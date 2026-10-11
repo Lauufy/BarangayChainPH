@@ -1,73 +1,64 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
-@section('title', 'Admin Dashboard')
+@section('title', 'Dashboard')
 
 @section('content')
-    <div class="mb-8">
-        <p class="text-sm font-medium text-emerald-400">ADMINISTRATION PORTAL</p>
+<div class="mb-6">
+    <p class="text-sm font-medium text-emerald-600">OVERVIEW</p>
+    <h1 class="mt-1 text-2xl font-bold text-slate-900">Admin Dashboard</h1>
+    <p class="mt-1 text-sm text-slate-500">Monitor citizen services and barangay transactions.</p>
+</div>
 
-        <h1 class="mt-2 text-3xl font-bold tracking-tight text-white">
-            Welcome, {{ auth()->user()->name }}!
-        </h1>
+<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    @foreach ([
+        ['Total Citizens', $totalCitizens ?? 0, 'Registered citizen accounts'],
+        ['Pending Permits', $pendingPermits ?? 0, 'Requests awaiting review'],
+        ['Pending Verifications', $pendingVerifications ?? 0, 'Identity checks to review'],
+        ['Documents Authenticated', $authenticatedDocuments ?? 0, 'Verified documents']
+    ] as [$label, $value, $description])
+        <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p class="text-sm font-medium text-slate-500">{{ $label }}</p>
+            <p class="mt-3 text-3xl font-bold text-slate-900">{{ number_format((int) $value) }}</p>
+            <p class="mt-2 text-xs text-slate-500">{{ $description }}</p>
+        </section>
+    @endforeach
+</div>
 
-        <p class="mt-2 text-slate-400">
-            Manage system accounts and oversee barangay digital services.
-        </p>
-    </div>
-
-    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        <div class="rounded-2xl border border-slate-800 bg-[#071326] p-6">
-            <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
-                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"
-                    aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2m6-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8-3v6m3-3h-6" />
-                </svg>
-            </div>
-
-            <h2 class="font-semibold text-white">User & Role Management</h2>
-            <p class="mt-2 text-sm leading-6 text-slate-400">
-                Create staff accounts and manage user roles and access.
-            </p>
-            <a href="{{ route('admin.users.index') }}"
-                class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-emerald-400 transition hover:text-emerald-300">
-                Manage Accounts
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"
-                    aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14m-6-6 6 6-6 6" />
-                </svg>
-            </a>
+<div class="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
+    <section class="rounded-xl border border-slate-200 bg-white p-5 xl:col-span-2">
+        <div class="flex items-center justify-between gap-3">
+            <h2 class="font-semibold text-slate-900">Recent Permit Requests</h2>
+            <a href="{{ url('/admin/permits') }}" class="text-sm font-medium text-emerald-700 hover:text-emerald-800">View all</a>
         </div>
-
-        <div class="rounded-2xl border border-slate-800 bg-[#071326] p-6">
-            <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400">
-                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"
-                    aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M8 7h8m-8 4h8m-8 4h5M6 3h9l4 4v14H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
-                </svg>
-            </div>
-
-            <h2 class="font-semibold text-white">Permit Oversight</h2>
-            <p class="mt-2 text-sm leading-6 text-slate-400">
-                Monitor permit applications and their processing status.
-            </p>
-            <span class="mt-4 inline-block text-xs font-medium text-blue-400">Coming soon</span>
+        <div class="mt-4 overflow-x-auto">
+            <table class="w-full min-w-150 text-left text-sm">
+                <thead class="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+                    <tr><th class="px-3 py-3">Reference</th><th class="px-3 py-3">Citizen</th><th class="px-3 py-3">Permit Type</th><th class="px-3 py-3">Status</th></tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                @forelse (($recentPermits ?? collect()) as $permit)
+                    <tr>
+                        <td class="px-3 py-3 font-medium text-slate-800">{{ $permit->reference_number ?? ('REQ-' . $permit->id) }}</td>
+                        <td class="px-3 py-3 text-slate-600">{{ $permit->user->name ?? $permit->citizen_name ?? '—' }}</td>
+                        <td class="px-3 py-3 text-slate-600">{{ $permit->permit_type ?? $permit->type ?? '—' }}</td>
+                        <td class="px-3 py-3"><span class="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">{{ ucfirst($permit->status ?? 'Pending') }}</span></td>
+                    </tr>
+                @empty
+                    <tr><td colspan="4" class="px-3 py-8 text-center text-slate-500">No recent permit requests to display.</td></tr>
+                @endforelse
+                </tbody>
+            </table>
         </div>
-
-        <div class="rounded-2xl border border-slate-800 bg-[#071326] p-6">
-            <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-violet-500/10 text-violet-400">
-                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"
-                    aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 19V5m0 14h16M8 16v-5m4 5V7m4 9v-8" />
-                </svg>
-            </div>
-
-            <h2 class="font-semibold text-white">Reports & Analytics</h2>
-            <p class="mt-2 text-sm leading-6 text-slate-400">
-                Review service activity and system performance.
-            </p>
-            <span class="mt-4 inline-block text-xs font-medium text-violet-400">Coming soon</span>
+    </section>
+    <section class="rounded-xl border border-slate-200 bg-white p-5">
+        <h2 class="font-semibold text-slate-900">Admin Shortcuts</h2>
+        <div class="mt-4 space-y-2">
+            @foreach ([['User & Role Management', '/admin/users'], ['Identity Verification', '/admin/identity-verification'], ['Permit Management', '/admin/permits'], ['Reports & Analytics', '/admin/reports']] as [$label, $url])
+                <a href="{{ url($url) }}" class="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-3 text-sm font-medium text-slate-700 hover:border-emerald-300 hover:bg-emerald-50">
+                    {{ $label }} <span class="text-emerald-700">→</span>
+                </a>
+            @endforeach
         </div>
-    </div>
+    </section>
+</div>
 @endsection

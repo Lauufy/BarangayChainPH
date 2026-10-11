@@ -1,13 +1,13 @@
+
 <?php
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Auth\EmailVerificationController;
+use App\Http\Controllers\Auth\ForgotPasswordController;
+use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Auth\EmailVerificationController;
-use Illuminate\Foundation\Auth\EmailVerificationRequest;
-use Illuminate\Http\Request;
-
 
 /*
 |--------------------------------------------------------------------------
@@ -19,6 +19,9 @@ Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
+Route::view('/terms', 'legal.terms')->name('terms');
+Route::view('/privacy', 'legal.privacy')->name('privacy');
+
 /*
 |--------------------------------------------------------------------------
 | Guest Routes
@@ -26,48 +29,62 @@ Route::get('/', function () {
 */
 
 Route::middleware('guest')->group(function () {
+    // Registration
     Route::get('/register', [RegisterController::class, 'create'])
         ->name('register');
 
     Route::post('/register', [RegisterController::class, 'store'])
         ->name('register.store');
 
+    // Login
     Route::get('/login', [LoginController::class, 'create'])
         ->name('login');
 
     Route::post('/login', [LoginController::class, 'store'])
         ->name('login.store');
+
+    // Forgot Password
+    Route::get('/forgot-password', [ForgotPasswordController::class, 'showForgotPassword'])
+        ->name('password.request');
+
+    Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLink'])
+        ->middleware('throttle:3,1')
+        ->name('password.email');
+
+    // Reset Password
+    Route::get('/reset-password/{token}', [ResetPasswordController::class, 'showResetPassword'])
+        ->name('password.reset');
+
+    Route::post('/reset-password', [ResetPasswordController::class, 'resetPassword'])
+        ->middleware('throttle:5,1')
+        ->name('password.update');
 });
 
+/*
+|--------------------------------------------------------------------------
+| Email Verification Routes
+|--------------------------------------------------------------------------
+*/
 
 Route::middleware('auth')->group(function () {
-    // Show the email verification notice.
-    Route::get('/email/verify', function () {
-        return view('auth.verify-email');
-    })->name('verification.notice');
+    // Keep the named verification notice route without duplicating /email/verify.
+    Route::view('/email/verification/notice', 'auth.verify-email')
+        ->name('verification.notice');
 
+    Route::get('/email/verify', [EmailVerificationController::class, 'show'])
+        ->name('verification.otp.show');
+
+    Route::post('/email/verify', [EmailVerificationController::class, 'verify'])
+        ->middleware('throttle:10,1')
+        ->name('verification.otp.verify');
+
+    Route::post('/email/verification/resend', [EmailVerificationController::class, 'resend'])
+        ->middleware('throttle:3,1')
+        ->name('verification.otp.resend');
+
+    Route::post('/email/verification/cancel', [EmailVerificationController::class, 'cancel'])
+        ->name('verification.cancel');
 });
-
-
-Route::get('/email/verify', [EmailVerificationController::class, 'show'])
-    ->name('verification.otp.show');
-
-Route::post('/email/verify', [EmailVerificationController::class, 'verify'])
-    ->middleware('throttle:10,1')
-    ->name('verification.otp.verify');
-
-Route::post('/email/verification/resend', [EmailVerificationController::class, 'resend'])
-    ->middleware('throttle:3,1')
-    ->name('verification.otp.resend');
-
-Route::post('/email/verification/cancel', [EmailVerificationController::class, 'cancel'])
-    ->name('verification.cancel');
-
-
-
-
-Route::view('/terms', 'legal.terms')->name('terms');
-Route::view('/privacy', 'legal.privacy')->name('privacy');
 
 /*
 |--------------------------------------------------------------------------
@@ -76,9 +93,8 @@ Route::view('/privacy', 'legal.privacy')->name('privacy');
 */
 
 Route::middleware(['auth', 'role:citizen'])->group(function () {
-    Route::get('/citizen/dashboard', function () {
-        return view('citizen.dashboard');
-    })->name('citizen.dashboard');
+    Route::view('/citizen/dashboard', 'citizen.dashboard')
+        ->name('citizen.dashboard');
 });
 
 /*
@@ -88,39 +104,71 @@ Route::middleware(['auth', 'role:citizen'])->group(function () {
 */
 
 Route::middleware(['auth', 'role:staff'])->group(function () {
-    Route::get('/staff/dashboard', function () {
-        return view('staff.dashboard');
-    })->name('staff.dashboard');
+    Route::view('/staff/dashboard', 'staff.dashboard')
+        ->name('staff.dashboard');
 });
 
 /*
 |--------------------------------------------------------------------------
-| Admin Dashboard
+| Admin Dashboard and Modules
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'role:admin'])->group(function () {
-    Route::get('/admin/dashboard', function () {
-        return view('admin.dashboard');
-    })->name('admin.dashboard');
+Route::middleware(['auth', 'role:admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
 
-    Route::get('/admin/users', [UserController::class, 'index'])
-        ->name('admin.users.index');
+        // Dashboard
+        Route::get('/dashboard', function () {
+            return view('admin.dashboard');
+        })->name('dashboard');
 
-    Route::post('/admin/users', [UserController::class, 'store'])
-        ->name('admin.users.store');
+        // User & Role Management
+        Route::get('/users', [UserController::class, 'index'])
+            ->name('users.index');
 
-    Route::patch('/admin/users/{user}/status', [UserController::class, 'toggleStatus'])
-        ->name('admin.users.toggle-status');
-});
+        Route::post('/users', [UserController::class, 'store'])
+            ->name('users.store');
+
+        Route::patch('/users/{user}/status', [UserController::class, 'toggleStatus'])
+            ->name('users.toggle-status');
+
+        // Digital Identity Verification
+        Route::view('/identity-verification', 'admin.identity-verification')
+            ->name('identity-verification.index');
+
+        // Permit & Clearance Processing
+        Route::view('/permits', 'admin.permits')
+            ->name('permits.index');
+
+        // Document Authentication
+        Route::view('/document-authentication', 'admin.document-authentication')
+            ->name('document-authentication.index');
+
+        // Blockchain Transaction Ledger
+        Route::view('/blockchain-ledger', 'admin.blockchain-ledger')
+            ->name('blockchain-ledger.index');
+
+        // Notifications & Messaging
+        Route::view('/notifications', 'admin.notifications')
+            ->name('notifications.index');
+
+        // Reports & Analytics
+        Route::view('/reports', 'admin.reports')
+            ->name('reports.index');
+
+        // Audit Logs
+        Route::view('/audit-logs', 'admin.audit-logs')
+            ->name('audit-logs.index');
+    });
 
 /*
 |--------------------------------------------------------------------------
-| Authenticated Routes
+| Logout
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('auth')->group(function () {
-    Route::post('/logout', [LoginController::class, 'destroy'])
-        ->name('logout');
-});
+Route::post('/logout', [LoginController::class, 'destroy'])
+    ->middleware('auth')
+    ->name('logout');
