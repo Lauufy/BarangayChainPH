@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Notifications\EmailVerificationOtp;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\RateLimiter;
@@ -19,7 +20,7 @@ class EmailVerificationController extends Controller
         $registration = $request->session()->get('pending_registration');
 
         if (
-            !is_array($registration) ||
+            ! is_array($registration) ||
             empty($registration['email']) ||
             empty($registration['otp_hash'])
         ) {
@@ -44,8 +45,9 @@ class EmailVerificationController extends Controller
             ->get('pending_registration');
 
         if (
-            !is_array($registration) ||
+            ! is_array($registration) ||
             empty($registration['name']) ||
+            empty($registration['phone']) ||
             empty($registration['email']) ||
             empty($registration['password']) ||
             empty($registration['otp_hash']) ||
@@ -60,7 +62,7 @@ class EmailVerificationController extends Controller
         $email = $registration['email'];
 
         // Rate limit verification attempts by email.
-        $key = 'email-otp:' . sha1(strtolower($email));
+        $key = 'email-otp:'.sha1(strtolower($email));
 
         if (RateLimiter::tooManyAttempts($key, 5)) {
             throw ValidationException::withMessages([
@@ -73,7 +75,7 @@ class EmailVerificationController extends Controller
         // Check OTP expiration and validity.
         if (
             now()->timestamp > (int) $registration['otp_expires_at'] ||
-            !Hash::check(
+            ! Hash::check(
                 $validated['otp'],
                 $registration['otp_hash']
             )
@@ -97,14 +99,22 @@ class EmailVerificationController extends Controller
         }
 
         // Create the citizen only after successful OTP verification.
-        $user = User::create([
-            'name' => $registration['name'],
-            'email' => $email,
-            'password' => $registration['password'],
-            'role' => 'citizen',
-            'is_active' => true,
-            'email_verified_at' => now(),
-        ]);
+        $user = DB::transaction(function () use ($registration, $email) {
+            $user = User::create([
+                'name' => $registration['name'],
+                'email' => $email,
+                'password' => $registration['password'],
+                'role' => 'citizen',
+                'is_active' => true,
+                'email_verified_at' => now(),
+            ]);
+
+            $user->citizenProfile()->create([
+                'phone' => $registration['phone'],
+            ]);
+
+            return $user;
+        });
 
         RateLimiter::clear($key);
 
@@ -132,7 +142,7 @@ class EmailVerificationController extends Controller
             ->get('pending_registration');
 
         if (
-            !is_array($registration) ||
+            ! is_array($registration) ||
             empty($registration['name']) ||
             empty($registration['email']) ||
             empty($registration['password'])
@@ -160,7 +170,7 @@ class EmailVerificationController extends Controller
         }
 
         // Allow one resend every 120 seconds.
-        $key = 'email-otp-resend:' . sha1(strtolower($email));
+        $key = 'email-otp-resend:'.sha1(strtolower($email));
 
         if (RateLimiter::tooManyAttempts($key, 1)) {
             return back()->withErrors([

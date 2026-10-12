@@ -1,12 +1,12 @@
 
 <?php
 
-use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
-use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -70,21 +70,21 @@ Route::middleware('auth')->group(function () {
     // Keep the named verification notice route without duplicating /email/verify.
     Route::view('/email/verification/notice', 'auth.verify-email')
         ->name('verification.notice');
-
-    Route::get('/email/verify', [EmailVerificationController::class, 'show'])
-        ->name('verification.otp.show');
-
-    Route::post('/email/verify', [EmailVerificationController::class, 'verify'])
-        ->middleware('throttle:10,1')
-        ->name('verification.otp.verify');
-
-    Route::post('/email/verification/resend', [EmailVerificationController::class, 'resend'])
-        ->middleware('throttle:3,1')
-        ->name('verification.otp.resend');
-
-    Route::post('/email/verification/cancel', [EmailVerificationController::class, 'cancel'])
-        ->name('verification.cancel');
 });
+
+Route::get('/email/verify', [EmailVerificationController::class, 'show'])
+    ->name('verification.otp.show');
+
+Route::post('/email/verify', [EmailVerificationController::class, 'verify'])
+    ->middleware('throttle:10,1')
+    ->name('verification.otp.verify');
+
+Route::post('/email/verification/resend', [EmailVerificationController::class, 'resend'])
+    ->middleware('throttle:3,1')
+    ->name('verification.otp.resend');
+
+Route::post('/email/verification/cancel', [EmailVerificationController::class, 'cancel'])
+    ->name('verification.cancel');
 
 /*
 |--------------------------------------------------------------------------

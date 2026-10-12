@@ -14,16 +14,26 @@
 
 <body class="min-h-screen bg-[#020A18] text-slate-100 antialiased">
 
-    <header class="m-2 px-6 pt-6">
-        <x:navigation.back-nav />
-    </header>
+    <div class="relative grid min-h-screen lg:grid-cols-2">
 
-    <main class="flex items-center justify-center px-4 py-10 sm:px-6">
-        <div class="w-full max-w-md">
-            @yield('content')
+        {{-- Back navigation: floats over the top of the page --}}
+        <header class="absolute inset-x-0 top-0 z-10 px-6 pt-6">
+            <x:navigation.back-nav />
+        </header>
+
+        {{-- Form --}}
+        <main class="pt-35 px-4 pb-10 sm:px-6">
+            <div class="mx-auto w-full max-w-md">
+                @yield('content')
+            </div>
+        </main>
+
+        {{-- Panel (hidden on phones and tablets) --}}
+        <div class="hidden lg:block">
+            @yield('panel')
         </div>
-    </main>
 
+    </div>
 
     <x:feedbacks.toast />
 

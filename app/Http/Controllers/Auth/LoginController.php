@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\EmployeeProfile;
 use App\Models\User;
 use App\Notifications\EmailVerificationOtp;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class LoginController extends Controller
@@ -21,14 +21,24 @@ class LoginController extends Controller
 
     public function store(Request $request)
     {
-        $credentials = $request->validate([
-            'email' => ['required', 'email'],
+        $validated = $request->validate([
+            'identifier' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string'],
         ]);
 
+        $identifier = trim($validated['identifier']);
+        $employee = EmployeeProfile::query()
+            ->where('employee_id', strtoupper($identifier))
+            ->first();
+
+        $credentials = [
+            'email' => $employee?->user->email ?? $identifier,
+            'password' => $validated['password'],
+        ];
+
         if (! Auth::attempt($credentials, $request->boolean('remember'))) {
             throw ValidationException::withMessages([
-                'email' => 'The email or password is incorrect.',
+                'identifier' => 'The email/employee ID or password is incorrect.',
             ]);
         }
 

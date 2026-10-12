@@ -23,7 +23,7 @@
                 </p>
             </div>
 
-            <button type="button"
+            <a href="#create-account"
                 class="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400">
                 <svg class="size-5" fill="none" viewBox="0 0 24 24"
                     stroke="currentColor" stroke-width="1.8" aria-hidden="true">
@@ -31,7 +31,7 @@
                         d="M12 5v14m7-7H5" />
                 </svg>
                 Add Account
-            </button>
+            </a>
         </div>
 
         {{-- Summary cards --}}
@@ -39,19 +39,19 @@
 
             <div class="rounded-xl border border-white/10 bg-[#09172D] p-5">
                 <p class="text-sm text-blue-100/60">Total Accounts</p>
-                <p class="mt-3 text-3xl font-bold text-white">—</p>
+                <p class="mt-3 text-3xl font-bold text-white">{{ $accountCounts['total'] }}</p>
                 <p class="mt-2 text-xs text-slate-500">All registered system accounts</p>
             </div>
 
             <div class="rounded-xl border border-white/10 bg-[#09172D] p-5">
                 <p class="text-sm text-blue-100/60">Staff Accounts</p>
-                <p class="mt-3 text-3xl font-bold text-white">—</p>
+                <p class="mt-3 text-3xl font-bold text-white">{{ $accountCounts['staff'] }}</p>
                 <p class="mt-2 text-xs text-slate-500">Authorized barangay personnel</p>
             </div>
 
             <div class="rounded-xl border border-white/10 bg-[#09172D] p-5">
                 <p class="text-sm text-blue-100/60">Administrator Accounts</p>
-                <p class="mt-3 text-3xl font-bold text-white">—</p>
+                <p class="mt-3 text-3xl font-bold text-white">{{ $accountCounts['admin'] }}</p>
                 <p class="mt-2 text-xs text-slate-500">Accounts with administrative access</p>
             </div>
 
@@ -107,30 +107,138 @@
                     <thead class="bg-white/3 text-xs uppercase tracking-wider text-slate-400">
                         <tr>
                             <th class="px-5 py-4 font-semibold">Account</th>
-                            <th class="px-5 py-4 font-semibold">Role</th>
+                            <th class="px-5 py-4 font-semibold">Role / Employee ID</th>
                             <th class="px-5 py-4 font-semibold">Status</th>
                             <th class="px-5 py-4 font-semibold">Date Created</th>
                             <th class="px-5 py-4 text-right font-semibold">Actions</th>
                         </tr>
                     </thead>
 
-                    <tbody>
-                        <tr>
-                            <td colspan="5" class="px-5 py-12 text-center">
-                                <p class="font-medium text-slate-300">
-                                    Account records will appear here.
-                                </p>
-
-                                <p class="mt-2 text-xs text-slate-500">
-                                    Connect this table to your user management controller.
-                                </p>
-                            </td>
-                        </tr>
+                    <tbody class="divide-y divide-white/5">
+                        @forelse ($users as $user)
+                            <tr>
+                                <td class="px-5 py-4">
+                                    <p class="font-medium text-white">{{ $user->name }}</p>
+                                    <p class="mt-1 text-xs text-slate-400">{{ $user->email }}</p>
+                                </td>
+                                <td class="px-5 py-4 capitalize text-slate-300">
+                                    {{ $user->role }}
+                                    @if ($user->employeeProfile)
+                                        <p class="mt-1 text-xs text-emerald-400">
+                                            {{ $user->employeeProfile->employee_id }}
+                                        </p>
+                                        <p class="mt-1 text-xs text-slate-500">
+                                            {{ $user->employeeProfile->position }} · {{ $user->employeeProfile->department }}
+                                        </p>
+                                    @endif
+                                </td>
+                                <td class="px-5 py-4 text-slate-300">
+                                    {{ $user->is_active ? 'Active' : 'Inactive' }}
+                                </td>
+                                <td class="px-5 py-4 text-slate-400">
+                                    {{ $user->created_at->format('M j, Y') }}
+                                </td>
+                                <td class="px-5 py-4 text-right">
+                                    @if (!auth()->user()->is($user))
+                                        <form action="{{ route('admin.users.toggle-status', $user) }}" method="POST">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit" class="font-semibold text-emerald-400 hover:text-emerald-300">
+                                                {{ $user->is_active ? 'Deactivate' : 'Activate' }}
+                                            </button>
+                                        </form>
+                                    @else
+                                        <span class="text-slate-500">Current account</span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="px-5 py-12 text-center text-slate-400">
+                                    No accounts found.
+                                </td>
+                            </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
+            <div class="border-t border-white/10 p-4">
+                {{ $users->links() }}
+            </div>
 
         </div>
+
+        <section id="create-account" class="rounded-xl border border-white/10 bg-[#09172D] p-5">
+            <h2 class="text-base font-semibold text-white">Create an account</h2>
+            <p class="mt-1 text-sm text-blue-100/50">
+                Staff and admin accounts receive a unique employee ID that can be used to sign in.
+            </p>
+
+            <x-feedbacks.form-errors />
+
+            <form action="{{ route('admin.users.store') }}" method="POST" class="mt-5 grid gap-4 sm:grid-cols-2">
+                @csrf
+                <label class="text-sm text-slate-300">
+                    Full name
+                    <input name="name" value="{{ old('name', 'Carlo Admin') }}" required
+                        class="mt-1 w-full rounded-lg border border-white/10 bg-[#020A18] px-3 py-2.5 text-white">
+                </label>
+                <label class="text-sm text-slate-300">
+                    Email
+                    <input name="email" type="email" value="{{ old('email') }}" required
+                        class="mt-1 w-full rounded-lg border border-white/10 bg-[#020A18] px-3 py-2.5 text-white">
+                </label>
+                <label class="text-sm text-slate-300">
+                    Role
+                    <select name="role" required
+                        class="mt-1 w-full rounded-lg border border-white/10 bg-[#020A18] px-3 py-2.5 text-white">
+                        <option value="staff" @selected(old('role') === 'staff')>Staff / Employee</option>
+                        <option value="admin" @selected(old('role', 'admin') === 'admin')>Administrator</option>
+                    </select>
+                </label>
+                <label class="text-sm text-slate-300">
+                    Department
+                    <input name="department" value="{{ old('department') }}"
+                        class="mt-1 w-full rounded-lg border border-white/10 bg-[#020A18] px-3 py-2.5 text-white">
+                </label>
+                <label class="text-sm text-slate-300">
+                    Position
+                    <input name="position" value="{{ old('position') }}"
+                        class="mt-1 w-full rounded-lg border border-white/10 bg-[#020A18] px-3 py-2.5 text-white">
+                </label>
+                <label class="text-sm text-slate-300">
+                    Phone number
+                    <input name="phone" type="tel" value="{{ old('phone') }}"
+                        class="mt-1 w-full rounded-lg border border-white/10 bg-[#020A18] px-3 py-2.5 text-white">
+                </label>
+                <label class="text-sm text-slate-300">
+                    Office (optional)
+                    <input name="office" value="{{ old('office') }}"
+                        class="mt-1 w-full rounded-lg border border-white/10 bg-[#020A18] px-3 py-2.5 text-white">
+                </label>
+                <label class="text-sm text-slate-300">
+                    Date hired (optional)
+                    <input name="date_hired" type="date" value="{{ old('date_hired') }}"
+                        max="{{ now()->toDateString() }}"
+                        class="mt-1 w-full rounded-lg border border-white/10 bg-[#020A18] px-3 py-2.5 text-white">
+                </label>
+                <label class="text-sm text-slate-300">
+                    Password
+                    <input name="password" type="password" required autocomplete="new-password"
+                        class="mt-1 w-full rounded-lg border border-white/10 bg-[#020A18] px-3 py-2.5 text-white">
+                </label>
+                <label class="text-sm text-slate-300">
+                    Confirm password
+                    <input name="password_confirmation" type="password" required autocomplete="new-password"
+                        class="mt-1 w-full rounded-lg border border-white/10 bg-[#020A18] px-3 py-2.5 text-white">
+                </label>
+                <div class="sm:col-span-2">
+                    <button type="submit" class="rounded-lg bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-500">
+                        Create account
+                    </button>
+                </div>
+            </form>
+        </section>
 
     </div>
 @endsection

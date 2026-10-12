@@ -1,51 +1,53 @@
 
-@extends('layouts.guest')
+@extends('layouts.legal')
 
-@section('title', 'Terms of Service')
+@section('title', 'Privacy Policy')
 
 @section('content')
-<div class="mx-auto max-w-3xl rounded-2xl border border-slate-800 bg-[#071326] p-6 text-slate-300 sm:p-10">
-    <a href="{{ route('register') }}" class="text-sm text-emerald-400 hover:text-emerald-300">
-        &larr; Back to Registration
-    </a>
 
-    <h1 class="mt-6 text-3xl font-bold text-white">Terms of Service</h1>
+
+    <h1 class="mt-6 text-3xl font-bold text-white">Privacy Policy</h1>
     <p class="mt-2 text-sm text-slate-500">BarangayChain PH</p>
 
     <div class="mt-8 space-y-6 text-sm leading-7">
         <section>
-            <h2 class="text-lg font-semibold text-white">1. Acceptance of Terms</h2>
-            <p>By creating an account, you agree to follow these terms when using BarangayChain PH and its barangay services.</p>
+            <h2 class="text-lg font-semibold text-white">1. Information We Collect</h2>
+            <p>To create a citizen account, BarangayChain PH collects your name, email address, phone number, date of birth, civil status, nationality, and address (house/lot/block number, street, barangay, city or municipality, province, and ZIP code). Place of birth, occupation, gender, and religion are optional. We may also collect information and documents you submit when using barangay services.</p>
         </section>
 
         <section>
-            <h2 class="text-lg font-semibold text-white">2. Account Information</h2>
-            <p>You must provide accurate and updated information. You are responsible for keeping your account credentials confidential and for activities performed through your account.</p>
+            <h2 class="text-lg font-semibold text-white">2. How We Use Your Information</h2>
+            <p>Your information may be used to manage your account, verify your identity, process permits and clearances, send service notifications, and maintain system security.</p>
         </section>
 
         <section>
-            <h2 class="text-lg font-semibold text-white">3. Proper Use</h2>
-            <p>You must provide truthful information and submit only legitimate requests and documents. Fraudulent submissions, misuse, or unauthorized access are prohibited.</p>
+            <h2 class="text-lg font-semibold text-white">3. Data Protection</h2>
+            <p>Reasonable organizational, technical, and security measures should be implemented to protect personal information against unauthorized access, disclosure, alteration, or loss.</p>
         </section>
 
         <section>
-            <h2 class="text-lg font-semibold text-white">4. Service Availability</h2>
-            <p>Permit processing, document verification, notifications, and other services are subject to barangay procedures, staff review, and system availability.</p>
+            <h2 class="text-lg font-semibold text-white">4. Sharing of Information</h2>
+            <p>Personal information should only be accessed or shared by authorized personnel and appropriate service providers when necessary for legitimate service purposes or as required by law.</p>
         </section>
 
         <section>
-            <h2 class="text-lg font-semibold text-white">5. Account Suspension</h2>
-            <p>Accounts may be restricted when necessary to protect system security or address suspected misuse, subject to applicable policies and laws.</p>
+            <h2 class="text-lg font-semibold text-white">5. Data Retention</h2>
+            <p>Personal information should be retained only as long as necessary for the stated purposes and applicable legal or records-management requirements.</p>
         </section>
 
         <section>
-            <h2 class="text-lg font-semibold text-white">6. Changes to These Terms</h2>
-            <p>These terms may be updated when necessary. Users should review the latest version before continuing to use the service.</p>
+            <h2 class="text-lg font-semibold text-white">6. Your Privacy Rights</h2>
+            <p>You may have rights to access, correct, or request the appropriate handling of your personal information under applicable data protection laws, subject to lawful limitations.</p>
+        </section>
+
+        <section>
+            <h2 class="text-lg font-semibold text-white">7. Contact Information</h2>
+            <p>For privacy-related questions or requests, contact the authorized Barangay San Luis office through its official communication channels.</p>
         </section>
     </div>
 
     <p class="mt-8 border-t border-slate-800 pt-5 text-xs text-slate-500">
-        Draft policy for BarangayChain PH. Have the responsible barangay officials review and approve it before production use.
+        Draft policy for BarangayChain PH. Have the barangay's designated privacy officer or responsible officials review it for compliance with the Philippine Data Privacy Act before production use.
     </p>
 </div>
 @endsection

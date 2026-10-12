@@ -24,6 +24,7 @@ class RegisterController extends Controller
         // Validate registration details.
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'phone' => ['required', 'string', 'max:30'],
             'email' => [
                 'required',
                 'string',
@@ -45,10 +46,8 @@ class RegisterController extends Controller
             'terms' => ['required', 'accepted'],
             'g-recaptcha-response' => ['required', 'string'],
         ], [
-            'terms.accepted' =>
-                'You must agree to the Terms of Service and Privacy Policy.',
-            'g-recaptcha-response.required' =>
-                'Please complete the CAPTCHA verification.',
+            'terms.accepted' => 'You must agree to the Terms of Service and Privacy Policy.',
+            'g-recaptcha-response.required' => 'Please complete the CAPTCHA verification.',
         ]);
 
         // Verify CAPTCHA configuration.
@@ -57,8 +56,7 @@ class RegisterController extends Controller
 
         if (empty($secretKey)) {
             throw ValidationException::withMessages([
-                'g-recaptcha-response' =>
-                    'CAPTCHA verification is temporarily unavailable. Please try again.',
+                'g-recaptcha-response' => 'CAPTCHA verification is temporarily unavailable. Please try again.',
             ]);
         }
 
@@ -76,18 +74,16 @@ class RegisterController extends Controller
                 );
         } catch (ConnectionException $exception) {
             throw ValidationException::withMessages([
-                'g-recaptcha-response' =>
-                    'CAPTCHA verification is temporarily unavailable. Please try again.',
+                'g-recaptcha-response' => 'CAPTCHA verification is temporarily unavailable. Please try again.',
             ]);
         }
 
         if (
-            !$captchaResponse->successful() ||
-            !$captchaResponse->json('success', false)
+            ! $captchaResponse->successful() ||
+            ! $captchaResponse->json('success', false)
         ) {
             throw ValidationException::withMessages([
-                'g-recaptcha-response' =>
-                    'CAPTCHA verification failed. Please try again.',
+                'g-recaptcha-response' => 'CAPTCHA verification failed. Please try again.',
             ]);
         }
 
@@ -102,6 +98,7 @@ class RegisterController extends Controller
 
         $request->session()->put('pending_registration', [
             'name' => $validated['name'],
+            'phone' => $validated['phone'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'otp_hash' => Hash::make($otp),
@@ -127,8 +124,7 @@ class RegisterController extends Controller
             ]);
 
             throw ValidationException::withMessages([
-                'email' =>
-                    'We could not send your verification code. Please check your email settings and try again.',
+                'email' => 'We could not send your verification code. Please check your email settings and try again.',
             ]);
         }
 

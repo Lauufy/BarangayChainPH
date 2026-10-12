@@ -3,33 +3,32 @@
 @section('title', 'Create Account')
 
 @section('content')
-
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 
     {{-- Header --}}
     <header class="mb-6">
-        <p class="mb-2 text-[11px] font-bold uppercase tracking-[0.22em] text-emerald-400">
+        <p class="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-400">
             Citizen Portal
         </p>
 
-        <h1 class="text-3xl font-bold tracking-tight text-white">
+        <h1 class="text-3xl font-bold leading-tight tracking-tight text-white">
             Create an account
         </h1>
 
-        <p class="mt-2 text-sm leading-5 text-blue-100/65">
+        <p class="mt-2 text-sm leading-6 text-blue-100/70">
             Register to access BarangayChain PH services.
         </p>
     </header>
 
     {{-- Log In / Sign Up tabs --}}
-    <div class="mb-5 flex rounded-lg border border-white/10 bg-[#09172D] p-1">
+    <div class="mb-5 flex rounded-md border border-white/10 bg-[#09172D] p-1">
         <a href="{{ route('login') }}"
-            class="flex flex-1 items-center justify-center rounded-md px-3 py-2.5 text-sm font-medium text-blue-100/60 transition hover:text-white">
+            class="flex flex-1 items-center justify-center rounded px-3 py-2.5 text-sm font-semibold text-blue-100/60 transition hover:text-white">
             Log In
         </a>
 
         <a href="{{ route('register') }}" aria-current="page"
-            class="flex flex-1 items-center justify-center rounded-md bg-[#172A45] px-3 py-2.5 text-sm font-semibold text-white shadow-sm">
+            class="flex flex-1 items-center justify-center rounded bg-[#172A45] px-3 py-2.5 text-sm font-semibold text-white shadow-sm">
             Sign Up
         </a>
     </div>
@@ -37,149 +36,75 @@
     {{-- Errors --}}
     <x-feedbacks.form-errors />
 
-    {{-- Registration form --}}
+    {{-- Register form --}}
     <form action="{{ route('register.store') }}" method="POST" class="space-y-4" data-validate>
         @csrf
 
-        {{-- Full name --}}
-        <div>
-            <label for="name" class="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-blue-100">
-                Full Name
-            </label>
+        {{-- Full name + Phone --}}
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <x-form.input name="name" label="Full Name" required autofocus autocomplete="name"
+                placeholder="Enter your full name" data-validate />
 
-            <input id="name" name="name" type="text" value="{{ old('name') }}" required autofocus
-                autocomplete="name" placeholder="Enter your full name" data-validate
-                class="validation-input w-full rounded-lg border border-white/10 bg-[#0B2347] px-3.5 py-3 text-sm text-white outline-none transition placeholder:text-blue-100/50 hover:border-white/20 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/10">
+            <x-form.input name="phone" label="Phone Number" type="tel" inputmode="tel" required autocomplete="tel"
+                placeholder="Enter your phone number" />
         </div>
 
         {{-- Email --}}
-        <div>
-            <label for="email" class="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-blue-100">
-                Email Address
-            </label>
+        <x-form.input name="email" label="Email Address" type="email" required autocomplete="email"
+            placeholder="you@example.com" data-validate />
 
-            <input id="email" name="email" type="email" value="{{ old('email') }}" required autocomplete="email"
-                placeholder="you@example.com" data-validate
-                class="validation-input w-full rounded-lg border border-white/10 bg-[#0B2347] px-3.5 py-3 text-sm text-white outline-none transition placeholder:text-blue-100/50 hover:border-white/20 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/10">
+        {{-- Password + Confirm password --}}
+        <div class="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
+            <x-form.input name="password" label="Password" type="password" data-password maxlength="16" required
+                autocomplete="new-password" placeholder="At least 8 characters">
+                {{-- Password rules checklist --}}
+                <x-feedbacks.password-requirement />
+            </x-form.input>
+
+            <x-form.input name="password_confirmation" label="Confirm Password" type="password" data-password-confirmation
+                maxlength="16" required autocomplete="new-password" placeholder="Re-enter your password" />
         </div>
 
-        {{-- Password --}}
-        <div>
-            <label for="password" class="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-blue-100">
-                Password
-            </label>
-
-            <div class="relative">
-                <input id="password" data-password name="password" type="password" maxlength="16" required
-                    autocomplete="new-password" placeholder="At least 8 characters"
-                    class="validation-input w-full rounded-lg border border-white/10 bg-[#0B2347] py-3 pl-3.5 pr-11 text-sm text-white outline-none transition placeholder:text-blue-100/50 hover:border-white/20 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/10">
-
-
-
-                {{-- Show / hide password --}}
-                <button type="button" data-password-toggle="password" aria-label="Show password"
-                    class="absolute inset-y-0 right-0 flex items-center rounded-r-lg px-3.5 text-blue-100/50 transition hover:text-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400">
-
-                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"
-                        aria-hidden="true">
-                        <g data-password-eye>
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </g>
-                    </svg>
-                </button>
-            </div>
-            
-            <x:feedbacks.password-requirement />
-        </div>
-
-        {{-- Confirm password --}}
-        <div>
-            <label for="password_confirmation"
-                class="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-blue-100">
-                Confirm Password
-            </label>
-
-            <div class="relative">
-                <input id="password_confirmation" data-password-confirmation name="password_confirmation" type="password"
-                    maxlength="16" required autocomplete="new-password" placeholder="Re-enter your password"
-                    class="validation-input w-full rounded-lg border border-white/10 bg-[#0B2347] py-3 pl-3.5 pr-11 text-sm text-white outline-none transition placeholder:text-blue-100/50 hover:border-white/20 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/10">
-
-                {{-- Show / hide password --}}
-                <button type="button" data-password-toggle="password_confirmation" aria-label="Show password"
-                    class="absolute inset-y-0 right-0 flex items-center rounded-r-lg px-3.5 text-blue-100/50 transition hover:text-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400">
-
-                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"
-                        aria-hidden="true">
-                        <g data-password-eye>
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </g>
-                    </svg>
-                </button>
-            </div>
-        </div>
-
-        {{-- Google reCAPTCHA --}}
+        {{-- reCAPTCHA --}}
         <div>
             <div class="overflow-x-auto">
                 <div class="g-recaptcha" data-theme="dark" data-sitekey="{{ config('services.recaptcha.site_key') }}"></div>
             </div>
-
             @error('g-recaptcha-response')
-                <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
+                <p class="mt-2 text-xs font-medium text-red-400">{{ $message }}</p>
             @enderror
         </div>
 
-        {{-- Terms and privacy checkbox --}}
-        <div>
-            <label class="flex cursor-pointer items-start gap-2.5">
-                <span class="relative mt-0.5 flex h-4 w-4 shrink-0">
-                    <input id="terms" type="checkbox" name="terms" value="1" required
-                        @checked(old('terms'))
-                        class="peer h-4 w-4 cursor-pointer appearance-none rounded border border-white/20 bg-[#0B2347] transition checked:border-emerald-600 checked:bg-emerald-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400">
-
-                    {{-- Check mark (shows when checked) --}}
-                    <svg class="pointer-events-none absolute inset-0 m-auto h-3 w-3 text-white opacity-0 transition peer-checked:opacity-100"
-                        viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.5 8.5l3 3 6-6.5" />
-                    </svg>
-                </span>
-
-                <span class="text-xs leading-5 text-blue-100/60">
-                    I agree to the
-                    <a href="{{ route('terms') }}" target="_blank" rel="noopener"
-                        class="font-semibold text-emerald-400 transition hover:text-emerald-300">Terms of Service</a>
-                    and
-                    <a href="{{ route('privacy') }}" target="_blank" rel="noopener"
-                        class="font-semibold text-emerald-400 transition hover:text-emerald-300">Privacy Policy</a>.
-                </span>
-            </label>
-
-            @error('terms')
-                <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
-            @enderror
-        </div>
+        {{-- Terms --}}
+        <x-form.checkbox name="terms" required>
+            I agree to the
+            <a href="{{ route('terms') }}" target="_blank" rel="noopener"
+                class="font-semibold text-emerald-400 transition hover:text-emerald-300">Terms of Service</a>
+            and
+            <a href="{{ route('privacy') }}" target="_blank" rel="noopener"
+                class="font-semibold text-emerald-400 transition hover:text-emerald-300">Privacy Policy</a>.
+        </x-form.checkbox>
 
         {{-- Submit --}}
         <button type="submit" data-loading data-loading-text="Creating account..."
-            class="flex w-full items-center justify-center gap-3 rounded-lg bg-emerald-600 px-4 py-3 text-sm font-bold uppercase tracking-[0.12em] text-white shadow-lg shadow-emerald-950/20 transition hover:bg-emerald-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#020A18] disabled:cursor-not-allowed disabled:opacity-70">
-            Create Account
+            class="flex w-full items-center justify-center gap-3 rounded-md bg-emerald-600 px-4 py-3 text-sm font-semibold tracking-wide text-white shadow-lg shadow-emerald-950/20 transition hover:bg-emerald-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#020A18] disabled:cursor-not-allowed disabled:opacity-70">
+            SIGN UP
         </button>
     </form>
 
-    <p class="mt-6 text-center text-sm text-blue-100/60">
+    <p class="mt-6 text-center text-sm text-blue-100/70">
         Already have an account?
         <a href="{{ route('login') }}" class="font-semibold text-white transition hover:text-emerald-300">
             Sign in
         </a>
     </p>
 
-    <p class="mt-3 text-center text-xs leading-5 text-blue-100/40">
+    <p class="mt-3 text-center text-xs leading-5 text-blue-100/50">
         Your account requires email verification before you can access
         BarangayChain PH services.
     </p>
 
+@section('panel')
+    <x-partials.journey-panel :active="1" />
+@endsection
 @endsection

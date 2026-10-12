@@ -1,4 +1,4 @@
-@extends('layouts.guest')
+@extends('layouts.app')
 
 @section('title', 'Verify Email')
 
@@ -6,22 +6,22 @@
 
     {{-- Header --}}
     <header class="mb-6">
-        <p class="mb-2 text-[11px] font-bold uppercase tracking-[0.22em] text-emerald-400">
+        <p class="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-400">
             Citizen Portal
         </p>
 
-        <h1 class="text-3xl font-bold tracking-tight text-white">
+        <h1 class="text-3xl font-bold leading-tight tracking-tight text-white">
             Verify your email
         </h1>
 
-        <p class="mt-2 text-sm leading-5 text-blue-100/65">
+        <p class="mt-2 text-sm leading-6 text-blue-100/70">
             One more step to secure your account.
         </p>
     </header>
 
     {{-- Email information --}}
-    <div class="mb-5 rounded-lg border border-white/10 bg-[#09172D] px-3.5 py-2.5">
-        <p class="text-[11px] font-medium uppercase tracking-wide text-slate-400">
+    <div class="mb-5 rounded-md border border-white/10 bg-[#09172D] px-3.5 py-2.5">
+        <p class="text-xs font-medium uppercase tracking-wide text-slate-400">
             Verification email
         </p>
 
@@ -30,105 +30,103 @@
         </p>
     </div>
 
-    {{-- OTP verification --}}
+    {{-- Errors --}}
+    <x-feedbacks.form-errors />
+
+    {{-- OTP form --}}
     <form method="POST" action="{{ route('verification.otp.verify') }}" class="space-y-4">
         @csrf
 
         <div>
-            <label for="otp" class="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-blue-100">
+            <label for="otp" class="mb-1.5 block text-sm font-medium text-blue-100">
                 Verification Code
             </label>
 
             <input id="otp" name="otp" type="text" value="{{ old('otp') }}" maxlength="6" minlength="6"
                 inputmode="numeric" pattern="[0-9]{6}" autocomplete="one-time-code" placeholder="000000" required
-                autofocus oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6)"
-                class="w-full rounded-lg border border-white/10 bg-[#0B2347] px-3.5 py-3 text-center text-xl font-bold tracking-[0.5em] text-white outline-none transition placeholder:text-blue-100/30 hover:border-white/20 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/10">
+                autofocus
+                class="w-full rounded-md border border-white/10 bg-[#0B2347] px-3.5 py-3 text-center text-xl font-bold tracking-[0.5em] text-white outline-none transition placeholder:text-blue-100/30 hover:border-white/20 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/10">
+
+            @error('otp')
+                <p class="mt-1 text-xs font-medium text-red-400">{{ $message }}</p>
+            @enderror
         </div>
 
         <button id="verify-button" type="submit" data-loading data-loading-text="Verifying..." disabled
-            class="flex w-full items-center justify-center gap-3 rounded-lg bg-emerald-600 px-4 py-3 text-sm font-bold uppercase tracking-[0.12em] text-white shadow-lg shadow-emerald-950/20 transition hover:bg-emerald-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#020A18] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-emerald-600">
+            class="flex w-full items-center justify-center gap-3 rounded-md bg-emerald-600 px-4 py-3 text-sm font-semibold tracking-wide text-white shadow-lg shadow-emerald-950/20 transition hover:bg-emerald-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#020A18] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-emerald-600">
             Verify Email
         </button>
     </form>
 
-    {{-- Resend OTP --}}
+    {{-- Resend code --}}
     <form id="resend-form" method="POST" action="{{ route('verification.otp.resend') }}" class="mt-2.5">
         @csrf
 
         <button id="resend-button" type="submit"
-            class="w-full rounded-lg border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm font-semibold text-emerald-300 transition hover:bg-emerald-400/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 disabled:cursor-not-allowed disabled:opacity-60">
+            class="w-full rounded-md border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm font-semibold text-emerald-300 transition hover:bg-emerald-400/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 disabled:cursor-not-allowed disabled:opacity-60">
             <span id="resend-text">Resend Verification Code</span>
         </button>
     </form>
 
-    {{-- Cancel verification --}}
+    {{-- Cancel --}}
     <form method="POST" action="{{ route('verification.cancel') }}" class="mt-2.5">
         @csrf
 
         <button type="submit" data-loading data-loading-text="Canceling..."
-            class="flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-[#09172D] px-4 py-3 text-sm font-semibold text-slate-300 transition hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 disabled:cursor-not-allowed disabled:opacity-70">
+            class="flex w-full items-center justify-center gap-2 rounded-md border border-white/10 bg-[#09172D] px-4 py-3 text-sm font-semibold text-slate-300 transition hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 disabled:cursor-not-allowed disabled:opacity-70">
             {{ session('otp_flow') === 'login' ? 'Back to Login' : 'Cancel Verification' }}
         </button>
     </form>
 
-    <p class="mt-6 text-center text-xs leading-5 text-blue-100/40">
+    <p class="mt-6 text-center text-xs leading-5 text-blue-100/50">
         Your verification code is valid for 10 minutes.
         Check your spam or junk folder if needed.
     </p>
 
-
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Verify button: enabled only with 6 digits
-            const otpInput = document.getElementById('otp');
-            const verifyButton = document.getElementById('verify-button');
+        // ---------- OTP input ----------
+        const otp = document.getElementById('otp');
+        const verifyButton = document.getElementById('verify-button');
 
-            const updateVerifyButton = () => {
-                verifyButton.disabled = !/^\d{6}$/.test(otpInput.value);
-            };
+        // Keep digits only (max 6) and enable the button only when there are 6
+        function updateCode() {
+            otp.value = otp.value.replace(/\D/g, '').slice(0, 6);
+            verifyButton.disabled = otp.value.length !== 6;
+        }
 
-            otpInput.addEventListener('input', updateVerifyButton);
-            window.addEventListener('pageshow', updateVerifyButton);
-            updateVerifyButton();
+        otp.addEventListener('input', updateCode);
+        window.addEventListener('pageshow', updateCode);
+        updateCode();
 
-            // Resend cooldown
-            const resendForm = document.getElementById('resend-form');
-            const resendButton = document.getElementById('resend-button');
-            const resendText = document.getElementById('resend-text');
+        // ---------- Resend cooldown (2 minutes) ----------
+        const resendForm = document.getElementById('resend-form');
+        const resendButton = document.getElementById('resend-button');
+        const resendText = document.getElementById('resend-text');
+        const storageKey = 'barangaychain_resend_cooldown';
+        let timer;
 
-            const cooldownSeconds = 120;
-            const storageKey = 'barangaychain_resend_cooldown';
-            let cooldownTimer;
+        function updateResend() {
+            clearTimeout(timer);
 
-            const updateResendButton = () => {
-                clearTimeout(cooldownTimer);
+            const secondsLeft = Math.ceil((Number(sessionStorage.getItem(storageKey)) - Date.now()) / 1000);
 
-                const expiresAt = Number(sessionStorage.getItem(storageKey) || 0);
-                const remaining = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
+            if (secondsLeft > 0) {
+                resendButton.disabled = true;
+                resendText.textContent = `Resend available in ${secondsLeft}s`;
+                timer = setTimeout(updateResend, 1000);
+            } else {
+                resendButton.disabled = false;
+                resendText.textContent = 'Resend Verification Code';
+            }
+        }
 
-                resendButton.disabled = remaining > 0;
-                resendText.textContent = remaining > 0
-                    ? `Resend available in ${remaining}s`
-                    : 'Resend Verification Code';
-
-                if (remaining > 0) {
-                    cooldownTimer = setTimeout(updateResendButton, 1000);
-                } else {
-                    sessionStorage.removeItem(storageKey);
-                }
-            };
-
-            resendForm.addEventListener('submit', () => {
-                sessionStorage.setItem(
-                    storageKey,
-                    String(Date.now() + cooldownSeconds * 1000)
-                );
-
-                updateResendButton();
-            });
-
-            window.addEventListener('pageshow', updateResendButton);
-            updateResendButton();
+        // Start the cooldown when the resend form is submitted
+        resendForm.addEventListener('submit', () => {
+            sessionStorage.setItem(storageKey, Date.now() + 120 * 1000);
+            updateResend();
         });
+
+        updateResend();
+        window.addEventListener('pageshow', updateResend);
     </script>
 @endsection
