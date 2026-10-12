@@ -93,8 +93,17 @@ Route::post('/email/verification/cancel', [EmailVerificationController::class, '
 */
 
 Route::middleware(['auth', 'role:citizen'])->group(function () {
-    Route::view('/citizen/dashboard', 'citizen.dashboard')
-        ->name('citizen.dashboard');
+    Route::prefix('citizen')
+        ->name('citizen.')
+        ->group(function () {
+            Route::view('/dashboard', 'citizen.dashboard')->name('dashboard');
+            Route::view('/services', 'citizen.services')->name('services');
+            Route::view('/documents', 'citizen.documents')->name('documents');
+            Route::view('/applications', 'citizen.applications')->name('applications');
+            Route::view('/profile', 'citizen.profile')->name('profile');
+            Route::view('/identity-verification', 'citizen.identity-verification')
+                ->name('identity-verification');
+        });
 });
 
 /*

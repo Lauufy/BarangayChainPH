@@ -36,21 +36,19 @@
                         autocomplete="email" placeholder="Enter your registered email" />
 
                     {{-- New password + rules checklist --}}
-                    <x-form.input name="password" label="New Password" type="password" maxlength="16" required
+                    <x-form.input name="password" label="New Password" type="password" data-password-strength maxlength="16" required
                         autocomplete="new-password" placeholder="Enter your new password">
                         <x-feedbacks.password-requirement />
                     </x-form.input>
 
                     {{-- Confirm password --}}
-                    <x-form.input name="password_confirmation" label="Confirm New Password" type="password"
-                        maxlength="16" required autocomplete="new-password"
-                        placeholder="Re-enter your new password" />
+                    <x-form.input name="password_confirmation" label="Confirm New Password" type="password" data-password-confirmation maxlength="16"
+                        required autocomplete="new-password" placeholder="Re-enter your new password" />
 
                     {{-- Submit --}}
-                    <button type="submit" data-loading data-loading-text="Updating Password..."
-                        class="flex w-full items-center justify-center gap-3 rounded-md bg-emerald-600 px-4 py-3 text-sm font-semibold tracking-wide text-white shadow-lg shadow-emerald-950/20 transition hover:bg-emerald-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#020A18] disabled:cursor-not-allowed disabled:opacity-70">
-                        Reset Password
-                    </button>
+                    <x-form.button type="submit" class="w-full" loading-text="Updating password...">
+                        RESET PASSWORD
+                    </x-form.button>
                 </form>
             </div>
 

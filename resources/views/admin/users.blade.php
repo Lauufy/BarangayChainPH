@@ -1,4 +1,3 @@
-
 @extends('layouts.admin')
 
 @section('title', 'User & Role Management')
@@ -23,15 +22,12 @@
                 </p>
             </div>
 
-            <a href="#create-account"
-                class="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400">
-                <svg class="size-5" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M12 5v14m7-7H5" />
-                </svg>
+            <button type="button"
+                onclick="document.getElementById('createUserModal').classList.remove('hidden'); document.getElementById('createUserModal').classList.add('flex')"
+                class="rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500">
                 Add Account
-            </a>
+            </button>
+
         </div>
 
         {{-- Summary cards --}}
@@ -73,15 +69,13 @@
             {{-- Search and filters --}}
             <div class="flex flex-col gap-3 border-b border-white/10 p-4 sm:flex-row">
                 <div class="relative flex-1">
-                    <svg class="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500"
-                        fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                        stroke-width="1.8" aria-hidden="true">
+                    <svg class="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500" fill="none"
+                        viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                         <circle cx="11" cy="11" r="7" />
                         <path stroke-linecap="round" d="m16 16 4 4" />
                     </svg>
 
-                    <input type="search"
-                        placeholder="Search by name or email..."
+                    <input type="search" placeholder="Search by name or email..."
                         class="w-full rounded-lg border border-white/10 bg-[#020A18] py-2.5 pl-9 pr-3 text-sm text-white outline-none placeholder:text-slate-600 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/10">
                 </div>
 
@@ -103,7 +97,7 @@
 
             {{-- Table --}}
             <div class="overflow-x-auto">
-                <table class="w-full min-w-175 text-left text-sm">
+                <table class="min-w-175 w-full text-left text-sm">
                     <thead class="bg-white/3 text-xs uppercase tracking-wider text-slate-400">
                         <tr>
                             <th class="px-5 py-4 font-semibold">Account</th>
@@ -128,12 +122,15 @@
                                             {{ $user->employeeProfile->employee_id }}
                                         </p>
                                         <p class="mt-1 text-xs text-slate-500">
-                                            {{ $user->employeeProfile->position }} · {{ $user->employeeProfile->department }}
+                                            {{ $user->employeeProfile->position }} ·
+                                            {{ $user->employeeProfile->department }}
                                         </p>
                                     @endif
                                 </td>
-                                <td class="px-5 py-4 text-slate-300">
-                                    {{ $user->is_active ? 'Active' : 'Inactive' }}
+                                <td class="px-5 py-4">
+                                    <x-badge :variant="$user->is_active ? 'success' : 'danger'">
+                                        {{ $user->is_active ? 'Active' : 'Inactive' }}
+                                    </x-badge>
                                 </td>
                                 <td class="px-5 py-4 text-slate-400">
                                     {{ $user->created_at->format('M j, Y') }}
@@ -143,7 +140,8 @@
                                         <form action="{{ route('admin.users.toggle-status', $user) }}" method="POST">
                                             @csrf
                                             @method('PATCH')
-                                            <button type="submit" class="font-semibold text-emerald-400 hover:text-emerald-300">
+                                            <button type="submit"
+                                                class="font-semibold text-emerald-400 hover:text-emerald-300">
                                                 {{ $user->is_active ? 'Deactivate' : 'Activate' }}
                                             </button>
                                         </form>
@@ -168,77 +166,7 @@
 
         </div>
 
-        <section id="create-account" class="rounded-xl border border-white/10 bg-[#09172D] p-5">
-            <h2 class="text-base font-semibold text-white">Create an account</h2>
-            <p class="mt-1 text-sm text-blue-100/50">
-                Staff and admin accounts receive a unique employee ID that can be used to sign in.
-            </p>
-
-            <x-feedbacks.form-errors />
-
-            <form action="{{ route('admin.users.store') }}" method="POST" class="mt-5 grid gap-4 sm:grid-cols-2">
-                @csrf
-                <label class="text-sm text-slate-300">
-                    Full name
-                    <input name="name" value="{{ old('name', 'Carlo Admin') }}" required
-                        class="mt-1 w-full rounded-lg border border-white/10 bg-[#020A18] px-3 py-2.5 text-white">
-                </label>
-                <label class="text-sm text-slate-300">
-                    Email
-                    <input name="email" type="email" value="{{ old('email') }}" required
-                        class="mt-1 w-full rounded-lg border border-white/10 bg-[#020A18] px-3 py-2.5 text-white">
-                </label>
-                <label class="text-sm text-slate-300">
-                    Role
-                    <select name="role" required
-                        class="mt-1 w-full rounded-lg border border-white/10 bg-[#020A18] px-3 py-2.5 text-white">
-                        <option value="staff" @selected(old('role') === 'staff')>Staff / Employee</option>
-                        <option value="admin" @selected(old('role', 'admin') === 'admin')>Administrator</option>
-                    </select>
-                </label>
-                <label class="text-sm text-slate-300">
-                    Department
-                    <input name="department" value="{{ old('department') }}"
-                        class="mt-1 w-full rounded-lg border border-white/10 bg-[#020A18] px-3 py-2.5 text-white">
-                </label>
-                <label class="text-sm text-slate-300">
-                    Position
-                    <input name="position" value="{{ old('position') }}"
-                        class="mt-1 w-full rounded-lg border border-white/10 bg-[#020A18] px-3 py-2.5 text-white">
-                </label>
-                <label class="text-sm text-slate-300">
-                    Phone number
-                    <input name="phone" type="tel" value="{{ old('phone') }}"
-                        class="mt-1 w-full rounded-lg border border-white/10 bg-[#020A18] px-3 py-2.5 text-white">
-                </label>
-                <label class="text-sm text-slate-300">
-                    Office (optional)
-                    <input name="office" value="{{ old('office') }}"
-                        class="mt-1 w-full rounded-lg border border-white/10 bg-[#020A18] px-3 py-2.5 text-white">
-                </label>
-                <label class="text-sm text-slate-300">
-                    Date hired (optional)
-                    <input name="date_hired" type="date" value="{{ old('date_hired') }}"
-                        max="{{ now()->toDateString() }}"
-                        class="mt-1 w-full rounded-lg border border-white/10 bg-[#020A18] px-3 py-2.5 text-white">
-                </label>
-                <label class="text-sm text-slate-300">
-                    Password
-                    <input name="password" type="password" required autocomplete="new-password"
-                        class="mt-1 w-full rounded-lg border border-white/10 bg-[#020A18] px-3 py-2.5 text-white">
-                </label>
-                <label class="text-sm text-slate-300">
-                    Confirm password
-                    <input name="password_confirmation" type="password" required autocomplete="new-password"
-                        class="mt-1 w-full rounded-lg border border-white/10 bg-[#020A18] px-3 py-2.5 text-white">
-                </label>
-                <div class="sm:col-span-2">
-                    <button type="submit" class="rounded-lg bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-500">
-                        Create account
-                    </button>
-                </div>
-            </form>
-        </section>
+        @include('admin.modals-admin.create-user')
 
     </div>
 @endsection

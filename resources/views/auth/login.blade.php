@@ -60,10 +60,9 @@
         </div>
 
         {{-- Submit --}}
-        <button type="submit" data-loading data-loading-text="Logging in..."
-            class="flex w-full items-center justify-center gap-3 rounded-md bg-emerald-600 px-4 py-3 text-sm font-semibold tracking-wide text-white shadow-lg shadow-emerald-950/20 transition hover:bg-emerald-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#020A18] disabled:cursor-not-allowed disabled:opacity-70">
-            SIGN IN
-        </button>
+        <x-form.button type="submit" class="w-full" loading-text="Logging in...">
+            LOGIN
+        </x-form.button>
     </form>
 
     <p class="mt-6 text-center text-sm text-blue-100/70">
@@ -79,8 +78,8 @@
     </p>
 
 @section('panel')
-    <x-partials.journey-panel badge="Citizen Portal" title="Welcome back" subtitle="Log in to continue using barangay services."
-        :active="0" />
+    <x-partials.journey-panel badge="Citizen Portal" title="Welcome back"
+        subtitle="Log in to continue using barangay services." :active="0" />
 @endsection
 
 @endsection

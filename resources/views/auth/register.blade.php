@@ -55,7 +55,7 @@
 
         {{-- Password + Confirm password --}}
         <div class="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
-            <x-form.input name="password" label="Password" type="password" data-password maxlength="16" required
+            <x-form.input name="password" label="Password" type="password" data-password-strength maxlength="16" required
                 autocomplete="new-password" placeholder="At least 8 characters">
                 {{-- Password rules checklist --}}
                 <x-feedbacks.password-requirement />
@@ -86,10 +86,9 @@
         </x-form.checkbox>
 
         {{-- Submit --}}
-        <button type="submit" data-loading data-loading-text="Creating account..."
-            class="flex w-full items-center justify-center gap-3 rounded-md bg-emerald-600 px-4 py-3 text-sm font-semibold tracking-wide text-white shadow-lg shadow-emerald-950/20 transition hover:bg-emerald-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#020A18] disabled:cursor-not-allowed disabled:opacity-70">
-            SIGN UP
-        </button>
+        <x-form.button type="submit" class="w-full" loading-text="Signing up...">
+            CREATE ACCOUNT
+        </x-form.button>
     </form>
 
     <p class="mt-6 text-center text-sm text-blue-100/70">

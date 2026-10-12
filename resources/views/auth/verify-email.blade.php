@@ -43,8 +43,7 @@
             </label>
 
             <input id="otp" name="otp" type="text" value="{{ old('otp') }}" maxlength="6" minlength="6"
-                inputmode="numeric" pattern="[0-9]{6}" autocomplete="one-time-code" placeholder="000000" required
-                autofocus
+                inputmode="numeric" pattern="[0-9]{6}" autocomplete="one-time-code" placeholder="000000" required autofocus
                 class="w-full rounded-md border border-white/10 bg-[#0B2347] px-3.5 py-3 text-center text-xl font-bold tracking-[0.5em] text-white outline-none transition placeholder:text-blue-100/30 hover:border-white/20 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/10">
 
             @error('otp')
@@ -52,10 +51,11 @@
             @enderror
         </div>
 
-        <button id="verify-button" type="submit" data-loading data-loading-text="Verifying..." disabled
-            class="flex w-full items-center justify-center gap-3 rounded-md bg-emerald-600 px-4 py-3 text-sm font-semibold tracking-wide text-white shadow-lg shadow-emerald-950/20 transition hover:bg-emerald-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#020A18] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-emerald-600">
+        {{-- Verify email with a loading spinner; initially disabled until validation passes --}}
+        <x-form.button id="verify-button" type="submit" loading-text="Verifying..." disabled
+            class="w-full gap-3 py-3 tracking-wide shadow-lg shadow-emerald-950/20 focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#020A18] disabled:hover:bg-emerald-600">
             Verify Email
-        </button>
+        </x-form.button>
     </form>
 
     {{-- Resend code --}}
@@ -72,10 +72,11 @@
     <form method="POST" action="{{ route('verification.cancel') }}" class="mt-2.5">
         @csrf
 
-        <button type="submit" data-loading data-loading-text="Canceling..."
-            class="flex w-full items-center justify-center gap-2 rounded-md border border-white/10 bg-[#09172D] px-4 py-3 text-sm font-semibold text-slate-300 transition hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 disabled:cursor-not-allowed disabled:opacity-70">
+        {{-- Cancel OTP verification or return to login with a loading spinner --}}
+        <x-form.button type="submit" variant="secondary" loading-text="Canceling..."
+            class="w-full border-white/10 bg-[#09172D] py-3 text-slate-300 transition hover:text-white focus-visible:ring-2 focus-visible:ring-emerald-400">
             {{ session('otp_flow') === 'login' ? 'Back to Login' : 'Cancel Verification' }}
-        </button>
+        </x-form.button>
     </form>
 
     <p class="mt-6 text-center text-xs leading-5 text-blue-100/50">

@@ -35,6 +35,10 @@ class UserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        if ($request->role === 'admin' && blank($request->name)) {
+            $request->merge(['name' => 'Carlo Admin']);
+        }
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],

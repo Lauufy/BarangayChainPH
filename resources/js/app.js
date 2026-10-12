@@ -1,4 +1,5 @@
 import './global/auth-btn';
-import './global/form-validation'
-import './global/data-loading'
-import './global/password-toggle'
+import './global/form-validation';
+import './global/data-loading';
+import './global/password-strength';
+import './global/password-toggle';

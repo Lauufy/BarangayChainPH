@@ -86,11 +86,6 @@
         <p class="mt-1 text-xs text-blue-100/50">{{ $hint }}</p>
     @endif
 
-    {{-- Error message for this field --}}
-    @error($name)
-        <p class="mt-1 text-xs font-medium text-red-400">{{ $message }}</p>
-    @enderror
-
     {{-- extra content under the field (e.g. password rules) --}}
     {{ $slot }}
 </div>

@@ -34,10 +34,11 @@
                         autocomplete="email" placeholder="Enter your registered email" />
 
                     {{-- Submit --}}
-                    <button type="submit" data-loading data-loading-text="Sending..."
-                        class="flex w-full items-center justify-center gap-3 rounded-md bg-emerald-600 px-4 py-3 text-sm font-semibold tracking-wide text-white shadow-lg shadow-emerald-950/20 transition hover:bg-emerald-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#020A18] disabled:cursor-not-allowed disabled:opacity-70">
+                    <x-form.button type="submit" class="w-full" loading-text="Sending...">
                         Send Reset Link
-                    </button>
+                    </x-form.button>
+
+
                 </form>
             </div>
 
