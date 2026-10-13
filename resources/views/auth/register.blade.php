@@ -45,8 +45,8 @@
             <x-form.input name="name" label="Full Name" required autofocus autocomplete="name"
                 placeholder="Enter your full name" data-validate />
 
-            <x-form.input name="phone" label="Phone Number" type="tel" inputmode="tel" required autocomplete="tel"
-                placeholder="Enter your phone number" />
+            <x-form.input name="phone" label="Phone Number" type="tel" inputmode="numeric" pattern="[0-9]{11}"
+                maxlength="11" minlength="11" required autocomplete="tel" placeholder="Enter your 11-digit phone number" />
         </div>
 
         {{-- Email --}}

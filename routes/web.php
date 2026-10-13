@@ -1,11 +1,15 @@
 <?php
 
+use App\Http\Controllers\Admin\IdentityReviewController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
+use App\Http\Controllers\Citizen\IdentityVerificationController;
+use App\Http\Controllers\Citizen\ProfileController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -91,19 +95,46 @@ Route::post('/email/verification/cancel', [EmailVerificationController::class, '
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'role:citizen'])->group(function () {
-    Route::prefix('citizen')
-        ->name('citizen.')
-        ->group(function () {
-            Route::view('/dashboard', 'citizen.dashboard')->name('dashboard');
-            Route::view('/services', 'citizen.services')->name('services');
-            Route::view('/documents', 'citizen.documents')->name('documents');
-            Route::view('/applications', 'citizen.applications')->name('applications');
-            Route::view('/profile', 'citizen.profile')->name('profile');
-            Route::view('/identity-verification', 'citizen.identity-verification')
+Route::middleware(['auth', 'role:citizen'])
+    ->prefix('citizen')
+    ->name('citizen.')
+    ->group(function () {
+        Route::view('/dashboard', 'citizen.dashboard')->name('dashboard');
+        Route::view('/services', 'citizen.services')->name('services');
+        Route::view('/documents', 'citizen.documents')->name('documents');
+        Route::view('/applications', 'citizen.applications')->name('applications');
+
+        Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
+        Route::get('/profile/photo', [ProfileController::class, 'showPhoto'])->name('profile.photo.show');
+
+        // Digital Identity Verification
+        Route::controller(IdentityVerificationController::class)->group(function () {
+            Route::get('/identity-verification', 'show')
                 ->name('identity-verification');
+
+            Route::post('/identity-verification/details', 'storeDetails')
+                ->name('identity-verification.details');
+
+            Route::post('/identity-verification/document', 'storeDocument')
+                ->middleware('throttle:10,1')
+                ->name('identity-verification.document');
+
+            Route::get('/identity-verification/document/{verification}', 'document')
+                ->name('identity-verification.file');
         });
-});
+
+        // Dismiss a notification (only the user's own can be found)
+        Route::post('/notifications/{id}/read', function (Request $request, string $id) {
+            $request->user()->unreadNotifications()->find($id)?->markAsRead();
+
+            return back();
+        })->name('notifications.read');
+
+        Route::middleware('identity.verified')->group(function () {
+            Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+            Route::post('/profile/photo', [ProfileController::class, 'photo'])->name('profile.photo');
+        });
+    });
 
 /*
 |--------------------------------------------------------------------------
@@ -142,10 +173,6 @@ Route::middleware(['auth', 'role:admin'])
         Route::patch('/users/{user}/status', [UserController::class, 'toggleStatus'])
             ->name('users.toggle-status');
 
-        // Digital Identity Verification
-        Route::view('/identity-verification', 'admin.identity-verification')
-            ->name('identity-verification.index');
-
         // Permit & Clearance Processing
         Route::view('/permits', 'admin.permits')
             ->name('permits.index');
@@ -170,6 +197,26 @@ Route::middleware(['auth', 'role:admin'])
         Route::view('/audit-logs', 'admin.audit-logs')
             ->name('audit-logs.index');
     });
+
+/*
+|--------------------------------------------------------------------------
+| Identity Verification Review (admin and staff)
+|--------------------------------------------------------------------------
+*/
+
+foreach (['admin', 'staff'] as $role) {
+    Route::middleware(['auth', 'role:' . $role])
+        ->prefix($role . '/identity-verification')
+        ->name($role . '.identity-verification.')
+        ->controller(IdentityReviewController::class)
+        ->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/{verification}', 'show')->name('show');
+            Route::get('/{verification}/document', 'document')->name('document');
+            Route::post('/{verification}/approve', 'approve')->name('approve');
+            Route::post('/{verification}/reject', 'reject')->name('reject');
+        });
+}
 
 /*
 |--------------------------------------------------------------------------

@@ -4,56 +4,144 @@
 
 @section('content')
     @php
-        $user = auth()->user();
-        $profile = $user->citizenProfile;
-        $addressParts = array_filter([
-            $profile?->house_number,
-            $profile?->street,
-            $profile?->barangay,
-            $profile?->city_municipality,
-            $profile?->province,
-            $profile?->zip_code,
-        ]);
+        $input = 'mt-1 w-full rounded-md border border-slate-300 px-3 py-2.5 text-sm focus:border-[#17325c] focus:outline-none disabled:bg-slate-50 disabled:text-slate-500';
+        $button = 'rounded-md bg-[#17325c] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#10244a]';
     @endphp
 
-    <div class="space-y-7">
-        <section>
-            <p class="text-xs font-bold uppercase tracking-[0.16em] text-emerald-700">Account</p>
-            <h1 class="mt-2 text-2xl font-bold tracking-tight text-[#09172D] sm:text-3xl">My profile</h1>
-            <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Review the account and contact information currently associated with your citizen portal.</p>
-        </section>
+    <div class="space-y-6">
+        <x-partials.citizen-page-header title="My profile"
+            text="Review the account and contact information tied to your citizen portal." />
 
-        <div class="grid gap-5 lg:grid-cols-[1.3fr_0.7fr]">
-            <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-                <div class="flex items-center gap-4 border-b border-slate-100 pb-5">
-                    <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-xl font-bold text-emerald-700">{{ strtoupper(substr($user->name, 0, 1)) }}</span>
-                    <div class="min-w-0">
-                        <h2 class="truncate text-lg font-bold text-[#09172D]">{{ $user->name }}</h2>
-                        <p class="mt-1 break-all text-sm text-slate-500">{{ $user->email }}</p>
+        {{-- Notice when editing is locked --}}
+        @unless ($verified)
+            <x-partials.citizen-notice type="amber" title="Profile editing is locked">
+                {{ $status === 'pending'
+                    ? 'Your identity application is being reviewed. Editing opens once it is approved.'
+                    : 'Profile editing is available only after your identity verification is approved.' }}
+                <a href="{{ route('citizen.identity-verification') }}" class="mt-3 block w-fit {{ $button }}">
+                    {{ $status === 'pending' ? 'View status' : 'Verify account' }}
+                </a>
+            </x-partials.citizen-notice>
+        @endunless
+
+        {{-- Error messages --}}
+        @if ($errors->any())
+            <div role="alert" class="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                <ul class="list-disc space-y-1 pl-5">
+                    @foreach ($errors->all() as $message)
+                        <li>{{ $message }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        <section class="rounded-md border border-slate-200 bg-white p-5 sm:p-6">
+            {{-- Photo, name, email --}}
+            <div class="flex items-center gap-4 border-b border-slate-100 pb-5">
+                @if ($profile?->photo_path)
+                    <img src="{{ route('citizen.profile.photo.show') }}?v={{ $profile->updated_at?->timestamp }}" alt="Profile photo"
+                        class="h-14 w-14 shrink-0 rounded-full object-cover">
+                @else
+                    <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#17325c] text-xl font-bold text-white">{{ strtoupper(substr($user->name, 0, 1)) }}</span>
+                @endif
+
+                <div class="min-w-0">
+                    <h2 class="truncate text-lg font-bold text-slate-900">{{ $user->name }}</h2>
+                    <p class="break-all text-sm text-slate-500">{{ $user->email }}</p>
+
+                    {{-- Photo uploads right after choosing a file --}}
+                    @if ($verified)
+                        <form method="POST" action="{{ route('citizen.profile.photo') }}" enctype="multipart/form-data">
+                            @csrf
+                            <label class="mt-1 inline-block cursor-pointer text-sm font-semibold text-[#17325c] underline">
+                                Change photo
+                                <input type="file" name="photo" accept=".jpg,.jpeg,.png" class="hidden" onchange="this.form.submit()">
+                            </label>
+                        </form>
+                    @endif
+                </div>
+            </div>
+
+            {{-- Details that cannot be edited (checked against the ID) --}}
+            <dl class="grid gap-5 py-5 text-sm sm:grid-cols-2">
+                @foreach ([
+                    'Date of birth' => $profile?->date_of_birth?->format('M j, Y'),
+                    'Gender' => $profile?->gender,
+                    'Place of birth' => $profile?->place_of_birth,
+                    'Nationality' => $profile?->nationality,
+                ] as $label => $value)
+                    <div>
+                        <dt class="text-slate-500">{{ $label }}</dt>
+                        <dd class="mt-1 font-medium text-slate-800">{{ $value ?: 'Not added' }}</dd>
                     </div>
+                @endforeach
+            </dl>
+
+            {{-- Editable details (fields stay disabled until Edit is clicked) --}}
+            <form id="profile-form" method="POST" action="{{ route('citizen.profile.update') }}" class="border-t border-slate-100 pt-5">
+                @csrf
+                @method('PUT')
+
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div>
+                        <label for="civil_status" class="text-sm font-medium text-slate-700">Civil status</label>
+                        <select id="civil_status" name="civil_status" @disabled(! $editing) class="{{ $input }}">
+                            <option value="">Select</option>
+                            @foreach (['Single', 'Married', 'Widowed', 'Separated', 'Divorced'] as $option)
+                                <option value="{{ $option }}" @selected(old('civil_status', $profile?->civil_status) === $option)>{{ $option }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    @foreach ([
+                        'phone' => ['Phone number', 'tel'],
+                        'religion' => ['Religion', 'text'],
+                        'occupation' => ['Occupation', 'text'],
+                        'house_number' => ['House number', 'text'],
+                        'barangay' => ['Barangay', 'text'],
+                        'city_municipality' => ['City / Municipality', 'text'],
+                        'province' => ['Province', 'text'],
+                        'zip_code' => ['ZIP code', 'text'],
+                    ] as $name => [$label, $type])
+                        <div>
+                            <label for="{{ $name }}" class="text-sm font-medium text-slate-700">{{ $label }}</label>
+                            <input id="{{ $name }}" name="{{ $name }}" type="{{ $type }}" @disabled(! $editing)
+                                value="{{ old($name, $profile?->$name) }}" class="{{ $input }}">
+                        </div>
+                    @endforeach
                 </div>
 
-                <dl class="grid gap-5 pt-5 sm:grid-cols-2">
-                    <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Phone</dt>
-                        <dd class="mt-1 text-sm font-medium text-slate-800">{{ $profile?->phone ?: 'Not added' }}</dd>
-                    </div>
-                    <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Date of birth</dt>
-                        <dd class="mt-1 text-sm font-medium text-slate-800">{{ $profile?->date_of_birth?->format('M j, Y') ?? 'Not added' }}</dd>
-                    </div>
-                    <div class="sm:col-span-2">
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Address</dt>
-                        <dd class="mt-1 text-sm font-medium text-slate-800">{{ $addressParts ? implode(', ', $addressParts) : 'Not added' }}</dd>
-                    </div>
-                </dl>
-            </section>
+                @if ($verified)
+                    <div class="mt-6">
+                        <button type="button" id="edit-button" @class([$button, 'hidden' => $editing])>Edit</button>
 
-            <aside class="rounded-2xl border border-blue-100 bg-blue-50 p-5 sm:p-6">
-                <h2 class="font-semibold text-[#09172D]">Need to update your information?</h2>
-                <p class="mt-2 text-sm leading-6 text-slate-600">Profile editing is not available online yet. Contact your barangay office for assistance updating your citizen record.</p>
-                <a href="{{ route('privacy') }}" class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-emerald-800 hover:text-emerald-900">Read our privacy notice <span aria-hidden="true">→</span></a>
-            </aside>
-        </div>
+                        <div id="edit-actions" @class(['flex gap-3', 'hidden' => ! $editing])>
+                            <button type="submit" class="{{ $button }}">Save</button>
+                            <button type="button" id="cancel-button" class="rounded-md border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Cancel</button>
+                        </div>
+                    </div>
+                @endif
+            </form>
+        </section>
+
+        <a href="{{ route('privacy') }}" class="inline-block text-sm font-semibold text-[#17325c] underline">Read our privacy notice</a>
     </div>
+
+    @if ($verified)
+        <script>
+            const fields = document.querySelectorAll('#profile-form input, #profile-form select');
+            const editButton = document.getElementById('edit-button');
+            const actions = document.getElementById('edit-actions');
+
+            // Edit: unlock the fields
+            editButton.addEventListener('click', () => {
+                fields.forEach(field => field.disabled = false);
+                editButton.classList.add('hidden');
+                actions.classList.remove('hidden');
+            });
+
+            // Cancel: reload to restore the saved values
+            document.getElementById('cancel-button').addEventListener('click', () => location.reload());
+        </script>
+    @endif
 @endsection

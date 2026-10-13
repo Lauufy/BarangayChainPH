@@ -20,7 +20,7 @@ class RoleMiddleware
         }
 
         if (! $user->is_active) {
-            auth()->logout();
+            auth()->guard()->logout();
 
             $request->session()->invalidate();
             $request->session()->regenerateToken();

@@ -4,72 +4,47 @@
 
 @section('content')
     <div class="space-y-6">
-        <div>
-            <p class="text-xs font-bold uppercase tracking-[0.2em] text-emerald-400">Security & Accountability</p>
-            <h1 class="mt-2 text-2xl font-bold text-white">Audit Logs</h1>
-            <p class="mt-2 text-sm text-blue-100/60">Review administrative actions and important system events.</p>
-        </div>
+        <x-admin.page-header label="Security & Accountability" title="Audit Logs"
+            text="Review administrative actions and important system events." />
 
+        {{-- Numbers --}}
         <div class="grid gap-4 sm:grid-cols-3">
-            @foreach (['Total Events', 'Administrative Actions', 'Security Events'] as $label)
-                <div class="rounded-xl border border-white/10 bg-[#09172D] p-5">
-                    <p class="text-sm text-blue-100/60">{{ $label }}</p>
-                    <p class="mt-3 text-3xl font-bold text-white">—</p>
-                </div>
-            @endforeach
+            <x-admin.stat-card label="Total Events" />
+            <x-admin.stat-card label="Administrative Actions" />
+            <x-admin.stat-card label="Security Events" />
         </div>
 
-        <div class="rounded-xl border border-white/10 bg-[#09172D] p-5">
-            <h2 class="font-semibold text-white">Filter Audit Records</h2>
+        {{-- Filters --}}
+        <div class="admin-card p-5">
+            <h2 class="font-semibold text-slate-900">Filter Audit Records</h2>
 
             <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                <input type="search" placeholder="Search user or activity..."
-                    class="rounded-lg border border-white/10 bg-[#020A18] px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-emerald-400 focus:outline-none">
-
-                <select class="rounded-lg border border-white/10 bg-[#020A18] px-3 py-2.5 text-sm text-slate-300">
+                <input type="search" placeholder="Search user or activity..." class="admin-field">
+                <select class="admin-field">
                     <option value="">All event types</option>
                     <option value="account">Account changes</option>
                     <option value="permit">Permit actions</option>
                     <option value="identity">Identity verification</option>
                     <option value="security">Security events</option>
                 </select>
-
-                <input type="date" aria-label="Filter by date"
-                    class="rounded-lg border border-white/10 bg-[#020A18] px-3 py-2.5 text-sm text-slate-300 focus:border-emerald-400 focus:outline-none">
+                <input type="date" aria-label="Filter by date" class="admin-field">
             </div>
         </div>
 
-        <div class="overflow-hidden rounded-xl border border-white/10 bg-[#09172D]">
-            <div class="border-b border-white/10 p-5">
-                <h2 class="font-semibold text-white">System Activity History</h2>
-                <p class="mt-1 text-sm text-slate-400">Audit events will appear here after logging is implemented.</p>
+        <div class="admin-card">
+            <div class="border-b border-slate-200 p-5">
+                <h2 class="font-semibold text-slate-900">System Activity History</h2>
+                <p class="mt-1 text-sm text-slate-500">Audit events will appear here after logging is implemented.</p>
             </div>
 
-            <div class="overflow-x-auto">
-                <table class="w-full min-w-187.5 text-left text-sm">
-                    <thead class="bg-white/3 text-xs uppercase text-slate-400">
-                        <tr>
-                            <th class="px-5 py-4">Date & Time</th>
-                            <th class="px-5 py-4">User</th>
-                            <th class="px-5 py-4">Action</th>
-                            <th class="px-5 py-4">Module</th>
-                            <th class="px-5 py-4">Result</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td colspan="5" class="px-5 py-12 text-center text-slate-400">
-                                No audit log records connected yet.
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+            <x-admin.table :heads="['Date & Time', 'User', 'Action', 'Module', 'Result']"
+                :empty="true" message="No audit log records connected yet." />
         </div>
 
-        <div class="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4">
-            <p class="text-sm font-semibold text-amber-200">Audit log integrity</p>
-            <p class="mt-2 text-sm leading-6 text-slate-400">
+        {{-- Note --}}
+        <div class="rounded-xl border border-amber-200 bg-amber-50 p-4">
+            <p class="text-sm font-semibold text-amber-900">Audit log integrity</p>
+            <p class="mt-2 text-sm leading-6 text-amber-800">
                 Audit records should be generated by the server, restricted to authorized personnel,
                 and protected against unauthorized editing or deletion. The filters above are visual
                 placeholders until connected to an audit log data source.

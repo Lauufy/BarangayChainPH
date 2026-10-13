@@ -5,116 +5,147 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-
     <title>@yield('title', 'Citizen Portal') | Barangay San Luis</title>
     <link rel="icon" type="image/png" href="{{ asset('img/branding/barangayChainPH-logo.png') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    {{-- Public Sans = body text, Barlow Condensed = brand name --}}
+    <link
+        href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&family=Public+Sans:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
-<body class="min-h-screen bg-[#f7f8f4] text-slate-800 antialiased">
-    <div class="flex min-h-screen flex-col">
-        <div class="bg-[#123d30] text-white">
-            <div class="mx-auto flex min-h-10 max-w-7xl items-center justify-between gap-4 px-4 text-xs sm:px-6 lg:px-8">
-                <p class="font-medium text-white/90">Official Barangay San Luis Website</p>
-                <p class="hidden text-white/70 sm:block">Antipolo City, Rizal · Republic of the Philippines</p>
-            </div>
+<body class="flex min-h-screen flex-col bg-slate-50 font-['Public_Sans',sans-serif] text-slate-800">
+
+    {{-- Government bar --}}
+    <div class="bg-blue-950 text-xs text-white">
+        <div class="mx-auto flex h-9 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+            <span class="truncate text-blue-100">Official Barangay Website</span>
+            <span class="hidden text-blue-200 sm:block">Republic of the Philippines | Antipolo City, Rizal</span>
         </div>
+    </div>
 
-        <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
-            <div class="mx-auto flex min-h-21 max-w-7xl items-center justify-between gap-6 px-4 sm:px-6 lg:px-8">
-                <a href="{{ route('citizen.dashboard') }}" class="flex min-w-0 items-center gap-3">
-                    <img src="{{ asset('img/branding/barangayChainPH-logo.png') }}" alt="Barangay San Luis seal" class="h-12 w-12 shrink-0 rounded-full border border-slate-200 object-contain p-0.5">
-                    <span class="min-w-0 leading-tight">
-                        <span class="block text-[10px] font-bold uppercase tracking-[0.15em] text-emerald-800">Barangay Government</span>
-                        <span class="mt-1 block truncate text-base font-extrabold tracking-tight text-[#173a2e] sm:text-lg">Barangay San Luis</span>
-                        <span class="mt-0.5 block text-xs text-slate-500">Antipolo City, Rizal</span>
+    {{-- Header --}}
+    <header class="sticky top-0 z-30 border-b border-slate-200 bg-white">
+        <div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+
+            <x-partials.logo />
+
+            {{-- Page links (desktop only) --}}
+            <nav class="hidden gap-1 lg:flex">
+                @foreach (['citizen.dashboard' => 'Home', 'citizen.services' => 'Services', 'citizen.applications' => 'Applications', 'citizen.documents' => 'Documents'] as $route => $label)
+                    <a href="{{ route($route) }}" @class([
+                        'rounded-md px-3 py-2 text-sm font-semibold',
+                        'bg-slate-100 text-[#17325c]' => request()->routeIs($route),
+                        'text-slate-600 hover:bg-slate-50' => !request()->routeIs($route),
+                    ])>{{ $label }}</a>
+                @endforeach
+            </nav>
+
+            {{-- User dropdown --}}
+            <details id="user-menu" class="group relative shrink-0">
+
+                {{-- Button --}}
+                <summary class="flex cursor-pointer list-none items-center gap-3 rounded-lg p-1.5 hover:bg-slate-100 [&::-webkit-details-marker]:hidden">
+
+                    {{-- Desktop: name, photo, arrow --}}
+                    <span class="hidden text-right lg:block">
+                        <span class="block max-w-40 truncate text-sm font-bold">{{ auth()->user()->name }}</span>
+                        <span class="block text-xs text-slate-500">Citizen</span>
                     </span>
-                </a>
 
-                <nav aria-label="Main navigation" class="hidden items-center gap-1 lg:flex">
-                    <a href="{{ route('citizen.dashboard') }}" @class([
-                        'rounded-lg px-3 py-2.5 text-sm font-semibold transition',
-                        'bg-emerald-50 text-emerald-900' => request()->routeIs('citizen.dashboard'),
-                        'text-slate-600 hover:bg-slate-50 hover:text-emerald-900' => ! request()->routeIs('citizen.dashboard'),
-                    ])>Home</a>
-                    <a href="{{ route('citizen.services') }}" @class([
-                        'rounded-lg px-3 py-2.5 text-sm font-semibold transition',
-                        'bg-emerald-50 text-emerald-900' => request()->routeIs('citizen.services'),
-                        'text-slate-600 hover:bg-slate-50 hover:text-emerald-900' => ! request()->routeIs('citizen.services'),
-                    ])>Services</a>
-                    <a href="{{ route('citizen.applications') }}" @class([
-                        'rounded-lg px-3 py-2.5 text-sm font-semibold transition',
-                        'bg-emerald-50 text-emerald-900' => request()->routeIs('citizen.applications'),
-                        'text-slate-600 hover:bg-slate-50 hover:text-emerald-900' => ! request()->routeIs('citizen.applications'),
-                    ])>Applications</a>
-                    <a href="{{ route('citizen.documents') }}" @class([
-                        'rounded-lg px-3 py-2.5 text-sm font-semibold transition',
-                        'bg-emerald-50 text-emerald-900' => request()->routeIs('citizen.documents'),
-                        'text-slate-600 hover:bg-slate-50 hover:text-emerald-900' => ! request()->routeIs('citizen.documents'),
-                    ])>Documents</a>
-                    <a href="{{ route('citizen.identity-verification') }}" @class([
-                        'rounded-lg px-3 py-2.5 text-sm font-semibold transition',
-                        'bg-emerald-50 text-emerald-900' => request()->routeIs('citizen.identity-verification'),
-                        'text-slate-600 hover:bg-slate-50 hover:text-emerald-900' => ! request()->routeIs('citizen.identity-verification'),
-                    ])>Identity</a>
-                </nav>
+                    @if (auth()->user()->citizenProfile?->photo_path)
+                        <img src="{{ route('citizen.profile.photo.show') }}" alt="" class="hidden h-10 w-10 rounded-full object-cover lg:block">
+                    @else
+                        <span class="hidden h-10 w-10 items-center justify-center rounded-full bg-[#17325c] font-bold text-white lg:flex">
+                            {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                        </span>
+                    @endif
 
-                <div class="hidden items-center gap-3 lg:flex">
-                    <a href="{{ route('citizen.profile') }}" class="flex items-center gap-2.5 rounded-full border border-slate-200 py-1.5 pl-1.5 pr-3 transition hover:border-emerald-300 hover:bg-emerald-50">
-                        <span class="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-sm font-bold text-emerald-900">{{ strtoupper(substr(auth()->user()->name ?? 'C', 0, 1)) }}</span>
-                        <span class="max-w-32 truncate text-sm font-semibold text-slate-700">{{ auth()->user()->name }}</span>
+                    {{-- Mobile: menu icon, becomes X when open --}}
+                    <span class="flex h-10 w-10 items-center justify-center rounded-md bg-[#eef5ff] lg:hidden">
+                        <svg class="h-6 w-6 group-open:hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                        <svg class="hidden h-6 w-6 group-open:block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" d="M6 6l12 12M18 6L6 18" />
+                        </svg>
+                    </span>
+                </summary>
+
+                {{-- Panel --}}
+                <div class="absolute right-0 z-40 mt-2 w-72 max-w-[calc(100vw-2rem)] rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
+
+                    {{-- Name and email --}}
+                    <div class="mb-2 border-b border-slate-100 px-3 pb-3 pt-2">
+                        <p class="truncate font-bold text-slate-900">{{ auth()->user()->name }}</p>
+                        <p class="truncate text-xs text-slate-500">{{ auth()->user()->email }}</p>
+                    </div>
+
+                    {{-- Page links (phone and tablet only) --}}
+                    <div class="mb-2 border-b border-slate-100 pb-2 lg:hidden">
+                        @foreach (['citizen.dashboard' => 'Home', 'citizen.services' => 'Services', 'citizen.applications' => 'Applications', 'citizen.documents' => 'Documents'] as $route => $label)
+                            <a href="{{ route($route) }}" class="block rounded-md px-3 py-2.5 text-sm hover:bg-slate-100">{{ $label }}</a>
+                        @endforeach
+                    </div>
+
+                    {{-- Identity verification with colored badge --}}
+                    <a href="{{ route('citizen.identity-verification') }}"
+                        class="flex items-center justify-between rounded-md px-3 py-2.5 text-sm hover:bg-slate-100">
+                        Identity verification
+                        @if (auth()->user()->isIdentityVerified())
+                            <span class="rounded-full bg-green-100 px-2 py-0.5 text-xs font-bold text-green-700">Verified</span>
+                        @elseif (auth()->user()->identityStatus() === 'pending')
+                            <span class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700">Pending</span>
+                        @else
+                            <span class="rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-700">Required</span>
+                        @endif
                     </a>
-                    <form method="POST" action="{{ route('logout') }}">
+
+                    <a href="{{ route('citizen.profile') }}" class="block rounded-md px-3 py-2.5 text-sm hover:bg-slate-100">My profile</a>
+
+                    {{-- Sign out --}}
+                    <form method="POST" action="{{ route('logout') }}" class="mt-2 border-t border-slate-100 pt-2">
                         @csrf
-                        <button type="submit" class="rounded-lg px-3 py-2 text-sm font-semibold text-slate-500 transition hover:bg-red-50 hover:text-red-700">Sign out</button>
+                        <button class="w-full rounded-md px-3 py-2.5 text-left text-sm font-semibold text-red-600 hover:bg-red-50">Sign out</button>
                     </form>
                 </div>
+            </details>
+        </div>
+    </header>
 
-                <details class="relative lg:hidden">
-                    <summary class="flex cursor-pointer list-none items-center gap-2 rounded-lg border border-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
-                        <span class="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-900">{{ strtoupper(substr(auth()->user()->name ?? 'C', 0, 1)) }}</span>
-                        <span class="hidden max-w-28 truncate sm:inline">{{ auth()->user()->name }}</span>
-                        <svg class="h-4 w-4 text-slate-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 7.22a.75.75 0 0 1 1.06 0L10 10.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 8.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd"/></svg>
-                    </summary>
-                    <nav aria-label="Mobile navigation" class="absolute right-0 mt-3 w-64 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
-                        <a class="block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-900" href="{{ route('citizen.dashboard') }}">Home</a>
-                        <a class="block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-900" href="{{ route('citizen.services') }}">Barangay services</a>
-                        <a class="block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-900" href="{{ route('citizen.applications') }}">My applications</a>
-                        <a class="block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-900" href="{{ route('citizen.documents') }}">My documents</a>
-                        <a class="block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-900" href="{{ route('citizen.identity-verification') }}">Identity verification</a>
-                        <a class="block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-900" href="{{ route('citizen.profile') }}">My profile</a>
-                        <form method="POST" action="{{ route('logout') }}" class="mt-2 border-t border-slate-100 pt-2">
-                            @csrf
-                            <button type="submit" class="w-full rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-red-700 hover:bg-red-50">Sign out</button>
-                        </form>
-                    </nav>
-                </details>
-            </div>
-        </header>
+    {{-- Page content --}}
+    <main class="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+        <x:feedbacks.toast />
 
-        <main class="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
-            <x:feedbacks.toast />
-            @yield('content')
-        </main>
-
-        <footer class="mt-auto bg-[#173a2e] text-white">
-            <div class="mx-auto grid max-w-7xl gap-8 px-4 py-9 sm:px-6 md:grid-cols-[1fr_auto] md:items-center lg:px-8">
-                <div class="flex items-center gap-3">
-                    <img src="{{ asset('img/branding/barangayChainPH-logo.png') }}" alt="" class="h-10 w-10 rounded-full bg-white object-contain p-0.5">
-                    <div>
-                        <p class="text-sm font-bold">Barangay San Luis</p>
-                        <p class="mt-1 text-xs text-white/65">Antipolo City, Rizal · Citizen Services</p>
-                    </div>
+        {{-- Unread notifications --}}
+        @foreach (auth()->user()->unreadNotifications as $notification)
+            <div class="mb-4 flex flex-col gap-2 rounded-md border border-blue-200 bg-blue-50 p-4 sm:flex-row sm:justify-between sm:gap-4">
+                <div>
+                    <p class="text-sm font-semibold text-[#17325c]">{{ $notification->data['title'] }}</p>
+                    <p class="mt-1 text-sm text-slate-600">{{ $notification->data['message'] }}</p>
                 </div>
-                <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-white/75">
-                    <a href="{{ route('privacy') }}" class="transition hover:text-white">Privacy notice</a>
-                    <a href="{{ route('terms') }}" class="transition hover:text-white">Terms of service</a>
-                    <a href="{{ route('citizen.profile') }}" class="transition hover:text-white">My profile</a>
-                </div>
-                <p class="border-t border-white/15 pt-5 text-xs text-white/55 md:col-span-2">© {{ now()->year }} Barangay San Luis, Antipolo City. Official citizen service portal.</p>
+                <form method="POST" action="{{ route('citizen.notifications.read', $notification->id) }}">
+                    @csrf
+                    <button class="text-sm font-semibold text-[#17325c] underline">Dismiss</button>
+                </form>
             </div>
-        </footer>
-    </div>
+        @endforeach
+
+        @yield('content')
+    </main>
+
+    {{-- Footer --}}
+    <x-partials.c-footer />
+
+    <script>
+        // Close the dropdown when clicking outside it
+        const menu = document.getElementById('user-menu');
+        document.addEventListener('click', (e) => {
+            if (!menu.contains(e.target)) menu.removeAttribute('open');
+        });
+    </script>
 </body>
 
 </html>

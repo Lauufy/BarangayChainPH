@@ -23,9 +23,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'zip_code',
     'place_of_birth',
     'occupation',
+    'photo_path',
 ])]
 class CitizenProfile extends Model
 {
+    // True when every detail needed for verification is filled in
+    public function hasCompleteDetails(): bool
+    {
+        $required = ['phone', 'date_of_birth', 'gender', 'civil_status', 'nationality', 'place_of_birth', 'barangay', 'city_municipality', 'province', 'zip_code'];
+
+        return collect($required)->every(fn ($field) => filled($this->$field));
+    }
+
     protected function casts(): array
     {
         return [

@@ -62,10 +62,13 @@
 
                 {{-- NAV LINKS --}}
                 <nav class="hidden items-center gap-1 lg:flex">
-                    <a href="#home" class="px-3 py-3 text-sm font-semibold text-slate-300 transition hover:text-white">
+                    <a href="#home"
+                        class="px-3 py-3 text-sm font-semibold text-slate-300 transition hover:text-white">
                         Home
                     </a>
-                    <a href="#about" class="px-3 py-3 text-sm font-semibold text-slate-300 transition hover:text-white">
+                    <a href="{{ route('staff.identity-verification.index') }}">Identity Verification</a>
+                    <a href="#about"
+                        class="px-3 py-3 text-sm font-semibold text-slate-300 transition hover:text-white">
                         About
                     </a>
                     <a href="#services"
@@ -327,11 +330,14 @@
                     </p>
                 </div>
 
-                <div class="mt-12 grid overflow-hidden rounded-lg border border-white/10 bg-[#071326] md:grid-cols-2 lg:grid-cols-4">
+                <div
+                    class="mt-12 grid overflow-hidden rounded-lg border border-white/10 bg-[#071326] md:grid-cols-2 lg:grid-cols-4">
 
                     {{-- CLEARANCE --}}
-                    <article class="border-b border-white/10 p-8 transition hover:bg-[#09172D] lg:border-b-0 lg:border-r">
-                        <div class="flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
+                    <article
+                        class="border-b border-white/10 p-8 transition hover:bg-[#09172D] lg:border-b-0 lg:border-r">
+                        <div
+                            class="flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M7 3h10a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2zM9 8h6M9 12h6M9 16h4" />
@@ -350,8 +356,10 @@
                     </article>
 
                     {{-- CERTIFICATES --}}
-                    <article class="border-b border-white/10 p-8 transition hover:bg-[#09172D] lg:border-b-0 lg:border-r">
-                        <div class="flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
+                    <article
+                        class="border-b border-white/10 p-8 transition hover:bg-[#09172D] lg:border-b-0 lg:border-r">
+                        <div
+                            class="flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M6 3h12v18H6zM9 7h6M9 11h6M9 15h4" />
@@ -370,8 +378,10 @@
                     </article>
 
                     {{-- RESIDENCY --}}
-                    <article class="border-b border-white/10 p-8 transition hover:bg-[#09172D] md:border-r lg:border-b-0">
-                        <div class="flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
+                    <article
+                        class="border-b border-white/10 p-8 transition hover:bg-[#09172D] md:border-r lg:border-b-0">
+                        <div
+                            class="flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M3 11l9-7 9 7M5 10v9h14v-9M9 19v-5h6v5" />
@@ -391,7 +401,8 @@
 
                     {{-- COMMUNITY --}}
                     <article class="p-8 transition hover:bg-[#09172D]">
-                        <div class="flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
+                        <div
+                            class="flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M12 21s-7-4.35-7-10a7 7 0 0114 0c0 5.65-7 10-7 10z" />
@@ -502,7 +513,8 @@
                     </div>
 
                     <div class="grid overflow-hidden rounded-lg border border-white/10 bg-[#071326] sm:grid-cols-2">
-                        <a href="#" class="border-b border-white/10 p-7 transition hover:bg-[#09172D] sm:border-r">
+                        <a href="#"
+                            class="border-b border-white/10 p-7 transition hover:bg-[#09172D] sm:border-r">
                             <h3 class="text-sm font-black text-white">Public Documents</h3>
                             <p class="mt-2 text-xs leading-5 text-slate-400">
                                 Access available public documents.
@@ -624,7 +636,8 @@
                             </div>
 
                             <div class="mt-6">
-                                <label for="email" class="text-xs font-medium uppercase tracking-wide text-slate-300">
+                                <label for="email"
+                                    class="text-xs font-medium uppercase tracking-wide text-slate-300">
                                     Email Address
                                 </label>
 
@@ -653,12 +666,13 @@
                             </div>
 
                             <div class="mt-6">
-                                <label for="subject" class="text-xs font-medium uppercase tracking-wide text-slate-300">
+                                <label for="subject"
+                                    class="text-xs font-medium uppercase tracking-wide text-slate-300">
                                     Subject
                                 </label>
 
                                 <select id="subject" name="subject" required
-                                    class="mt-2 w-full rounded-lg border border-white/10 bg-[#0B2347] px-4 py-3.5 text-sm text-white outline-none transition scheme-dark hover:border-white/20 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/10">
+                                    class="scheme-dark mt-2 w-full rounded-lg border border-white/10 bg-[#0B2347] px-4 py-3.5 text-sm text-white outline-none transition hover:border-white/20 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/10">
                                     <option value="">Select a concern</option>
                                     <option value="barangay_clearance" @selected(old('subject') === 'barangay_clearance')>Barangay Clearance
                                     </option>
@@ -677,7 +691,8 @@
                             </div>
 
                             <div class="mt-6">
-                                <label for="message" class="text-xs font-medium uppercase tracking-wide text-slate-300">
+                                <label for="message"
+                                    class="text-xs font-medium uppercase tracking-wide text-slate-300">
                                     Message
                                 </label>
 
@@ -702,10 +717,11 @@
                     </div>
 
                     {{-- Google Maps (filter makes the map dark) --}}
-                    <div class="h-100 lg:min-h-125 w-full overflow-hidden rounded-lg border border-white/10 bg-[#071326] lg:h-full">
+                    <div
+                        class="h-100 lg:min-h-125 w-full overflow-hidden rounded-lg border border-white/10 bg-[#071326] lg:h-full">
                         <iframe
                             src="https://maps.google.com/maps?q=Barangay%20San%20Luis%2C%20Antipolo%20City%2C%20Rizal&z=15&output=embed"
-                            class="block h-full w-full border-0 filter-[invert(90%)_hue-rotate(180deg)_contrast(90%)]"
+                            class="filter-[invert(90%)_hue-rotate(180deg)_contrast(90%)] block h-full w-full border-0"
                             allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"
                             title="Map location of Barangay San Luis, Antipolo City">
                         </iframe>

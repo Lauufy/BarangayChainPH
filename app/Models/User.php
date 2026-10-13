@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Notifications\Notifiable;
 
 #[Fillable([
@@ -63,5 +64,29 @@ class User extends Authenticatable implements MustVerifyEmail
     public function employeeProfile(): HasOne
     {
         return $this->hasOne(EmployeeProfile::class);
+    }
+
+    // All identity verification applications of this user
+    public function identityVerifications(): HasMany
+    {
+        return $this->hasMany(IdentityVerification::class);
+    }
+
+    // The most recent application (or null if the citizen never submitted)
+    public function latestIdentityVerification(): HasOne
+    {
+        return $this->hasOne(IdentityVerification::class)->latestOfMany();
+    }
+
+    // Returns: unverified, pending, verified, or rejected
+    public function identityStatus(): string
+    {
+        return $this->latestIdentityVerification?->status ?? 'unverified';
+    }
+
+    // True only after staff or admin approved the application
+    public function isIdentityVerified(): bool
+    {
+        return $this->identityStatus() === IdentityVerification::VERIFIED;
     }
 }

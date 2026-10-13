@@ -36,3 +36,18 @@
     scrollbar-width: thin;
     scrollbar-color: #334155 #09172D;
 }
+
+.custom-button-color:hover:not(:disabled) {
+    filter: brightness(1.15);
+}
+
+
+@layer components {
+    .admin-field {
+        @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-[#17325c] focus:ring-2 focus:ring-[#17325c]/20;
+    }
+
+    .admin-card {
+        @apply overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm;
+    }
+}
