@@ -1,4 +1,3 @@
-
 # Stage 1: Build frontend assets
 FROM node:24-alpine AS frontend
 
@@ -9,6 +8,8 @@ RUN npm ci
 
 COPY resources ./resources
 COPY vite.config.js ./
+# If you use Tailwind v3, also add:
+# COPY tailwind.config.js postcss.config.js ./
 COPY public ./public
 RUN npm run build
 
@@ -41,24 +42,34 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction \
        bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache
 
-# Configure Apache to serve Laravel's public directory
+# Serve Laravel's public directory and allow .htaccess rewrites
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 
 RUN sed -ri 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
-    /etc/apache2/sites-available/000-default.conf \
-    /etc/apache2/apache2.conf
+    /etc/apache2/sites-available/*.conf \
+    /etc/apache2/apache2.conf \
+    /etc/apache2/conf-available/*.conf \
+    && printf '%s\n' \
+    '<Directory ${APACHE_DOCUMENT_ROOT}>' \
+    '    AllowOverride All' \
+    '    Require all granted' \
+    '</Directory>' \
+    > /etc/apache2/conf-available/laravel.conf \
+    && a2enconf laravel
 
-# Render provides the port through the PORT environment variable
+# Startup script: set Render's port, migrate, then start Apache
 RUN printf '%s\n' \
     '#!/bin/sh' \
     'set -e' \
     'PORT="${PORT:-10000}"' \
     'sed -ri "s/^Listen .*/Listen ${PORT}/" /etc/apache2/ports.conf' \
-    'sed -ri "s/<VirtualHost \*:80>/<VirtualHost *:${PORT}>/" /etc/apache2/sites-available/000-default.conf' \
+    'sed -ri "s/<VirtualHost \*:[0-9]+>/<VirtualHost *:${PORT}>/" /etc/apache2/sites-available/000-default.conf' \
+    'php artisan config:clear' \
+    'php artisan migrate --force' \
     'exec apache2-foreground' \
     > /usr/local/bin/start-render.sh \
     && chmod +x /usr/local/bin/start-render.sh
 
 EXPOSE 10000
 
-CMD ["sh", "-c", "php artisan config:clear && /usr/local/bin/start-render.sh"]
+CMD ["/usr/local/bin/start-render.sh"]
