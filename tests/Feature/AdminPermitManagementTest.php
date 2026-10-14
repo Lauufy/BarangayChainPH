@@ -89,8 +89,8 @@ class AdminPermitManagementTest extends TestCase
             $mail = $notification->toMail($request->user);
 
             return $notification->serviceRequest->is($request)
-                && $mail->actionText === 'View My Applications'
-                && $mail->actionUrl === route('citizen.applications');
+                && $mail->actionText === 'View My Documents'
+                && $mail->actionUrl === route('citizen.documents');
         });
 
         $this->assertInstanceOf(ShouldQueue::class, new ServiceRequestApproved($request));

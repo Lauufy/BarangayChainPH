@@ -48,11 +48,23 @@ class ServiceRequestController extends Controller
     public function applications(Request $request): View
     {
         $applications = ServiceRequest::query()
-            ->where('user_id', $request->user()->id)
+            ->whereBelongsTo($request->user())
+            ->where('status', '!=', ServiceRequest::APPROVED)
             ->latest()
             ->paginate(10);
 
         return view('citizen.applications', compact('applications'));
+    }
+
+    public function documents(Request $request): View
+    {
+        $documents = ServiceRequest::query()
+            ->whereBelongsTo($request->user())
+            ->where('status', ServiceRequest::APPROVED)
+            ->latest()
+            ->paginate(10);
+
+        return view('citizen.documents', compact('documents'));
     }
 
     public function showApplication(Request $request, ServiceRequest $serviceRequest): View

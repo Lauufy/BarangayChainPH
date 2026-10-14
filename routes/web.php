@@ -104,7 +104,8 @@ Route::middleware(['auth', 'role:citizen'])
     ->group(function () {
         Route::view('/dashboard', 'citizen.dashboard')->name('dashboard');
         Route::view('/services', 'citizen.services')->name('services');
-        Route::view('/documents', 'citizen.documents')->name('documents');
+        Route::get('/documents', [ServiceRequestController::class, 'documents'])
+            ->name('documents');
         Route::get('/applications', [ServiceRequestController::class, 'applications'])
             ->name('applications');
         Route::get('/applications/{serviceRequest}', [ServiceRequestController::class, 'showApplication'])

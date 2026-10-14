@@ -36,6 +36,6 @@ class ServiceRequestApproved extends Notification implements ShouldQueue
             ->greeting('Hello '.$notifiable->name.',')
             ->line($data['message'])
             ->line('You can now view your approved application in the citizen portal.')
-            ->action('View My Applications', route('citizen.applications'));
+            ->action('View My Documents', route('citizen.documents'));
     }
 }

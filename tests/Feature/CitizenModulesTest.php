@@ -357,6 +357,47 @@ class CitizenModulesTest extends TestCase
             ->assertSee('pending');
     }
 
+    public function test_approved_request_moves_from_my_applications_to_my_documents(): void
+    {
+        $citizen = User::factory()->create([
+            'role' => 'citizen',
+            'is_active' => true,
+        ]);
+        $approved = ServiceRequest::create([
+            'user_id' => $citizen->id,
+            'reference_number' => 'BRGY-202610140008',
+            'service_type' => ServiceRequest::CERTIFICATE_OF_RESIDENCY,
+            'applicant_name' => 'Juan Dela Cruz',
+            'address' => 'Updated address',
+            'age' => 30,
+            'purpose' => 'School requirement',
+            'status' => ServiceRequest::APPROVED,
+        ]);
+        $pending = ServiceRequest::create([
+            'user_id' => $citizen->id,
+            'reference_number' => 'BRGY-202610140009',
+            'service_type' => ServiceRequest::BARANGAY_CLEARANCE,
+            'applicant_name' => 'Juan Dela Cruz',
+            'address' => 'Updated address',
+            'age' => 30,
+            'purpose' => 'Employment requirement',
+            'status' => ServiceRequest::PENDING,
+        ]);
+
+        $this->actingAs($citizen)
+            ->get(route('citizen.applications'))
+            ->assertOk()
+            ->assertDontSee($approved->reference_number)
+            ->assertSee($pending->reference_number);
+
+        $this->get(route('citizen.documents'))
+            ->assertOk()
+            ->assertViewIs('citizen.documents')
+            ->assertSee($approved->reference_number)
+            ->assertSee('Certificate of residency')
+            ->assertDontSee($pending->reference_number);
+    }
+
     public function test_citizen_can_print_an_approved_application(): void
     {
         $citizen = User::factory()->create([
@@ -377,7 +418,7 @@ class CitizenModulesTest extends TestCase
         $citizen->notify(new ServiceRequestApproved($application));
 
         $this->actingAs($citizen)
-            ->get(route('citizen.applications'))
+            ->get(route('citizen.documents'))
             ->assertSee('Print')
             ->assertSee(route('citizen.applications.print', $application), false);
 

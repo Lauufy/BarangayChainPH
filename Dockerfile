@@ -62,6 +62,8 @@ RUN printf '%s\n' \
     '#!/bin/sh' \
     'set -e' \
     'PORT="${PORT:-10000}"' \
+    'export APP_URL="${APP_URL:-${RENDER_EXTERNAL_URL:-http://localhost}}"' \
+    'export QUEUE_CONNECTION="${QUEUE_CONNECTION:-sync}"' \
     'sed -ri "s/^Listen .*/Listen ${PORT}/" /etc/apache2/ports.conf' \
     'sed -ri "s/<VirtualHost \*:[0-9]+>/<VirtualHost *:${PORT}>/" /etc/apache2/sites-available/000-default.conf' \
     'php artisan config:clear' \
