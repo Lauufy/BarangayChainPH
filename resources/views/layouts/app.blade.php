@@ -12,13 +12,13 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
-<body class="min-h-screen bg-[#020A18] text-slate-100 antialiased">
+<body class="min-h-screen bg-[#ffffff] text-slate-100 antialiased">
 
     <header class="m-2 px-6 pt-6">
         <x:navigation.back-nav />
     </header>
 
-    <main class="flex items-center justify-center px-4 py-10 sm:px-6">
+    <main class="flex items-center justify-center px-4 py-8 sm:px-6">
         <div class="w-full max-w-md">
             @yield('content')
         </div>

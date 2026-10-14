@@ -9,10 +9,12 @@
 
     <link rel="icon" type="image/png" href="{{ asset('img/branding/barangayChainPH-logo.png') }}">
 
+    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800&display=swap" rel="stylesheet">
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
-<body class="min-h-screen bg-[#020A18] text-slate-100 antialiased">
+<body class="min-h-screen bg-[#ffffff] text-slate-100 antialiased">
 
     <div class="relative grid min-h-screen lg:grid-cols-2">
 

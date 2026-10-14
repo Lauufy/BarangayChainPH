@@ -24,7 +24,7 @@
     $variantClasses = [
         'primary' => 'text-white',
         'secondary' => 'border border-white/10 text-white',
-        'danger' => 'bg-red-600 text-white hover:bg-red-700',
+        'danger' => 'bg-red-300 text-white hover:bg-red-700',
     ];
 
     $buttonClass = $variantClasses[$variant] ?? $variantClasses['primary'];

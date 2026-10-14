@@ -1,139 +1,96 @@
-<footer class="bg-slate-950 text-white">
-    <div class="mx-auto max-w-7xl px-6 py-12 lg:px-8">
+<footer class="border-t-4 border-[#FFC933] bg-[#0F1B3D] text-white" style="font-family: 'Public Sans', ui-sans-serif, system-ui, sans-serif;">
+    <div class="mx-auto max-w-6xl px-5 py-14">
 
-        <div class="grid gap-10 md:grid-cols-3">
+        <div class="grid gap-10 md:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1fr]">
 
             {{-- BRAND --}}
             <div>
                 <div class="flex items-center gap-3">
-                    <div
-                        class="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-blue-900 bg-blue-50">
-                        <img src="{{ asset('img/branding/barangayChainPH-logo.png') }}" alt="Barangay San Luis Logo"
-                            class="h-full w-full object-cover">
-                    </div>
-
-                    <div class="leading-tight">
-                        <p class="text-[9px] font-bold uppercase tracking-widest text-blue-400">
-                            Barangay Government
-                        </p>
-
-                        <h3 class="font-black text-white">
-                            Barangay San Luis
-                        </h3>
-
-                        <p class="text-xs text-slate-500">
+                    <img src="{{ asset('img/branding/barangayChainPH-logo.png') }}" alt="Barangay San Luis logo"
+                        class="h-12 w-12 rounded-full object-cover">
+                    <p class="text-lg font-extrabold leading-tight"
+                        style="font-family: 'Bricolage Grotesque', 'Public Sans', sans-serif; letter-spacing: -0.02em;">
+                        Barangay San Luis
+                        <span class="block text-xs font-medium tracking-normal text-blue-200/70">
                             Antipolo City, Rizal
-                        </p>
-                    </div>
+                        </span>
+                    </p>
                 </div>
 
-                <p class="mt-5 max-w-sm text-sm leading-6 text-slate-400">
-                    Official online public service portal of Barangay San Luis,
-                    Antipolo City, Rizal.
+                <p class="mt-5 max-w-xs text-sm leading-6 text-blue-100/75">
+                    The official online portal of Barangay San Luis, for public information and
+                    barangay services.
                 </p>
             </div>
 
+            {{-- QUICK LINKS --}}
+            <nav aria-label="Footer">
+                <h3 class="text-sm font-bold text-[#FFC933]">Explore</h3>
+                <ul class="mt-4 space-y-2.5 text-sm text-blue-100/80">
+                    <li><a href="{{ url('/') }}#services" class="transition hover:text-white hover:underline">Services</a></li>
+                    <li><a href="{{ url('/') }}#announcements" class="transition hover:text-white hover:underline">Announcements</a></li>
+                    <li><a href="{{ url('/') }}#about" class="transition hover:text-white hover:underline">About</a></li>
+                    <li><a href="{{ route('login') }}" class="transition hover:text-white hover:underline">Log in</a></li>
+                    <li><a href="{{ route('register') }}" class="transition hover:text-white hover:underline">Create account</a></li>
+                </ul>
+            </nav>
 
             {{-- CONTACT --}}
             <div>
-                <h3 class="text-xs font-black uppercase tracking-widest text-white">
-                    Contact Us
-                </h3>
+                <h3 class="text-sm font-bold text-[#FFC933]">Contact</h3>
 
-                <div class="mt-3 space-y-4 text-sm">
-
-                    {{-- Address --}}
-                    <div class="flex items-start gap-2 mb-1">
-                        <span class="shrink-0 text-xs font-medium uppercase tracking-wide text-slate-500">
-                            Address:
-                        </span>
-                        <p class="leading-5 text-slate-300">
-                            Barangay San Luis, Antipolo City, Rizal
-                        </p>
+                <dl class="mt-4 space-y-3 text-sm">
+                    <div>
+                        <dt class="text-xs text-blue-200/60">Address</dt>
+                        <dd class="mt-0.5 text-blue-50">Barangay San Luis, Antipolo City, Rizal</dd>
                     </div>
-
-                    {{-- Phone --}}
-                    <div class="flex items-center gap-2 mb-1">
-                        <span class="shrink-0 text-xs font-medium uppercase tracking-wide text-slate-500">
-                            Phone:
-                        </span>
-                        <a href="tel:+639233232322" class="text-slate-300 transition hover:text-blue-400">
-                            +63 923 323 2322
-                        </a>
+                    <div>
+                        <dt class="text-xs text-blue-200/60">Phone</dt>
+                        <dd class="mt-0.5">
+                            <a href="tel:+639233232322" class="text-blue-50 transition hover:text-[#FFC933]">+63 923 323 2322</a>
+                        </dd>
                     </div>
-
-                    {{-- Email --}}
-                    <div class="flex items-center gap-2 mb-1">
-                        <span class="shrink-0 text-xs font-medium uppercase tracking-wide text-slate-500">
-                            Email:
-                        </span>
-                        <a href="mailto:barangaychain@gmail.com" class="text-slate-300 transition hover:text-blue-400">
-                            barangaychain@gmail.com
-                        </a>
+                    <div>
+                        <dt class="text-xs text-blue-200/60">Email</dt>
+                        <dd class="mt-0.5 break-all">
+                            <a href="mailto:barangaychain@gmail.com" class="text-blue-50 transition hover:text-[#FFC933]">barangaychain@gmail.com</a>
+                        </dd>
                     </div>
-
-                    {{-- Facebook --}}
-                    <div class="flex items-center gap-2 mb-1">
-                        <span class="shrink-0 text-xs font-medium uppercase tracking-wide text-slate-500">
-                            Facebook:
-                        </span>
-
-                        <a href="https://www.facebook.com/barangay.sanluis.35" target="_blank" rel="noopener noreferrer"
-                            class="inline-flex items-center gap-1 font-semibold text-blue-400 transition hover:text-blue-300 hover:underline">
-                            Visit our Facebook Page
-                        </a>
+                    <div>
+                        <dt class="text-xs text-blue-200/60">Facebook</dt>
+                        <dd class="mt-0.5">
+                            <a href="https://www.facebook.com/barangay.sanluis.35" target="_blank"
+                                rel="noopener noreferrer"
+                                class="font-semibold text-[#FFC933] underline-offset-4 hover:underline">
+                                Visit our Facebook page
+                            </a>
+                        </dd>
                     </div>
-
-                </div>
-
-
-
+                </dl>
             </div>
+
             {{-- OFFICE HOURS --}}
             <div>
-                <h3 class="text-xs font-black uppercase tracking-widest text-white">
-                    Office Hours
-                </h3>
+                <h3 class="text-sm font-bold text-[#FFC933]">Office hours</h3>
 
-                <div class="mt-2 space-y-2 text-sm">
-
+                <dl class="mt-4 space-y-3 text-sm">
                     <div>
-                        <p class="font-semibold text-slate-300">
-                            Monday – Friday
-                        </p>
-                        <p class="mt-1 text-slate-400">
-                            8:00 AM – 5:00 PM
-                        </p>
+                        <dt class="font-semibold text-blue-50">Monday to Friday</dt>
+                        <dd class="mt-0.5 text-blue-100/75">8:00 AM to 5:00 PM</dd>
                     </div>
-
                     <div>
-                        <p class="font-semibold text-slate-300">
-                            Saturday – Sunday
-                        </p>
-                        <p class="mt-1 text-slate-500">
-                            Closed
-                        </p>
+                        <dt class="font-semibold text-blue-50">Saturday and Sunday</dt>
+                        <dd class="mt-0.5 text-blue-100/75">Closed</dd>
                     </div>
-
-                </div>
+                </dl>
             </div>
 
         </div>
 
-
         {{-- COPYRIGHT --}}
-        <div class="mt-10 border-t border-slate-800 pt-6">
-            <div class="flex flex-col gap-3 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-
-                <p>
-                    © {{ date('Y') }} Barangay San Luis. All Rights Reserved.
-                </p>
-
-                <p>
-                    Republic of the Philippines · Antipolo City, Rizal
-                </p>
-
-            </div>
+        <div class="mt-12 flex flex-col gap-2 border-t border-white/15 pt-6 text-xs text-blue-200/60 sm:flex-row sm:items-center sm:justify-between">
+            <p>© {{ date('Y') }} Barangay San Luis. All rights reserved.</p>
+            <p>Republic of the Philippines, Antipolo City, Rizal</p>
         </div>
 
     </div>

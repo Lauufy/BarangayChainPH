@@ -5,29 +5,29 @@
 @section('content')
 
     {{-- Header --}}
-    <header class="mb-6">
-        <p class="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-400">
+    <header class="mb-4">
+        <p class="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#00229b]">
             Citizen Portal
         </p>
 
-        <h1 class="text-3xl font-bold leading-tight tracking-tight text-white">
-            Welcome back
+        <h1 class="font-['Inter',sans-serif] text-3xl font-bold leading-tight tracking-tight text-[#0F1B3D]">
+            Sign In to Continue
         </h1>
 
-        <p class="mt-2 text-sm leading-6 text-blue-100/70">
+        <p class="mt-2 text-sm font-semibold leading-6 text-[#020746]">
             Log in to access your account and barangay services.
         </p>
     </header>
 
     {{-- Log In / Sign Up tabs --}}
-    <div class="mb-5 flex rounded-md border border-white/10 bg-[#09172D] p-1">
+    <div class="mb-5 flex rounded-md border border-[#DDE3F3] bg-[#E6ECFA] p-1">
         <a href="{{ route('login') }}" aria-current="page"
-            class="flex flex-1 items-center justify-center rounded bg-[#172A45] px-3 py-2.5 text-sm font-semibold text-white shadow-sm">
+            class="flex flex-1 items-center justify-center rounded bg-white px-3 py-2.5 text-sm font-semibold text-[#0F1B3D] shadow-sm">
             Log In
         </a>
 
         <a href="{{ route('register') }}"
-            class="flex flex-1 items-center justify-center rounded px-3 py-2.5 text-sm font-semibold text-blue-100/60 transition hover:text-white">
+            class="flex flex-1 items-center justify-center rounded px-3 py-2.5 text-sm font-semibold text-[#5A6788] transition hover:text-[#0F1B3D]">
             Sign Up
         </a>
     </div>
@@ -40,11 +40,11 @@
         @csrf
 
         {{-- Email or Employee ID --}}
-        <x-form.input name="identifier" label="Email Address or Employee ID" required autofocus autocomplete="username"
+        <x-form.input light name="identifier" label="Email Address or Employee ID" required autofocus autocomplete="username"
             placeholder="Enter your email or employee ID" />
 
         {{-- Password --}}
-        <x-form.input name="password" label="Password" type="password" maxlength="30" required
+        <x-form.input light name="password" label="Password" type="password" maxlength="30" required
             autocomplete="current-password" placeholder="Password" />
 
         {{-- Remember me / Forgot password --}}
@@ -53,7 +53,7 @@
 
             @if (Route::has('password.request'))
                 <a href="{{ route('password.request') }}"
-                    class="text-sm font-semibold text-emerald-400 transition hover:text-emerald-300">
+                    class="text-sm font-semibold text-[#1D3FBB] transition hover:text-[#16318F]">
                     Forgot password?
                 </a>
             @endif
@@ -65,14 +65,14 @@
         </x-form.button>
     </form>
 
-    <p class="mt-6 text-center text-sm text-blue-100/70">
+    <p class="mt-6 text-center text-sm text-[#3B4868]">
         Don't have an account?
-        <a href="{{ route('register') }}" class="font-semibold text-white transition hover:text-emerald-300">
+        <a href="{{ route('register') }}" class="font-semibold text-[#0F1B3D] transition hover:text-[#1D3FBB]">
             Create an account
         </a>
     </p>
 
-    <p class="mt-3 text-center text-xs leading-5 text-blue-100/50">
+    <p class="mt-3 text-center text-xs leading-5 text-[#5A6788]">
         Your account information is protected.
         Never share your password with anyone.
     </p>

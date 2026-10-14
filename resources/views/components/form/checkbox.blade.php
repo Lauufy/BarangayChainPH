@@ -6,7 +6,7 @@
         <span class="relative mt-0.5 flex h-4 w-4 shrink-0">
             <input id="{{ $name }}" type="checkbox" name="{{ $name }}" value="{{ $value }}"
                 @checked(old($name))
-                {{ $attributes->class(['peer h-4 w-4 cursor-pointer appearance-none rounded-sm border border-white/20 bg-[#0B2347] transition checked:border-emerald-600 checked:bg-emerald-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400']) }}>
+                {{ $attributes->class(['peer h-4 w-4 cursor-pointer appearance-none rounded-sm border-1 border-black bg-[#ffff] transition checked:border-emerald-600 checked:bg-emerald-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400']) }}>
 
             {{-- Check mark --}}
             <svg class="pointer-events-none absolute inset-0 m-auto h-3 w-3 text-white opacity-0 transition peer-checked:opacity-100"
@@ -15,7 +15,7 @@
             </svg>
         </span>
 
-        <span class="text-sm leading-5 text-blue-100/70">{{ $slot }}</span>
+        <span class="text-sm leading-5 text-[#000135]">{{ $slot }}</span>
     </label>
 
     {{-- Error message for this checkbox --}}
