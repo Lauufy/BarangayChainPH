@@ -3,7 +3,7 @@
 <div id="{{ $inputId }}Requirements"
     data-password-strength-container
     data-password-target="{{ $inputId }}"
-    class="mt-2 hidden">
+    class="mt-2">
 
     {{-- Password Strength Bar --}}
     <div class="h-1 w-full overflow-hidden rounded-full bg-slate-700">
@@ -19,7 +19,7 @@
         <p id="{{ $inputId }}RequirementText"
             data-password-strength-copy
             class="text-[10px] leading-relaxed text-slate-100">
-            At least 8 characters with letters and numbers
+            Use 8-16 characters with uppercase, lowercase, a number, and a symbol.
         </p>
 
         <span id="{{ $inputId }}StrengthText"
@@ -28,4 +28,12 @@
             —
         </span>
     </div>
+
+    <ul class="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px] text-slate-400" aria-label="Password requirements">
+        <li data-password-requirement="length">8-16 characters</li>
+        <li data-password-requirement="upper">Uppercase letter</li>
+        <li data-password-requirement="lower">Lowercase letter</li>
+        <li data-password-requirement="number">Number</li>
+        <li data-password-requirement="special">Symbol</li>
+    </ul>
 </div>

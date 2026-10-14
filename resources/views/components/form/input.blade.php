@@ -69,12 +69,19 @@
         {{-- Show / hide password button --}}
         @if ($type === 'password')
             <button type="button" data-password-toggle="{{ $name }}" aria-label="Show password"
+                aria-pressed="false"
                 class="absolute inset-y-0 right-0 flex items-center rounded-r-md px-3.5 transition focus-visible:outline-none focus-visible:ring-2 {{ $muted }} {{ $hover }}">
                 <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                    <g data-password-eye>
+                    <g data-password-eye-show>
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         <path stroke-linecap="round" stroke-linejoin="round"
                             d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </g>
+                    <g data-password-eye-hide class="hidden">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.584 10.587a2 2 0 002.829 2.828" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.88 5.09A10.02 10.02 0 0112 5c4.477 0 8.268 2.943 9.542 7a10.05 10.05 0 01-4.132 5.13" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.228 6.228A10.05 10.05 0 002.458 12C3.732 16.057 7.523 19 12 19a9.97 9.97 0 005.772-1.772" />
                     </g>
                 </svg>
             </button>

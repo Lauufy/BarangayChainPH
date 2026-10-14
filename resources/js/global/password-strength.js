@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const bar = container.querySelector('[data-password-strength-bar]');
         const strengthText = container.querySelector('[data-password-strength-label]');
         const requirementText = container.querySelector('[data-password-strength-copy]');
+        const requirementItems = container.querySelectorAll('[data-password-requirement]');
 
         if (!bar || !strengthText || !requirementText) {
             return;
@@ -19,20 +20,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const password = passwordInput.value;
 
             if (!password) {
-                container.classList.add('hidden');
                 bar.style.width = '0%';
                 bar.style.backgroundColor = 'transparent';
                 strengthText.textContent = '—';
                 strengthText.style.color = '#94a3b8';
-                requirementText.textContent = 'At least 8 characters with letters and numbers';
+                requirementText.textContent = 'Use 8-16 characters with uppercase, lowercase, a number, and a symbol.';
                 requirementText.style.color = '#94a3b8';
+                requirementItems.forEach((item) => {
+                    item.classList.remove('font-semibold', 'text-emerald-600');
+                    item.classList.add('text-slate-400');
+                });
                 return;
             }
 
-            container.classList.remove('hidden');
-
             const checks = {
-                length: password.length >= 8,
+                length: password.length >= 8 && password.length <= 16,
                 upper: /[A-Z]/.test(password),
                 lower: /[a-z]/.test(password),
                 number: /[0-9]/.test(password),
@@ -61,11 +63,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const missing = [];
 
-            if (!checks.length) missing.push('8+ characters');
+            if (!checks.length) missing.push('8-16 characters');
             if (!checks.upper) missing.push('uppercase');
             if (!checks.lower) missing.push('lowercase');
             if (!checks.number) missing.push('number');
             if (!checks.special) missing.push('symbol');
+
+            requirementItems.forEach((item) => {
+                const isMet = checks[item.dataset.passwordRequirement];
+
+                item.classList.toggle('font-semibold', isMet);
+                item.classList.toggle('text-emerald-600', isMet);
+                item.classList.toggle('text-slate-400', !isMet);
+            });
 
             if (missing.length === 0) {
                 requirementText.textContent = 'All requirements met';
