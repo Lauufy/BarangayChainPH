@@ -51,6 +51,12 @@
     $field =
         'mt-1.5 w-full rounded-md border border-[#C9D2EA] bg-white px-4 py-3 text-sm text-[#0F1B3D] outline-none transition hover:border-[#1D3FBB]/60 focus:border-[#1D3FBB] focus:ring-4 focus:ring-[#1D3FBB]/15';
     $label = 'text-sm font-semibold text-[#0F1B3D]';
+    $dashboardRoute = match (auth()->user()?->role) {
+        'admin' => 'admin.dashboard',
+        'staff' => 'staff.dashboard',
+        'citizen' => 'citizen.dashboard',
+        default => 'home',
+    };
 @endphp
 
 <body class="bg-[#F6F8FC] text-[#0F1B3D] antialiased">
@@ -70,14 +76,21 @@
             </nav>
 
             <div class="flex items-center gap-2">
-                <a href="{{ route('login') }}"
-                    class="hidden rounded-md px-4 py-2 text-sm font-semibold text-[#1D3FBB] hover:bg-[#E6ECFA] sm:inline-flex">
-                    Log in
-                </a>
-                <a href="{{ route('register') }}"
-                    class="inline-flex rounded-md bg-[#1D3FBB] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#16318F]">
-                    Create account
-                </a>
+                @auth
+                    <a href="{{ route($dashboardRoute) }}"
+                        class="inline-flex rounded-md bg-[#1D3FBB] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#16318F]">
+                        Continue
+                    </a>
+                @else
+                    <a href="{{ route('login') }}"
+                        class="hidden rounded-md px-4 py-2 text-sm font-semibold text-[#1D3FBB] hover:bg-[#E6ECFA] sm:inline-flex">
+                        Log in
+                    </a>
+                    <a href="{{ route('register') }}"
+                        class="inline-flex rounded-md bg-[#1D3FBB] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#16318F]">
+                        Create account
+                    </a>
+                @endauth
 
                 {{-- Mobile menu --}}
                 <details class="relative lg:hidden">
@@ -96,8 +109,13 @@
                             class="block rounded-md px-3 py-2.5 hover:bg-[#E6ECFA]">Announcements</a>
                         <a href="#about" class="block rounded-md px-3 py-2.5 hover:bg-[#E6ECFA]">About</a>
                         <a href="#contact" class="block rounded-md px-3 py-2.5 hover:bg-[#E6ECFA]">Contact</a>
-                        <a href="{{ route('login') }}"
-                            class="mt-1 block rounded-md border-t border-[#DDE3F3] px-3 py-2.5 text-[#1D3FBB]">Log in</a>
+                        @auth
+                            <a href="{{ route($dashboardRoute) }}"
+                                class="mt-1 block rounded-md border-t border-[#DDE3F3] px-3 py-2.5 text-[#1D3FBB]">Continue</a>
+                        @else
+                            <a href="{{ route('login') }}"
+                                class="mt-1 block rounded-md border-t border-[#DDE3F3] px-3 py-2.5 text-[#1D3FBB]">Log in</a>
+                        @endauth
                     </div>
                 </details>
             </div>
@@ -130,10 +148,17 @@
                     </p>
 
                     <div class="mt-8 flex flex-wrap gap-3">
-                        <a href="{{ route('register') }}"
-                            class="inline-flex rounded-md bg-[#1D3FBB] px-6 py-3.5 text-sm font-bold text-white transition hover:bg-[#16318F]">
-                            Create an account
-                        </a>
+                        @auth
+                            <a href="{{ route($dashboardRoute) }}"
+                                class="inline-flex rounded-md bg-[#1D3FBB] px-6 py-3.5 text-sm font-bold text-white transition hover:bg-[#16318F]">
+                                Continue to dashboard
+                            </a>
+                        @else
+                            <a href="{{ route('register') }}"
+                                class="inline-flex rounded-md bg-[#1D3FBB] px-6 py-3.5 text-sm font-bold text-white transition hover:bg-[#16318F]">
+                                Create an account
+                            </a>
+                        @endauth
                         <a href="#announcements"
                             class="inline-flex rounded-md border border-[#B9C4E4] bg-white px-6 py-3.5 text-sm font-bold text-[#0F1B3D] transition hover:border-[#1D3FBB]">
                             Read announcements
@@ -148,13 +173,15 @@
                     <div class="relative overflow-hidden rounded-2xl bg-[#1D3FBB] text-white">
                         <div class="px-7 pb-3 pt-7">
                             <h2 class="display text-2xl font-bold">What do you need today?</h2>
-                            <p class="mt-1 text-sm text-blue-100">Log in to start a request.</p>
+                            <p class="mt-1 text-sm text-blue-100">
+                                {{ auth()->check() ? 'Continue to your dashboard to start a request.' : 'Log in to start a request.' }}
+                            </p>
                         </div>
 
                         <ul class="divide-y divide-white/15 px-3 pb-3">
                             @foreach ([['Barangay Clearance', 'For employment, business, and other requirements'], ['Barangay Certificate', 'Official certificates and barangay documents'], ['Certificate of Residency', 'Proof that you live in the barangay'], ['Community Programs', 'Programs and services open to residents']] as [$title, $desc])
                                 <li>
-                                    <a href="{{ route('login') }}"
+                                    <a href="{{ route(auth()->check() ? $dashboardRoute : 'login') }}"
                                         class="req-row flex items-center justify-between gap-4 rounded-lg px-4 py-4 transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-[#FFC933]">
                                         <span>
                                             <span class="block text-base font-bold">{{ $title }}</span>

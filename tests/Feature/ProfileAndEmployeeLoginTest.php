@@ -199,6 +199,23 @@ class ProfileAndEmployeeLoginTest extends TestCase
         }
     }
 
+    public function test_authenticated_users_see_a_continue_button_on_the_landing_page(): void
+    {
+        $citizen = User::factory()->create([
+            'role' => 'citizen',
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+
+        $this->actingAs($citizen)
+            ->get(route('home'))
+            ->assertOk()
+            ->assertSee('Continue')
+            ->assertSee('Continue to dashboard')
+            ->assertSee(route('citizen.dashboard'), false)
+            ->assertDontSee('Log in to start a request.');
+    }
+
     public function test_admin_created_staff_accounts_receive_an_employee_id(): void
     {
         Http::fake([
