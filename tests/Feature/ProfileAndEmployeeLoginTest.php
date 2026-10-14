@@ -145,6 +145,60 @@ class ProfileAndEmployeeLoginTest extends TestCase
         $this->assertAuthenticatedAs($user);
     }
 
+    public function test_unverified_citizen_sees_a_configuration_error_when_resend_is_not_configured(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'unverified@example.com',
+            'password' => 'StrongPass123!',
+            'role' => 'citizen',
+            'email_verified_at' => null,
+            'is_active' => true,
+        ]);
+
+        config([
+            'mail.default' => 'resend',
+            'services.resend.key' => null,
+        ]);
+
+        $response = $this->from(route('login'))
+            ->post(route('login.store'), [
+                'identifier' => 'unverified@example.com',
+                'password' => 'StrongPass123!',
+            ]);
+
+        $response->assertRedirect(route('login'))
+            ->assertSessionHasErrors([
+                'identifier' => 'Email verification is temporarily unavailable. Please contact the administrator.',
+            ]);
+        $this->assertGuest();
+    }
+
+    public function test_authenticated_users_are_redirected_to_their_dashboard_from_login_and_registration(): void
+    {
+        $dashboardRoutes = [
+            'citizen' => 'citizen.dashboard',
+            'staff' => 'staff.dashboard',
+            'admin' => 'admin.dashboard',
+        ];
+
+        foreach ($dashboardRoutes as $role => $dashboardRoute) {
+            $user = User::factory()->create([
+                'role' => $role,
+                'is_active' => true,
+                'email_verified_at' => now(),
+            ]);
+
+            $this->actingAs($user)
+                ->get(route('login'))
+                ->assertRedirect(route($dashboardRoute));
+
+            $this->get(route('register'))
+                ->assertRedirect(route($dashboardRoute));
+
+            auth()->logout();
+        }
+    }
+
     public function test_admin_created_staff_accounts_receive_an_employee_id(): void
     {
         Http::fake([

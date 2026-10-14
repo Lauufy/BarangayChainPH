@@ -35,15 +35,15 @@
             <div class="min-w-0 flex-1">
                 <h2
                     id="form-error-title"
-                    class="text-sm font-semibold leading-5 text-red-200"
+                    class="text-sm font-semibold leading-5 text-red-900"
                 >
                     {{ $title }}
                 </h2>
 
                 <ul class="mt-2 space-y-2">
                     @foreach ($errors->getBag($bag)->all() as $message)
-                        <li class="flex items-start gap-2 text-sm leading-5 text-red-200/80">
-                            <span class="mt-2 size-1 shrink-0 rounded-full bg-red-300/70" aria-hidden="true"></span>
+                        <li class="flex items-start gap-2 text-sm leading-5 text-red-800">
+                            <span class="mt-2 size-1 shrink-0 rounded-full bg-red-500" aria-hidden="true"></span>
                             <span class="min-w-0 wrap-break-word">{{ $message }}</span>
                         </li>
                     @endforeach

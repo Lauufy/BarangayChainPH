@@ -17,6 +17,15 @@ return Application::configure(basePath: dirname(__DIR__))
         // Render terminates HTTPS at its load balancer, so trust the forwarded headers.
         $middleware->trustProxies(at: '*');
 
+        $middleware->redirectUsersTo(function (Request $request): string {
+            return match ($request->user()?->role) {
+                'admin' => route('admin.dashboard'),
+                'staff' => route('staff.dashboard'),
+                'citizen' => route('citizen.dashboard'),
+                default => route('home'),
+            };
+        });
+
         $middleware->alias([
             'role' => RoleMiddleware::class,
             'identity.verified' => EnsureIdentityVerified::class,

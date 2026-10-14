@@ -9,6 +9,7 @@ use App\Notifications\EmailVerificationOtp;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
 
@@ -60,6 +61,22 @@ class LoginController extends Controller
 
         // Only citizens must verify their email through OTP.
         if ($user->role === 'citizen' && ! $user->email_verified_at) {
+            if (config('mail.default') !== 'resend' || blank(config('services.resend.key'))) {
+                Auth::logout();
+
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                Log::error('Unable to send login verification code because Resend is not configured.', [
+                    'user_id' => $user->id,
+                    'mailer' => config('mail.default'),
+                ]);
+
+                throw ValidationException::withMessages([
+                    'identifier' => 'Email verification is temporarily unavailable. Please contact the administrator.',
+                ]);
+            }
+
             $otp = (string) random_int(100000, 999999);
 
             $user->forceFill([
