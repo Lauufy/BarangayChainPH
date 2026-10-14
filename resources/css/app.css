@@ -1,0 +1,53 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+/* Scrollbar Track */
+::-webkit-scrollbar-track {
+    background: #09172D;
+}
+
+/* Scrollbar Thumb */
+::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 10px;
+}
+
+/* Scrollbar Thumb on Hover */
+::-webkit-scrollbar-thumb:hover {
+    background: #10B981;
+}
+
+/* Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #334155 #09172D;
+}
+
+.custom-button-color:hover:not(:disabled) {
+    filter: brightness(1.15);
+}
+
+
+@layer components {
+    .admin-field {
+        @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-[#17325c] focus:ring-2 focus:ring-[#17325c]/20;
+    }
+
+    .admin-card {
+        @apply overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm;
+    }
+}
