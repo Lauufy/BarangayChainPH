@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\IdentityVerification;
 use App\Models\ServiceRequest;
 use App\Models\User;
 use App\Notifications\ServiceRequestApproved;
@@ -14,6 +15,59 @@ use Tests\TestCase;
 class AdminPermitManagementTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_admin_dashboard_displays_live_summary_counts_and_links(): void
+    {
+        $admin = User::factory()->create([
+            'role' => 'admin',
+            'is_active' => true,
+        ]);
+        $citizen = User::factory()->create([
+            'role' => 'citizen',
+            'is_active' => true,
+        ]);
+        User::factory()->create([
+            'role' => 'citizen',
+            'is_active' => true,
+        ]);
+        ServiceRequest::create([
+            'reference_number' => 'BRGY-DASHBOARD-001',
+            'service_type' => ServiceRequest::CERTIFICATE_OF_INDIGENCY,
+            'applicant_name' => 'Dashboard Citizen',
+            'address' => 'Dashboard Address',
+            'age' => 30,
+            'purpose' => 'Dashboard test',
+            'user_id' => $citizen->id,
+            'status' => ServiceRequest::PENDING,
+        ]);
+        IdentityVerification::create([
+            'user_id' => $citizen->id,
+            'document_type' => 'government_id',
+            'document_path' => 'dashboard-pending.pdf',
+            'status' => IdentityVerification::PENDING,
+        ]);
+        IdentityVerification::create([
+            'user_id' => $citizen->id,
+            'document_type' => 'government_id',
+            'document_path' => 'dashboard-verified.pdf',
+            'status' => IdentityVerification::VERIFIED,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertViewIs('admin.dashboard')
+            ->assertSee('Total Citizens')
+            ->assertSee('>2<', false)
+            ->assertSee('Pending Permits')
+            ->assertSee('>1<', false)
+            ->assertSee('Pending Verifications')
+            ->assertSee('Documents Authenticated')
+            ->assertSee(route('admin.users.index'), false)
+            ->assertSee(route('admin.permits.index'), false)
+            ->assertSee(route('admin.identity-verification.index'), false)
+            ->assertSee(route('admin.document-authentication.index'), false);
+    }
 
     public function test_admin_can_see_submitted_indigency_requests_in_permit_management(): void
     {

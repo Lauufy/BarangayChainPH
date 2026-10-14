@@ -21,24 +21,28 @@
                 label="Total Citizens"
                 :value="$totalCitizens ?? 0"
                 note="Registered citizen accounts"
+                :href="route('admin.users.index')"
             />
 
             <x-admin.stat-card
                 label="Pending Permits"
                 :value="$pendingPermits ?? 0"
                 note="Requests awaiting review"
+                :href="route('admin.permits.index')"
             />
 
             <x-admin.stat-card
                 label="Pending Verifications"
                 :value="$pendingVerifications ?? 0"
                 note="Identity checks to review"
+                :href="route('admin.identity-verification.index')"
             />
 
             <x-admin.stat-card
                 label="Documents Authenticated"
                 :value="$authenticatedDocuments ?? 0"
                 note="Verified documents"
+                :href="route('admin.document-authentication.index')"
             />
         </div>
 

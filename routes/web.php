@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\IdentityReviewController;
 use App\Http\Controllers\Admin\PermitController;
 use App\Http\Controllers\Admin\UserController;
@@ -202,9 +203,8 @@ Route::middleware(['auth', 'role:admin'])
     ->group(function () {
 
         // Dashboard
-        Route::get('/dashboard', function () {
-            return view('admin.dashboard');
-        })->name('dashboard');
+        Route::get('/dashboard', [DashboardController::class, 'index'])
+            ->name('dashboard');
 
         // User & Role Management
         Route::get('/users', [UserController::class, 'index'])
