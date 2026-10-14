@@ -98,7 +98,11 @@ class ProfileAndEmployeeLoginTest extends TestCase
             'https://api.pwnedpasswords.com/range/*' => Http::response('', 200),
         ]);
         Notification::fake();
-        config(['services.recaptcha.secret_key' => 'test-secret']);
+        config([
+            'services.recaptcha.secret_key' => 'test-secret',
+            'services.resend.key' => 'test-resend-key',
+            'mail.default' => 'resend',
+        ]);
 
         $response = $this->post(route('register.store'), [
             'name' => 'Jordan Citizen',
@@ -117,6 +121,36 @@ class ProfileAndEmployeeLoginTest extends TestCase
         $response->assertSessionMissing('pending_registration.date_of_birth');
         $response->assertSessionMissing('pending_registration.civil_status');
         $this->assertDatabaseMissing('users', ['email' => 'jordan@example.com']);
+    }
+
+    public function test_registration_shows_a_configuration_error_when_resend_is_not_configured(): void
+    {
+        Http::fake([
+            'https://www.google.com/recaptcha/api/siteverify' => Http::response(['success' => true], 200),
+            'https://api.pwnedpasswords.com/range/*' => Http::response('', 200),
+        ]);
+        config([
+            'services.recaptcha.secret_key' => 'test-secret',
+            'services.resend.key' => null,
+            'mail.default' => 'resend',
+        ]);
+
+        $response = $this->from(route('register'))
+            ->post(route('register.store'), [
+                'name' => 'Jordan Citizen',
+                'email' => 'jordan@example.com',
+                'phone' => '09171234567',
+                'password' => 'StrongPass123!',
+                'password_confirmation' => 'StrongPass123!',
+                'terms' => '1',
+                'g-recaptcha-response' => 'valid-token',
+            ]);
+
+        $response->assertRedirect(route('register'))
+            ->assertSessionHasErrors([
+                'email' => 'Email verification is temporarily unavailable. Please contact the administrator.',
+            ]);
+        $response->assertSessionMissing('pending_registration');
     }
 
     public function test_employee_can_log_in_with_employee_id(): void

@@ -8,6 +8,7 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
@@ -84,6 +85,20 @@ class RegisterController extends Controller
         ) {
             throw ValidationException::withMessages([
                 'g-recaptcha-response' => 'CAPTCHA verification failed. Please try again.',
+            ]);
+        }
+
+        if (
+            config('mail.default') !== 'resend' ||
+            blank(config('services.resend.key')) ||
+            blank(config('mail.from.address'))
+        ) {
+            Log::error('Unable to send registration verification code because Resend is not configured.', [
+                'mailer' => config('mail.default'),
+            ]);
+
+            throw ValidationException::withMessages([
+                'email' => 'Email verification is temporarily unavailable. Please contact the administrator.',
             ]);
         }
 
