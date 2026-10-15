@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\IdentityReviewController;
+use App\Http\Controllers\Admin\PermitController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
@@ -9,6 +11,8 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Citizen\IdentityVerificationController;
 use App\Http\Controllers\Citizen\ProfileController;
+use App\Http\Controllers\Citizen\ServiceRequestController;
+use App\Http\Controllers\PermitVerificationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -24,6 +28,10 @@ Route::get('/', function () {
 
 Route::view('/terms', 'legal.terms')->name('terms');
 Route::view('/privacy', 'legal.privacy')->name('privacy');
+
+Route::get('/verify/permit/{serviceRequest}', [PermitVerificationController::class, 'show'])
+    ->middleware('signed')
+    ->name('permits.verify');
 
 /*
 |--------------------------------------------------------------------------
@@ -101,9 +109,50 @@ Route::middleware(['auth', 'role:citizen'])
     ->group(function () {
         Route::view('/dashboard', 'citizen.dashboard')->name('dashboard');
         Route::view('/services', 'citizen.services')->name('services');
-        Route::view('/documents', 'citizen.documents')->name('documents');
-        Route::view('/applications', 'citizen.applications')->name('applications');
 
+        // Documents & Applications
+        Route::get('/documents', [ServiceRequestController::class, 'documents'])
+            ->name('documents');
+        Route::get('/applications', [ServiceRequestController::class, 'applications'])
+            ->name('applications');
+        Route::get('/applications/{serviceRequest}', [ServiceRequestController::class, 'showApplication'])
+            ->name('applications.show');
+        Route::get('/applications/{serviceRequest}/print', [ServiceRequestController::class, 'printApplication'])
+            ->name('applications.print');
+        Route::post('/applications/{serviceRequest}/cancel', [ServiceRequestController::class, 'cancelApplication'])
+            ->name('applications.cancel');
+
+        // Barangay Clearance
+        Route::get('/barangay-clearance', [ServiceRequestController::class, 'clearance'])
+            ->name('barangay-clearance');
+        Route::post('/barangay-clearance/preview', [ServiceRequestController::class, 'previewClearance'])
+            ->name('barangay-clearance.preview');
+        Route::post('/barangay-clearance/modify', [ServiceRequestController::class, 'modifyClearance'])
+            ->name('barangay-clearance.modify');
+        Route::post('/barangay-clearance/proceed', [ServiceRequestController::class, 'proceedClearance'])
+            ->name('barangay-clearance.proceed');
+
+        // Certificate of Residency
+        Route::get('/certificate-of-residency', [ServiceRequestController::class, 'residency'])
+            ->name('certificate-of-residency');
+        Route::post('/certificate-of-residency/preview', [ServiceRequestController::class, 'previewResidency'])
+            ->name('certificate-of-residency.preview');
+        Route::post('/certificate-of-residency/modify', [ServiceRequestController::class, 'modifyResidency'])
+            ->name('certificate-of-residency.modify');
+        Route::post('/certificate-of-residency/proceed', [ServiceRequestController::class, 'proceedResidency'])
+            ->name('certificate-of-residency.proceed');
+
+        // Certificate of Indigency
+        Route::get('/certificate-of-indigency', [ServiceRequestController::class, 'indigency'])
+            ->name('certificate-of-indigency');
+        Route::post('/certificate-of-indigency/preview', [ServiceRequestController::class, 'previewIndigency'])
+            ->name('certificate-of-indigency.preview');
+        Route::post('/certificate-of-indigency/modify', [ServiceRequestController::class, 'modifyIndigency'])
+            ->name('certificate-of-indigency.modify');
+        Route::post('/certificate-of-indigency/proceed', [ServiceRequestController::class, 'proceedIndigency'])
+            ->name('certificate-of-indigency.proceed');
+
+        // Profile
         Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
         Route::get('/profile/photo', [ProfileController::class, 'showPhoto'])->name('profile.photo.show');
 
@@ -126,6 +175,10 @@ Route::middleware(['auth', 'role:citizen'])
         // Dismiss a notification (only the user's own can be found)
         Route::post('/notifications/{id}/read', function (Request $request, string $id) {
             $request->user()->unreadNotifications()->find($id)?->markAsRead();
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Notification dismissed.']);
+            }
 
             return back();
         })->name('notifications.read');
@@ -159,9 +212,8 @@ Route::middleware(['auth', 'role:admin'])
     ->group(function () {
 
         // Dashboard
-        Route::get('/dashboard', function () {
-            return view('admin.dashboard');
-        })->name('dashboard');
+        Route::get('/dashboard', [DashboardController::class, 'index'])
+            ->name('dashboard');
 
         // User & Role Management
         Route::get('/users', [UserController::class, 'index'])
@@ -174,8 +226,16 @@ Route::middleware(['auth', 'role:admin'])
             ->name('users.toggle-status');
 
         // Permit & Clearance Processing
-        Route::view('/permits', 'admin.permits')
+        Route::get('/permits', [PermitController::class, 'index'])
             ->name('permits.index');
+        Route::get('/permits/{serviceRequest}', [PermitController::class, 'show'])
+            ->name('permits.show');
+        Route::post('/permits/{serviceRequest}/approve', [PermitController::class, 'approve'])
+            ->name('permits.approve');
+        Route::post('/permits/{serviceRequest}/reject', [PermitController::class, 'reject'])
+            ->name('permits.reject');
+        Route::patch('/permits/{serviceRequest}/print-limit', [PermitController::class, 'updatePrintLimit'])
+            ->name('permits.print-limit.update');
 
         // Document Authentication
         Route::view('/document-authentication', 'admin.document-authentication')
@@ -205,9 +265,9 @@ Route::middleware(['auth', 'role:admin'])
 */
 
 foreach (['admin', 'staff'] as $role) {
-    Route::middleware(['auth', 'role:' . $role])
-        ->prefix($role . '/identity-verification')
-        ->name($role . '.identity-verification.')
+    Route::middleware(['auth', 'role:'.$role])
+        ->prefix($role.'/identity-verification')
+        ->name($role.'.identity-verification.')
         ->controller(IdentityReviewController::class)
         ->group(function () {
             Route::get('/', 'index')->name('index');

@@ -18,7 +18,7 @@
     <div class="mb-1 flex items-center justify-between gap-3">
         <p id="{{ $inputId }}RequirementText"
             data-password-strength-copy
-            class="text-[10px] leading-relaxed text-slate-100">
+            class="text-[11px] leading-relaxed text-black">
             At least 8 characters with letters and numbers
         </p>
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Citizen;
 
 use App\Http\Controllers\Controller;
+use App\Models\CitizenProfile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -25,8 +26,7 @@ class ProfileController extends Controller
 
     public function update(Request $request)
     {
-        $user = $request->user();
-        abort_unless($user->isIdentityVerified() && $user->citizenProfile, 403);
+        $profile = $this->verifiedProfile($request);
 
         $data = $request->validate([
             'phone' => 'required|max:30|regex:/^[0-9+\-\s()]{7,20}$/',
@@ -51,15 +51,14 @@ class ProfileController extends Controller
         ]));
 
         // Update via the model so the encrypted casts still apply
-        $user->citizenProfile->update($data);
+        $profile->update($data);
 
         return redirect()->route('citizen.profile')->with('success', 'Your profile was updated.');
     }
 
     public function photo(Request $request)
     {
-        $user = $request->user();
-        abort_unless($user->isIdentityVerified() && $user->citizenProfile, 403);
+        $profile = $this->verifiedProfile($request);
 
         $request->validate([
             'photo' => 'required|image|mimes:jpg,jpeg,png|max:2048',
@@ -67,11 +66,11 @@ class ProfileController extends Controller
             'photo.max' => 'The photo must not be larger than 2 MB.',
         ]);
 
-        $profile = $user->citizenProfile;
         $oldPath = $profile->photo_path;
 
-        $path = $request->file('photo')->store('profile-photos', 'local');
-        $profile->update(['photo_path' => $path]);
+        $profile->update([
+            'photo_path' => $request->file('photo')->store('profile-photos', 'local'),
+        ]);
 
         // Remove the old photo only after the new one is saved
         if ($oldPath) {
@@ -89,5 +88,14 @@ class ProfileController extends Controller
         abort_unless($path && $disk->exists($path), 404);
 
         return response()->file($disk->path($path));
+    }
+
+    private function verifiedProfile(Request $request): CitizenProfile
+    {
+        $user = $request->user();
+
+        abort_unless($user->isIdentityVerified() && $user->citizenProfile, 403);
+
+        return $user->citizenProfile;
     }
 }

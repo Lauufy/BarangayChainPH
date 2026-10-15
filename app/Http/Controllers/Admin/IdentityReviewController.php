@@ -25,11 +25,11 @@ class IdentityReviewController extends Controller
     {
         $verification->load('user.citizenProfile', 'reviewer');
 
-        return view('admin.identity-verification-show', [
+        return view('admin.modals-admin.identity-verification-show', [
             'prefix' => $request->user()->role,
             'verification' => $verification,
             'profile' => $verification->user->citizenProfile,
-            'isImage' => ! str_ends_with($verification->document_path, '.pdf'),
+            'isImage' => !str_ends_with($verification->document_path, '.pdf'),
         ]);
     }
 
@@ -60,7 +60,7 @@ class IdentityReviewController extends Controller
     {
         $route = $request->user()->role . '.identity-verification.index';
 
-        if (! $verification->isPending()) {
+        if (!$verification->isPending()) {
             return redirect()->route($route)->with('error', 'This application was already reviewed.');
         }
 

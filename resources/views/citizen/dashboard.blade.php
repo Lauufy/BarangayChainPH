@@ -3,32 +3,6 @@
 @section('title', 'Citizen Dashboard')
 
 @section('content')
-    @php
-        $user = auth()->user();
-        $profile = $user->citizenProfile;
-        $status = $user->identityStatus();
-        $address = implode(', ', array_filter([
-            $profile?->house_number, $profile?->street, $profile?->barangay,
-            $profile?->city_municipality, $profile?->province,
-        ]));
-
-        // status => [label, text color]
-        [$statusText, $statusColor] = [
-            'verified' => ['Verified', 'text-emerald-700'],
-            'pending' => ['Pending review', 'text-amber-700'],
-            'rejected' => ['Rejected', 'text-red-700'],
-        ][$status] ?? ['Not verified', 'text-slate-600'];
-
-        $services = [
-            ['Barangay clearance', 'M8 7V3m8 4V3M4 11h16M5 5h14a1 1 0 0 1 1 1v13H4V6a1 1 0 0 1 1-1Z'],
-            ['Certificate of residency', 'M3 10.5 12 3l9 7.5M5 9v11h14V9M9 20v-6h6v6'],
-            ['Certificate of indigency', 'M7 3h7l5 5v13H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2ZM14 3v5h5M9 13h6M9 17h6'],
-        ];
-
-        // Pass $announcements from the controller: [['title' => '...', 'date' => '...'], ...]
-        $announcements = $announcements ?? [];
-    @endphp
-
     <div class="space-y-6">
         {{-- Hero --}}
         <section class="grid overflow-hidden rounded-md border border-slate-200 bg-white lg:grid-cols-[1.4fr_1fr]">
@@ -46,16 +20,34 @@
                 <div class="flex items-center gap-3">
                     <img src="{{ asset('img/branding/barangayChainPH-logo.png') }}" alt="" class="h-12 w-12 rounded-full border border-slate-200 bg-white object-contain p-0.5">
                     <div class="min-w-0">
-                        <p class="truncate font-semibold text-slate-900">{{ $user->name }}</p>
-                        <p class="truncate text-sm text-slate-500">{{ $user->email }}</p>
+                        <p class="truncate font-semibold text-slate-900">{{ auth()->user()->name }}</p>
+                        <p class="truncate text-sm text-slate-500">{{ auth()->user()->email }}</p>
                     </div>
                 </div>
                 <div class="border-t border-slate-200 pt-4">
                     <p class="text-sm text-slate-500">Identity status</p>
-                    <p class="mt-1 text-lg font-bold {{ $statusColor }}">{{ $statusText }}</p>
-                    @unless ($user->isIdentityVerified())
+
+                    @switch(auth()->user()->identityStatus())
+                        @case('verified')
+                            <p class="mt-1 text-lg font-bold text-emerald-700">Verified</p>
+                            @break
+                        @case('pending')
+                            <p class="mt-1 text-lg font-bold text-amber-700">Pending review</p>
+                            @break
+                        @case('rejected')
+                            <p class="mt-1 text-lg font-bold text-red-700">Rejected</p>
+                            @break
+                        @default
+                            <p class="mt-1 text-lg font-bold text-slate-600">Not verified</p>
+                    @endswitch
+
+                    @unless (auth()->user()->isIdentityVerified())
                         <a href="{{ route('citizen.identity-verification') }}" class="mt-2 inline-block text-sm font-semibold text-[#17325c] underline">
-                            {{ $status === 'pending' ? 'View status' : 'Verify your account' }}
+                            @if (auth()->user()->identityStatus() === 'pending')
+                                View status
+                            @else
+                                Verify your account
+                            @endif
                         </a>
                     @endunless
                 </div>
@@ -67,20 +59,27 @@
             <section class="rounded-md border border-slate-200 bg-white p-5">
                 <h2 class="font-bold text-[#17325c]">Barangay services</h2>
                 <div class="mt-4 grid gap-3 sm:grid-cols-3">
-                    @foreach ($services as [$title, $icon])
-                        <a href="{{ route('citizen.services') }}" class="flex flex-col items-center gap-2 rounded-md border border-slate-200 p-4 text-center text-sm font-medium text-slate-700 hover:border-[#17325c] hover:bg-slate-50">
-                            <svg class="h-7 w-7 text-[#17325c]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="{{ $icon }}"/></svg>
-                            {{ $title }}
-                        </a>
-                    @endforeach
+                    <a href="{{ route('citizen.services') }}" class="flex flex-col items-center gap-2 rounded-md border border-slate-200 p-4 text-center text-sm font-medium text-slate-700 hover:border-[#17325c] hover:bg-slate-50">
+                        <svg class="h-7 w-7 text-[#17325c]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 7V3m8 4V3M4 11h16M5 5h14a1 1 0 0 1 1 1v13H4V6a1 1 0 0 1 1-1Z"/></svg>
+                        Barangay clearance
+                    </a>
+                    <a href="{{ route('citizen.services') }}" class="flex flex-col items-center gap-2 rounded-md border border-slate-200 p-4 text-center text-sm font-medium text-slate-700 hover:border-[#17325c] hover:bg-slate-50">
+                        <svg class="h-7 w-7 text-[#17325c]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5M5 9v11h14V9M9 20v-6h6v6"/></svg>
+                        Certificate of residency
+                    </a>
+                    <a href="{{ route('citizen.services') }}" class="flex flex-col items-center gap-2 rounded-md border border-slate-200 p-4 text-center text-sm font-medium text-slate-700 hover:border-[#17325c] hover:bg-slate-50">
+                        <svg class="h-7 w-7 text-[#17325c]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M7 3h7l5 5v13H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2ZM14 3v5h5M9 13h6M9 17h6"/></svg>
+                        Certificate of indigency
+                    </a>
                 </div>
                 <a href="{{ route('citizen.documents') }}" class="mt-4 inline-block text-sm font-semibold text-[#17325c] underline">Go to my documents</a>
             </section>
 
             <section class="rounded-md border border-slate-200 bg-white p-5">
                 <h2 class="font-bold text-[#17325c]">Announcements and notices</h2>
+                {{-- Pass $announcements from the controller: [['title' => '...', 'date' => '...'], ...] --}}
                 <ul class="mt-3 divide-y divide-slate-100">
-                    @forelse ($announcements as $item)
+                    @forelse (($announcements ?? []) as $item)
                         <li class="py-3">
                             <p class="text-sm font-medium text-slate-800">{{ $item['title'] }}</p>
                             <p class="mt-0.5 text-xs text-slate-500">{{ $item['date'] }}</p>
@@ -100,9 +99,9 @@
                     <a href="{{ route('citizen.profile') }}" class="text-sm font-semibold text-[#17325c] underline">Open profile</a>
                 </div>
                 <dl class="mt-4 space-y-3 text-sm">
-                    <div><dt class="text-slate-500">Phone</dt><dd class="font-medium text-slate-800">{{ $profile?->phone ?: 'Not added' }}</dd></div>
-                    <div><dt class="text-slate-500">Date of birth</dt><dd class="font-medium text-slate-800">{{ $profile?->date_of_birth?->format('M j, Y') ?? 'Not added' }}</dd></div>
-                    <div><dt class="text-slate-500">Address</dt><dd class="font-medium text-slate-800">{{ $address ?: 'Add your address to complete your profile' }}</dd></div>
+                    <div><dt class="text-slate-500">Phone</dt><dd class="font-medium text-slate-800">{{ auth()->user()->citizenProfile?->phone ?: 'Not added' }}</dd></div>
+                    <div><dt class="text-slate-500">Date of birth</dt><dd class="font-medium text-slate-800">{{ auth()->user()->citizenProfile?->date_of_birth?->format('M j, Y') ?? 'Not added' }}</dd></div>
+                    <div><dt class="text-slate-500">Address</dt><dd class="font-medium text-slate-800">{{ auth()->user()->citizenProfile?->full_address ?: 'Add your address to complete your profile' }}</dd></div>
                 </dl>
             </section>
 

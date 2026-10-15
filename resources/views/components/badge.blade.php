@@ -2,19 +2,13 @@
     'variant' => 'neutral',
 ])
 
-@php
-    $variants = [
-        'success' => 'border border-emerald-400/30 bg-emerald-500/10 text-emerald-300',
-        'danger' => 'border border-red-400/30 bg-red-500/10 text-red-300',
-        'warning' => 'border border-amber-400/30 bg-amber-500/10 text-amber-200',
-        'info' => 'border border-sky-400/30 bg-sky-500/10 text-sky-200',
-        'neutral' => 'border border-white/10 bg-white/5 text-slate-200',
-    ];
-@endphp
-
 <span {{ $attributes->class([
-    'inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em]',
-    $variants[$variant] ?? $variants['neutral'],
+    'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold capitalize',
+    'bg-green-100 text-green-700' => $variant === 'success',
+    'bg-red-100 text-red-700' => $variant === 'danger',
+    'bg-amber-100 text-amber-700' => $variant === 'warning',
+    'bg-sky-100 text-sky-700' => $variant === 'info',
+    'bg-slate-100 text-slate-700' => ! in_array($variant, ['success', 'danger', 'warning', 'info']),
 ]) }}>
     {{ $slot }}
 </span>

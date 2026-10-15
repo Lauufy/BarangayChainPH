@@ -28,15 +28,20 @@
                             <p class="font-medium text-slate-900">{{ $verification->user->name }}</p>
                             <p class="text-xs text-slate-500">{{ $verification->user->email }}</p>
                         </td>
+
                         <td class="px-5 py-4 text-slate-600">{{ $verification->submitted_at->format('M j, Y g:i A') }}</td>
+
                         <td class="px-5 py-4">
                             <x-badge :variant="$verification->isVerified() ? 'success' : ($verification->isRejected() ? 'danger' : 'warning')">
                                 {{ $verification->status }}
                             </x-badge>
                         </td>
+
                         <td class="px-5 py-4">
                             <a href="{{ route($prefix . '.identity-verification.show', $verification) }}"
-                                class="font-semibold text-[#17325c] hover:underline">Review</a>
+                                class="inline-flex rounded-md border border-[#17325c] px-3 py-1.5 text-xs font-semibold text-[#17325c] hover:bg-slate-50">
+                                Review
+                            </a>
                         </td>
                     </tr>
                 @endforeach
