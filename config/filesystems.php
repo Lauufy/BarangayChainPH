@@ -33,7 +33,8 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // Keep uploaded citizen and verification files private by disabling direct local file serving.
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

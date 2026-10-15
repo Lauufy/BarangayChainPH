@@ -8,6 +8,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 class ProfileAndEmployeeLoginTest extends TestCase
@@ -117,6 +118,11 @@ class ProfileAndEmployeeLoginTest extends TestCase
         $response->assertSessionMissing('pending_registration.date_of_birth');
         $response->assertSessionMissing('pending_registration.civil_status');
         $this->assertDatabaseMissing('users', ['email' => 'jordan@example.com']);
+    }
+
+    public function test_private_storage_files_are_not_served_publicly(): void
+    {
+        $this->assertFalse(Route::has('storage.local'));
     }
 
     public function test_employee_can_log_in_with_employee_id(): void
