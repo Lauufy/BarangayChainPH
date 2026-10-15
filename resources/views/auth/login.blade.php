@@ -78,8 +78,7 @@
     </p>
 
 @section('panel')
-    <x-partials.journey-panel badge="Citizen Portal" title="Welcome back"
-        subtitle="Log in to continue using barangay services." :active="0" />
+    <x-partials.journey-panel :active="0" />
 @endsection
 
 @endsection
