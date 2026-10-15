@@ -43,27 +43,11 @@ class ServiceRequestController extends Controller
 
     // Form pages
 
-    public function indigency(Request $request) { return $this->form($request, 'indigency'); }
-    public function clearance(Request $request) { return $this->form($request, 'clearance'); }
-    public function residency(Request $request) { return $this->form($request, 'residency'); }
+    public function indigency(Request $request): View { return $this->form($request, 'indigency'); }
 
-    // Preview
+    public function clearance(Request $request): View { return $this->form($request, 'clearance'); }
 
-    public function previewIndigency(Request $request) { return $this->previewRequest($request, 'indigency'); }
-    public function previewClearance(Request $request) { return $this->previewRequest($request, 'clearance'); }
-    public function previewResidency(Request $request) { return $this->previewRequest($request, 'residency'); }
-
-    // Modify
-
-    public function modifyIndigency(Request $request) { return $this->modifyRequest($request, 'indigency'); }
-    public function modifyClearance(Request $request) { return $this->modifyRequest($request, 'clearance'); }
-    public function modifyResidency(Request $request) { return $this->modifyRequest($request, 'residency'); }
-
-    // Proceed
-
-    public function proceedIndigency(Request $request) { return $this->proceedRequest($request, 'indigency'); }
-    public function proceedClearance(Request $request) { return $this->proceedRequest($request, 'clearance'); }
-    public function proceedResidency(Request $request) { return $this->proceedRequest($request, 'residency'); }
+    public function residency(Request $request): View { return $this->form($request, 'residency'); }
 
     // Lists and details
 
@@ -113,13 +97,13 @@ class ServiceRequestController extends Controller
             return $locked->fresh();
         });
 
-        $url = URL::signedRoute('permits.verify', ['serviceRequest' => $serviceRequest]);
+        $verificationUrl = URL::signedRoute('permits.verify', ['serviceRequest' => $serviceRequest]);
 
         return view('citizen.application-print', [
             'application' => $serviceRequest,
             'documentTitle' => $this->documentTitle($serviceRequest),
-            'qrCode' => $this->qrCode($url),
-            'verificationUrl' => $url,
+            'qrCode' => $this->qrCode($verificationUrl),
+            'verificationUrl' => $verificationUrl,
         ]);
     }
 
@@ -134,7 +118,11 @@ class ServiceRequestController extends Controller
         $cancelled = DB::transaction(function () use ($serviceRequest, $data) {
             $locked = $this->lock($serviceRequest);
 
-            return $locked->isCancellable() && $locked->update([
+            if (! $locked->isCancellable()) {
+                return false;
+            }
+
+            return $locked->update([
                 'status' => ServiceRequest::CANCELLED,
                 'cancellation_reason' => $data['cancellation_reason'],
                 'cancelled_at' => now(),
@@ -152,14 +140,30 @@ class ServiceRequestController extends Controller
             ]);
     }
 
+    // Preview / modify / proceed
+
+    public function previewIndigency(Request $request): View { return $this->previewRequest($request, 'indigency'); }
+
+    public function previewClearance(Request $request): View { return $this->previewRequest($request, 'clearance'); }
+
+    public function previewResidency(Request $request): View { return $this->previewRequest($request, 'residency'); }
+
+    public function modifyIndigency(Request $request): RedirectResponse { return $this->modifyRequest($request, 'indigency'); }
+
+    public function modifyClearance(Request $request): RedirectResponse { return $this->modifyRequest($request, 'clearance'); }
+
+    public function modifyResidency(Request $request): RedirectResponse { return $this->modifyRequest($request, 'residency'); }
+
+    public function proceedIndigency(Request $request): RedirectResponse { return $this->proceedRequest($request, 'indigency'); }
+
+    public function proceedClearance(Request $request): RedirectResponse { return $this->proceedRequest($request, 'clearance'); }
+
+    public function proceedResidency(Request $request): RedirectResponse { return $this->proceedRequest($request, 'residency'); }
+
     // Helpers
 
-    private function form(Request $request, string $type): View|RedirectResponse
+    private function form(Request $request, string $type): View
     {
-        if ($this->pendingQuery($request, $type)->exists()) {
-            return $this->pendingBlocked();
-        }
-
         $info = self::TYPES[$type];
 
         return view('citizen.service-request', [
@@ -168,6 +172,28 @@ class ServiceRequestController extends Controller
             'profile' => $request->user()->citizenProfile,
             $info['flag'] => true,
         ]);
+    }
+
+    private function ownedRequests(Request $request)
+    {
+        return ServiceRequest::whereBelongsTo($request->user())->latest();
+    }
+
+    private function authorizeOwner(Request $request, ServiceRequest $serviceRequest): void
+    {
+        abort_unless($serviceRequest->user_id === $request->user()->id, 404);
+    }
+
+    private function lock(ServiceRequest $serviceRequest): ServiceRequest
+    {
+        return ServiceRequest::whereKey($serviceRequest->id)->lockForUpdate()->firstOrFail();
+    }
+
+    private function qrCode(string $data): string
+    {
+        return (new Builder(writer: new SvgWriter, data: $data, size: 120, margin: 4))
+            ->build()
+            ->getDataUri();
     }
 
     private function previewRequest(Request $request, string $type): View
@@ -195,69 +221,35 @@ class ServiceRequestController extends Controller
     {
         $data = $request->session()->get("{$type}_request");
 
-        if (!is_array($data)) {
+        if (! is_array($data)) {
             return $this->previewExpired($type);
         }
 
         $validated = validator($data, $this->requestRules())->validate();
 
-        $serviceRequest = DB::transaction(function () use ($request, $type, $validated) {
-            if ($this->pendingQuery($request, $type)->lockForUpdate()->exists()) {
-                return null;
-            }
-
-            return ServiceRequest::create([
-                'user_id' => $request->user()->id,
-                'reference_number' => 'BRGY-' . now()->format('YmdHis') . '-' . str_pad(random_int(1, 9999), 4, '0', STR_PAD_LEFT),
-                'service_type' => self::TYPES[$type]['service'],
-                'applicant_name' => $validated['name'],
-                'address' => $validated['address'],
-                'age' => $validated['age'],
-                'purpose' => $validated['purpose'],
-                'status' => ServiceRequest::PENDING,
-            ]);
-        });
+        $serviceRequest = ServiceRequest::create([
+            'user_id' => $request->user()->id,
+            'reference_number' => 'BRGY-'.now()->format('YmdHis').'-'.str_pad((string) random_int(1, 9999), 4, '0', STR_PAD_LEFT),
+            'service_type' => self::TYPES[$type]['service'],
+            'applicant_name' => $validated['name'],
+            'address' => $validated['address'],
+            'age' => $validated['age'],
+            'purpose' => $validated['purpose'],
+            'status' => ServiceRequest::PENDING,
+        ]);
 
         $request->session()->forget("{$type}_request");
 
-        return $serviceRequest
-            ? redirect()->route('citizen.applications')->with('success', "Your certificate request {$serviceRequest->reference_number} was submitted for barangay processing.")
-            : $this->pendingBlocked();
+        return redirect()
+            ->route('citizen.applications')
+            ->with('success', "Your certificate request {$serviceRequest->reference_number} was submitted for barangay processing.");
     }
 
-    private function ownedRequests(Request $request)
+    private function previewExpired(string $type): RedirectResponse
     {
-        return ServiceRequest::whereBelongsTo($request->user())->latest();
-    }
-
-    private function pendingQuery(Request $request, string $type)
-    {
-        return ServiceRequest::whereBelongsTo($request->user())
-            ->where('service_type', self::TYPES[$type]['service'])
-            ->where('status', ServiceRequest::PENDING);
-    }
-
-    private function authorizeOwner(Request $request, ServiceRequest $serviceRequest): void
-    {
-        abort_unless($serviceRequest->user_id === $request->user()->id, 404);
-    }
-
-    private function lock(ServiceRequest $serviceRequest): ServiceRequest
-    {
-        return ServiceRequest::whereKey($serviceRequest->id)->lockForUpdate()->firstOrFail();
-    }
-
-    private function qrCode(string $data): string
-    {
-        return (new Builder(writer: new SvgWriter, data: $data, size: 120, margin: 4))
-            ->build()
-            ->getDataUri();
-    }
-
-    private function documentTitle(ServiceRequest $serviceRequest): string
-    {
-        return collect(self::TYPES)->firstWhere('service', $serviceRequest->service_type)['title']
-            ?? self::TYPES['indigency']['title'];
+        return redirect()
+            ->route(self::TYPES[$type]['route'])
+            ->withErrors(['purpose' => 'Your preview expired. Please fill out the form again.']);
     }
 
     private function requestRules(): array
@@ -270,17 +262,9 @@ class ServiceRequestController extends Controller
         ];
     }
 
-    private function previewExpired(string $type): RedirectResponse
+    private function documentTitle(ServiceRequest $serviceRequest): string
     {
-        return redirect()
-            ->route(self::TYPES[$type]['route'])
-            ->withErrors(['purpose' => 'Your preview expired. Please fill out the form again.']);
-    }
-
-    private function pendingBlocked(): RedirectResponse
-    {
-        return redirect()
-            ->route('citizen.applications')
-            ->with('error', 'You already have a pending request for this service.');
+        return collect(self::TYPES)->firstWhere('service', $serviceRequest->service_type)['title']
+            ?? self::TYPES['indigency']['title'];
     }
 }

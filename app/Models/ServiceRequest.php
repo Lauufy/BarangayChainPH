@@ -7,13 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
-/**
- * @property int $id
- * @property int $user_id
- * @property string $service_type
- * @property string $status
- */
-
 #[Fillable([
     'user_id', 'reference_number', 'service_type', 'applicant_name', 'address',
     'age', 'purpose', 'status', 'cancellation_reason', 'cancelled_at',
