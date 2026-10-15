@@ -14,6 +14,7 @@ use App\Http\Controllers\Citizen\ProfileController;
 use App\Http\Controllers\Citizen\ServiceRequestController;
 use App\Http\Controllers\PermitVerificationController;
 use Illuminate\Http\Request;
+use App\Models\ServiceRequest;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -108,7 +109,15 @@ Route::middleware(['auth', 'role:citizen'])
     ->name('citizen.')
     ->group(function () {
         Route::view('/dashboard', 'citizen.dashboard')->name('dashboard');
-        Route::view('/services', 'citizen.services')->name('services');
+
+        Route::get('/services', function (Request $request) {
+            $pendingServices = ServiceRequest::whereBelongsTo($request->user())
+                ->where('status', ServiceRequest::PENDING)
+                ->pluck('service_type')
+                ->all();
+
+            return view('citizen.services', compact('pendingServices'));
+        })->name('services');
 
         // Documents & Applications
         Route::get('/documents', [ServiceRequestController::class, 'documents'])
@@ -265,9 +274,9 @@ Route::middleware(['auth', 'role:admin'])
 */
 
 foreach (['admin', 'staff'] as $role) {
-    Route::middleware(['auth', 'role:'.$role])
-        ->prefix($role.'/identity-verification')
-        ->name($role.'.identity-verification.')
+    Route::middleware(['auth', 'role:' . $role])
+        ->prefix($role . '/identity-verification')
+        ->name($role . '.identity-verification.')
         ->controller(IdentityReviewController::class)
         ->group(function () {
             Route::get('/', 'index')->name('index');
