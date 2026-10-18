@@ -12,7 +12,7 @@
                     Citizen Portal
                 </p>
 
-                <h1 class="font-['Inter',sans-serif] text-3xl font-bold leading-tight tracking-tight text-[#0F1B3D]">
+                <h1 class="text-3xl font-bold leading-tight tracking-tight text-[#0F1B3D]">
                     Reset your password
                 </h1>
 

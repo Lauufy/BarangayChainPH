@@ -1,4 +1,3 @@
-import './global/auth-btn';
 import './global/form-validation';
 import './global/data-loading';
 import './global/password-strength';

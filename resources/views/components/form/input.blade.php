@@ -14,6 +14,12 @@
     $field = $light
         ? 'border-slate-300 bg-white text-slate-900 hover:border-slate-400 focus:border-[#17325c] focus:ring-[#17325c]/20'
         : 'border-white/10 bg-[#0B2347] text-white hover:border-white/20 focus:border-emerald-400 focus:ring-emerald-400/10';
+
+    // Autofill: paint over the browser's autofill background, keep text and caret readable
+    $autofill = $light
+        ? '[&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_#ffffff] [&:-webkit-autofill]:[-webkit-text-fill-color:#0f172a] [&:-webkit-autofill]:caret-slate-900'
+        : '[&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_#0B2347] [&:-webkit-autofill]:[-webkit-text-fill-color:#ffffff] [&:-webkit-autofill]:caret-white';
+
     $muted = $light ? 'text-slate-500' : 'text-blue-100/60';
     $accent = $light ? 'peer-focus:text-[#17325c]' : 'peer-focus:text-emerald-400';
     $hover = $light ? 'hover:text-[#17325c] focus-visible:ring-[#17325c]' : 'hover:text-emerald-400 focus-visible:ring-emerald-400';
@@ -23,7 +29,7 @@
     $ph = $light ? 'text-slate-400' : 'text-blue-100/40';
     $ph = $raised ? "placeholder:$ph" : "placeholder:text-transparent focus:placeholder:$ph";
 
-    $base = "peer validation-input block w-full rounded-md border pb-1.5 pl-3.5 pt-5 text-base outline-none transition focus:ring-2 disabled:opacity-60 sm:text-sm $field";
+    $base = "peer validation-input block w-full rounded-md border pb-1.5 pl-3.5 pt-5 text-base outline-none transition focus:ring-2 disabled:opacity-60 sm:text-sm $field $autofill";
 @endphp
 
 <div>
@@ -80,6 +86,9 @@
             </button>
         @endif
     </div>
+
+    {{-- Error message (filled by JS on blur, hidden while typing) --}}
+    <p data-error-for="{{ $name }}" class="mt-1 hidden text-xs text-red-500"></p>
 
     @if ($hint)
         <p class="mt-1 text-xs {{ $muted }}">{{ $hint }}</p>

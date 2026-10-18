@@ -8,15 +8,10 @@
     <title>@yield('title', 'Dashboard') - BarangayChain PH</title>
 
     <link rel="icon" type="image/png" href="{{ asset('img/branding/barangayChainPH-logo.png') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
-
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
-<body class="h-screen overflow-hidden bg-white font-['Public_Sans',sans-serif] text-slate-800 antialiased">
+<body class="h-screen overflow-hidden bg-white font-sans text-slate-800 antialiased">
 
     <div class="flex h-screen overflow-hidden">
 

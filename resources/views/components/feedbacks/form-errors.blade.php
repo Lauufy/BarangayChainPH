@@ -1,54 +1,41 @@
-
 @props([
-    'title' => 'Please review the following errors:',
+    'title' => 'Please fix the following:',
     'bag' => 'default',
+    'light' => true, // false = dark theme
 ])
 
-@if ($errors->getBag($bag)->any())
-    <div
-        role="alert"
-        aria-labelledby="form-error-title"
-        aria-live="assertive"
-        {{ $attributes->merge([
-            'class' => 'mb-5 rounded-xl border border-red-400/25 bg-red-500/[0.07] p-4 sm:p-5'
-        ]) }}
-    >
-        <div class="flex items-start gap-3">
-            <div class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-red-400/10 text-red-300">
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="size-5"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    aria-hidden="true"
-                >
-                    <circle cx="12" cy="12" r="9" />
-                    <path d="M12 8v4" />
-                    <path d="M12 16h.01" />
-                </svg>
-            </div>
+@php
+    $all = $errors->getBag($bag)->all();
+    $box = $light ? 'border-red-200 bg-red-50 text-red-700' : 'border-red-400/25 bg-red-500/10 text-red-200';
+@endphp
 
-            <div class="min-w-0 flex-1">
-                <h2
-                    id="form-error-title"
-                    class="text-sm font-semibold leading-5 text-red-200"
-                >
-                    {{ $title }}
-                </h2>
+@if ($all)
+    <div role="alert" aria-live="assertive"
+        {{ $attributes->class(["mb-4 flex items-start gap-2.5 rounded-md border border-l-4 border-l-red-500 py-2.5 pl-3 pr-2 text-xs leading-4 $box"]) }}>
+        <svg class="mt-px size-4 shrink-0 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 8v4M12 16h.01" />
+        </svg>
 
-                <ul class="mt-2 space-y-2">
-                    @foreach ($errors->getBag($bag)->all() as $message)
-                        <li class="flex items-start gap-2 text-sm leading-5 text-red-200/80">
-                            <span class="mt-2 size-1 shrink-0 rounded-full bg-red-300/70" aria-hidden="true"></span>
-                            <span class="min-w-0 wrap-break-word">{{ $message }}</span>
-                        </li>
+        <div class="min-w-0 flex-1">
+            @if (count($all) === 1)
+                <p class="wrap-break-word font-medium">{{ $all[0] }}</p>
+            @else
+                <p class="font-semibold">{{ $title }}</p>
+                <ul class="mt-1 list-inside list-disc space-y-0.5 opacity-90">
+                    @foreach ($all as $message)
+                        <li class="wrap-break-word">{{ $message }}</li>
                     @endforeach
                 </ul>
-            </div>
+            @endif
         </div>
+
+        <button type="button" aria-label="Dismiss" onclick="this.parentElement.remove()"
+            class="rounded p-0.5 opacity-60 transition hover:opacity-100">
+            <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6L6 18" />
+            </svg>
+        </button>
     </div>
 @endif

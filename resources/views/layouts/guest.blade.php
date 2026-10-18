@@ -9,8 +9,6 @@
 
     <link rel="icon" type="image/png" href="{{ asset('img/branding/barangayChainPH-logo.png') }}">
 
-    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800&display=swap" rel="stylesheet">
-
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 

@@ -4,7 +4,7 @@
 
 @section('content')
     <main class="flex min-h-[calc(100vh-5rem)] px-4">
-        <section class="w-full max-w-md font-['Inter',sans-serif]">
+        <section class="w-full max-w-md">
 
             {{-- Header --}}
             <header class="mb-4">
@@ -12,7 +12,7 @@
                 <p class="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#00229b]">
                     Citizen Portal
                 </p>
-                <h1 class="font-['Inter',sans-serif] text-3xl font-bold leading-tight tracking-tight text-[#0F1B3D]">
+                <h1 class="text-3xl font-bold leading-tight tracking-tight text-[#0F1B3D]">
                     Verify your email
                 </h1>
                 <p class="mt-2 text-sm leading-6 text-[#020746]">

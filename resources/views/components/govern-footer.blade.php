@@ -1,4 +1,4 @@
-<footer class="border-t-4 border-[#FFC933] bg-[#0F1B3D] text-white" style="font-family: 'Public Sans', ui-sans-serif, system-ui, sans-serif;">
+<footer class="border-t-4 border-[#FFC933] bg-[#0F1B3D] text-white">
     <div class="mx-auto max-w-6xl px-5 py-14">
 
         <div class="grid gap-10 md:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1fr]">
@@ -9,7 +9,7 @@
                     <img src="{{ asset('img/branding/barangayChainPH-logo.png') }}" alt="Barangay San Luis logo"
                         class="h-12 w-12 rounded-full object-cover">
                     <p class="text-lg font-extrabold leading-tight"
-                        style="font-family: 'Bricolage Grotesque', 'Public Sans', sans-serif; letter-spacing: -0.02em;">
+                        style="font-family: 'Bricolage Grotesque', 'Inter', sans-serif; letter-spacing: -0.02em;">
                         Barangay San Luis
                         <span class="block text-xs font-medium tracking-normal text-blue-200/70">
                             Antipolo City, Rizal

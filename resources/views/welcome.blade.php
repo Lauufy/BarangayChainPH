@@ -10,15 +10,14 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=bricolage-grotesque:600,700,800|public-sans:400,500,600,700&display=swap"
+    <link href="https://fonts.bunny.net/css?family=bricolage-grotesque:600,700,800&display=swap"
           rel="stylesheet">
 
     <link rel="icon" type="image/png" href="{{ asset('img/branding/barangayChainPH-logo.png') }}">
 
     <style>
         html { scroll-behavior: smooth; scroll-padding-top: 5rem; }
-        body { font-family: 'Public Sans', ui-sans-serif, system-ui, sans-serif; }
-        .display { font-family: 'Bricolage Grotesque', 'Public Sans', ui-sans-serif, sans-serif; letter-spacing: -0.025em; }
+        .display { font-family: 'Bricolage Grotesque', 'Inter', ui-sans-serif, sans-serif; letter-spacing: -0.025em; }
         .req-row:hover .req-arrow { transform: translateX(4px); }
 
         @media (prefers-reduced-motion: reduce) {

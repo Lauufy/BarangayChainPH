@@ -11,7 +11,7 @@
             Citizen Portal
         </p>
 
-        <h1 class="font-['Inter',sans-serif] text-3xl font-bold leading-tight tracking-tight text-[#0F1B3D]">
+        <h1 class="text-3xl font-bold leading-tight tracking-tight text-[#0F1B3D]">
             Create an account
         </h1>
 
@@ -23,7 +23,7 @@
     {{-- Log In / Sign Up tabs --}}
     <div class="mb-5 flex rounded-md border border-[#DDE3F3] bg-[#E6ECFA] p-1">
         <a href="{{ route('login') }}"
-            class="flex flex-1 items-center justify-center rounded px-3 py-2.5 text-sm font-semibold text-[#5A6788] transition hover:text-[#0F1B3D]">
+            class="flex flex-1 items-center justify-center rounded px-3 py-2.5 text-sm font-semibold  text-[#5A6788] transition hover:text-[#0F1B3D]">
             Log In
         </a>
 
@@ -43,15 +43,16 @@
         {{-- Full name + Phone --}}
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <x-form.input light name="name" label="Full Name" required autofocus autocomplete="name"
-                placeholder="Enter your full name" data-validate />
+                placeholder="Enter your full name" />
 
             <x-form.input light name="phone" label="Phone Number" type="tel" inputmode="numeric" pattern="[0-9]{11}"
                 maxlength="11" minlength="11" required autocomplete="tel" placeholder="Enter your 11-digit phone number" />
         </div>
 
         {{-- Email --}}
-        <x-form.input light name="email" label="Email Address" type="email" required autocomplete="email"
-            placeholder="you@example.com" data-validate />
+        <x-form.input light name="email" label="Email Address" type="email" required data-blur
+         data-error="Please enter a valid email address." autocomplete="email"
+            placeholder="you@example.com" />
 
         {{-- Password + Confirm password --}}
         <div class="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
