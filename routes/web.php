@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
+use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\Citizen\IdentityVerificationController;
 use App\Http\Controllers\Citizen\ProfileController;
 use App\Http\Controllers\Citizen\ServiceRequestController;
@@ -70,6 +71,11 @@ Route::middleware('guest')->group(function () {
     Route::post('/reset-password', [ResetPasswordController::class, 'resetPassword'])
         ->middleware('throttle:5,1')
         ->name('password.update');
+
+    //Google Auth
+    Route::get('/auth/google', [GoogleController::class, 'redirect'])->name('google.redirect');
+
+    Route::get('/auth/google/callback', [GoogleController::class, 'callback']);
 });
 
 /*

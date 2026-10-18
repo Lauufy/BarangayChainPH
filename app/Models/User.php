@@ -17,6 +17,7 @@ use Illuminate\Notifications\Notifiable;
     'email',
     'email_verified_at',
     'password',
+    'google_id',
     'role',
     'is_active',
     'email_verification_otp',

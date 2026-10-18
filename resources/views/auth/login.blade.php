@@ -40,8 +40,8 @@
         @csrf
 
         {{-- Email or Employee ID --}}
-        <x-form.input light name="identifier" label="Email Address or Employee ID" required autofocus autocomplete="username"
-            placeholder="Enter your email or employee ID" />
+        <x-form.input light name="identifier" label="Email Address or Employee ID" required autofocus
+            autocomplete="username" placeholder="Enter your email or employee ID" />
 
         {{-- Password --}}
         <x-form.input light name="password" label="Password" type="password" maxlength="30" required
@@ -71,6 +71,15 @@
             Create an account
         </a>
     </p>
+
+    {{-- Google login button --}}
+    <div class="my-4 text-center text-sm text-gray-500">or</div>
+
+    <a href="{{ route('google.redirect') }}"
+        class="flex w-full items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+        <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="h-5 w-5" alt="Google">
+        Continue with Google
+    </a>
 
     <p class="mt-3 text-center text-xs leading-5 text-[#5A6788]">
         Your account information is protected.
