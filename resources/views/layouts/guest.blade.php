@@ -12,24 +12,24 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
-<body class="min-h-screen bg-[#ffffff] text-slate-100 antialiased">
+<body class="min-h-dvh bg-white text-slate-900 antialiased">
 
-    <div class="relative grid min-h-screen lg:grid-cols-2">
+    <div class="relative grid min-h-dvh grid-cols-1 items-stretch lg:grid-cols-2">
 
-        {{-- Back navigation: floats over the top of the page --}}
-        <header class="absolute inset-x-0 top-0 z-10 px-6 pt-6">
+        {{-- Back navigation --}}
+        <header class="absolute inset-x-0 top-0 z-10 px-4 pt-5 sm:px-6 sm:pt-6">
             <x:navigation.back-nav />
         </header>
 
-        {{-- Form --}}
-        <main class="pt-35 px-4 pb-10 sm:px-6">
-            <div class="mx-auto w-full max-w-md">
+        {{-- Authentication form --}}
+        <main class="flex min-w-0 flex-col px-4 pb-8 pt-24 sm:px-6 sm:pb-10 sm:pt-28 lg:pt-24">
+            <div class="mx-auto my-auto w-full max-w-md py-4">
                 @yield('content')
             </div>
         </main>
 
-        {{-- Panel (hidden on phones and tablets) --}}
-        <div class="hidden lg:block">
+        {{-- Journey panel: desktop only --}}
+        <div class="hidden min-w-0 lg:flex lg:items-stretch">
             @yield('panel')
         </div>
 
