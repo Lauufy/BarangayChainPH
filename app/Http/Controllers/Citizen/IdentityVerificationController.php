@@ -8,10 +8,19 @@ use Illuminate\Http\Request;
 
 class IdentityVerificationController extends Controller
 {
+    // How many rejected applications a citizen may have before being blocked
+    private const MAX_REJECTED_TRIES = 3;
+
     // Accepted government IDs
     private array $documentTypes = [
-        'Philippine National ID', "Driver's License", 'Passport', 'UMID',
-        'Postal ID', "Voter's ID", 'PRC ID', 'Barangay ID',
+        'Philippine National ID',
+        "Driver's License",
+        'Passport',
+        'UMID',
+        'Postal ID',
+        "Voter's ID",
+        'PRC ID',
+        'Barangay ID',
     ];
 
     // Show Step 1, Step 2, or the current status
@@ -59,8 +68,11 @@ class IdentityVerificationController extends Controller
 
         // Join the parts into the one-line "address" column
         $data['address'] = implode(', ', array_filter([
-            $data['house_number'] ?? null, $data['barangay'],
-            $data['city_municipality'], $data['province'], $data['zip_code'],
+            $data['house_number'] ?? null,
+            $data['barangay'],
+            $data['city_municipality'],
+            $data['province'],
+            $data['zip_code'],
         ]));
 
         $request->user()->citizenProfile()->updateOrCreate([], $data);
@@ -68,7 +80,7 @@ class IdentityVerificationController extends Controller
         return redirect()->route('citizen.identity-verification', ['step' => 2]);
     }
 
-    // Step 2: upload the ID and submit for review
+    // Steps 2-4: ID, selfie and consent are sent together
     public function storeDocument(Request $request)
     {
         $user = $request->user();
@@ -85,12 +97,39 @@ class IdentityVerificationController extends Controller
         $request->validate([
             'document_type' => 'required|in:' . implode(',', $this->documentTypes),
             'document' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
+            'id_number' => 'required|string|max:50|regex:/^[A-Za-z0-9\-\s]+$/',
+            'selfie' => 'required|image|mimes:jpg,jpeg,png|max:5120',
+            'selfie_source' => 'required|in:camera,upload',
+            'agree_truth' => 'accepted',
+            'agree_privacy' => 'accepted',
         ], [
             'document.mimes' => 'The ID must be a JPG, PNG, or PDF file.',
             'document.max' => 'The ID must not be larger than 5 MB.',
+            'id_number.regex' => 'The ID number may only contain letters, numbers, and dashes.',
+            'selfie.image' => 'The selfie must be a JPG or PNG photo.',
+            'selfie.mimes' => 'The selfie must be a JPG or PNG photo.',
+            'selfie.max' => 'The selfie must not be larger than 5 MB.',
+            'agree_truth.accepted' => 'Please confirm that your information is true.',
+            'agree_privacy.accepted' => 'Please agree to the data privacy notice.',
         ]);
 
-        // Save the file in private storage (no public link)
+        // Too many rejected tries
+        $rejected = $user->identityVerifications()
+            ->where('status', IdentityVerification::REJECTED)
+            ->count();
+
+        if ($rejected >= self::MAX_REJECTED_TRIES) {
+            return back()->withErrors(['limit' => 'Too many rejected tries. Please visit the barangay office.']);
+        }
+
+        // Same ID already used by another account?
+        $hash = $this->idNumberHash($request->document_type, $request->id_number);
+
+        if ($this->idAlreadyUsed($hash, $user->id)) {
+            return back()->withErrors(['id_number' => 'This ID is already used by another account.']);
+        }
+
+        // Save both files in private storage (no public link)
         $file = $request->file('document');
 
         $user->identityVerifications()->create([
@@ -98,11 +137,32 @@ class IdentityVerificationController extends Controller
             'document_type' => $request->document_type,
             'document_path' => $file->store('identity-documents/' . $user->id, 'local'),
             'document_original_name' => $file->getClientOriginalName(),
+            'id_number_hash' => $hash,
+            'selfie_path' => $request->file('selfie')->store('identity-selfies/' . $user->id, 'local'),
+            'selfie_source' => $request->selfie_source,
+            'consented_at' => now(),
             'submitted_at' => now(),
         ]);
 
         return redirect()->route('citizen.identity-verification')
             ->with('success', 'Your application was submitted. Please wait for review.');
+    }
+
+    // Step 2: check if this ID number is already used (called by the page before Next)
+    public function checkIdNumber(Request $request)
+    {
+        $request->validate([
+            'document_type' => 'required|in:' . implode(',', $this->documentTypes),
+            'id_number' => 'required|string|max:50|regex:/^[A-Za-z0-9\-\s]+$/',
+        ], [
+            'id_number.regex' => 'The ID number may only contain letters, numbers, and dashes.',
+        ]);
+
+        $hash = $this->idNumberHash($request->document_type, $request->id_number);
+
+        return response()->json([
+            'used' => $this->idAlreadyUsed($hash, $request->user()->id),
+        ]);
     }
 
     // Only the owner can open their uploaded ID
@@ -120,5 +180,23 @@ class IdentityVerificationController extends Controller
     private function isLocked($user): bool
     {
         return in_array($user->identityStatus(), ['pending', 'verified']);
+    }
+
+    // Hash of the ID number, so the real number is never saved.
+    // Dashes, spaces and letter case are ignored: "1234-5678" = "12345678".
+    private function idNumberHash(string $type, string $number): string
+    {
+        $clean = preg_replace('/[^a-z0-9]/', '', strtolower($number));
+
+        return hash_hmac('sha256', $type . '|' . $clean, config('app.key'));
+    }
+
+    // Is this ID already used by another pending or verified account?
+    private function idAlreadyUsed(string $hash, int $userId): bool
+    {
+        return IdentityVerification::where('id_number_hash', $hash)
+            ->where('user_id', '!=', $userId)
+            ->whereIn('status', [IdentityVerification::PENDING, IdentityVerification::VERIFIED])
+            ->exists();
     }
 }

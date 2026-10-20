@@ -22,9 +22,10 @@ class ServiceRequestRejected extends Notification implements ShouldQueue
     public function toArray(object $notifiable): array
     {
         return [
+            'status' => 'rejected',
             'title' => 'Application rejected',
-            'message' => "Your application {$this->serviceRequest->reference_number} was rejected.",
-            'reason' => $this->serviceRequest->rejection_reason,
+            'message' => "Your application {$this->serviceRequest->reference_number} was rejected. Reason: {$this->serviceRequest->rejection_reason}",
+            'url' => route('citizen.applications'),
         ];
     }
 
@@ -36,8 +37,7 @@ class ServiceRequestRejected extends Notification implements ShouldQueue
             ->subject('BarangayChain PH - Application Rejected')
             ->greeting("Hello {$notifiable->name},")
             ->line($data['message'])
-            ->line("Reason: {$data['reason']}")
             ->line('Please review the reason and submit a new application if appropriate.')
-            ->action('View My Applications', route('citizen.applications'));
+            ->action('View My Applications', $data['url']);
     }
 }

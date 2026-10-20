@@ -5,12 +5,14 @@
 @section('content')
     <div class="space-y-4">
         {{-- Header --}}
-        <header class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+        <header
+            class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
             <div class="flex min-w-0 items-center gap-3">
                 <a href="{{ route($prefix . '.identity-verification.index') }}"
                     class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-slate-300 text-slate-600 hover:bg-slate-50"
                     aria-label="Back to list" title="Back to list">
-                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="m15 18-6-6 6-6" />
                     </svg>
                 </a>
@@ -18,13 +20,15 @@
                 <div class="min-w-0">
                     <h1 class="truncate text-xl font-bold leading-tight text-slate-900">{{ $verification->user->name }}</h1>
                     <p class="truncate text-xs text-slate-500">
-                        {{ $verification->user->email }} &middot; Submitted {{ $verification->submitted_at->format('M j, Y g:i A') }}
+                        {{ $verification->user->email }} &middot; Submitted
+                        {{ $verification->submitted_at->format('M j, Y g:i A') }}
                     </p>
                 </div>
             </div>
 
             @if ($verification->isPending())
-                <span class="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800">
+                <span
+                    class="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800">
                     <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span> Pending review
                 </span>
             @else
@@ -42,11 +46,13 @@
                 <dl class="grid gap-x-4 gap-y-3 p-4 sm:grid-cols-2 xl:grid-cols-3">
                     <div>
                         <dt class="text-[11px] font-semibold uppercase text-slate-500">Name</dt>
-                        <dd class="wrap-break-word text-sm text-slate-900">{{ $verification->user->name ?: 'Not provided' }}</dd>
+                        <dd class="wrap-break-word text-sm text-slate-900">{{ $verification->user->name ?: 'Not provided' }}
+                        </dd>
                     </div>
                     <div>
                         <dt class="text-[11px] font-semibold uppercase text-slate-500">Date of birth</dt>
-                        <dd class="wrap-break-word text-sm text-slate-900">{{ $profile?->date_of_birth?->format('M j, Y') ?: 'Not provided' }}</dd>
+                        <dd class="wrap-break-word text-sm text-slate-900">
+                            {{ $profile?->date_of_birth?->format('M j, Y') ?: 'Not provided' }}</dd>
                     </div>
                     <div>
                         <dt class="text-[11px] font-semibold uppercase text-slate-500">Gender</dt>
@@ -54,15 +60,18 @@
                     </div>
                     <div>
                         <dt class="text-[11px] font-semibold uppercase text-slate-500">Civil status</dt>
-                        <dd class="wrap-break-word text-sm text-slate-900">{{ $profile?->civil_status ?: 'Not provided' }}</dd>
+                        <dd class="wrap-break-word text-sm text-slate-900">{{ $profile?->civil_status ?: 'Not provided' }}
+                        </dd>
                     </div>
                     <div>
                         <dt class="text-[11px] font-semibold uppercase text-slate-500">Nationality</dt>
-                        <dd class="wrap-break-word text-sm text-slate-900">{{ $profile?->nationality ?: 'Not provided' }}</dd>
+                        <dd class="wrap-break-word text-sm text-slate-900">{{ $profile?->nationality ?: 'Not provided' }}
+                        </dd>
                     </div>
                     <div>
                         <dt class="text-[11px] font-semibold uppercase text-slate-500">Place of birth</dt>
-                        <dd class="wrap-break-word text-sm text-slate-900">{{ $profile?->place_of_birth ?: 'Not provided' }}</dd>
+                        <dd class="wrap-break-word text-sm text-slate-900">
+                            {{ $profile?->place_of_birth ?: 'Not provided' }}</dd>
                     </div>
                     <div>
                         <dt class="text-[11px] font-semibold uppercase text-slate-500">Religion</dt>
@@ -70,7 +79,8 @@
                     </div>
                     <div>
                         <dt class="text-[11px] font-semibold uppercase text-slate-500">Occupation</dt>
-                        <dd class="wrap-break-word text-sm text-slate-900">{{ $profile?->occupation ?: 'Not provided' }}</dd>
+                        <dd class="wrap-break-word text-sm text-slate-900">{{ $profile?->occupation ?: 'Not provided' }}
+                        </dd>
                     </div>
                     <div>
                         <dt class="text-[11px] font-semibold uppercase text-slate-500">Phone</dt>
@@ -78,7 +88,8 @@
                     </div>
                     <div class="sm:col-span-2 xl:col-span-3">
                         <dt class="text-[11px] font-semibold uppercase text-slate-500">Email</dt>
-                        <dd class="wrap-break-word text-sm text-slate-900">{{ $verification->user->email ?: 'Not provided' }}</dd>
+                        <dd class="wrap-break-word text-sm text-slate-900">
+                            {{ $verification->user->email ?: 'Not provided' }}</dd>
                     </div>
                     <div class="sm:col-span-2 xl:col-span-3">
                         <dt class="text-[11px] font-semibold uppercase text-slate-500">Address</dt>
@@ -90,8 +101,16 @@
                 <div class="border-t border-slate-200 bg-slate-50/60 p-4">
                     <h3 class="text-sm font-semibold text-slate-900">Decision</h3>
 
+                    @if ($rejectedBefore > 0)
+                        <p class="mt-1 text-xs font-semibold text-amber-700">
+                            This citizen has {{ $rejectedBefore }} earlier rejected
+                            {{ Str::plural('application', $rejectedBefore) }}.
+                        </p>
+                    @endif
+
                     @if ($verification->isPending())
-                        <p class="mt-1 text-xs text-slate-500">The citizen will be able to request services and edit their profile.</p>
+                        <p class="mt-1 text-xs text-slate-500">The citizen will be able to request services and edit their
+                            profile.</p>
 
                         {{--
                             Two separate forms laid out as one block:
@@ -100,21 +119,25 @@
                         --}}
                         <div class="mt-3 grid gap-4 sm:grid-cols-2">
                             {{-- Reject (reason is required) --}}
-                            <form method="POST" action="{{ route($prefix . '.identity-verification.reject', $verification) }}"
+                            <form method="POST"
+                                action="{{ route($prefix . '.identity-verification.reject', $verification) }}"
                                 class="contents">
                                 @csrf
 
                                 <div class="order-1 sm:col-span-2 sm:row-start-1">
-                                    <x-form.input light type="textarea" name="rejection_reason" label="Reason for rejection" placeholder=" " required maxlength="500" />
+                                    <x-form.input light type="textarea" name="rejection_reason" label="Reason for rejection"
+                                        placeholder=" " required maxlength="500" />
                                 </div>
 
                                 <div class="order-3 sm:col-start-2 sm:row-start-2 [&_button]:w-full">
-                                    <x-form.button type="submit" variant="danger" loadingText="Rejecting...">Reject</x-form.button>
+                                    <x-form.button type="submit" variant="danger"
+                                        loadingText="Rejecting...">Reject</x-form.button>
                                 </div>
                             </form>
 
                             {{-- Approve --}}
-                            <form method="POST" action="{{ route($prefix . '.identity-verification.approve', $verification) }}"
+                            <form method="POST"
+                                action="{{ route($prefix . '.identity-verification.approve', $verification) }}"
                                 class="order-2 sm:col-start-1 sm:row-start-2 [&_button]:w-full">
                                 @csrf
                                 <x-form.button type="submit" loadingText="Approving...">Approve</x-form.button>
@@ -124,7 +147,8 @@
                         <div class="mt-3 space-y-2 text-sm text-slate-600">
                             <p>
                                 Reviewed by
-                                <span class="font-semibold text-slate-900">{{ $verification->reviewer?->name ?? 'a removed account' }}</span>
+                                <span
+                                    class="font-semibold text-slate-900">{{ $verification->reviewer?->name ?? 'a removed account' }}</span>
                                 on {{ $verification->reviewed_at->format('M j, Y g:i A') }}
                             </p>
 
@@ -139,9 +163,10 @@
                 </div>
             </section>
 
-            {{-- Right: uploaded ID --}}
-            <aside class="lg:w-100 lg:shrink-0 xl:w-150">
-                <section class="admin-card flex h-full flex-col">
+            {{-- Right: uploaded ID and selfie --}}
+            <aside class="lg:w-100 xl:w-150 space-y-4 lg:shrink-0">
+                {{-- Uploaded ID --}}
+                <section class="admin-card">
                     <div class="flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-3">
                         <div class="min-w-0">
                             <h2 class="text-sm font-semibold text-slate-900">Uploaded ID</h2>
@@ -151,14 +176,51 @@
                             class="shrink-0 text-xs font-semibold text-[#17325c] hover:underline">Open &nearr;</a>
                     </div>
 
-                    <div class="flex flex-1 items-center justify-center bg-slate-50 p-3">
+                    <div class="flex items-center justify-center bg-slate-50 p-3">
                         @if ($isImage)
-                            <a href="{{ route($prefix . '.identity-verification.document', $verification) }}" target="_blank">
-                                <img src="{{ route($prefix . '.identity-verification.document', $verification) }}" alt="Uploaded ID"
+                            <a href="{{ route($prefix . '.identity-verification.document', $verification) }}"
+                                target="_blank">
+                                <img src="{{ route($prefix . '.identity-verification.document', $verification) }}"
+                                    alt="Uploaded ID"
                                     class="max-h-110 rounded border border-slate-200 bg-white object-contain">
                             </a>
                         @else
-                            <p class="py-6 text-center text-xs text-slate-500">Preview not available. Open the file to view it.</p>
+                            <p class="py-6 text-center text-xs text-slate-500">Preview not available. Open the file to view
+                                it.</p>
+                        @endif
+                    </div>
+                </section>
+
+                {{-- Selfie --}}
+                <section class="admin-card">
+                    <div class="flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-3">
+                        <div class="min-w-0">
+                            <h2 class="text-sm font-semibold text-slate-900">Selfie</h2>
+                            <p class="truncate text-xs text-slate-500">
+                                @if (!$verification->selfie_path)
+                                    Not provided
+                                @else
+                                    {{ $verification->selfie_source === 'camera' ? 'Taken with the camera' : 'Uploaded photo' }}
+                                @endif
+                            </p>
+                        </div>
+                        @if ($verification->selfie_path)
+                            <a href="{{ route($prefix . '.identity-verification.selfie', $verification) }}" target="_blank"
+                                class="shrink-0 text-xs font-semibold text-[#17325c] hover:underline">Open &nearr;</a>
+                        @endif
+                    </div>
+
+                    <div class="flex items-center justify-center bg-slate-50 p-3">
+                        @if ($verification->selfie_path)
+                            <a href="{{ route($prefix . '.identity-verification.selfie', $verification) }}"
+                                target="_blank">
+                                <img src="{{ route($prefix . '.identity-verification.selfie', $verification) }}"
+                                    alt="Selfie"
+                                    class="max-h-110 rounded border border-slate-200 bg-white object-contain">
+                            </a>
+                        @else
+                            <p class="py-6 text-center text-xs text-slate-500">No selfie. This application was submitted
+                                before the selfie step.</p>
                         @endif
                     </div>
                 </section>

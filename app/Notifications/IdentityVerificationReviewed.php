@@ -12,22 +12,24 @@ class IdentityVerificationReviewed extends Notification
     {
     }
 
-    // Saved in the portal and sent by email
+    // Saved in the portal (bell) and sent by email
     public function via(object $notifiable): array
     {
         return ['database', 'mail'];
     }
 
-    // The banner text (also reused by the email)
+    // The bell / notifications page text (also reused by the email)
     public function toArray(object $notifiable): array
     {
         $approved = $this->verification->isVerified();
 
         return [
+            'status' => $approved ? 'verified' : 'rejected',
             'title' => $approved ? 'Identity verified' : 'Identity verification rejected',
             'message' => $approved
                 ? 'Your identity was verified. You can now request barangay services.'
                 : 'Reason: '.$this->verification->rejection_reason,
+            'url' => route('citizen.identity-verification'),
         ];
     }
 
@@ -40,6 +42,6 @@ class IdentityVerificationReviewed extends Notification
             ->subject($data['title'])
             ->greeting('Hello '.$notifiable->name.',')
             ->line($data['message'])
-            ->action('Open citizen portal', route('citizen.identity-verification'));
+            ->action('Open citizen portal', $data['url']);
     }
 }

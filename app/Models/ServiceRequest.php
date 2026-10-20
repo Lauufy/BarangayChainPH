@@ -9,9 +9,9 @@ use Illuminate\Support\Str;
 
 /**
  * @property int $id
- * @property int $user_id
- * @property string $service_type
+ * @property string $reference_number
  * @property string $status
+ * @property string|null $rejection_reason
  */
 
 #[Fillable([

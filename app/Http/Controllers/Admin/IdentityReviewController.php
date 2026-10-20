@@ -30,6 +30,8 @@ class IdentityReviewController extends Controller
             'verification' => $verification,
             'profile' => $verification->user->citizenProfile,
             'isImage' => !str_ends_with($verification->document_path, '.pdf'),
+            'rejectedBefore' => IdentityVerification::where('user_id', $verification->user_id)
+                ->where('status', IdentityVerification::REJECTED)->count(),
         ]);
     }
 
@@ -39,6 +41,14 @@ class IdentityReviewController extends Controller
         abort_unless(is_file($verification->filePath()), 404);
 
         return response()->file($verification->filePath());
+    }
+
+    // Open the selfie
+    public function selfie(IdentityVerification $verification)
+    {
+        abort_unless($verification->selfie_path && is_file($verification->selfiePath()), 404);
+
+        return response()->file($verification->selfiePath());
     }
 
     public function approve(Request $request, IdentityVerification $verification)
