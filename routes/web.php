@@ -2,7 +2,9 @@
 
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\IdentityReviewController;
+use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
 use App\Http\Controllers\Admin\PermitController;
+use App\Http\Controllers\Admin\ProfileController as AdminProfileController;
 use App\Http\Controllers\Admin\TicketInboxController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\EmailVerificationController;
@@ -12,11 +14,12 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Citizen\IdentityVerificationController;
+use App\Http\Controllers\Citizen\NotificationController;
 use App\Http\Controllers\Citizen\ProfileController;
 use App\Http\Controllers\Citizen\ServiceRequestController;
-use App\Http\Controllers\PermitVerificationController;
-use App\Http\Controllers\Citizen\NotificationController;
 use App\Http\Controllers\Citizen\TicketController;
+use App\Http\Controllers\PermitVerificationController;
+use App\Http\Controllers\TicketParticipantPhotoController;
 use App\Models\ServiceRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -30,6 +33,10 @@ use Illuminate\Support\Facades\Route;
 Route::view('/', 'welcome')->name('home');
 Route::view('/terms', 'legal.terms')->name('terms');
 Route::view('/privacy', 'legal.privacy')->name('privacy');
+
+Route::get('/tickets/{ticket}/participants/{participant}/photo', [TicketParticipantPhotoController::class, 'show'])
+    ->middleware(['auth', 'role:citizen,admin'])
+    ->name('tickets.participants.photo');
 
 Route::get('/verify/permit/{serviceRequest}', [PermitVerificationController::class, 'show'])
     ->middleware('signed')
@@ -137,7 +144,6 @@ Route::middleware(['auth', 'role:citizen'])
             Route::post('/certificate-of-indigency/proceed', 'proceedIndigency')->name('certificate-of-indigency.proceed');
         });
 
-
         // Tickets (messages about a request)
         Route::get('/applications/{serviceRequest}/ticket', [TicketController::class, 'show'])->name('tickets.show');
         Route::post('/applications/{serviceRequest}/ticket', [TicketController::class, 'reply'])
@@ -158,7 +164,7 @@ Route::middleware(['auth', 'role:citizen'])
             Route::get('/identity-verification/document/{verification}', 'document')->name('identity-verification.file');
         });
 
-
+        // Notifications
         Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications');
         Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
         Route::post('/notifications/{id}/read', [NotificationController::class, 'read'])->name('notifications.read');
@@ -192,6 +198,12 @@ Route::middleware(['auth', 'role:admin'])
     ->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+        // Profile
+        Route::get('/profile', [AdminProfileController::class, 'show'])->name('profile');
+        Route::put('/profile', [AdminProfileController::class, 'update'])->name('profile.update');
+        Route::get('/profile/photo', [AdminProfileController::class, 'showPhoto'])->name('profile.photo.show');
+        Route::post('/profile/photo', [AdminProfileController::class, 'photo'])->name('profile.photo');
+
         // Users and roles
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
@@ -212,6 +224,12 @@ Route::middleware(['auth', 'role:admin'])
         Route::post('/tickets/{ticket}', [TicketInboxController::class, 'reply'])
             ->middleware('throttle:30,1')
             ->name('tickets.reply');
+
+        // Notifications
+        Route::post('/notifications/read-all', [AdminNotificationController::class, 'readAll'])
+            ->name('notifications.read-all');
+        Route::post('/notifications/{id}/read', [AdminNotificationController::class, 'read'])
+            ->name('notifications.read');
 
         // Simple pages
         Route::view('/document-authentication', 'admin.document-authentication')->name('document-authentication.index');

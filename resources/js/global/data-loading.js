@@ -7,6 +7,8 @@ const SPINNER = `
             d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
     </svg>`;
 
+const LOCKABLE_FIELDS = "input:not([type='hidden']), textarea";
+
 function startLoading(el) {
     if (el.dataset.loadingActive === "true") return;
 
@@ -35,11 +37,27 @@ function stopLoading(el) {
     if ("disabled" in el) el.disabled = false;
 }
 
+function setFormLocked(form, locked) {
+    if (!form.matches("[data-lock-on-submit]")) return;
+
+    form.querySelectorAll(LOCKABLE_FIELDS).forEach((field) => {
+        field.readOnly = locked;
+
+        if (locked) {
+            field.setAttribute("aria-readonly", "true");
+        } else {
+            field.removeAttribute("aria-readonly");
+        }
+    });
+}
+
 // Form submission
 document.addEventListener("submit", (e) => {
     const form = e.target;
 
     if (!form.matches("form")) return;
+
+    setFormLocked(form, true);
 
     const submitter = e.submitter;
 
@@ -64,4 +82,7 @@ document.addEventListener("click", (e) => {
 // Restore after browser back/forward navigation
 window.addEventListener("pageshow", () => {
     document.querySelectorAll("[data-loading]").forEach(stopLoading);
+    document.querySelectorAll("form[data-lock-on-submit]").forEach((form) => {
+        setFormLocked(form, false);
+    });
 });

@@ -92,7 +92,7 @@
 
                 {{-- Notification bell --}}
                 @unless ($hideNotifications)
-                    <details id="notification-menu" class="group sm:relative">
+                    <details id="notification-menu" class="sm:relative">
                         <summary class="relative flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 [&::-webkit-details-marker]:hidden"
                                  aria-label="Open notifications">
                             <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24" aria-hidden="true">
@@ -100,7 +100,7 @@
                             </svg>
 
                             @if ($unreadCount > 0)
-                                <span id="notification-count" data-count="{{ $unreadCount }}"
+                                <span id="notification-count"
                                       class="absolute right-0 top-0 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[11px] font-bold leading-none text-white">
                                     {{ $unreadCount > 9 ? '9+' : $unreadCount }}
                                 </span>
@@ -131,38 +131,36 @@
                                         $unread = $notification->read_at === null;
                                     @endphp
 
-                                    <div data-notification class="relative flex gap-3 pb-5 last:pb-0">
+                                    <div data-notification class="relative pb-5 last:pb-0">
                                         @unless ($loop->last)
                                             <span class="absolute bottom-1 left-4.5 top-10 w-px -translate-x-1/2 bg-slate-200" aria-hidden="true"></span>
                                         @endunless
 
-                                        <span class="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full {{ $notifColors[$type] ?? $notifColors['info'] }}">
-                                            <svg class="h-4.5 w-4.5" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24" aria-hidden="true">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="{{ $notifIcons[$type] ?? $notifIcons['info'] }}" />
-                                            </svg>
-                                        </span>
+                                        <form method="POST" action="{{ route('citizen.notifications.read', $notification->id) }}">
+                                            @csrf
+                                            <button type="submit" class="group/item flex w-full items-start gap-3 text-left">
+                                                <span class="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full {{ $notifColors[$type] ?? $notifColors['info'] }}">
+                                                    <svg class="h-4.5 w-4.5" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24" aria-hidden="true">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="{{ $notifIcons[$type] ?? $notifIcons['info'] }}" />
+                                                    </svg>
+                                                </span>
 
-                                        <div class="min-w-0 flex-1">
-                                            <div class="flex items-start justify-between gap-3">
-                                                <p class="text-[13px] font-semibold text-slate-900">
-                                                    {{ $notification->data['title'] ?? 'Notification' }}
-                                                    @if ($unread)
-                                                        <span data-unread-dot class="ml-1 inline-block h-2 w-2 rounded-full bg-[#17325c] align-middle" aria-label="Unread"></span>
-                                                    @endif
-                                                </p>
-                                                <span class="shrink-0 whitespace-nowrap text-[11px] text-slate-500">{{ $notification->created_at->diffForHumans() }}</span>
-                                            </div>
-
-                                            <p class="mt-0.5 text-xs text-slate-500">{{ $notification->data['message'] ?? '' }}</p>
-
-                                            @if ($unread)
-                                                <form method="POST" action="{{ route('citizen.notifications.read', $notification->id) }}"
-                                                      class="notification-dismiss-form mt-1">
-                                                    @csrf
-                                                    <button class="text-[11px] font-semibold text-[#17325c] underline">Dismiss</button>
-                                                </form>
-                                            @endif
-                                        </div>
+                                                <span class="min-w-0 flex-1">
+                                                    <span class="flex items-start justify-between gap-3">
+                                                        <span class="text-[13px] font-semibold text-slate-900 group-hover/item:underline">
+                                                            {{ $notification->data['title'] ?? 'Notification' }}
+                                                            @if ($unread)
+                                                                <span data-unread-dot class="ml-1 inline-block h-2 w-2 rounded-full bg-[#17325c] align-middle">
+                                                                    <span class="sr-only">Unread</span>
+                                                                </span>
+                                                            @endif
+                                                        </span>
+                                                        <span class="shrink-0 whitespace-nowrap text-[11px] text-slate-500">{{ $notification->created_at->diffForHumans() }}</span>
+                                                    </span>
+                                                    <span class="mt-0.5 block text-xs text-slate-500">{{ $notification->data['message'] ?? '' }}</span>
+                                                </span>
+                                            </button>
+                                        </form>
                                     </div>
                                 @empty
                                     <p class="px-2 py-8 text-center text-sm text-slate-500">No notifications yet.</p>
@@ -238,7 +236,8 @@
                         <a href="{{ route('citizen.identity-verification') }}"
                            class="flex items-center justify-between gap-2 rounded-md px-3 py-2.5 text-sm hover:bg-slate-100">
                             <span>Identity verification</span>
-                            <span class="rounded-full px-2 py-0.5 text-xs font-bold {{ $identityBadge[1] }}">
+                            <span id="identity-status-badge" data-identity-status="{{ $user->identityStatus() }}"
+                                  class="rounded-full px-2 py-0.5 text-xs font-bold {{ $identityBadge[1] }}">
                                 {{ $identityBadge[0] }}
                             </span>
                         </a>
@@ -260,7 +259,7 @@
     </header>
 
     {{-- Page content --}}
-    <main class="mx-auto min-h-screen w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+    <main id="citizen-page-content" class="mx-auto min-h-screen w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
         <x:feedbacks.toast />
 
         @yield('content')
@@ -269,62 +268,92 @@
     <x-partials.c-footer />
 
     <script>
-        // Dismiss a notification without reloading the page.
-        document.querySelectorAll('.notification-dismiss-form').forEach((form) => {
-            form.addEventListener('submit', async (event) => {
-                event.preventDefault();
-
-                const item = form.closest('[data-notification]');
-                const button = form.querySelector('button');
-                button.disabled = true;
-
-                try {
-                    const response = await fetch(form.action, {
-                        method: 'POST',
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
-                        },
-                        body: new FormData(form),
-                        credentials: 'same-origin',
-                    });
-
-                    if (!response.ok) throw new Error('Unable to dismiss notification.');
-
-                    // Show the item as read
-                    item.querySelector('[data-unread-dot]')?.remove();
-                    form.remove();
-
-                    // Lower the number on the bell and the subtitle
-                    const badge = document.getElementById('notification-count');
-                    const subtitle = document.getElementById('notification-subtitle');
-
-                    if (badge) {
-                        const left = Number(badge.dataset.count) - 1;
-                        badge.dataset.count = left;
-                        badge.textContent = left > 9 ? '9+' : left;
-
-                        if (subtitle) {
-                            subtitle.textContent = left > 0
-                                ? `You have ${left} new notification${left === 1 ? '' : 's'}.`
-                                : "You're all caught up.";
-                        }
-
-                        if (left <= 0) {
-                            badge.remove();
-                            document.getElementById('mark-all-form')?.remove();
-                        }
-                    }
-                } catch (error) {
-                    console.error(error);
-                    button.disabled = false;
-                }
-            });
-        });
-
-        // Close the menus when clicking outside or pressing Escape.
+        const notificationMenu = document.getElementById('notification-menu');
         const menus = document.querySelectorAll('#user-menu, #notification-menu');
 
+        // Opening the bell marks all notifications as viewed.
+        notificationMenu?.addEventListener('toggle', async () => {
+            if (!notificationMenu.open) return;
+
+            const markAllForm = document.getElementById('mark-all-form');
+            const badge = document.getElementById('notification-count');
+            const subtitle = document.getElementById('notification-subtitle');
+
+            if (!markAllForm || !badge) return;
+
+            try {
+                const response = await fetch(markAllForm.action, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+                    },
+                    body: new FormData(markAllForm),
+                    credentials: 'same-origin',
+                });
+
+                if (!response.ok) throw new Error('Unable to mark notifications as read.');
+
+                badge.remove();
+                subtitle.textContent = "You're all caught up.";
+                document.querySelectorAll('[data-unread-dot]').forEach((dot) => dot.remove());
+                markAllForm.remove();
+            } catch (error) {
+                console.error(error);
+            }
+        });
+
+        // Synchronize the current page without a full reload.
+        setInterval(async () => {
+            const activeElement = document.activeElement;
+            const isEditing = activeElement?.matches('input, textarea, select, [contenteditable="true"]');
+
+            if (document.hidden || isEditing) return;
+
+            const hasUnsavedInput = [...document.querySelectorAll('form input, form textarea, form select')]
+                .some((field) => field.type === 'file'
+                    ? field.files.length > 0
+                    : field.value !== field.defaultValue);
+
+            if (hasUnsavedInput) return;
+
+            try {
+                const response = await fetch(location.href, {
+                    cache: 'no-store',
+                    headers: { 'Accept': 'text/html' },
+                    credentials: 'same-origin',
+                });
+
+                if (!response.ok) throw new Error('Unable to synchronize the citizen page.');
+
+                const freshDocument = new DOMParser().parseFromString(await response.text(), 'text/html');
+                const freshContent = freshDocument.getElementById('citizen-page-content');
+                const currentContent = document.getElementById('citizen-page-content');
+                const freshMenu = freshDocument.getElementById('notification-menu');
+                const freshIdentityBadge = freshDocument.getElementById('identity-status-badge');
+                const identityBadge = document.getElementById('identity-status-badge');
+
+                if (freshContent && currentContent && freshContent.innerHTML !== currentContent.innerHTML) {
+                    currentContent.innerHTML = freshContent.innerHTML;
+                }
+
+                if (freshMenu && notificationMenu && freshMenu.innerHTML !== notificationMenu.innerHTML) {
+                    const isOpen = notificationMenu.open;
+                    notificationMenu.innerHTML = freshMenu.innerHTML;
+                    notificationMenu.open = isOpen;
+                }
+
+                if (freshIdentityBadge && identityBadge) {
+                    identityBadge.className = freshIdentityBadge.className;
+                    identityBadge.dataset.identityStatus = freshIdentityBadge.dataset.identityStatus;
+                    identityBadge.textContent = freshIdentityBadge.textContent;
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        }, 15000);
+
+        // Close the menus when clicking outside or pressing Escape.
         document.addEventListener('click', (event) => {
             menus.forEach((menu) => {
                 if (!menu.contains(event.target)) menu.removeAttribute('open');
