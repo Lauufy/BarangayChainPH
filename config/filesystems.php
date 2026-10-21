@@ -32,7 +32,7 @@ return [
 
         'local' => [
             'driver' => 'local',
-            'root' => storage_path('app/private'),
+            'root' => env('FILESYSTEM_LOCAL_ROOT', storage_path('app/private')),
             // Keep uploaded citizen and verification files private by disabling direct local file serving.
             'serve' => false,
             'throw' => false,
