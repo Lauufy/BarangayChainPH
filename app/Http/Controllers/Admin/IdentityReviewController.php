@@ -5,10 +5,15 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\IdentityVerification;
 use App\Notifications\IdentityVerificationReviewed;
+use App\Services\SupabaseStorage;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class IdentityReviewController extends Controller
 {
+    public function __construct(private SupabaseStorage $supabaseStorage) {}
+
     // List all applications with counts
     public function index(Request $request)
     {
@@ -29,26 +34,34 @@ class IdentityReviewController extends Controller
             'prefix' => $request->user()->role,
             'verification' => $verification,
             'profile' => $verification->user->citizenProfile,
-            'isImage' => !str_ends_with($verification->document_path, '.pdf'),
+            'isImage' => ! str_ends_with($verification->document_path, '.pdf'),
             'rejectedBefore' => IdentityVerification::where('user_id', $verification->user_id)
                 ->where('status', IdentityVerification::REJECTED)->count(),
         ]);
     }
 
     // Open the uploaded ID
-    public function document(IdentityVerification $verification)
+    public function document(IdentityVerification $verification): BinaryFileResponse|RedirectResponse
     {
+        if (! str_ends_with(strtolower($verification->document_path), '.pdf')) {
+            return redirect()->away(
+                $this->supabaseStorage->temporaryUrl($verification->document_path, now()->addMinutes(10))
+            );
+        }
+
         abort_unless(is_file($verification->filePath()), 404);
 
         return response()->file($verification->filePath());
     }
 
     // Open the selfie
-    public function selfie(IdentityVerification $verification)
+    public function selfie(IdentityVerification $verification): RedirectResponse
     {
-        abort_unless($verification->selfie_path && is_file($verification->selfiePath()), 404);
+        abort_unless($verification->selfie_path, 404);
 
-        return response()->file($verification->selfiePath());
+        return redirect()->away(
+            $this->supabaseStorage->temporaryUrl($verification->selfie_path, now()->addMinutes(10))
+        );
     }
 
     public function approve(Request $request, IdentityVerification $verification)
@@ -68,9 +81,9 @@ class IdentityReviewController extends Controller
     // Save the decision (only pending applications can be reviewed)
     private function review(Request $request, IdentityVerification $verification, string $status, ?string $reason = null)
     {
-        $route = $request->user()->role . '.identity-verification.index';
+        $route = $request->user()->role.'.identity-verification.index';
 
-        if (!$verification->isPending()) {
+        if (! $verification->isPending()) {
             return redirect()->route($route)->with('error', 'This application was already reviewed.');
         }
 
@@ -88,6 +101,6 @@ class IdentityReviewController extends Controller
             report($exception);
         }
 
-        return redirect()->route($route)->with('success', 'The application was ' . $status . '.');
+        return redirect()->route($route)->with('success', 'The application was '.$status.'.');
     }
 }

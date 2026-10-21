@@ -4,11 +4,15 @@ namespace App\Http\Controllers\Citizen;
 
 use App\Http\Controllers\Controller;
 use App\Models\CitizenProfile;
+use App\Services\SupabaseStorage;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class ProfileController extends Controller
 {
+    public function __construct(private SupabaseStorage $supabaseStorage) {}
+
     public function show(Request $request)
     {
         $user = $request->user();
@@ -69,25 +73,24 @@ class ProfileController extends Controller
         $oldPath = $profile->photo_path;
 
         $profile->update([
-            'photo_path' => $request->file('photo')->store('profile-photos', 'local'),
+            'photo_path' => $request->file('photo')->store('profile-photos', 'supabase'),
         ]);
 
         // Remove the old photo only after the new one is saved
         if ($oldPath) {
-            Storage::disk('local')->delete($oldPath);
+            Storage::disk('supabase')->delete($oldPath);
         }
 
         return redirect()->route('citizen.profile')->with('success', 'Your photo was updated.');
     }
 
-    public function showPhoto(Request $request)
+    public function showPhoto(Request $request): RedirectResponse
     {
         $path = $request->user()->citizenProfile?->photo_path;
-        $disk = Storage::disk('local');
 
-        abort_unless($path && $disk->exists($path), 404);
+        abort_unless($path, 404);
 
-        return response()->file($disk->path($path));
+        return redirect()->away($this->supabaseStorage->temporaryUrl($path, now()->addMinutes(10)));
     }
 
     private function verifiedProfile(Request $request): CitizenProfile

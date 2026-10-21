@@ -5,8 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 #[Fillable([
     'user_id',
@@ -36,12 +36,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $status
  * @property string|null $rejection_reason
  */
-
 class IdentityVerification extends Model
 {
     // The possible statuses (Unverified = no row yet)
     public const PENDING = 'pending';
+
     public const VERIFIED = 'verified';
+
     public const REJECTED = 'rejected';
 
     protected function casts(): array
@@ -69,13 +70,6 @@ class IdentityVerification extends Model
     public function filePath(): string
     {
         return Storage::disk('local')->path($this->document_path);
-    }
-
-    public function selfiePath(): ?string
-    {
-        return $this->selfie_path
-            ? Storage::disk('local')->path($this->selfie_path)
-            : null;
     }
 
     public function isPending(): bool

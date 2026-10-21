@@ -3,16 +3,18 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Services\SupabaseStorage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ProfileController extends Controller
 {
+    public function __construct(private SupabaseStorage $supabaseStorage) {}
+
     public function show(Request $request): View
     {
         return view('admin.profile', [
@@ -67,11 +69,11 @@ class ProfileController extends Controller
         $oldPath = $employeeProfile->photo_path;
 
         $employeeProfile->update([
-            'photo_path' => $request->file('photo')->store('admin-profile-photos', 'local'),
+            'photo_path' => $request->file('photo')->store('admin-profile-photos', 'supabase'),
         ]);
 
         if ($oldPath) {
-            Storage::disk('local')->delete($oldPath);
+            Storage::disk('supabase')->delete($oldPath);
         }
 
         return redirect()
@@ -79,13 +81,12 @@ class ProfileController extends Controller
             ->with('success', 'Your profile photo was updated.');
     }
 
-    public function showPhoto(Request $request): BinaryFileResponse
+    public function showPhoto(Request $request): RedirectResponse
     {
         $path = $request->user()->employeeProfile?->photo_path;
-        $disk = Storage::disk('local');
 
-        abort_unless($path && $disk->exists($path), 404);
+        abort_unless($path, 404);
 
-        return response()->file($disk->path($path));
+        return redirect()->away($this->supabaseStorage->temporaryUrl($path, now()->addMinutes(10)));
     }
 }

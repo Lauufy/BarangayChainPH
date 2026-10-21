@@ -6,14 +6,18 @@ use App\Http\Controllers\Controller;
 use App\Models\IdentityVerification;
 use App\Models\User;
 use App\Notifications\CitizenSubmissionReceived;
+use App\Services\SupabaseStorage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\Rule;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class IdentityVerificationController extends Controller
 {
+    public function __construct(private SupabaseStorage $supabaseStorage) {}
+
     private const MAX_REJECTED_TRIES = 3;
 
     private const DOCUMENT_TYPES = [
@@ -141,10 +145,13 @@ class IdentityVerificationController extends Controller
         $user->identityVerifications()->create([
             'status' => IdentityVerification::PENDING,
             'document_type' => $data['document_type'],
-            'document_path' => $document->store("identity-documents/{$user->id}", 'local'),
+            'document_path' => $document->store(
+                "identity-documents/{$user->id}",
+                $document->getMimeType() === 'application/pdf' ? 'local' : 'supabase'
+            ),
             'document_original_name' => $document->getClientOriginalName(),
             'id_number_hash' => $hash,
-            'selfie_path' => $request->file('selfie')->store("identity-selfies/{$user->id}", 'local'),
+            'selfie_path' => $request->file('selfie')->store("identity-selfies/{$user->id}", 'supabase'),
             'selfie_source' => $data['selfie_source'],
             'consented_at' => now(),
             'submitted_at' => now(),
@@ -171,13 +178,17 @@ class IdentityVerificationController extends Controller
     }
 
     // Allow citizens to open only their own uploaded ID.
-    public function document(Request $request, IdentityVerification $verification)
+    public function document(Request $request, IdentityVerification $verification): BinaryFileResponse|RedirectResponse
     {
-        abort_unless(
-            $verification->user_id === $request->user()->id
-                && is_file($verification->filePath()),
-            404
-        );
+        abort_unless($verification->user_id === $request->user()->id, 404);
+
+        if (! str_ends_with(strtolower($verification->document_path), '.pdf')) {
+            return redirect()->away(
+                $this->supabaseStorage->temporaryUrl($verification->document_path, now()->addMinutes(10))
+            );
+        }
+
+        abort_unless(is_file($verification->filePath()), 404);
 
         return response()->file($verification->filePath());
     }
