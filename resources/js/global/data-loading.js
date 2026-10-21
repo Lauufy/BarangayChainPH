@@ -7,7 +7,22 @@ const SPINNER = `
             d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
     </svg>`;
 
-const LOCKABLE_FIELDS = "input:not([type='hidden']), textarea";
+const LOCKABLE_FIELDS = [
+    "input:not([type]):not(:disabled)",
+    "input[type='text']:not(:disabled)",
+    "input[type='search']:not(:disabled)",
+    "input[type='url']:not(:disabled)",
+    "input[type='tel']:not(:disabled)",
+    "input[type='email']:not(:disabled)",
+    "input[type='password']:not(:disabled)",
+    "input[type='date']:not(:disabled)",
+    "input[type='month']:not(:disabled)",
+    "input[type='week']:not(:disabled)",
+    "input[type='time']:not(:disabled)",
+    "input[type='datetime-local']:not(:disabled)",
+    "input[type='number']:not(:disabled)",
+    "textarea:not(:disabled)",
+].join(", ");
 
 function startLoading(el) {
     if (el.dataset.loadingActive === "true") return;
@@ -38,16 +53,42 @@ function stopLoading(el) {
 }
 
 function setFormLocked(form, locked) {
-    if (!form.matches("[data-lock-on-submit]")) return;
+    if (locked) {
+        form.dataset.loadingFieldsLocked = "true";
+    } else {
+        delete form.dataset.loadingFieldsLocked;
+    }
 
     form.querySelectorAll(LOCKABLE_FIELDS).forEach((field) => {
-        field.readOnly = locked;
-
         if (locked) {
+            if (field.readOnly) return;
+
+            field.dataset.loadingWasReadOnly = "false";
+            const ariaReadonly = field.getAttribute("aria-readonly");
+            field.dataset.loadingHadAriaReadonly = String(ariaReadonly !== null);
+
+            if (ariaReadonly !== null) {
+                field.dataset.loadingAriaReadonly = ariaReadonly;
+            }
+
+            field.readOnly = true;
             field.setAttribute("aria-readonly", "true");
+            return;
+        }
+
+        if (field.dataset.loadingWasReadOnly !== "false") return;
+
+        field.readOnly = false;
+        delete field.dataset.loadingWasReadOnly;
+
+        if (field.dataset.loadingHadAriaReadonly === "true") {
+            field.setAttribute("aria-readonly", field.dataset.loadingAriaReadonly);
         } else {
             field.removeAttribute("aria-readonly");
         }
+
+        delete field.dataset.loadingHadAriaReadonly;
+        delete field.dataset.loadingAriaReadonly;
     });
 }
 
@@ -57,13 +98,13 @@ document.addEventListener("submit", (e) => {
 
     if (!form.matches("form")) return;
 
-    setFormLocked(form, true);
-
     const submitter = e.submitter;
 
     const buttons = submitter?.matches("[data-loading]")
         ? [submitter]
         : [...form.querySelectorAll('button[type="submit"][data-loading]')];
+
+    if (buttons.length > 0) setFormLocked(form, true);
 
     buttons.forEach(startLoading);
 });
@@ -82,7 +123,7 @@ document.addEventListener("click", (e) => {
 // Restore after browser back/forward navigation
 window.addEventListener("pageshow", () => {
     document.querySelectorAll("[data-loading]").forEach(stopLoading);
-    document.querySelectorAll("form[data-lock-on-submit]").forEach((form) => {
+    document.querySelectorAll("form[data-loading-fields-locked]").forEach((form) => {
         setFormLocked(form, false);
     });
 });

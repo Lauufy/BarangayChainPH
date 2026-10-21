@@ -64,6 +64,13 @@ RUN printf '%s\n' \
     'PORT="${PORT:-10000}"' \
     'sed -ri "s/^Listen .*/Listen ${PORT}/" /etc/apache2/ports.conf' \
     'sed -ri "s/<VirtualHost \*:[0-9]+>/<VirtualHost *:${PORT}>/" /etc/apache2/sites-available/000-default.conf' \
+    'if [ -n "${FILESYSTEM_LOCAL_ROOT:-}" ]; then' \
+    '    if [ ! -d "$FILESYSTEM_LOCAL_ROOT" ]; then' \
+    '        echo "FILESYSTEM_LOCAL_ROOT does not exist. Attach a Render persistent disk at this path." >&2' \
+    '        exit 1' \
+    '    fi' \
+    '    chown www-data:www-data "$FILESYSTEM_LOCAL_ROOT"' \
+    'fi' \
     'php artisan config:clear' \
     'php artisan migrate --force' \
     'exec apache2-foreground' \

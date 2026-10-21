@@ -36,7 +36,11 @@ $option = $light ? '[&>option]:bg-white' : '[&>option]:bg-[#0B2347]';
 $ph = $light ? 'text-slate-400' : 'text-blue-100/40';
     $ph = $raised ? "placeholder:$ph" : "placeholder:text-transparent focus:placeholder:$ph";
 
-    $base = "peer validation-input block w-full rounded-md border pb-1.5 pl-3.5 pt-5 text-base outline-none transition focus:ring-2 disabled:opacity-60 sm:text-sm $field $autofill";
+$readOnlyClasses = $type === 'select' || $type === 'file'
+    ? ''
+    : 'read-only:cursor-not-allowed read-only:opacity-60';
+
+$base = "peer validation-input block w-full rounded-md border pb-1.5 pl-3.5 pt-5 text-base outline-none transition focus:ring-2 disabled:opacity-60 $readOnlyClasses sm:text-sm $field $autofill";
 @endphp
 
 <div>
