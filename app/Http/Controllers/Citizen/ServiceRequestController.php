@@ -43,33 +43,70 @@ class ServiceRequestController extends Controller
 
     // Form pages
 
-    public function indigency(Request $request) { return $this->form($request, 'indigency'); }
-    public function clearance(Request $request) { return $this->form($request, 'clearance'); }
-    public function residency(Request $request) { return $this->form($request, 'residency'); }
+    public function indigency(Request $request)
+    {
+        return $this->form($request, 'indigency');
+    }
+    public function clearance(Request $request)
+    {
+        return $this->form($request, 'clearance');
+    }
+    public function residency(Request $request)
+    {
+        return $this->form($request, 'residency');
+    }
 
     // Preview
 
-    public function previewIndigency(Request $request) { return $this->previewRequest($request, 'indigency'); }
-    public function previewClearance(Request $request) { return $this->previewRequest($request, 'clearance'); }
-    public function previewResidency(Request $request) { return $this->previewRequest($request, 'residency'); }
+    public function previewIndigency(Request $request)
+    {
+        return $this->previewRequest($request, 'indigency');
+    }
+    public function previewClearance(Request $request)
+    {
+        return $this->previewRequest($request, 'clearance');
+    }
+    public function previewResidency(Request $request)
+    {
+        return $this->previewRequest($request, 'residency');
+    }
 
     // Modify
 
-    public function modifyIndigency(Request $request) { return $this->modifyRequest($request, 'indigency'); }
-    public function modifyClearance(Request $request) { return $this->modifyRequest($request, 'clearance'); }
-    public function modifyResidency(Request $request) { return $this->modifyRequest($request, 'residency'); }
+    public function modifyIndigency(Request $request)
+    {
+        return $this->modifyRequest($request, 'indigency');
+    }
+    public function modifyClearance(Request $request)
+    {
+        return $this->modifyRequest($request, 'clearance');
+    }
+    public function modifyResidency(Request $request)
+    {
+        return $this->modifyRequest($request, 'residency');
+    }
 
     // Proceed
 
-    public function proceedIndigency(Request $request) { return $this->proceedRequest($request, 'indigency'); }
-    public function proceedClearance(Request $request) { return $this->proceedRequest($request, 'clearance'); }
-    public function proceedResidency(Request $request) { return $this->proceedRequest($request, 'residency'); }
+    public function proceedIndigency(Request $request)
+    {
+        return $this->proceedRequest($request, 'indigency');
+    }
+    public function proceedClearance(Request $request)
+    {
+        return $this->proceedRequest($request, 'clearance');
+    }
+    public function proceedResidency(Request $request)
+    {
+        return $this->proceedRequest($request, 'residency');
+    }
 
     // Lists and details
 
     public function applications(Request $request): View
     {
         $applications = $this->ownedRequests($request)
+            ->with('ticket')
             ->where('status', '!=', ServiceRequest::APPROVED)
             ->paginate(10);
 
@@ -79,6 +116,7 @@ class ServiceRequestController extends Controller
     public function documents(Request $request): View
     {
         $documents = $this->ownedRequests($request)
+            ->with('ticket')
             ->where('status', ServiceRequest::APPROVED)
             ->paginate(10);
 
@@ -89,9 +127,13 @@ class ServiceRequestController extends Controller
     {
         $this->authorizeOwner($request, $serviceRequest);
 
+        $ticket = $serviceRequest->ticket;
+
         return view('citizen.application-review', [
             'application' => $serviceRequest,
             'documentTitle' => $this->documentTitle($serviceRequest),
+            'ticket' => $ticket,
+            'recentMessages' => $ticket?->messages()->latest()->take(3)->get()->reverse(),
         ]);
     }
 
@@ -134,13 +176,19 @@ class ServiceRequestController extends Controller
         $cancelled = DB::transaction(function () use ($serviceRequest, $data) {
             $locked = $this->lock($serviceRequest);
 
-            return $locked->isCancellable() && $locked->update([
+            $cancelled = $locked->isCancellable() && $locked->update([
                 'status' => ServiceRequest::CANCELLED,
                 'cancellation_reason' => $data['cancellation_reason'],
                 'cancelled_at' => now(),
                 'permit_number' => null,
                 'rejection_reason' => null,
             ]);
+
+            if ($cancelled) {
+                $locked->ticket?->postSystemMessage('This request was canceled.', close: true);
+            }
+
+            return $cancelled;
         });
 
         $redirect = redirect()->route('citizen.applications.show', $serviceRequest);
@@ -206,7 +254,7 @@ class ServiceRequestController extends Controller
                 return null;
             }
 
-            return ServiceRequest::create([
+            $serviceRequest = ServiceRequest::create([
                 'user_id' => $request->user()->id,
                 'reference_number' => 'BRGY-' . now()->format('YmdHis') . '-' . str_pad(random_int(1, 9999), 4, '0', STR_PAD_LEFT),
                 'service_type' => self::TYPES[$type]['service'],
@@ -216,6 +264,16 @@ class ServiceRequestController extends Controller
                 'purpose' => $validated['purpose'],
                 'status' => ServiceRequest::PENDING,
             ]);
+
+            // Open a ticket with an automatic first message
+            $ticket = $serviceRequest->ticket()->create(['user_id' => $request->user()->id]);
+
+            $ticket->messages()->create([
+                'body' => "Your request {$serviceRequest->reference_number} was submitted. The barangay will post updates here.",
+                'is_system' => true,
+            ]);
+
+            return $serviceRequest;
         });
 
         $request->session()->forget("{$type}_request");

@@ -7,20 +7,20 @@
 @section('content')
     @php
         $heads = ['Reference', 'Document', 'Approved', 'Action'];
-        $button = 'inline-flex rounded-md px-3 py-1.5 text-xs font-semibold';
+        $button = 'inline-flex rounded-lg px-3 py-1.5 text-xs font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2';
+        $outline = $button . ' border border-slate-300 text-[#17325c] hover:border-[#17325c] hover:bg-slate-50';
     @endphp
 
-    <div class="space-y-7">
+    <div class="space-y-6">
         <section>
-            <p class="text-xs font-bold uppercase tracking-[0.16em] text-emerald-700">Records</p>
-            <h1 class="mt-2 text-2xl font-bold tracking-tight text-[#09172D] sm:text-3xl">My documents</h1>
-            <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+            <h1 class="text-2xl font-bold tracking-tight text-[#09172D] sm:text-3xl">My documents</h1>
+            <p class="mt-1.5 max-w-2xl text-sm leading-6 text-slate-600">
                 View barangay documents issued to you and their verification details.
             </p>
         </section>
 
-        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div class="border-b border-slate-100 px-5 py-4 sm:px-6">
+        <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div class="border-b border-slate-200 px-5 py-4 sm:px-6">
                 <h2 class="font-semibold text-[#09172D]">Issued documents</h2>
                 <p class="mt-1 text-sm text-slate-500">
                     Approved service requests are available here as issued documents.
@@ -29,7 +29,7 @@
 
             @if ($documents->isEmpty())
                 <div class="px-5 py-14 text-center sm:px-6">
-                    <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
+                    <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#17325c]/10 text-[#17325c]">
                         <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
                             aria-hidden="true">
                             <path d="M7 3h7l5 5v13H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
@@ -41,14 +41,14 @@
                         Approved documents will appear here once your service request has been reviewed.
                     </p>
                     <a href="{{ route('citizen.services') }}"
-                        class="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#0B2347] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#123365]">
-                        Browse services <span aria-hidden="true">→</span>
+                        class="mt-5 inline-flex rounded-lg bg-[#17325c] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#10244a]">
+                        Browse services
                     </a>
                 </div>
             @else
                 <div class="overflow-x-auto">
                     <table class="min-w-2xl w-full text-left text-sm">
-                        <thead class="bg-slate-50 text-xs uppercase text-slate-500">
+                        <thead class="border-b border-slate-200 bg-slate-50 text-slate-600">
                             <tr>
                                 @foreach ($heads as $head)
                                     <th class="px-5 py-3 font-semibold">{{ $head }}</th>
@@ -57,7 +57,7 @@
                         </thead>
                         <tbody class="divide-y divide-slate-100">
                             @foreach ($documents as $document)
-                                <tr>
+                                <tr class="hover:bg-slate-50/60">
                                     <td class="whitespace-nowrap px-5 py-4 font-semibold text-slate-900">
                                         {{ $document->reference_number }}</td>
                                     <td class="px-5 py-4 text-slate-700">
@@ -73,18 +73,18 @@
                                     <td class="px-5 py-4">
                                         <div class="flex flex-wrap items-center gap-2">
                                             <a href="{{ route('citizen.applications.show', $document) }}"
-                                                class="{{ $button }} border border-[#17325c] text-[#17325c] hover:bg-slate-50">
-                                                View
-                                            </a>
+                                                class="{{ $outline }}">View</a>
+
+                                            @if ($document->ticket)
+                                                <a href="{{ route('citizen.tickets.show', $document) }}"
+                                                    class="{{ $outline }}">Messages</a>
+                                            @endif
 
                                             @if ($document->canPrint())
                                                 <a href="{{ route('citizen.applications.print', $document) }}"
-                                                    class="{{ $button }} bg-emerald-600 text-white hover:bg-emerald-700">
-                                                    Print
-                                                </a>
+                                                    class="{{ $button }} bg-[#17325c] text-white hover:bg-[#10244a]">Print</a>
                                             @else
-                                                <span class="text-xs font-semibold text-slate-400">Print limit
-                                                    reached</span>
+                                                <span class="text-xs font-medium text-slate-400">Print limit reached</span>
                                             @endif
                                         </div>
                                     </td>

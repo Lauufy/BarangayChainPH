@@ -15,6 +15,8 @@ use App\Http\Controllers\Citizen\ProfileController;
 use App\Http\Controllers\Citizen\ServiceRequestController;
 use App\Http\Controllers\PermitVerificationController;
 use App\Http\Controllers\Citizen\NotificationController;
+use App\Http\Controllers\Citizen\TicketController;
+use App\Http\Controllers\Admin\TicketInboxController;
 use App\Models\ServiceRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -135,6 +137,13 @@ Route::middleware(['auth', 'role:citizen'])
             Route::post('/certificate-of-indigency/proceed', 'proceedIndigency')->name('certificate-of-indigency.proceed');
         });
 
+
+        // Tickets (messages about a request)
+        Route::get('/applications/{serviceRequest}/ticket', [TicketController::class, 'show'])->name('tickets.show');
+        Route::post('/applications/{serviceRequest}/ticket', [TicketController::class, 'reply'])
+            ->middleware('throttle:20,1')
+            ->name('tickets.reply');
+
         // Profile
         Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
         Route::get('/profile/photo', [ProfileController::class, 'showPhoto'])->name('profile.photo.show');
@@ -205,6 +214,13 @@ Route::middleware(['auth', 'role:admin'])
             Route::post('/permits/{serviceRequest}/reject', 'reject')->name('permits.reject');
             Route::patch('/permits/{serviceRequest}/print-limit', 'updatePrintLimit')->name('permits.print-limit.update');
         });
+
+        // Citizen tickets (messages)
+        Route::get('/tickets', [TicketInboxController::class, 'index'])->name('tickets.index');
+        Route::get('/tickets/{ticket}', [TicketInboxController::class, 'show'])->name('tickets.show');
+        Route::post('/tickets/{ticket}', [TicketInboxController::class, 'reply'])
+            ->middleware('throttle:30,1')
+            ->name('tickets.reply');
 
         // Simple pages
         Route::view('/document-authentication', 'admin.document-authentication')->name('document-authentication.index');

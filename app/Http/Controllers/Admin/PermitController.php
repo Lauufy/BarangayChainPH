@@ -36,7 +36,7 @@ class PermitController extends Controller
 
     public function approve(ServiceRequest $serviceRequest): RedirectResponse
     {
-        $approved = $this->decide($serviceRequest, fn ($request) => [
+        $approved = $this->decide($serviceRequest, fn($request) => [
             'status' => ServiceRequest::APPROVED,
             'permit_number' => $request->permit_number ?? ServiceRequest::generatePermitNumber(),
             'rejection_reason' => null,
@@ -48,6 +48,8 @@ class PermitController extends Controller
 
         $this->notify($approved, new ServiceRequestApproved($approved));
 
+        $approved->ticket?->postSystemMessage('Your request was approved. You can now print your permit from the Documents page.', close: true);
+
         return $this->back($serviceRequest, 'success', 'The application was approved.');
     }
 
@@ -57,7 +59,7 @@ class PermitController extends Controller
             'rejection_reason' => ['required', 'string', 'min:5', 'max:500'],
         ]);
 
-        $rejected = $this->decide($serviceRequest, fn () => [
+        $rejected = $this->decide($serviceRequest, fn() => [
             'status' => ServiceRequest::REJECTED,
             'rejection_reason' => $data['rejection_reason'],
         ]);
@@ -67,6 +69,8 @@ class PermitController extends Controller
         }
 
         $this->notify($rejected, new ServiceRequestRejected($rejected));
+
+        $rejected->ticket?->postSystemMessage('Your request was rejected. Reason: ' . $data['rejection_reason'], close: true);
 
         return $this->back($serviceRequest, 'success', 'The application was rejected.');
     }

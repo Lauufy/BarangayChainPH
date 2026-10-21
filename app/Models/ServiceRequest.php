@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 /**
@@ -15,9 +16,20 @@ use Illuminate\Support\Str;
  */
 
 #[Fillable([
-    'user_id', 'reference_number', 'service_type', 'applicant_name', 'address',
-    'age', 'purpose', 'status', 'cancellation_reason', 'cancelled_at',
-    'rejection_reason', 'permit_number', 'print_count', 'print_limit',
+    'user_id',
+    'reference_number',
+    'service_type',
+    'applicant_name',
+    'address',
+    'age',
+    'purpose',
+    'status',
+    'cancellation_reason',
+    'cancelled_at',
+    'rejection_reason',
+    'permit_number',
+    'print_count',
+    'print_limit',
 ])]
 class ServiceRequest extends Model
 {
@@ -50,7 +62,7 @@ class ServiceRequest extends Model
 
     public static function generatePermitNumber(): string
     {
-        return 'PERMIT-'.now()->format('Ymd').'-'.Str::upper(Str::random(8));
+        return 'PERMIT-' . now()->format('Ymd') . '-' . Str::upper(Str::random(8));
     }
 
     public function isCancellable(): bool
@@ -73,5 +85,11 @@ class ServiceRequest extends Model
     public function effectivePrintLimit(): int
     {
         return $this->print_limit ?? self::MAX_PRINTS;
+    }
+
+
+    public function ticket(): HasOne
+    {
+        return $this->hasOne(Ticket::class);
     }
 }

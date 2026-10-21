@@ -123,12 +123,11 @@
                     <p class="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
                         Communication</p>
 
-                    <x-admin.nav-link href="/admin/notifications" match="admin/notifications*">
+                    <x-admin.nav-link href="/admin/tickets" match="admin/tickets*">
                         <x-slot:icon>
-                            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
-                            <path d="M10 21h4" />
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                         </x-slot:icon>
-                        Notifications &amp; Messaging
+                        Ticket Messages
                     </x-admin.nav-link>
                 </div>
 
@@ -193,8 +192,8 @@
                     {{-- Notifications --}}
                     <button type="button" aria-label="Notifications"
                         class="relative rounded-md p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900">
-                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
                             <path d="M10 21h4" />
                         </svg>
