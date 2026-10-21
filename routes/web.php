@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\IdentityReviewController;
 use App\Http\Controllers\Admin\PermitController;
+use App\Http\Controllers\Admin\TicketInboxController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
@@ -16,7 +17,6 @@ use App\Http\Controllers\Citizen\ServiceRequestController;
 use App\Http\Controllers\PermitVerificationController;
 use App\Http\Controllers\Citizen\NotificationController;
 use App\Http\Controllers\Citizen\TicketController;
-use App\Http\Controllers\Admin\TicketInboxController;
 use App\Models\ServiceRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -162,15 +162,6 @@ Route::middleware(['auth', 'role:citizen'])
         Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications');
         Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
         Route::post('/notifications/{id}/read', [NotificationController::class, 'read'])->name('notifications.read');
-
-        // Dismiss a notification (only the user's own can be found)
-        Route::post('/notifications/{id}/read', function (Request $request, string $id) {
-            $request->user()->unreadNotifications()->find($id)?->markAsRead();
-
-            return $request->expectsJson()
-                ? response()->json(['message' => 'Notification dismissed.'])
-                : back();
-        })->name('notifications.read');
 
         // Only identity-verified citizens can edit their profile
         Route::middleware('identity.verified')->group(function () {
