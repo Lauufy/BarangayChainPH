@@ -8,15 +8,19 @@
         $unreadCount = auth()->user()->unreadNotifications()->count();
 
         // Look of each status: icon circle color and icon shape
-        $colors = [
-            'verified' => 'bg-emerald-50 text-emerald-500',
-            'rejected' => 'bg-red-50 text-red-500',
-            'info' => 'bg-orange-50 text-orange-500',
-        ];
-        $icons = [
-            'verified' => 'M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z',
-            'rejected' => 'M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z',
-            'info' => 'M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0',
+        $styles = [
+            'verified' => [
+                'color' => 'bg-emerald-50 text-emerald-500',
+                'icon' => 'M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z',
+            ],
+            'rejected' => [
+                'color' => 'bg-red-50 text-red-500',
+                'icon' => 'M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z',
+            ],
+            'info' => [
+                'color' => 'bg-orange-50 text-orange-500',
+                'icon' => 'M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0',
+            ],
         ];
     @endphp
 
@@ -51,8 +55,7 @@
             <div class="px-4 py-5 sm:px-6">
                 @forelse ($notifications as $notification)
                     @php
-                        $type = $notification->data['status'] ?? 'info';
-                        $unread = $notification->read_at === null;
+                        $style = $styles[$notification->data['status'] ?? 'info'] ?? $styles['info'];
                     @endphp
 
                     <div class="relative pb-6 last:pb-0">
@@ -64,9 +67,9 @@
                         <form method="POST" action="{{ route('citizen.notifications.read', $notification->id) }}">
                             @csrf
                             <button type="submit" class="group relative flex w-full items-start gap-4 text-left">
-                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full {{ $colors[$type] ?? $colors['info'] }}">
+                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full {{ $style['color'] }}">
                                     <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24" aria-hidden="true">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="{{ $icons[$type] ?? $icons['info'] }}" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="{{ $style['icon'] }}" />
                                     </svg>
                                 </span>
 
@@ -74,7 +77,7 @@
                                     <span class="flex items-start justify-between gap-3">
                                         <span class="text-[13px] font-semibold text-slate-900 group-hover:underline">
                                             {{ $notification->data['title'] ?? 'Notification' }}
-                                            @if ($unread)
+                                            @if ($notification->read_at === null)
                                                 <span class="ml-1 inline-block h-2 w-2 rounded-full bg-[#17325c] align-middle" aria-label="Unread"></span>
                                             @endif
                                         </span>

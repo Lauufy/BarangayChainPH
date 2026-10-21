@@ -18,17 +18,27 @@ class NotificationController extends Controller
             return response()->json(['ok' => true]);
         }
 
-        return redirect($notification->data['url'] ?? route('admin.notifications.index'));
+        return redirect()->to($this->notificationPath(
+            $notification->data['url'] ?? null,
+            route('admin.notifications.index', [], false),
+        ));
     }
 
     public function readAll(Request $request): RedirectResponse|JsonResponse
     {
         $request->user()->unreadNotifications->markAsRead();
 
-        if ($request->expectsJson()) {
-            return response()->json(['ok' => true]);
-        }
+        return $request->expectsJson()
+            ? response()->json(['ok' => true])
+            : back();
+    }
 
-        return back();
+    private function notificationPath(mixed $url, string $fallback): string
+    {
+        $path = is_string($url) ? parse_url($url, PHP_URL_PATH) : null;
+
+        return is_string($path) && str_starts_with($path, '/') && ! str_starts_with($path, '//')
+            ? $path
+            : $fallback;
     }
 }

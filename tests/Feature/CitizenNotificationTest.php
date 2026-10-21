@@ -19,13 +19,13 @@ class CitizenNotificationTest extends TestCase
         $notification = $citizen->notifications()->create([
             'id' => 'a4d1ba9c-1a0b-4d44-a87b-100001234567',
             'type' => 'App\\Notifications\\ServiceRequestApproved',
-            'data' => ['url' => route('citizen.applications')],
+            'data' => ['url' => 'https://barangaychain.test/citizen/applications'],
         ]);
 
         $response = $this->actingAs($citizen)
             ->post(route('citizen.notifications.read', $notification->id));
 
-        $response->assertRedirect(route('citizen.applications'));
+        $response->assertRedirect('/citizen/applications');
         $this->assertNotNull($notification->fresh()->read_at);
     }
 }

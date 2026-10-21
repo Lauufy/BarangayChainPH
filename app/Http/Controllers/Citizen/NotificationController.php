@@ -29,7 +29,10 @@ class NotificationController extends Controller
             return response()->json(['ok' => true]);
         }
 
-        return redirect($notification->data['url'] ?? route('citizen.notifications'));
+        return redirect()->to($this->notificationPath(
+            $notification->data['url'] ?? null,
+            route('citizen.notifications', [], false),
+        ));
     }
 
     // Mark all as read
@@ -43,5 +46,14 @@ class NotificationController extends Controller
         }
 
         return back();
+    }
+
+    private function notificationPath(mixed $url, string $fallback): string
+    {
+        $path = is_string($url) ? parse_url($url, PHP_URL_PATH) : null;
+
+        return is_string($path) && str_starts_with($path, '/') && ! str_starts_with($path, '//')
+            ? $path
+            : $fallback;
     }
 }
