@@ -34,13 +34,12 @@ $option = $light ? '[&>option]:bg-white' : '[&>option]:bg-[#0B2347]';
 
 // Placeholder stays hidden until focus (unless "raised")
 $ph = $light ? 'text-slate-400' : 'text-blue-100/40';
-    $ph = $raised ? "placeholder:$ph" : "placeholder:text-transparent focus:placeholder:$ph";
+$ph = $raised ? "placeholder:$ph" : "placeholder:text-transparent focus:placeholder:$ph";
 
-$readOnlyClasses = $type === 'select' || $type === 'file'
-    ? ''
-    : 'read-only:cursor-not-allowed read-only:opacity-60';
+$readOnlyClasses =
+    $type === 'select' || $type === 'file' ? '' : 'read-only:cursor-not-allowed read-only:opacity-60';
 
-$base = "peer validation-input block w-full rounded-md border pb-1.5 pl-3.5 pt-5 text-base outline-none transition focus:ring-2 disabled:opacity-60 $readOnlyClasses sm:text-sm $field $autofill";
+    $base = "peer validation-input block w-full rounded-md border pb-1.5 pl-3.5 pt-5 text-base outline-none transition focus:ring-2 disabled:opacity-60 $readOnlyClasses sm:text-sm $field $autofill";
 @endphp
 
 <div>
@@ -74,7 +73,7 @@ $base = "peer validation-input block w-full rounded-md border pb-1.5 pl-3.5 pt-5
 
         {{-- Floating label --}}
         <label for="{{ $fieldId }}"
-            class="{{ $muted }} {{ $accent }} {{ $raised ? 'top-2.5 text-[10px]' : ($type === 'textarea' ? 'top-4' : 'top-1/2 -translate-y-1/2') }} peer-not-placeholder-shown:top-2.5 peer-not-placeholder-shown:translate-y-0 peer-not-placeholder-shown:text-[10px] pointer-events-none absolute left-3.5 text-xs font-semibold uppercase tracking-wider transition-all duration-200 peer-focus:top-2.5 peer-focus:translate-y-0 peer-focus:text-[10px]">
+            class="{{ $muted }} {{ $accent }} {{ $raised ? 'top-2.5 text-[10px]' : ($type === 'textarea' ? 'top-4' : 'top-1/2 -translate-y-1/2') }} peer-not-placeholder-shown:top-2.5 peer-not-placeholder-shown:translate-y-0 peer-not-placeholder-shown:text-[10px] pointer-events-none absolute left-3.5 text-xs font-semibold uppercase tracking-wider transition-all duration-200 peer-autofill:top-2.5 peer-autofill:translate-y-0 peer-autofill:text-[10px] peer-focus:top-2.5 peer-focus:translate-y-0 peer-focus:text-[10px]">
             {{ $label }}
         </label>
 
