@@ -1,16 +1,31 @@
+
+# Environment secrets
 .env
 .env.*
 !.env.example
 
+# Git
 .git
 .github
+
+# Dependencies installed inside the Docker image
 node_modules
 vendor
 
+# Laravel logs and generated runtime files
 storage/logs/*
 storage/framework/cache/*
 storage/framework/sessions/*
 storage/framework/views/*
 
+# Test and development artifacts
 .phpunit.cache
+.phpunit.result.cache
 tests
+coverage
+
+# Local editor and operating-system files
+.vscode
+.idea
+.DS_Store
+Thumbs.db
