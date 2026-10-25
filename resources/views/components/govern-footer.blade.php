@@ -1,21 +1,37 @@
-<footer class="border-t-4 border-[#FFC933] bg-[#0F1B3D] text-white">
-    <div class="mx-auto max-w-6xl px-5 py-14">
+@php
+    // Shared footer styles (kept identical in citizen-footer.blade.php)
+    $heading = 'border-l-2 border-green-600 pl-3 text-sm font-bold text-white';
+    $link = 'transition hover:text-white hover:underline';
+    $contactLink = 'text-blue-50 transition hover:underline';
+    $term = 'text-xs text-blue-200/60';
+    $facebookLink = 'font-semibold text-white underline underline-offset-4 decoration-green-600 hover:decoration-white';
+    $bottomRow =
+        'mt-12 flex flex-col gap-2 border-t border-white/15 pt-6 text-xs text-blue-200/60 sm:flex-row sm:items-center sm:justify-between';
+
+    $links = [
+        [url('/') . '#services', 'Services'],
+        [url('/') . '#announcements', 'Announcements'],
+        [url('/') . '#about', 'About'],
+        [route('login'), 'Log in'],
+        [route('register'), 'Create account'],
+    ];
+@endphp
+
+<footer class="border-t-4 border-green-700 bg-blue-950 text-white">
+    <div class="mx-auto max-w-7xl px-5 py-14 sm:px-8">
 
         <div class="grid gap-10 md:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1fr]">
 
-            {{-- BRAND --}}
+            {{-- Brand --}}
             <div>
-                <div class="flex items-center gap-3">
-                    <img src="{{ asset('img/branding/barangayChainPH-logo.png') }}" alt="Barangay San Luis logo"
-                        class="h-12 w-12 rounded-full object-cover">
-                    <p class="text-lg font-extrabold leading-tight"
-                        style="font-family: 'Bricolage Grotesque', 'Inter', sans-serif; letter-spacing: -0.02em;">
-                        Barangay San Luis
-                        <span class="block text-xs font-medium tracking-normal text-blue-200/70">
-                            Antipolo City, Rizal
-                        </span>
-                    </p>
-                </div>
+                <span
+                    class="block whitespace-nowrap font-['Barlow_Condensed'] text-4xl font-bold uppercase tracking-[0.06em] text-[#006aff]">
+                    BarangayChain <span class="text-[#5fd47a]">PH</span>
+                </span>
+                </span>
+                <span class="mt-1 block text-xs font-medium text-blue-200/70">
+                    Barangay San Luis, Antipolo City, Rizal
+                </span>
 
                 <p class="mt-5 max-w-xs text-sm leading-6 text-blue-100/75">
                     The official online portal of Barangay San Luis, for public information and
@@ -23,45 +39,43 @@
                 </p>
             </div>
 
-            {{-- QUICK LINKS --}}
+            {{-- Quick links --}}
             <nav aria-label="Footer">
-                <h3 class="text-sm font-bold text-[#FFC933]">Explore</h3>
+                <h3 class="{{ $heading }}">Explore</h3>
                 <ul class="mt-4 space-y-2.5 text-sm text-blue-100/80">
-                    <li><a href="{{ url('/') }}#services" class="transition hover:text-white hover:underline">Services</a></li>
-                    <li><a href="{{ url('/') }}#announcements" class="transition hover:text-white hover:underline">Announcements</a></li>
-                    <li><a href="{{ url('/') }}#about" class="transition hover:text-white hover:underline">About</a></li>
-                    <li><a href="{{ route('login') }}" class="transition hover:text-white hover:underline">Log in</a></li>
-                    <li><a href="{{ route('register') }}" class="transition hover:text-white hover:underline">Create account</a></li>
+                    @foreach ($links as [$href, $text])
+                        <li><a href="{{ $href }}" class="{{ $link }}">{{ $text }}</a></li>
+                    @endforeach
                 </ul>
             </nav>
 
-            {{-- CONTACT --}}
+            {{-- Contact --}}
             <div>
-                <h3 class="text-sm font-bold text-[#FFC933]">Contact</h3>
+                <h3 class="{{ $heading }}">Contact</h3>
 
                 <dl class="mt-4 space-y-3 text-sm">
                     <div>
-                        <dt class="text-xs text-blue-200/60">Address</dt>
+                        <dt class="{{ $term }}">Address</dt>
                         <dd class="mt-0.5 text-blue-50">Barangay San Luis, Antipolo City, Rizal</dd>
                     </div>
                     <div>
-                        <dt class="text-xs text-blue-200/60">Phone</dt>
+                        <dt class="{{ $term }}">Phone</dt>
                         <dd class="mt-0.5">
-                            <a href="tel:+639233232322" class="text-blue-50 transition hover:text-[#FFC933]">+63 923 323 2322</a>
+                            <a href="tel:+639233232322" class="{{ $contactLink }}">+63 923 323 2322</a>
                         </dd>
                     </div>
                     <div>
-                        <dt class="text-xs text-blue-200/60">Email</dt>
+                        <dt class="{{ $term }}">Email</dt>
                         <dd class="mt-0.5 break-all">
-                            <a href="mailto:barangaychain@gmail.com" class="text-blue-50 transition hover:text-[#FFC933]">barangaychain@gmail.com</a>
+                            <a href="mailto:barangaychain@gmail.com"
+                                class="{{ $contactLink }}">barangaychain@gmail.com</a>
                         </dd>
                     </div>
                     <div>
-                        <dt class="text-xs text-blue-200/60">Facebook</dt>
+                        <dt class="{{ $term }}">Facebook</dt>
                         <dd class="mt-0.5">
                             <a href="https://www.facebook.com/barangay.sanluis.35" target="_blank"
-                                rel="noopener noreferrer"
-                                class="font-semibold text-[#FFC933] underline-offset-4 hover:underline">
+                                rel="noopener noreferrer" class="{{ $facebookLink }}">
                                 Visit our Facebook page
                             </a>
                         </dd>
@@ -69,9 +83,9 @@
                 </dl>
             </div>
 
-            {{-- OFFICE HOURS --}}
+            {{-- Office hours --}}
             <div>
-                <h3 class="text-sm font-bold text-[#FFC933]">Office hours</h3>
+                <h3 class="{{ $heading }}">Office hours</h3>
 
                 <dl class="mt-4 space-y-3 text-sm">
                     <div>
@@ -87,10 +101,17 @@
 
         </div>
 
-        {{-- COPYRIGHT --}}
-        <div class="mt-12 flex flex-col gap-2 border-t border-white/15 pt-6 text-xs text-blue-200/60 sm:flex-row sm:items-center sm:justify-between">
-            <p>© {{ date('Y') }} Barangay San Luis. All rights reserved.</p>
-            <p>Republic of the Philippines, Antipolo City, Rizal</p>
+        {{-- Legal links and copyright --}}
+        <div class="{{ $bottomRow }}">
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+                <a href="{{ route('privacy') }}" class="hover:text-white">Privacy Notice</a>
+                <a href="{{ route('terms') }}" class="border-l border-white/20 pl-4 hover:text-white">Terms of
+                    Service</a>
+                <button type="button" onclick="window.scrollTo({ top: 0, behavior: 'smooth' })"
+                    class="border-l border-white/20 pl-4 hover:text-white">Back to top ↑</button>
+            </div>
+
+            <p>© {{ now()->year }} Barangay San Luis. All rights reserved.</p>
         </div>
 
     </div>

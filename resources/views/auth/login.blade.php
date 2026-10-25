@@ -79,7 +79,7 @@
             </div>
 
             {{-- Submit --}}
-            <x-form.button type="submit" class="w-full" loading-text="Logging in...">
+            <x-form.button type="submit" color="blue" class="w-full" loading-text="Logging in...">
                 LOGIN
             </x-form.button>
         </form>

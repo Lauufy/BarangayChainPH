@@ -144,7 +144,7 @@
             </x-form.checkbox>
 
             {{-- Submit --}}
-            <x-form.button type="submit" class="w-full" loading-text="Signing up...">
+            <x-form.button type="submit" color="blue" class="w-full" loading-text="Signing up...">
                 CREATE ACCOUNT
             </x-form.button>
         </form>

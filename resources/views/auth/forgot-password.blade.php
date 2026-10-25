@@ -34,7 +34,7 @@
                         autocomplete="email" placeholder="Enter your registered email" />
 
                     {{-- Submit --}}
-                    <x-form.button type="submit" class="w-full" loading-text="Sending...">
+                    <x-form.button type="submit" color="blue" class="w-full" loading-text="Sending...">
                         Send Reset Link
                     </x-form.button>
 

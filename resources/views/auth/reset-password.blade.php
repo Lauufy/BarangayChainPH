@@ -46,7 +46,7 @@
                         required autocomplete="new-password" placeholder="Re-enter your new password" />
 
                     {{-- Submit --}}
-                    <x-form.button type="submit" class="w-full" loading-text="Updating password...">
+                    <x-form.button type="submit" color="blue" class="w-full" loading-text="Updating password...">
                         RESET PASSWORD
                     </x-form.button>
                 </form>

@@ -59,7 +59,7 @@
                 {{-- Cancel --}}
                 <form method="POST" action="{{ route('verification.cancel') }}" class="mt-3">
                     @csrf
-                    <x-form.button type="submit" variant="danger" loading-text="Please wait..."
+                    <x-form.button type="submit" color="red" loading-text="Please wait..."
                         class="w-full justify-center py-3">
                         {{ session('otp_flow') === 'login' ? 'Back to Login' : 'Cancel Verification' }}
                     </x-form.button>
