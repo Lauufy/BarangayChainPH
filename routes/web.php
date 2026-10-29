@@ -241,24 +241,22 @@ Route::middleware(['auth', 'role:admin'])
 
 /*
 |--------------------------------------------------------------------------
-| Identity verification review (admin and staff)
+| Identity verification review (admin only)
 |--------------------------------------------------------------------------
 */
 
-foreach (['admin', 'staff'] as $role) {
-    Route::middleware(['auth', 'role:' . $role])
-        ->prefix($role . '/identity-verification')
-        ->name($role . '.identity-verification.')
-        ->controller(IdentityReviewController::class)
-        ->group(function () {
-            Route::get('/', 'index')->name('index');
-            Route::get('/{verification}', 'show')->name('show');
-            Route::get('/{verification}/document', 'document')->name('document');
-            Route::get('/{verification}/selfie', 'selfie')->name('selfie');
-            Route::post('/{verification}/approve', 'approve')->name('approve');
-            Route::post('/{verification}/reject', 'reject')->name('reject');
-        });
-}
+Route::middleware(['auth', 'role:admin'])
+    ->prefix('admin/identity-verification')
+    ->name('admin.identity-verification.')
+    ->controller(IdentityReviewController::class)
+    ->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/{verification}', 'show')->name('show');
+        Route::get('/{verification}/document', 'document')->name('document');
+        Route::get('/{verification}/selfie', 'selfie')->name('selfie');
+        Route::post('/{verification}/approve', 'approve')->name('approve');
+        Route::post('/{verification}/reject', 'reject')->name('reject');
+    });
 
 /*
 |--------------------------------------------------------------------------

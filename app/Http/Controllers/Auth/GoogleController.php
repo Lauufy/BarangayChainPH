@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
@@ -17,7 +18,7 @@ class GoogleController extends Controller
     }
 
     // Google sends the user back here
-    public function callback()
+    public function callback(): RedirectResponse
     {
         $google = Socialite::driver('google')->user();
 
@@ -30,6 +31,12 @@ class GoogleController extends Controller
                 'email_verified_at' => now(),
             ]
         );
+
+        if (! $user->is_active) {
+            return redirect()->route('login')->withErrors([
+                'identifier' => 'Your account is inactive. Please contact the administrator.',
+            ]);
+        }
 
         // Save the Google ID
         $user->update(['google_id' => $google->getId()]);
