@@ -35,9 +35,6 @@ class UserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        if ($request->role === 'admin' && blank($request->name)) {
-            $request->merge(['name' => 'Carlo Admin']);
-        }
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -57,29 +54,60 @@ class UserController extends Controller
             ],
         ]);
 
-        DB::transaction(function () use ($validated) {
-            $user = User::create([
-                'name' => $validated['name'],
-                'email' => $validated['email'],
-                'password' => $validated['password'],
-                'role' => $validated['role'],
-                'is_active' => true,
-            ]);
 
-            $user->employeeProfile()->create([
-                'employee_id' => 'BSLCNPH-'.str_pad((string) $user->id, 6, '0', STR_PAD_LEFT),
-                'department' => $validated['department'],
-                'position' => $validated['position'],
-                'phone' => $validated['phone'] ?? null,
-                'office' => $validated['office'] ?? null,
-                'date_hired' => $validated['date_hired'] ?? null,
-            ]);
-        });
+        $user = User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => $validated['password'],
+            'role' => $validated['role'],
+            'is_active' => true,
+        ]);
+
+        // New staff start with the default access. An admin can change it later.
+        if ($validated['role'] === 'staff') {
+            $user->forceFill(['permissions' => config('permissions.staff_defaults')])->save();
+        }
+
+        $user->employeeProfile()->create([
+            'employee_id' => 'BSLCNPH-' . str_pad((string) $user->id, 6, '0', STR_PAD_LEFT),
+            'department' => $validated['department'],
+            'position' => $validated['position'],
+            'phone' => $validated['phone'] ?? null,
+            'office' => $validated['office'] ?? null,
+            'date_hired' => $validated['date_hired'] ?? null,
+        ]);
 
         return redirect()
             ->route('admin.users.index')
             ->with('success', 'The account was created successfully.');
     }
+
+    public function permissions(User $user): View
+    {
+        abort_unless($user->isStaff(), 404);
+
+        return view('admin.user-permissions', [
+            'user' => $user,
+            'permissionList' => config('permissions.list'),
+        ]);
+    }
+
+    public function updatePermissions(Request $request, User $user): RedirectResponse
+    {
+        abort_unless($user->isStaff(), 404);
+
+        $data = $request->validate([
+            'permissions' => ['nullable', 'array'],
+            'permissions.*' => ['string', Rule::in(array_keys(config('permissions.list')))],
+        ]);
+
+        $user->forceFill(['permissions' => array_values($data['permissions'] ?? [])])->save();
+
+        return redirect()
+            ->route('admin.users.index')
+            ->with('success', 'The staff permissions were updated.');
+    }
+
 
     public function toggleStatus(Request $request, User $user): RedirectResponse
     {
@@ -95,8 +123,8 @@ class UserController extends Controller
             $user->is_active &&
             $user->role === 'admin' &&
             User::where('role', 'admin')
-                ->where('is_active', true)
-                ->count() <= 1
+            ->where('is_active', true)
+            ->count() <= 1
         ) {
             return redirect()
                 ->route('admin.users.index')

@@ -3,8 +3,7 @@
 
     // Guests fall through to the login page, so $dashboard is always a safe link target
     $dashboard = match (auth()->user()?->role) {
-        'admin' => route('admin.dashboard'),
-        'staff' => route('staff.dashboard'),
+        'admin', 'staff' => route('admin.dashboard'),
         'citizen' => route('citizen.dashboard'),
         default => route('login'),
     };
@@ -168,8 +167,8 @@
                 @auth
                     <a href="{{ $dashboard }}" class="{{ $button }}">Open dashboard →</a>
                 @else
-                    <a href="{{ route('login') }}"
-                        class="text-sm font-semibold text-slate-700 hover:text-blue-900">Sign in</a>
+                    <a href="{{ route('login') }}" class="text-sm font-semibold text-slate-700 hover:text-blue-900">Sign
+                        in</a>
                     <a href="{{ route('register') }}" class="{{ $button }}">Create account →</a>
                 @endauth
             </div>
@@ -378,7 +377,8 @@
                                 </dt>
                                 <dd class="wrap-break-word mt-1 text-sm font-semibold text-blue-950">
                                     @if ($link)
-                                        <a href="{{ $link }}" class="break-all hover:underline">{{ $value }}</a>
+                                        <a href="{{ $link }}"
+                                            class="break-all hover:underline">{{ $value }}</a>
                                     @else
                                         {{ $value }}
                                     @endif
@@ -404,7 +404,8 @@
                         src="https://www.google.com/maps?q=Barangay+San+Luis+Antipolo+City+Rizal&output=embed">
                     </iframe>
 
-                    <div class="flex shrink-0 items-center gap-3 border-t border-slate-200 bg-blue-950 px-5 py-4 text-white">
+                    <div
+                        class="flex shrink-0 items-center gap-3 border-t border-slate-200 bg-blue-950 px-5 py-4 text-white">
                         <svg class="h-5 w-5 shrink-0 text-green-300" fill="none" stroke="currentColor"
                             stroke-width="1.5" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round"

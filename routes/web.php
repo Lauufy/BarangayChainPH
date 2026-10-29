@@ -35,7 +35,7 @@ Route::view('/terms', 'legal.terms')->name('terms');
 Route::view('/privacy', 'legal.privacy')->name('privacy');
 
 Route::get('/tickets/{ticket}/participants/{participant}/photo', [TicketParticipantPhotoController::class, 'show'])
-    ->middleware(['auth', 'role:citizen,admin'])
+    ->middleware(['auth', 'role:citizen,admin,staff'])
     ->name('tickets.participants.photo');
 
 Route::get('/verify/permit/{serviceRequest}', [PermitVerificationController::class, 'show'])
@@ -176,67 +176,75 @@ Route::middleware(['auth', 'role:citizen'])
         });
     });
 
-/*
-|--------------------------------------------------------------------------
-| Staff
-|--------------------------------------------------------------------------
-*/
-
-Route::view('/staff/dashboard', 'staff.dashboard')
-    ->middleware(['auth', 'role:staff'])
-    ->name('staff.dashboard');
 
 /*
 |--------------------------------------------------------------------------
 | Admin
 |--------------------------------------------------------------------------
 */
-
-Route::middleware(['auth', 'role:admin'])
+Route::middleware(['auth', 'role:admin,staff'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
+
+        // Admin and staff (no permission needed)
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-        // Profile
         Route::get('/profile', [AdminProfileController::class, 'show'])->name('profile');
         Route::put('/profile', [AdminProfileController::class, 'update'])->name('profile.update');
         Route::get('/profile/photo', [AdminProfileController::class, 'showPhoto'])->name('profile.photo.show');
         Route::post('/profile/photo', [AdminProfileController::class, 'photo'])->name('profile.photo');
 
-        // Users and roles
-        Route::get('/users', [UserController::class, 'index'])->name('users.index');
-        Route::post('/users', [UserController::class, 'store'])->name('users.store');
-        Route::patch('/users/{user}/status', [UserController::class, 'toggleStatus'])->name('users.toggle-status');
-
-        // Permits and clearances
-        Route::controller(PermitController::class)->group(function () {
-            Route::get('/permits', 'index')->name('permits.index');
-            Route::get('/permits/{serviceRequest}', 'show')->name('permits.show');
-            Route::post('/permits/{serviceRequest}/approve', 'approve')->name('permits.approve');
-            Route::post('/permits/{serviceRequest}/reject', 'reject')->name('permits.reject');
-            Route::patch('/permits/{serviceRequest}/print-limit', 'updatePrintLimit')->name('permits.print-limit.update');
-        });
-
-        // Citizen tickets (messages)
-        Route::get('/tickets', [TicketInboxController::class, 'index'])->name('tickets.index');
-        Route::get('/tickets/{ticket}', [TicketInboxController::class, 'show'])->name('tickets.show');
-        Route::post('/tickets/{ticket}', [TicketInboxController::class, 'reply'])
-            ->middleware('throttle:30,1')
-            ->name('tickets.reply');
-
-        // Notifications
         Route::post('/notifications/read-all', [AdminNotificationController::class, 'readAll'])
             ->name('notifications.read-all');
         Route::post('/notifications/{id}/read', [AdminNotificationController::class, 'read'])
             ->name('notifications.read');
-
-        // Simple pages
-        Route::view('/document-authentication', 'admin.document-authentication')->name('document-authentication.index');
-        Route::view('/blockchain-ledger', 'admin.blockchain-ledger')->name('blockchain-ledger.index');
         Route::view('/notifications', 'admin.notifications')->name('notifications.index');
-        Route::view('/reports', 'admin.reports')->name('reports.index');
-        Route::view('/audit-logs', 'admin.audit-logs')->name('audit-logs.index');
+
+        // Admin only (staff can never open these)
+        Route::middleware('role:admin')->group(function () {
+            Route::get('/users', [UserController::class, 'index'])->name('users.index');
+            Route::post('/users', [UserController::class, 'store'])->name('users.store');
+            Route::patch('/users/{user}/status', [UserController::class, 'toggleStatus'])->name('users.toggle-status');
+            Route::get('/users/{user}/permissions', [UserController::class, 'permissions'])->name('users.permissions');
+            Route::put('/users/{user}/permissions', [UserController::class, 'updatePermissions'])->name('users.permissions.update');
+        });
+
+        // Permits and clearances
+        Route::middleware('permission:permits.review')
+            ->controller(PermitController::class)
+            ->group(function () {
+                Route::get('/permits', 'index')->name('permits.index');
+                Route::get('/permits/{serviceRequest}', 'show')->name('permits.show');
+                Route::post('/permits/{serviceRequest}/approve', 'approve')->name('permits.approve');
+                Route::post('/permits/{serviceRequest}/reject', 'reject')->name('permits.reject');
+                Route::patch('/permits/{serviceRequest}/print-limit', 'updatePrintLimit')
+                    ->middleware('permission:permits.print-limit')
+                    ->name('permits.print-limit.update');
+            });
+
+        // Citizen tickets (messages)
+        Route::middleware('permission:tickets.reply')->group(function () {
+            Route::get('/tickets', [TicketInboxController::class, 'index'])->name('tickets.index');
+            Route::get('/tickets/{ticket}', [TicketInboxController::class, 'show'])->name('tickets.show');
+            Route::post('/tickets/{ticket}', [TicketInboxController::class, 'reply'])
+                ->middleware('throttle:30,1')
+                ->name('tickets.reply');
+        });
+
+        // Simple pages, one permission each
+        Route::view('/document-authentication', 'admin.document-authentication')
+            ->middleware('permission:documents.authenticate')
+            ->name('document-authentication.index');
+        Route::view('/blockchain-ledger', 'admin.blockchain-ledger')
+            ->middleware('permission:blockchain.view')
+            ->name('blockchain-ledger.index');
+        Route::view('/reports', 'admin.reports')
+            ->middleware('permission:reports.view')
+            ->name('reports.index');
+        Route::view('/audit-logs', 'admin.audit-logs')
+            ->middleware('permission:audit.view')
+            ->name('audit-logs.index');
     });
 
 /*
@@ -245,7 +253,7 @@ Route::middleware(['auth', 'role:admin'])
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'role:admin'])
+Route::middleware(['auth', 'role:admin,staff', 'permission:identity.review'])
     ->prefix('admin/identity-verification')
     ->name('admin.identity-verification.')
     ->controller(IdentityReviewController::class)

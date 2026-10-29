@@ -22,19 +22,28 @@ class GoogleController extends Controller
     {
         $google = Socialite::driver('google')->user();
 
-        // Find the user by email, or create a new one
+        // Find the user by email, or create a new citizen
         $user = User::firstOrCreate(
             ['email' => $google->getEmail()],
             [
                 'name' => $google->getName(),
                 'password' => Str::random(24),
                 'email_verified_at' => now(),
+                'role' => 'citizen',
+                'is_active' => true,
             ]
         );
 
         if (! $user->is_active) {
             return redirect()->route('login')->withErrors([
                 'identifier' => 'Your account is inactive. Please contact the administrator.',
+            ]);
+        }
+
+        // Staff and administrators must use the password login.
+        if (! $user->isCitizen()) {
+            return redirect()->route('login')->withErrors([
+                'identifier' => 'Staff and administrator accounts must sign in with email or employee ID and password.',
             ]);
         }
 

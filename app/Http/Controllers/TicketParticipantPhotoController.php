@@ -16,6 +16,9 @@ class TicketParticipantPhotoController extends Controller
     {
         $viewer = $request->user();
 
+        // Staff need the ticket permission (admins always pass)
+        abort_unless(! $viewer->isStaff() || $viewer->hasPermission('tickets.reply'), 403);
+
         if ($viewer->isCitizen()) {
             abort_unless($ticket->user_id === $viewer->id, 404);
         }

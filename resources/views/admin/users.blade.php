@@ -3,6 +3,7 @@
 @section('title', 'User & Role Management')
 
 @section('content')
+    <x-feedbacks.toast />
     <div class="space-y-6">
         <x-admin.page-header label="Administration" title="User & Role Management"
             text="Manage citizen accounts, staff members, and administrator access.">
@@ -17,7 +18,8 @@
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             <x-admin.stat-card label="Total Accounts" :value="$accountCounts['total']" note="All registered system accounts" />
             <x-admin.stat-card label="Staff Accounts" :value="$accountCounts['staff']" note="Authorized barangay personnel" />
-            <x-admin.stat-card label="Administrator Accounts" :value="$accountCounts['admin']" note="Accounts with administrative access" />
+            <x-admin.stat-card label="Administrator Accounts" :value="$accountCounts['admin']"
+                note="Accounts with administrative access" />
         </div>
 
         <div class="admin-card">
@@ -43,8 +45,7 @@
             </div>
 
             {{-- Table --}}
-            <x-admin.table :heads="['Account', 'Role / Employee ID', 'Status', 'Date Created', 'Actions']"
-                :empty="$users->isEmpty()" message="No accounts found.">
+            <x-admin.table :heads="['Account', 'Role / Employee ID', 'Status', 'Date Created', 'Actions']" :empty="$users->isEmpty()" message="No accounts found.">
                 @foreach ($users as $user)
                     <tr>
                         <td class="px-5 py-4">
@@ -54,8 +55,10 @@
                         <td class="px-5 py-4 capitalize text-slate-700">
                             {{ $user->role }}
                             @if ($user->employeeProfile)
-                                <p class="mt-1 text-xs font-semibold text-emerald-700">{{ $user->employeeProfile->employee_id }}</p>
-                                <p class="mt-1 text-xs text-slate-500">{{ $user->employeeProfile->position }} · {{ $user->employeeProfile->department }}</p>
+                                <p class="mt-1 text-xs font-semibold text-emerald-700">
+                                    {{ $user->employeeProfile->employee_id }}</p>
+                                <p class="mt-1 text-xs text-slate-500">{{ $user->employeeProfile->position }} ·
+                                    {{ $user->employeeProfile->department }}</p>
                             @endif
                         </td>
                         <td class="px-5 py-4">
@@ -66,13 +69,22 @@
                             @if (auth()->user()->is($user))
                                 <span class="text-slate-400">Current account</span>
                             @else
-                                <form action="{{ route('admin.users.toggle-status', $user) }}" method="POST">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button type="submit" class="font-semibold text-[#17325c] hover:underline">
-                                        {{ $user->is_active ? 'Deactivate' : 'Activate' }}
-                                    </button>
-                                </form>
+                                <div class="flex items-center gap-4">
+                                    @if ($user->isStaff())
+                                        <a href="{{ route('admin.users.permissions', $user) }}"
+                                            class="font-semibold text-[#17325c] hover:underline">
+                                            Permissions
+                                        </a>
+                                    @endif
+
+                                    <form action="{{ route('admin.users.toggle-status', $user) }}" method="POST">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" class="font-semibold text-[#17325c] hover:underline">
+                                            {{ $user->is_active ? 'Deactivate' : 'Activate' }}
+                                        </button>
+                                    </form>
+                                </div>
                             @endif
                         </td>
                     </tr>

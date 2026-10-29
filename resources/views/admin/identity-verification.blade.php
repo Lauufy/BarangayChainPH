@@ -1,4 +1,4 @@
-@extends($prefix === 'admin' ? 'layouts.admin' : 'layouts.staff')
+@extends('layouts.admin')
 
 @section('title', 'Digital Identity Verification')
 
@@ -38,7 +38,7 @@
                         </td>
 
                         <td class="px-5 py-4">
-                            <a href="{{ route($prefix . '.identity-verification.show', $verification) }}"
+                            <a href="{{ route('admin.identity-verification.show', $verification) }}"
                                 class="inline-flex rounded-md border border-[#17325c] px-3 py-1.5 text-xs font-semibold text-[#17325c] hover:bg-slate-50">
                                 Review
                             </a>

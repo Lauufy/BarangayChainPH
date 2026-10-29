@@ -1,4 +1,4 @@
-@extends($prefix === 'admin' ? 'layouts.admin' : 'layouts.staff')
+@extends('layouts.admin')
 
 @section('title', 'Review Identity Application')
 
@@ -8,7 +8,7 @@
         <header
             class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
             <div class="flex min-w-0 items-center gap-3">
-                <a href="{{ route($prefix . '.identity-verification.index') }}"
+                <a href="{{ route('admin.identity-verification.index') }}"
                     class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-slate-300 text-slate-600 hover:bg-slate-50"
                     aria-label="Back to list" title="Back to list">
                     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
@@ -120,7 +120,7 @@
                         <div class="mt-3 grid gap-4 sm:grid-cols-2">
                             {{-- Reject (reason is required) --}}
                             <form method="POST"
-                                action="{{ route($prefix . '.identity-verification.reject', $verification) }}"
+                                action="{{ route('admin.identity-verification.reject', $verification) }}"
                                 class="contents">
                                 @csrf
 
@@ -137,7 +137,7 @@
 
                             {{-- Approve --}}
                             <form method="POST"
-                                action="{{ route($prefix . '.identity-verification.approve', $verification) }}"
+                                action="{{ route('admin.identity-verification.approve', $verification) }}"
                                 class="order-2 sm:col-start-1 sm:row-start-2 [&_button]:w-full">
                                 @csrf
                                 <x-form.button type="submit" loadingText="Approving...">Approve</x-form.button>
@@ -172,15 +172,15 @@
                             <h2 class="text-sm font-semibold text-slate-900">Uploaded ID</h2>
                             <p class="truncate text-xs text-slate-500">{{ $verification->document_type }}</p>
                         </div>
-                        <a href="{{ route($prefix . '.identity-verification.document', $verification) }}" target="_blank"
+                        <a href="{{ route('admin.identity-verification.document', $verification) }}" target="_blank"
                             class="shrink-0 text-xs font-semibold text-[#17325c] hover:underline">Open &nearr;</a>
                     </div>
 
                     <div class="flex items-center justify-center bg-slate-50 p-3">
                         @if ($isImage)
-                            <a href="{{ route($prefix . '.identity-verification.document', $verification) }}"
+                            <a href="{{ route('admin.identity-verification.document', $verification) }}"
                                 target="_blank">
-                                <img src="{{ route($prefix . '.identity-verification.document', $verification) }}"
+                                <img src="{{ route('admin.identity-verification.document', $verification) }}"
                                     alt="Uploaded ID"
                                     class="max-h-110 rounded border border-slate-200 bg-white object-contain">
                             </a>
@@ -205,16 +205,16 @@
                             </p>
                         </div>
                         @if ($verification->selfie_path)
-                            <a href="{{ route($prefix . '.identity-verification.selfie', $verification) }}" target="_blank"
+                            <a href="{{ route('admin.identity-verification.selfie', $verification) }}" target="_blank"
                                 class="shrink-0 text-xs font-semibold text-[#17325c] hover:underline">Open &nearr;</a>
                         @endif
                     </div>
 
                     <div class="flex items-center justify-center bg-slate-50 p-3">
                         @if ($verification->selfie_path)
-                            <a href="{{ route($prefix . '.identity-verification.selfie', $verification) }}"
+                            <a href="{{ route('admin.identity-verification.selfie', $verification) }}"
                                 target="_blank">
-                                <img src="{{ route($prefix . '.identity-verification.selfie', $verification) }}"
+                                <img src="{{ route('admin.identity-verification.selfie', $verification) }}"
                                     alt="Selfie"
                                     class="max-h-110 rounded border border-slate-200 bg-white object-contain">
                             </a>

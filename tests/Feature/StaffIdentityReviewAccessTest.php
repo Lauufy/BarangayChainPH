@@ -10,25 +10,27 @@ class StaffIdentityReviewAccessTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_staff_cannot_access_identity_review_routes(): void
+    private function staff(array $permissions): User
     {
-        $staff = User::factory()->create([
+        return User::factory()->create([
             'role' => 'staff',
             'is_active' => true,
+            'permissions' => $permissions,
         ]);
+    }
 
-        $responses = [
-            $this->actingAs($staff)->get('/staff/identity-verification'),
-            $this->get('/staff/identity-verification/1'),
-            $this->get('/staff/identity-verification/1/document'),
-            $this->get('/staff/identity-verification/1/selfie'),
-            $this->post('/staff/identity-verification/1/approve'),
-            $this->post('/staff/identity-verification/1/reject'),
-        ];
+    public function test_staff_with_permission_can_open_identity_review(): void
+    {
+        $this->actingAs($this->staff(['identity.review']))
+            ->get(route('admin.identity-verification.index'))
+            ->assertOk();
+    }
 
-        foreach ($responses as $response) {
-            $response->assertNotFound();
-        }
+    public function test_staff_without_permission_cannot_open_identity_review(): void
+    {
+        $this->actingAs($this->staff([]))
+            ->get(route('admin.identity-verification.index'))
+            ->assertForbidden();
     }
 
     public function test_admin_can_still_access_identity_review(): void

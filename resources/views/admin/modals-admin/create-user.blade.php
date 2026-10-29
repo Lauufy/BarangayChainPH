@@ -42,8 +42,8 @@
                     <legend class="text-xs font-bold uppercase tracking-wide text-[#17325c]">Account</legend>
 
                     <div class="mt-3 grid gap-4 sm:grid-cols-2">
-                        <x-form.input light name="name" label="Full Name" value="{{ old('name', 'Carlo Admin') }}"
-                            required autofocus autocomplete="name" placeholder="Enter your full name" data-validate />
+                        <x-form.input light name="name" label="Full Name" required autofocus autocomplete="name"
+                            placeholder="Enter your full name" data-validate />
 
                         <x-form.input light name="email" label="Email Address" type="email" required
                             autocomplete="email" placeholder="Enter your email address" data-validate />

@@ -7,12 +7,14 @@
 @section('content')
     <div class="space-y-4">
         {{-- Header --}}
-        <header class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+        <header
+            class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
             <div class="flex min-w-0 items-center gap-3">
                 <a href="{{ route('admin.permits.index') }}"
                     class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-slate-300 text-slate-600 hover:bg-slate-50"
                     aria-label="Back to permit management" title="Back to permit management">
-                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="m15 18-6-6 6-6" />
                     </svg>
                 </a>
@@ -22,10 +24,12 @@
                         @switch($application->service_type)
                             @case(ServiceRequest::BARANGAY_CLEARANCE)
                                 Barangay clearance
-                                @break
+                            @break
+
                             @case(ServiceRequest::CERTIFICATE_OF_RESIDENCY)
                                 Certificate of residency
-                                @break
+                            @break
+
                             @default
                                 Certificate of indigency
                         @endswitch
@@ -36,11 +40,16 @@
 
             <span @class([
                 'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold capitalize',
-                'border-amber-200 bg-amber-50 text-amber-800' => $application->status === 'pending',
-                'border-blue-200 bg-blue-50 text-blue-800' => $application->status === 'processing',
-                'border-green-200 bg-green-50 text-green-800' => $application->status === 'approved',
-                'border-red-200 bg-red-50 text-red-800' => $application->status === 'rejected',
-                'border-slate-200 bg-slate-50 text-slate-700' => $application->status === 'cancelled',
+                'border-amber-200 bg-amber-50 text-amber-800' =>
+                    $application->status === 'pending',
+                'border-blue-200 bg-blue-50 text-blue-800' =>
+                    $application->status === 'processing',
+                'border-green-200 bg-green-50 text-green-800' =>
+                    $application->status === 'approved',
+                'border-red-200 bg-red-50 text-red-800' =>
+                    $application->status === 'rejected',
+                'border-slate-200 bg-slate-50 text-slate-700' =>
+                    $application->status === 'cancelled',
             ])>
                 <span @class([
                     'h-1.5 w-1.5 rounded-full',
@@ -83,7 +92,8 @@
 
                     <div>
                         <dt class="text-[11px] font-semibold uppercase text-slate-500">Date submitted</dt>
-                        <dd class="wrap-break-word text-sm text-slate-900">{{ $application->created_at->timezone(config('app.timezone'))->format('M j, Y g:i A') }}</dd>
+                        <dd class="wrap-break-word text-sm text-slate-900">
+                            {{ $application->created_at->timezone(config('app.timezone'))->format('M j, Y g:i A') }}</dd>
                     </div>
 
                     @if (filled($application->permit_number))
@@ -96,7 +106,8 @@
                     @if ($application->status === ServiceRequest::APPROVED)
                         <div>
                             <dt class="text-[11px] font-semibold uppercase text-slate-500">Prints remaining</dt>
-                            <dd class="wrap-break-word text-sm text-slate-900">{{ $application->printsRemaining() }} of {{ $application->effectivePrintLimit() }}</dd>
+                            <dd class="wrap-break-word text-sm text-slate-900">{{ $application->printsRemaining() }} of
+                                {{ $application->effectivePrintLimit() }}</dd>
                         </div>
                     @endif
 
@@ -119,11 +130,13 @@
                         --}}
                         <div class="mt-3 grid gap-4 sm:grid-cols-2">
                             {{-- Reject (reason is required) --}}
-                            <form method="POST" action="{{ route('admin.permits.reject', $application) }}" class="contents">
+                            <form method="POST" action="{{ route('admin.permits.reject', $application) }}"
+                                class="contents">
                                 @csrf
 
                                 <div class="order-1 space-y-1.5 sm:col-span-2 sm:row-start-1">
-                                    <label for="rejection_reason" class="block text-xs font-semibold text-slate-700">Reason for rejection</label>
+                                    <label for="rejection_reason" class="block text-xs font-semibold text-slate-700">Reason
+                                        for rejection</label>
                                     <textarea id="rejection_reason" name="rejection_reason" required minlength="5" maxlength="500" rows="3"
                                         class="block w-full rounded-md border border-slate-300 bg-white p-3 text-sm text-slate-900 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20">{{ old('rejection_reason') }}</textarea>
                                     @error('rejection_reason')
@@ -131,7 +144,8 @@
                                     @enderror
                                 </div>
 
-                                <button class="order-3 w-full rounded-md bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 sm:col-start-2 sm:row-start-2">
+                                <button
+                                    class="order-3 w-full rounded-md bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 sm:col-start-2 sm:row-start-2">
                                     Reject application
                                 </button>
                             </form>
@@ -140,7 +154,8 @@
                             <form method="POST" action="{{ route('admin.permits.approve', $application) }}"
                                 class="order-2 sm:col-start-1 sm:row-start-2">
                                 @csrf
-                                <button class="w-full rounded-md bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">
+                                <button
+                                    class="w-full rounded-md bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">
                                     Approve application
                                 </button>
                             </form>
@@ -161,7 +176,8 @@
             {{-- Right: request details + print access --}}
             <aside class="space-y-4 lg:w-96 lg:shrink-0">
                 <section class="admin-card">
-                    <h2 class="border-b border-slate-200 px-4 py-3 text-sm font-semibold text-slate-900">Request details</h2>
+                    <h2 class="border-b border-slate-200 px-4 py-3 text-sm font-semibold text-slate-900">Request details
+                    </h2>
 
                     <dl class="space-y-3 p-4">
                         @if (filled($application->purpose))
@@ -174,7 +190,8 @@
                         @if (filled($application->cancellation_reason))
                             <div>
                                 <dt class="text-[11px] font-semibold uppercase text-slate-500">Cancellation reason</dt>
-                                <dd class="wrap-break-word text-sm text-slate-900">{{ $application->cancellation_reason }}</dd>
+                                <dd class="wrap-break-word text-sm text-slate-900">{{ $application->cancellation_reason }}
+                                </dd>
                             </div>
                         @endif
 
@@ -184,7 +201,7 @@
                     </dl>
                 </section>
 
-                @if ($application->status === ServiceRequest::APPROVED)
+                @if ($application->status === ServiceRequest::APPROVED && auth()->user()->hasPermission('permits.print-limit'))
                     <section class="admin-card">
                         <div class="border-b border-slate-200 px-4 py-3">
                             <h2 class="text-sm font-semibold text-slate-900">Print access</h2>
@@ -199,7 +216,8 @@
                             @method('PATCH')
 
                             <div>
-                                <label for="print_limit" class="block text-xs font-semibold text-slate-700">Allowed prints</label>
+                                <label for="print_limit" class="block text-xs font-semibold text-slate-700">Allowed
+                                    prints</label>
                                 <input id="print_limit" name="print_limit" type="number" required max="1000"
                                     min="{{ $application->print_count }}"
                                     value="{{ old('print_limit', $application->effectivePrintLimit()) }}"
@@ -210,7 +228,8 @@
                                 @enderror
                             </div>
 
-                            <button class="w-full rounded-md bg-[#17325c] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#10244a]">
+                            <button
+                                class="w-full rounded-md bg-[#17325c] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#10244a]">
                                 Update print allowance
                             </button>
                         </form>

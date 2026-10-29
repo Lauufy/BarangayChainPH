@@ -18,7 +18,6 @@ class IdentityReviewController extends Controller
     public function index(Request $request)
     {
         return view('admin.identity-verification', [
-            'prefix' => $request->user()->role, // "admin" or "staff"
             'counts' => IdentityVerification::selectRaw('status, count(*) as total')
                 ->groupBy('status')->pluck('total', 'status'),
             'verifications' => IdentityVerification::with('user')->latest('submitted_at')->paginate(10),
@@ -31,7 +30,6 @@ class IdentityReviewController extends Controller
         $verification->load('user.citizenProfile', 'reviewer');
 
         return view('admin.modals-admin.identity-verification-show', [
-            'prefix' => $request->user()->role,
             'verification' => $verification,
             'profile' => $verification->user->citizenProfile,
             'isImage' => ! str_ends_with($verification->document_path, '.pdf'),
@@ -81,7 +79,7 @@ class IdentityReviewController extends Controller
     // Save the decision (only pending applications can be reviewed)
     private function review(Request $request, IdentityVerification $verification, string $status, ?string $reason = null)
     {
-        $route = $request->user()->role.'.identity-verification.index';
+        $route = 'admin.identity-verification.index';
 
         if (! $verification->isPending()) {
             return redirect()->route($route)->with('error', 'This application was already reviewed.');
@@ -101,6 +99,6 @@ class IdentityReviewController extends Controller
             report($exception);
         }
 
-        return redirect()->route($route)->with('success', 'The application was '.$status.'.');
+        return redirect()->route($route)->with('success', 'The application was ' . $status . '.');
     }
 }

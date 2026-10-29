@@ -52,10 +52,9 @@ class LoginController extends Controller
         }
 
         return match ($user->role) {
-            'admin' => redirect()->route('admin.dashboard'),
-            'staff' => redirect()->route('staff.dashboard'),
+            'admin', 'staff' => redirect()->route('admin.dashboard'),
             'citizen' => redirect()->route('citizen.dashboard'),
-            default => tap(redirect('/'), fn () => Auth::logout()),
+            default => tap(redirect('/'), fn() => Auth::logout()),
         };
     }
 

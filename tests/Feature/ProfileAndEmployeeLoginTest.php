@@ -147,7 +147,7 @@ class ProfileAndEmployeeLoginTest extends TestCase
             'password' => 'StrongPass123!',
         ]);
 
-        $response->assertRedirect(route('staff.dashboard'));
+        $response->assertRedirect(route('admin.dashboard'));
         $this->assertAuthenticatedAs($user);
     }
 
@@ -182,13 +182,14 @@ class ProfileAndEmployeeLoginTest extends TestCase
 
         $response->assertRedirect(route('admin.users.index'));
         $employee = User::where('email', 'morgan@example.com')->firstOrFail();
-        $this->assertSame('BSLCNPH-'.str_pad((string) $employee->id, 6, '0', STR_PAD_LEFT), $employee->employeeProfile->employee_id);
+        $this->assertSame('BSLCNPH-' . str_pad((string) $employee->id, 6, '0', STR_PAD_LEFT), $employee->employeeProfile->employee_id);
         $this->assertSame('Records', $employee->employeeProfile->department);
         $this->assertSame('Barangay Hall', $employee->employeeProfile->office);
         $this->assertSame('2024-01-15', $employee->employeeProfile->date_hired->toDateString());
+        $this->assertSame(config('permissions.staff_defaults'), $employee->permissions);
     }
 
-    public function test_admin_created_administrator_uses_carlo_admin_default_and_gets_employee_id(): void
+    public function test_admin_created_administrator_gets_employee_id(): void
     {
         Http::fake([
             'https://api.pwnedpasswords.com/range/*' => Http::response('', 200),
@@ -201,8 +202,7 @@ class ProfileAndEmployeeLoginTest extends TestCase
 
         $this->actingAs($signedInAdmin)
             ->get(route('admin.users.index'))
-            ->assertOk()
-            ->assertSee('value="Carlo Admin"', false);
+            ->assertOk();
 
         $response = $this->post(route('admin.users.store'), [
             'name' => 'Carlo Admin',
