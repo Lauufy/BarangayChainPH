@@ -2,32 +2,45 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\IssuedDocument;
 use App\Models\ServiceRequest;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class PermitVerificationController extends Controller
 {
-    public function show(ServiceRequest $serviceRequest): View
+    public function show(string $documentUuid): View
     {
-        $isGenuine = $serviceRequest->status === ServiceRequest::APPROVED
-            && filled($serviceRequest->permit_number);
+        $document = IssuedDocument::with('serviceRequest')
+            ->where('document_uuid', $documentUuid)
+            ->first();
 
-        $documentTitle = match ($serviceRequest->service_type) {
-            ServiceRequest::BARANGAY_CLEARANCE => 'Barangay Clearance',
-            ServiceRequest::CERTIFICATE_OF_RESIDENCY => 'Certificate of Residency',
-            ServiceRequest::CERTIFICATE_OF_INDIGENCY => 'Certificate of Indigency',
-            default => 'Barangay Document',
-        };
+        $application = $document?->serviceRequest;
+
+        $isGenuine = $document !== null
+            && $document->isValid()
+            && $application !== null
+            && $application->status === ServiceRequest::APPROVED
+            && filled($application->permit_number)
+            && $application->permit_number === $document->document_number
+            && Storage::disk($document->disk)->exists($document->file_path)
+            && hash_equals(
+                $document->file_hash,
+                hash('sha256', Storage::disk($document->disk)->get($document->file_path))
+            );
 
         return view('permits.verify', [
             'isGenuine' => $isGenuine,
-            'documentTitle' => $documentTitle,
-            'maskedApplicantName' => $isGenuine
-                ? $this->maskApplicantName($serviceRequest->applicant_name)
-                : null,
-            'permitNumber' => $isGenuine ? $serviceRequest->permit_number : null,
-            'referenceNumber' => $isGenuine ? $serviceRequest->reference_number : null,
+            'documentTitle' => match ($application?->service_type) {
+                ServiceRequest::BARANGAY_CLEARANCE => 'Barangay Clearance',
+                ServiceRequest::CERTIFICATE_OF_RESIDENCY => 'Certificate of Residency',
+                ServiceRequest::CERTIFICATE_OF_INDIGENCY => 'Certificate of Indigency',
+                default => 'Barangay Document',
+            },
+            'maskedApplicantName' => $isGenuine ? $this->maskApplicantName($application->applicant_name) : null,
+            'permitNumber' => $isGenuine ? $document->document_number : null,
+            'referenceNumber' => $isGenuine ? $application->reference_number : null,
         ]);
     }
 

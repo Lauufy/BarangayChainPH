@@ -5,6 +5,47 @@
 @section('title', 'Review Permit Application')
 
 @section('content')
+    @php
+        $isApproved = $application->status === ServiceRequest::APPROVED;
+        $activeDocuments = $application->issuedDocuments->whereNull('revoked_at');
+
+        [$badgeClass, $dotClass] = [
+            'pending' => ['border-amber-200 bg-amber-50 text-amber-800', 'bg-amber-500'],
+            'processing' => ['border-blue-200 bg-blue-50 text-blue-800', 'bg-blue-500'],
+            'approved' => ['border-green-200 bg-green-50 text-green-800', 'bg-green-500'],
+            'rejected' => ['border-red-200 bg-red-50 text-red-800', 'bg-red-500'],
+            'cancelled' => ['border-slate-200 bg-slate-50 text-slate-700', 'bg-slate-400'],
+        ][$application->status] ?? ['', ''];
+
+        $details = [];
+
+        if (filled($application->applicant_name)) {
+            $details['Full name'] = $application->applicant_name;
+        }
+        if (filled($application->age)) {
+            $details['Age'] = $application->age;
+        }
+        if (filled($application->user->email)) {
+            $details['Email'] = $application->user->email;
+        }
+
+        $details['Date submitted'] = $application->created_at
+            ->timezone(config('app.timezone'))
+            ->format('M j, Y g:i A');
+
+        if (filled($application->permit_number)) {
+            $details['Permit number'] = $application->permit_number;
+        }
+        if ($isApproved) {
+            $details['Prints remaining'] = $application->printsRemaining().' of '.$application->effectivePrintLimit();
+        }
+
+        $requestDetails = array_filter([
+            'Purpose' => $application->purpose,
+            'Cancellation reason' => $application->cancellation_reason,
+        ], fn($value) => filled($value));
+    @endphp
+
     <div class="space-y-4">
         {{-- Header --}}
         <header
@@ -21,45 +62,20 @@
 
                 <div class="min-w-0">
                     <h1 class="truncate text-xl font-bold leading-tight text-slate-900">
-                        @switch($application->service_type)
-                            @case(ServiceRequest::BARANGAY_CLEARANCE)
-                                Barangay clearance
-                            @break
-
-                            @case(ServiceRequest::CERTIFICATE_OF_RESIDENCY)
-                                Certificate of residency
-                            @break
-
-                            @default
-                                Certificate of indigency
-                        @endswitch
+                        {{ match ($application->service_type) {
+                            ServiceRequest::BARANGAY_CLEARANCE => 'Barangay clearance',
+                            ServiceRequest::CERTIFICATE_OF_RESIDENCY => 'Certificate of residency',
+                            default => 'Certificate of indigency',
+                        } }}
                     </h1>
                     <p class="truncate text-xs text-slate-500">{{ $application->reference_number }}</p>
                 </div>
             </div>
 
-            <span @class([
-                'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold capitalize',
-                'border-amber-200 bg-amber-50 text-amber-800' =>
-                    $application->status === 'pending',
-                'border-blue-200 bg-blue-50 text-blue-800' =>
-                    $application->status === 'processing',
-                'border-green-200 bg-green-50 text-green-800' =>
-                    $application->status === 'approved',
-                'border-red-200 bg-red-50 text-red-800' =>
-                    $application->status === 'rejected',
-                'border-slate-200 bg-slate-50 text-slate-700' =>
-                    $application->status === 'cancelled',
-            ])>
-                <span @class([
-                    'h-1.5 w-1.5 rounded-full',
-                    'bg-amber-500' => $application->status === 'pending',
-                    'bg-blue-500' => $application->status === 'processing',
-                    'bg-green-500' => $application->status === 'approved',
-                    'bg-red-500' => $application->status === 'rejected',
-                    'bg-slate-400' => $application->status === 'cancelled',
-                ])></span>
-                {{ $application->status === 'pending' ? 'Pending review' : $application->status }}
+            <span
+                class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold capitalize {{ $badgeClass }}">
+                <span class="h-1.5 w-1.5 rounded-full {{ $dotClass }}"></span>
+                {{ $application->status === ServiceRequest::PENDING ? 'Pending review' : $application->status }}
             </span>
         </header>
 
@@ -69,47 +85,12 @@
                 <h2 class="border-b border-slate-200 px-4 py-3 text-sm font-semibold text-slate-900">Applicant details</h2>
 
                 <dl class="grid gap-x-4 gap-y-3 p-4 sm:grid-cols-2 xl:grid-cols-3">
-                    @if (filled($application->applicant_name))
+                    @foreach ($details as $label => $value)
                         <div>
-                            <dt class="text-[11px] font-semibold uppercase text-slate-500">Full name</dt>
-                            <dd class="wrap-break-word text-sm text-slate-900">{{ $application->applicant_name }}</dd>
+                            <dt class="text-[11px] font-semibold uppercase text-slate-500">{{ $label }}</dt>
+                            <dd class="wrap-break-word text-sm text-slate-900">{{ $value }}</dd>
                         </div>
-                    @endif
-
-                    @if (filled($application->age))
-                        <div>
-                            <dt class="text-[11px] font-semibold uppercase text-slate-500">Age</dt>
-                            <dd class="wrap-break-word text-sm text-slate-900">{{ $application->age }}</dd>
-                        </div>
-                    @endif
-
-                    @if (filled($application->user->email))
-                        <div>
-                            <dt class="text-[11px] font-semibold uppercase text-slate-500">Email</dt>
-                            <dd class="wrap-break-word text-sm text-slate-900">{{ $application->user->email }}</dd>
-                        </div>
-                    @endif
-
-                    <div>
-                        <dt class="text-[11px] font-semibold uppercase text-slate-500">Date submitted</dt>
-                        <dd class="wrap-break-word text-sm text-slate-900">
-                            {{ $application->created_at->timezone(config('app.timezone'))->format('M j, Y g:i A') }}</dd>
-                    </div>
-
-                    @if (filled($application->permit_number))
-                        <div>
-                            <dt class="text-[11px] font-semibold uppercase text-slate-500">Permit number</dt>
-                            <dd class="wrap-break-word text-sm text-slate-900">{{ $application->permit_number }}</dd>
-                        </div>
-                    @endif
-
-                    @if ($application->status === ServiceRequest::APPROVED)
-                        <div>
-                            <dt class="text-[11px] font-semibold uppercase text-slate-500">Prints remaining</dt>
-                            <dd class="wrap-break-word text-sm text-slate-900">{{ $application->printsRemaining() }} of
-                                {{ $application->effectivePrintLimit() }}</dd>
-                        </div>
-                    @endif
+                    @endforeach
 
                     <div class="sm:col-span-2 xl:col-span-3">
                         <dt class="text-[11px] font-semibold uppercase text-slate-500">Address</dt>
@@ -123,13 +104,8 @@
                         <h3 class="text-sm font-semibold text-slate-900">Decision</h3>
                         <p class="mt-1 text-xs text-slate-500">Approve this request or reject it with a reason.</p>
 
-                        {{--
-                            Two separate forms laid out as one block:
-                            the reject form uses "contents" so its textarea and button
-                            sit in the same grid as the approve button.
-                        --}}
+                        {{-- The reject form uses "contents" so its fields share the grid with the approve button. --}}
                         <div class="mt-3 grid gap-4 sm:grid-cols-2">
-                            {{-- Reject (reason is required) --}}
                             <form method="POST" action="{{ route('admin.permits.reject', $application) }}"
                                 class="contents">
                                 @csrf
@@ -150,7 +126,6 @@
                                 </button>
                             </form>
 
-                            {{-- Approve --}}
                             <form method="POST" action="{{ route('admin.permits.approve', $application) }}"
                                 class="order-2 sm:col-start-1 sm:row-start-2">
                                 @csrf
@@ -180,28 +155,18 @@
                     </h2>
 
                     <dl class="space-y-3 p-4">
-                        @if (filled($application->purpose))
+                        @forelse ($requestDetails as $label => $value)
                             <div>
-                                <dt class="text-[11px] font-semibold uppercase text-slate-500">Purpose</dt>
-                                <dd class="wrap-break-word text-sm text-slate-900">{{ $application->purpose }}</dd>
+                                <dt class="text-[11px] font-semibold uppercase text-slate-500">{{ $label }}</dt>
+                                <dd class="wrap-break-word text-sm text-slate-900">{{ $value }}</dd>
                             </div>
-                        @endif
-
-                        @if (filled($application->cancellation_reason))
-                            <div>
-                                <dt class="text-[11px] font-semibold uppercase text-slate-500">Cancellation reason</dt>
-                                <dd class="wrap-break-word text-sm text-slate-900">{{ $application->cancellation_reason }}
-                                </dd>
-                            </div>
-                        @endif
-
-                        @if (blank($application->purpose) && blank($application->cancellation_reason))
+                        @empty
                             <p class="text-sm text-slate-500">No additional details.</p>
-                        @endif
+                        @endforelse
                     </dl>
                 </section>
 
-                @if ($application->status === ServiceRequest::APPROVED && auth()->user()->hasPermission('permits.print-limit'))
+                @if ($isApproved && auth()->user()->hasPermission('permits.print-limit'))
                     <section class="admin-card">
                         <div class="border-b border-slate-200 px-4 py-3">
                             <h2 class="text-sm font-semibold text-slate-900">Print access</h2>
@@ -233,6 +198,34 @@
                                 Update print allowance
                             </button>
                         </form>
+                    </section>
+                @endif
+
+                @if ($isApproved && $activeDocuments->isNotEmpty())
+                    <section class="admin-card">
+                        <div class="border-b border-slate-200 px-4 py-3">
+                            <h2 class="text-sm font-semibold text-slate-900">Document authentication</h2>
+                            <p class="mt-0.5 text-xs text-slate-500">
+                                Generate a replacement authenticated PDF while preserving the previous document record.
+                            </p>
+                        </div>
+
+                        <div class="space-y-3 p-4">
+                            <p class="text-xs text-slate-600">
+                                Active document:
+                                <span class="font-semibold text-slate-900">Version {{ $activeDocuments->max('version') }}</span>
+                            </p>
+
+                            <form method="POST" action="{{ route('admin.permits.reissue', $application) }}"
+                                onsubmit="return confirm('Are you sure you want to reissue this document? The current document will become invalid after the replacement is successfully generated.');">
+                                @csrf
+
+                                <button type="submit"
+                                    class="w-full rounded-md border border-[#17325c] bg-white px-4 py-2.5 text-sm font-semibold text-[#17325c] hover:bg-slate-50">
+                                    Reissue document
+                                </button>
+                            </form>
+                        </div>
                     </section>
                 @endif
             </aside>

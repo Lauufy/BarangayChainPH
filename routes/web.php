@@ -26,7 +26,7 @@ use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Public
+| Public Routes
 |--------------------------------------------------------------------------
 */
 
@@ -34,46 +34,59 @@ Route::view('/', 'welcome')->name('home');
 Route::view('/terms', 'legal.terms')->name('terms');
 Route::view('/privacy', 'legal.privacy')->name('privacy');
 
-Route::get('/tickets/{ticket}/participants/{participant}/photo', [TicketParticipantPhotoController::class, 'show'])
-    ->middleware(['auth', 'role:citizen,admin,staff'])
+Route::get('/tickets/{ticket}/participants/{participant}/photo', [
+    TicketParticipantPhotoController::class,
+    'show',
+])->middleware(['auth', 'role:citizen,admin,staff'])
     ->name('tickets.participants.photo');
 
-Route::get('/verify/permit/{serviceRequest}', [PermitVerificationController::class, 'show'])
-    ->middleware('signed')
+Route::get('/verify/permit/{documentUuid}', [
+    PermitVerificationController::class,
+    'show',
+])->whereUuid('documentUuid')
     ->name('permits.verify');
 
 /*
 |--------------------------------------------------------------------------
-| Guest (login, register, password reset, Google)
+| Guest Routes
 |--------------------------------------------------------------------------
 */
 
 Route::middleware('guest')->group(function () {
+
+    // Registration
     Route::get('/register', [RegisterController::class, 'create'])->name('register');
     Route::post('/register', [RegisterController::class, 'store'])->name('register.store');
 
+    // Login
     Route::get('/login', [LoginController::class, 'create'])->name('login');
     Route::post('/login', [LoginController::class, 'store'])->name('login.store');
 
+    // Password reset
     Route::get('/forgot-password', [ForgotPasswordController::class, 'showForgotPassword'])
         ->name('password.request');
+
     Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLink'])
         ->middleware('throttle:3,1')
         ->name('password.email');
 
     Route::get('/reset-password/{token}', [ResetPasswordController::class, 'showResetPassword'])
         ->name('password.reset');
+
     Route::post('/reset-password', [ResetPasswordController::class, 'resetPassword'])
         ->middleware('throttle:5,1')
         ->name('password.update');
 
-    Route::get('/auth/google', [GoogleController::class, 'redirect'])->name('google.redirect');
+    // Google authentication
+    Route::get('/auth/google', [GoogleController::class, 'redirect'])
+        ->name('google.redirect');
+
     Route::get('/auth/google/callback', [GoogleController::class, 'callback']);
 });
 
 /*
 |--------------------------------------------------------------------------
-| Email verification
+| Email Verification
 |--------------------------------------------------------------------------
 */
 
@@ -97,7 +110,7 @@ Route::post('/email/verification/cancel', [EmailVerificationController::class, '
 
 /*
 |--------------------------------------------------------------------------
-| Citizen
+| Citizen Routes
 |--------------------------------------------------------------------------
 */
 
@@ -105,8 +118,11 @@ Route::middleware(['auth', 'role:citizen'])
     ->prefix('citizen')
     ->name('citizen.')
     ->group(function () {
+
+        // Dashboard
         Route::view('/dashboard', 'citizen.dashboard')->name('dashboard');
 
+        // Available services
         Route::get('/services', function (Request $request) {
             $pendingServices = ServiceRequest::whereBelongsTo($request->user())
                 ->where('status', ServiceRequest::PENDING)
@@ -116,8 +132,9 @@ Route::middleware(['auth', 'role:citizen'])
             return view('citizen.services', compact('pendingServices'));
         })->name('services');
 
-        // Documents, applications and service forms
+        // Documents and applications
         Route::controller(ServiceRequestController::class)->group(function () {
+
             Route::get('/documents', 'documents')->name('documents');
 
             Route::get('/applications', 'applications')->name('applications');
@@ -144,8 +161,10 @@ Route::middleware(['auth', 'role:citizen'])
             Route::post('/certificate-of-indigency/proceed', 'proceedIndigency')->name('certificate-of-indigency.proceed');
         });
 
-        // Tickets (messages about a request)
-        Route::get('/applications/{serviceRequest}/ticket', [TicketController::class, 'show'])->name('tickets.show');
+        // Tickets
+        Route::get('/applications/{serviceRequest}/ticket', [TicketController::class, 'show'])
+            ->name('tickets.show');
+
         Route::post('/applications/{serviceRequest}/ticket', [TicketController::class, 'reply'])
             ->middleware('throttle:20,1')
             ->name('tickets.reply');
@@ -154,94 +173,125 @@ Route::middleware(['auth', 'role:citizen'])
         Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
         Route::get('/profile/photo', [ProfileController::class, 'showPhoto'])->name('profile.photo.show');
 
-        // Digital identity verification
+        // Identity verification
         Route::controller(IdentityVerificationController::class)->group(function () {
             Route::get('/identity-verification', 'show')->name('identity-verification');
             Route::post('/identity-verification/details', 'storeDetails')->name('identity-verification.details');
+
             Route::post('/identity-verification/document', 'storeDocument')
                 ->middleware('throttle:10,1')
                 ->name('identity-verification.document');
-            Route::get('/identity-verification/document/{verification}', 'document')->name('identity-verification.file');
+
+            Route::get('/identity-verification/document/{verification}', 'document')
+                ->name('identity-verification.file');
         });
 
         // Notifications
-        Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications');
-        Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
-        Route::post('/notifications/{id}/read', [NotificationController::class, 'read'])->name('notifications.read');
+        Route::get('/notifications', [NotificationController::class, 'index'])
+            ->name('notifications');
 
-        // Only identity-verified citizens can edit their profile
+        Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])
+            ->name('notifications.read-all');
+
+        Route::post('/notifications/{id}/read', [NotificationController::class, 'read'])
+            ->name('notifications.read');
+
+        // Verified citizens only
         Route::middleware('identity.verified')->group(function () {
-            Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
-            Route::post('/profile/photo', [ProfileController::class, 'photo'])->name('profile.photo');
+            Route::put('/profile', [ProfileController::class, 'update'])
+                ->name('profile.update');
+
+            Route::post('/profile/photo', [ProfileController::class, 'photo'])
+                ->name('profile.photo');
         });
     });
 
-
 /*
 |--------------------------------------------------------------------------
-| Admin
+| Admin and Staff Routes
 |--------------------------------------------------------------------------
 */
+
 Route::middleware(['auth', 'role:admin,staff'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
 
-        // Admin and staff (no permission needed)
-        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        // Dashboard
+        Route::get('/dashboard', [DashboardController::class, 'index'])
+            ->name('dashboard');
 
+        // Profile
         Route::get('/profile', [AdminProfileController::class, 'show'])->name('profile');
         Route::put('/profile', [AdminProfileController::class, 'update'])->name('profile.update');
         Route::get('/profile/photo', [AdminProfileController::class, 'showPhoto'])->name('profile.photo.show');
         Route::post('/profile/photo', [AdminProfileController::class, 'photo'])->name('profile.photo');
 
+        // Notifications
         Route::post('/notifications/read-all', [AdminNotificationController::class, 'readAll'])
             ->name('notifications.read-all');
+
         Route::post('/notifications/{id}/read', [AdminNotificationController::class, 'read'])
             ->name('notifications.read');
-        Route::view('/notifications', 'admin.notifications')->name('notifications.index');
 
-        // Admin only (staff can never open these)
+        Route::view('/notifications', 'admin.notifications')
+            ->name('notifications.index');
+
+        // Admin-only user management
         Route::middleware('role:admin')->group(function () {
             Route::get('/users', [UserController::class, 'index'])->name('users.index');
             Route::post('/users', [UserController::class, 'store'])->name('users.store');
-            Route::patch('/users/{user}/status', [UserController::class, 'toggleStatus'])->name('users.toggle-status');
-            Route::get('/users/{user}/permissions', [UserController::class, 'permissions'])->name('users.permissions');
-            Route::put('/users/{user}/permissions', [UserController::class, 'updatePermissions'])->name('users.permissions.update');
+
+            Route::patch('/users/{user}/status', [UserController::class, 'toggleStatus'])
+                ->name('users.toggle-status');
+
+            Route::get('/users/{user}/permissions', [UserController::class, 'permissions'])
+                ->name('users.permissions');
+
+            Route::put('/users/{user}/permissions', [UserController::class, 'updatePermissions'])
+                ->name('users.permissions.update');
         });
 
-        // Permits and clearances
+        // Permit management
         Route::middleware('permission:permits.review')
             ->controller(PermitController::class)
             ->group(function () {
                 Route::get('/permits', 'index')->name('permits.index');
                 Route::get('/permits/{serviceRequest}', 'show')->name('permits.show');
                 Route::post('/permits/{serviceRequest}/approve', 'approve')->name('permits.approve');
+                Route::post('/permits/{serviceRequest}/reissue', 'reissue')->name('permits.reissue');
                 Route::post('/permits/{serviceRequest}/reject', 'reject')->name('permits.reject');
+
                 Route::patch('/permits/{serviceRequest}/print-limit', 'updatePrintLimit')
                     ->middleware('permission:permits.print-limit')
                     ->name('permits.print-limit.update');
             });
 
-        // Citizen tickets (messages)
-        Route::middleware('permission:tickets.reply')->group(function () {
-            Route::get('/tickets', [TicketInboxController::class, 'index'])->name('tickets.index');
-            Route::get('/tickets/{ticket}', [TicketInboxController::class, 'show'])->name('tickets.show');
-            Route::post('/tickets/{ticket}', [TicketInboxController::class, 'reply'])
-                ->middleware('throttle:30,1')
-                ->name('tickets.reply');
-        });
+        // Citizen ticket inbox
+        Route::middleware('permission:tickets.reply')
+            ->controller(TicketInboxController::class)
+            ->group(function () {
+                Route::get('/tickets', 'index')->name('tickets.index');
+                Route::get('/tickets/{ticket}', 'show')->name('tickets.show');
 
-        // Simple pages, one permission each
+                Route::post('/tickets/{ticket}', 'reply')
+                    ->middleware('throttle:30,1')
+                    ->name('tickets.reply');
+            });
+
+        // Restricted pages
         Route::view('/document-authentication', 'admin.document-authentication')
             ->middleware('permission:documents.authenticate')
             ->name('document-authentication.index');
+
         Route::view('/blockchain-ledger', 'admin.blockchain-ledger')
             ->middleware('permission:blockchain.view')
             ->name('blockchain-ledger.index');
+
         Route::view('/reports', 'admin.reports')
             ->middleware('permission:reports.view')
             ->name('reports.index');
+
         Route::view('/audit-logs', 'admin.audit-logs')
             ->middleware('permission:audit.view')
             ->name('audit-logs.index');
@@ -249,7 +299,7 @@ Route::middleware(['auth', 'role:admin,staff'])
 
 /*
 |--------------------------------------------------------------------------
-| Identity verification review (admin only)
+| Identity Verification Review
 |--------------------------------------------------------------------------
 */
 

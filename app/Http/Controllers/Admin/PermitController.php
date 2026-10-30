@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\ServiceRequest;
 use App\Notifications\ServiceRequestApproved;
 use App\Notifications\ServiceRequestRejected;
+use App\Services\DocumentIssuer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
@@ -30,27 +32,51 @@ class PermitController extends Controller
     public function show(ServiceRequest $serviceRequest): View
     {
         return view('admin.modals-admin.permit-review', [
-            'application' => $serviceRequest->load('user'),
+            'application' => $serviceRequest->load(['user', 'issuedDocuments']),
         ]);
     }
 
-    public function approve(ServiceRequest $serviceRequest): RedirectResponse
+    public function approve(ServiceRequest $serviceRequest, DocumentIssuer $documentIssuer): RedirectResponse
     {
-        $approved = $this->decide($serviceRequest, fn($request) => [
-            'status' => ServiceRequest::APPROVED,
-            'permit_number' => $request->permit_number ?? ServiceRequest::generatePermitNumber(),
-            'rejection_reason' => null,
-        ]);
+        try {
+            $document = $documentIssuer->issue($serviceRequest);
+        } catch (\Throwable $e) {
+            report($e);
 
-        if (! $approved) {
-            return $this->back($serviceRequest, 'error', 'Only pending applications can be approved.');
+            return $this->back(
+                $serviceRequest,
+                'error',
+                'The application could not be approved because its PDF document could not be generated or stored. Please try again.'
+            );
         }
+
+        $approved = ServiceRequest::with(['user', 'ticket'])->findOrFail($document->service_request_id);
 
         $this->notify($approved, new ServiceRequestApproved($approved));
 
-        $approved->ticket?->postSystemMessage('Your request was approved. You can now print your permit from the Documents page.', close: true);
+        $approved->ticket?->postSystemMessage(
+            'Your request was approved. Your authenticated PDF is now available on the Documents page.',
+            close: true
+        );
 
-        return $this->back($serviceRequest, 'success', 'The application was approved.');
+        return $this->back($serviceRequest, 'success', 'The application was approved and its authenticated PDF was generated successfully.');
+    }
+
+    public function reissue(ServiceRequest $serviceRequest, DocumentIssuer $documentIssuer): RedirectResponse
+    {
+        try {
+            $document = $documentIssuer->reissue($serviceRequest);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return $this->back(
+                $serviceRequest,
+                'error',
+                'The document could not be reissued. The existing document remains unchanged. Please try again.'
+            );
+        }
+
+        return $this->back($serviceRequest, 'success', "Document reissued successfully. New document version: {$document->version}.");
     }
 
     public function reject(Request $request, ServiceRequest $serviceRequest): RedirectResponse
@@ -59,7 +85,7 @@ class PermitController extends Controller
             'rejection_reason' => ['required', 'string', 'min:5', 'max:500'],
         ]);
 
-        $rejected = $this->decide($serviceRequest, fn() => [
+        $rejected = $this->decide($serviceRequest, [
             'status' => ServiceRequest::REJECTED,
             'rejection_reason' => $data['rejection_reason'],
         ]);
@@ -70,7 +96,7 @@ class PermitController extends Controller
 
         $this->notify($rejected, new ServiceRequestRejected($rejected));
 
-        $rejected->ticket?->postSystemMessage('Your request was rejected. Reason: ' . $data['rejection_reason'], close: true);
+        $rejected->ticket?->postSystemMessage('Your request was rejected. Reason: '.$data['rejection_reason'], close: true);
 
         return $this->back($serviceRequest, 'success', 'The application was rejected.');
     }
@@ -99,7 +125,7 @@ class PermitController extends Controller
     }
 
     /** Locks the row and applies the update only if the request is still pending. */
-    private function decide(ServiceRequest $serviceRequest, callable $attributes): ?ServiceRequest
+    private function decide(ServiceRequest $serviceRequest, array $attributes): ?ServiceRequest
     {
         return DB::transaction(function () use ($serviceRequest, $attributes) {
             $locked = ServiceRequest::whereKey($serviceRequest->id)->lockForUpdate()->firstOrFail();
@@ -108,13 +134,13 @@ class PermitController extends Controller
                 return null;
             }
 
-            $locked->update($attributes($locked));
+            $locked->update($attributes);
 
             return $locked->fresh();
         });
     }
 
-    private function notify(ServiceRequest $serviceRequest, $notification): void
+    private function notify(ServiceRequest $serviceRequest, Notification $notification): void
     {
         try {
             $serviceRequest->user->notify($notification);

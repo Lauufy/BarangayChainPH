@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
@@ -14,7 +15,6 @@ use Illuminate\Support\Str;
  * @property string $status
  * @property string|null $rejection_reason
  */
-
 #[Fillable([
     'user_id',
     'reference_number',
@@ -60,15 +60,25 @@ class ServiceRequest extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function ticket(): HasOne
+    {
+        return $this->hasOne(Ticket::class);
+    }
+
+    public function issuedDocuments(): HasMany
+    {
+        return $this->hasMany(IssuedDocument::class);
+    }
+
     public static function generatePermitNumber(): string
     {
-        return 'PERMIT-' . now()->format('Ymd') . '-' . Str::upper(Str::random(8));
+        return 'PERMIT-'.now()->format('Ymd').'-'.Str::upper(Str::random(8));
     }
 
     public function isCancellable(): bool
     {
         return $this->status === self::PENDING
-            && $this->created_at?->addHours(2)->isFuture() === true;
+            && $this->created_at?->addHours(2)->isFuture();
     }
 
     public function canPrint(): bool
@@ -85,11 +95,5 @@ class ServiceRequest extends Model
     public function effectivePrintLimit(): int
     {
         return $this->print_limit ?? self::MAX_PRINTS;
-    }
-
-
-    public function ticket(): HasOne
-    {
-        return $this->hasOne(Ticket::class);
     }
 }

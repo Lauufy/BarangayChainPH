@@ -3,16 +3,17 @@
 namespace App\Http\Controllers\Citizen;
 
 use App\Http\Controllers\Controller;
+use App\Models\IssuedDocument;
 use App\Models\ServiceRequest;
 use App\Models\User;
 use App\Notifications\CitizenSubmissionReceived;
-use Endroid\QrCode\Builder\Builder;
-use Endroid\QrCode\Writer\SvgWriter;
+use App\Services\DocumentIssuer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class ServiceRequestController extends Controller
@@ -148,31 +149,26 @@ class ServiceRequestController extends Controller
         ]);
     }
 
-    public function printApplication(Request $request, ServiceRequest $serviceRequest): View
-    {
+    public function printApplication(
+        Request $request,
+        ServiceRequest $serviceRequest,
+        DocumentIssuer $documentIssuer
+    ): Response {
         $this->authorizeOwner($request, $serviceRequest);
 
-        $serviceRequest = DB::transaction(function () use ($serviceRequest) {
-            $locked = $this->lock($serviceRequest);
+        $printData = $this->recordPrint($serviceRequest);
 
-            abort_unless($locked->status === ServiceRequest::APPROVED, 404);
-            abort_unless($locked->canPrint(), 403, 'This permit has reached its print limit.');
+        if ($printData['requiresQrUpgrade']) {
+            $documentIssuer->ensureQrCode($serviceRequest);
 
-            $locked->update([
-                'permit_number' => $locked->permit_number ?? ServiceRequest::generatePermitNumber(),
-                'print_count' => $locked->print_count + 1,
-            ]);
+            $printData = $this->recordPrint($serviceRequest, afterUpgrade: true);
+        }
 
-            return $locked->fresh();
-        });
-
-        $url = URL::signedRoute('permits.verify', ['serviceRequest' => $serviceRequest]);
-
-        return view('citizen.application-print', [
-            'application' => $serviceRequest,
-            'documentTitle' => $this->documentTitle($serviceRequest),
-            'qrCode' => $this->qrCode($url),
-            'verificationUrl' => $url,
+        return response($printData['fileContents'], 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="'.$printData['document']->document_number.'.pdf"',
+            'Cache-Control' => 'private, no-store, no-cache, must-revalidate',
+            'X-Content-Type-Options' => 'nosniff',
         ]);
     }
 
@@ -277,12 +273,13 @@ class ServiceRequestController extends Controller
             ]);
 
             // Open a ticket with an automatic first message
-            $ticket = $serviceRequest->ticket()->create(['user_id' => $request->user()->id]);
-
-            $ticket->messages()->create([
-                'body' => "Your request {$serviceRequest->reference_number} was submitted. The barangay will post updates here.",
-                'is_system' => true,
-            ]);
+            $serviceRequest->ticket()
+                ->create(['user_id' => $request->user()->id])
+                ->messages()
+                ->create([
+                    'body' => "Your request {$serviceRequest->reference_number} was submitted. The barangay will post updates here.",
+                    'is_system' => true,
+                ]);
 
             return $serviceRequest;
         });
@@ -304,22 +301,17 @@ class ServiceRequestController extends Controller
     private function notifyAdmins(User $user, ServiceRequest $serviceRequest): void
     {
         try {
-            $admins = User::query()
-                ->where('role', 'admin')
-                ->where('is_active', true)
-                ->get();
+            $admins = User::where('role', 'admin')->where('is_active', true)->get();
 
-            if ($admins->isEmpty()) {
-                return;
+            if ($admins->isNotEmpty()) {
+                Notification::send($admins, new CitizenSubmissionReceived(
+                    'New permit request',
+                    "{$user->name} submitted {$serviceRequest->reference_number} for review.",
+                    route('admin.permits.show', $serviceRequest),
+                ));
             }
-
-            Notification::send($admins, new CitizenSubmissionReceived(
-                'New permit request',
-                "{$user->name} submitted {$serviceRequest->reference_number} for review.",
-                route('admin.permits.show', $serviceRequest),
-            ));
-        } catch (\Throwable $exception) {
-            report($exception);
+        } catch (\Throwable $e) {
+            report($e);
         }
     }
 
@@ -345,11 +337,61 @@ class ServiceRequestController extends Controller
         return ServiceRequest::whereKey($serviceRequest->id)->lockForUpdate()->firstOrFail();
     }
 
-    private function qrCode(string $data): string
+    /**
+     * Locks the request, validates the printable document and counts the print.
+     * The first pass skips counting when a QR upgrade is still needed;
+     * the pass after the upgrade aborts if the QR code is still missing.
+     *
+     * @return array{document: IssuedDocument, fileContents: string, requiresQrUpgrade: bool}
+     */
+    private function recordPrint(ServiceRequest $serviceRequest, bool $afterUpgrade = false): array
     {
-        return (new Builder(writer: new SvgWriter, data: $data, size: 120, margin: 4))
-            ->build()
-            ->getDataUri();
+        return DB::transaction(function () use ($serviceRequest, $afterUpgrade) {
+            $locked = $this->lock($serviceRequest);
+            $printData = $this->printableDocument($locked);
+
+            abort_if(
+                $afterUpgrade && $printData['requiresQrUpgrade'],
+                409,
+                'The document QR code could not be generated. Please contact the barangay office.'
+            );
+
+            if (! $printData['requiresQrUpgrade']) {
+                $locked->increment('print_count');
+            }
+
+            return $printData;
+        });
+    }
+
+    /**
+     * @return array{document: IssuedDocument, fileContents: string, requiresQrUpgrade: bool}
+     */
+    private function printableDocument(ServiceRequest $serviceRequest): array
+    {
+        abort_unless($serviceRequest->status === ServiceRequest::APPROVED, 404);
+        abort_unless($serviceRequest->canPrint(), 403, 'This permit has reached its print limit.');
+
+        $document = $serviceRequest->issuedDocuments()
+            ->whereNull('revoked_at')
+            ->latest('version')
+            ->first();
+
+        abort_unless($document, 404, 'No valid issued document was found.');
+
+        $fileContents = Storage::disk($document->disk)->get($document->file_path);
+
+        abort_unless(
+            hash_equals($document->file_hash, hash('sha256', $fileContents)),
+            409,
+            'The document failed its integrity check. Please contact the barangay office.'
+        );
+
+        return [
+            'document' => $document,
+            'fileContents' => $fileContents,
+            'requiresQrUpgrade' => $document->qr_code_generated_at === null,
+        ];
     }
 
     private function documentTitle(ServiceRequest $serviceRequest): string
