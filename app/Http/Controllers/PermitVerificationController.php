@@ -1,10 +1,10 @@
 <?php
 
-namespace App\\Http\\Controllers;
+namespace App\Http\Controllers;
 
-use App\\Models\\ServiceRequest;
-use Illuminate\\Support\\Str;
-use Illuminate\\View\\View;
+use App\Models\ServiceRequest;
+use Illuminate\Support\Str;
+use Illuminate\View\View;
 
 class PermitVerificationController extends Controller
 {
@@ -33,7 +33,7 @@ class PermitVerificationController extends Controller
 
     private function maskApplicantName(string $name): string
     {
-        $parts = preg_split('/\\s+/', trim($name), -1, PREG_SPLIT_NO_EMPTY);
+        $parts = preg_split('/\s+/', trim($name), -1, PREG_SPLIT_NO_EMPTY);
 
         if (count($parts) < 2) {
             return Str::substr($parts[0] ?? '', 0, 1).'.';
