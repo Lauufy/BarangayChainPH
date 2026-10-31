@@ -6,14 +6,74 @@ use App\Models\IssuedDocument;
 use App\Models\ServiceRequest;
 use App\Models\User;
 use App\Services\DocumentIssuer;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Barryvdh\DomPDF\PDF as DomPdfDocument;
+use Endroid\QrCode\Builder\Builder;
+use Endroid\QrCode\Writer\PngWriter;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
 class PermitWorkflowTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_issued_document_qr_uses_the_active_environment_host(): void
+    {
+        Storage::fake('supabase');
+        URL::forceRootUrl('https://barangay.example');
+        URL::forceScheme('https');
+
+        $user = User::factory()->create([
+            'role' => 'citizen',
+            'is_active' => true,
+        ]);
+
+        $application = ServiceRequest::create([
+            'user_id' => $user->id,
+            'reference_number' => 'BRGY-20261030-0007',
+            'service_type' => ServiceRequest::BARANGAY_CLEARANCE,
+            'applicant_name' => 'Carlo Mamaril',
+            'address' => 'Barangay San Luis, Antipolo City',
+            'age' => 22,
+            'purpose' => 'Employment',
+            'status' => ServiceRequest::PENDING,
+        ]);
+
+        $pdf = \Mockery::mock(DomPdfDocument::class);
+        $pdf->shouldReceive('output')
+            ->once()
+            ->andReturn('%PDF-qr-environment-test');
+
+        Pdf::shouldReceive('loadView')
+            ->once()
+            ->withArgs(function (string $view, array $data): bool {
+                $this->assertSame('permits.pdf', $view);
+
+                $verificationUrl = route('permits.verify', [
+                    'documentUuid' => $data['document']->document_uuid,
+                ]);
+                $this->assertStringStartsWith('https://barangay.example/', $verificationUrl);
+
+                $expectedQrCode = (new Builder(
+                    writer: new PngWriter,
+                    data: $verificationUrl,
+                    size: 120,
+                    margin: 4
+                ))->build()->getDataUri();
+
+                $this->assertSame($expectedQrCode, $data['qrCode']);
+
+                return true;
+            })
+            ->andReturn($pdf);
+
+        $document = app(DocumentIssuer::class)->issue($application);
+
+        $this->assertTrue(Storage::disk('supabase')->exists($document->file_path));
+    }
 
     public function test_pending_application_can_be_approved_with_an_authenticated_pdf(): void
     {

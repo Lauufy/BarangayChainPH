@@ -20,12 +20,7 @@ class DocumentIssuer
     public function issue(ServiceRequest $serviceRequest): IssuedDocument
     {
         return $this->locked($serviceRequest, function (ServiceRequest $application, ?string &$uploadedPath) {
-            $existing = $application->issuedDocuments()
-                ->whereNull('revoked_at')
-                ->latest('version')
-                ->first();
-
-            if ($existing) {
+            if ($existing = $this->activeDocument($application)) {
                 return $existing;
             }
 
@@ -55,26 +50,24 @@ class DocumentIssuer
         });
     }
 
+    /**
+     * Returns the active document, regenerating it first if it has no QR code yet.
+     * Returns null when the application is not printable.
+     */
     public function ensureQrCode(ServiceRequest $serviceRequest): ?IssuedDocument
     {
-        return DB::transaction(function () use ($serviceRequest) {
-            $application = ServiceRequest::whereKey($serviceRequest->id)->lockForUpdate()->firstOrFail();
-
+        return $this->locked($serviceRequest, function (ServiceRequest $application, ?string &$uploadedPath) {
             if (! $application->canPrint()) {
                 return null;
             }
 
-            $document = $application->issuedDocuments()
-                ->whereNull('revoked_at')
-                ->lockForUpdate()
-                ->latest('version')
-                ->first();
+            $document = $this->activeDocument($application);
 
             if (! $document || $document->qr_code_generated_at !== null) {
                 return $document;
             }
 
-            return $this->reissue($application);
+            return $this->replaceDocument($application, $document, $uploadedPath);
         });
     }
 
@@ -85,30 +78,13 @@ class DocumentIssuer
                 throw new RuntimeException('Only approved applications can be reissued.');
             }
 
-            /** @var IssuedDocument|null $previous */
-            $previous = $application->issuedDocuments()
-                ->whereNull('revoked_at')
-                ->lockForUpdate()
-                ->latest('version')
-                ->first();
+            $previous = $this->activeDocument($application);
 
             if (! $previous) {
                 throw new RuntimeException('No active document is available for reissuance.');
             }
 
-            $document = $this->createDocument(
-                $application,
-                $previous->document_number,
-                $previous->version + 1,
-                $uploadedPath,
-                'The replacement PDF could not be stored.'
-            );
-
-            $previous->update(['revoked_at' => $document->issued_at]);
-
-            $application->issuedDocuments()->save($document);
-
-            return $document;
+            return $this->replaceDocument($application, $previous, $uploadedPath);
         });
     }
 
@@ -116,7 +92,7 @@ class DocumentIssuer
      * Runs the callback in a transaction on the locked request.
      * If anything fails, the PDF uploaded by the callback is deleted.
      */
-    private function locked(ServiceRequest $serviceRequest, callable $callback): IssuedDocument
+    private function locked(ServiceRequest $serviceRequest, callable $callback): ?IssuedDocument
     {
         $uploadedPath = null;
 
@@ -137,6 +113,37 @@ class DocumentIssuer
 
             throw $e;
         }
+    }
+
+    /** Latest non-revoked document, locked for update. */
+    private function activeDocument(ServiceRequest $application): ?IssuedDocument
+    {
+        return $application->issuedDocuments()
+            ->whereNull('revoked_at')
+            ->lockForUpdate()
+            ->latest('version')
+            ->first();
+    }
+
+    /** Issues the next version of a document and revokes the previous one. */
+    private function replaceDocument(
+        ServiceRequest $application,
+        IssuedDocument $previous,
+        ?string &$uploadedPath
+    ): IssuedDocument {
+        $document = $this->createDocument(
+            $application,
+            $previous->document_number,
+            $previous->version + 1,
+            $uploadedPath,
+            'The replacement PDF could not be stored.'
+        );
+
+        $previous->update(['revoked_at' => $document->issued_at]);
+
+        $application->issuedDocuments()->save($document);
+
+        return $document;
     }
 
     /** Builds the document record, renders the PDF and stores it. Does not save the record. */
@@ -160,30 +167,12 @@ class DocumentIssuer
             'qr_code_generated_at' => $issuedAt,
         ]);
 
-        $verificationUrl = rtrim(config('app.url'), '/')
-            .route('permits.verify', ['documentUuid' => $documentUuid], false);
-
-        $qrCode = (new Builder(writer: new PngWriter, data: $verificationUrl, size: 120, margin: 4))
-            ->build()
-            ->getDataUri();
-
-        logger()->info('QR code generated', [
-            'format' => 'PNG',
-            'data_uri_prefix' => substr($qrCode, 0, 30),
-            'data_uri_length' => strlen($qrCode),
-        ]);
-
         $pdfContent = Pdf::loadView('permits.pdf', [
             'application' => $application,
             'document' => $document,
-            'documentTitle' => match ($application->service_type) {
-                ServiceRequest::BARANGAY_CLEARANCE => 'Barangay Clearance',
-                ServiceRequest::CERTIFICATE_OF_RESIDENCY => 'Certificate of Residency',
-                ServiceRequest::CERTIFICATE_OF_INDIGENCY => 'Certificate of Indigency',
-                default => 'Barangay Document',
-            },
+            'documentTitle' => $this->documentTitle($application),
             'issuedAt' => $issuedAt,
-            'qrCode' => $qrCode,
+            'qrCode' => $this->qrCodeDataUri($documentUuid),
         ])->output();
 
         $document->file_hash = hash('sha256', $pdfContent);
@@ -195,5 +184,25 @@ class DocumentIssuer
         }
 
         return $document;
+    }
+
+    private function qrCodeDataUri(string $documentUuid): string
+    {
+        $verificationUrl = rtrim(config('app.url'), '/')
+            .route('permits.verify', ['documentUuid' => $documentUuid], false);
+
+        return (new Builder(writer: new PngWriter, data: $verificationUrl, size: 120, margin: 4))
+            ->build()
+            ->getDataUri();
+    }
+
+    private function documentTitle(ServiceRequest $application): string
+    {
+        return match ($application->service_type) {
+            ServiceRequest::BARANGAY_CLEARANCE => 'Barangay Clearance',
+            ServiceRequest::CERTIFICATE_OF_RESIDENCY => 'Certificate of Residency',
+            ServiceRequest::CERTIFICATE_OF_INDIGENCY => 'Certificate of Indigency',
+            default => 'Barangay Document',
+        };
     }
 }

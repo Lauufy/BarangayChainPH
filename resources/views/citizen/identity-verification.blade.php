@@ -12,6 +12,8 @@
         $ghostButton = 'inline-flex w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-5 py-3.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#17325c]/40 sm:w-auto';
         $footer = 'flex flex-col-reverse gap-3 border-t border-slate-100 bg-slate-50 px-4 py-4 sm:flex-row sm:justify-end sm:rounded-b-xl sm:px-6';
         $iconBox = 'flex h-12 w-12 items-center justify-center rounded-full bg-white text-[#17325c] shadow-sm ring-1 ring-slate-200';
+        $title = 'text-xl font-semibold text-slate-900';
+        $hint = 'mt-1 max-w-prose text-sm text-slate-600';
     @endphp
 
     <div class="mx-auto max-w-3xl space-y-5 sm:space-y-6">
@@ -55,13 +57,7 @@
 
                 <div class="border-t border-slate-100 bg-slate-50 px-4 py-4 sm:px-6">
                     <a href="{{ route('citizen.identity-verification.file', $verification) }}" target="_blank" rel="noopener"
-                        class="inline-flex items-center gap-2 text-sm font-semibold text-[#17325c] underline-offset-4 hover:underline">
-                        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4h8l4 4v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v4h4" />
-                        </svg>
-                        View my uploaded ID
-                    </a>
+                        class="text-sm font-semibold text-[#17325c] underline-offset-4 hover:underline">View my uploaded ID</a>
                 </div>
             </section>
         @else
@@ -152,8 +148,8 @@
                     <div class="p-4 sm:p-6">
                         {{-- STEP 2: ID --}}
                         <div data-panel="2">
-                            <h2 class="text-xl font-semibold text-slate-900">Upload your ID</h2>
-                            <p class="mt-1 max-w-prose text-sm text-slate-600">Use a valid government ID. Your name and photo must be readable.</p>
+                            <h2 class="{{ $title }}">Upload your ID</h2>
+                            <p class="{{ $hint }}">Use a valid government ID. Your name and photo must be readable.</p>
 
                             <div class="mt-6 grid gap-5 sm:grid-cols-2">
                                 <x-form.input light name="document_type" label="Type of ID" type="select" required placeholder="Select"
@@ -188,25 +184,19 @@
                             </div>
                         </div>
 
-                        {{-- STEP 3: Selfie (upload or camera) --}}
+                        {{-- STEP 3: Selfie (upload or camera with face check) --}}
                         <div data-panel="3" class="hidden">
-                            <h2 class="text-xl font-semibold text-slate-900">Take a selfie with your ID</h2>
-                            <p class="mt-1 max-w-prose text-sm text-slate-600">Hold your ID next to your face. Use the camera or upload a photo.</p>
+                            <h2 class="{{ $title }}">Take a selfie with your ID</h2>
+                            <p class="{{ $hint }}">Hold your ID next to your face. Use the camera or upload a photo.</p>
 
-                            <ul class="mt-4 space-y-2 rounded-lg bg-slate-50 p-4 text-sm text-slate-700">
-                                @foreach (['Your face and your ID are both clearly visible.', 'The lighting is good. No hat or sunglasses.', 'The ID text is sharp and not covered.'] as $tip)
-                                    <li class="flex items-start gap-2.5">
-                                        <svg class="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.5 8.5l3 3 6-6.5" />
-                                        </svg>
-                                        {{ $tip }}
-                                    </li>
-                                @endforeach
+                            <ul class="mt-4 space-y-1.5 rounded-lg bg-slate-50 p-4 text-sm text-slate-700">
+                                <li>✓ Your face and your ID are both clearly visible.</li>
+                                <li>✓ The lighting is good. No hat or sunglasses.</li>
+                                <li>✓ The ID text is sharp and not covered.</li>
                             </ul>
 
                             <input type="hidden" name="selfie_source" id="selfie-source" value="upload">
 
-                            {{-- Upload or camera --}}
                             <div role="tablist" aria-label="Selfie method" class="mt-5 inline-flex rounded-lg bg-slate-100 p-1 text-sm font-semibold">
                                 <button type="button" role="tab" id="tab-upload" aria-selected="true"
                                     class="rounded-md bg-white px-4 py-2 text-slate-900 shadow-sm transition">Upload photo</button>
@@ -240,9 +230,10 @@
                                     <div class="relative mx-auto w-full max-w-md overflow-hidden rounded-lg bg-slate-900">
                                         <video id="camera-video" autoplay playsinline muted class="aspect-4/3 w-full -scale-x-100 object-cover"></video>
                                         <div class="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden="true">
-                                            <div class="h-3/4 w-2/5 rounded-[50%] border-2 border-dashed border-white/70"></div>
+                                            <div id="face-guide" class="h-3/4 w-2/5 rounded-[50%] border-2 border-dashed border-white/70 transition-colors"></div>
                                         </div>
                                     </div>
+                                    <p id="face-status" class="mt-3 text-center text-sm font-medium text-slate-600" role="status" aria-live="polite"></p>
                                     <div class="mt-3 flex justify-center">
                                         <x-form.button type="button" id="take-photo" color="#17325c" hoverColor="#10244a">Take photo</x-form.button>
                                     </div>
@@ -254,8 +245,8 @@
 
                         {{-- STEP 4: Review and consent --}}
                         <div data-panel="4" class="hidden">
-                            <h2 class="text-xl font-semibold text-slate-900">Review and submit</h2>
-                            <p class="mt-1 max-w-prose text-sm text-slate-600">Check that everything is correct, then accept the notice below.</p>
+                            <h2 class="{{ $title }}">Review and submit</h2>
+                            <p class="{{ $hint }}">Check that everything is correct, then accept the notice below.</p>
 
                             <div class="mt-5 divide-y divide-slate-100 rounded-lg border border-slate-200">
                                 <dl class="grid gap-4 p-4 text-sm sm:grid-cols-2">
@@ -273,9 +264,6 @@
                                             {{ collect([$profile?->house_number, $profile?->barangay, $profile?->city_municipality, $profile?->province, $profile?->zip_code])->filter()->implode(', ') ?: '—' }}
                                         </dd>
                                     </div>
-                                </dl>
-
-                                <dl class="grid gap-4 p-4 text-sm sm:grid-cols-2">
                                     <div>
                                         <dt class="text-slate-500">ID type</dt>
                                         <dd id="review-type" class="mt-1 font-medium text-slate-900"></dd>
@@ -326,7 +314,6 @@
                         </div>
                     </div>
 
-                    {{-- Buttons: we hide the wrapper div, not the button --}}
                     <div class="{{ $footer }}">
                         <button type="button" id="back-button" class="{{ $ghostButton }}">Back</button>
 
@@ -342,61 +329,66 @@
                 </form>
 
                 <script>
-                    var backUrl = @json(route('citizen.identity-verification'));
-                    var titles = @json($labels);
-                    var maxSize = 5 * 1024 * 1024; // 5 MB, same as the Laravel rule (max:5120)
-                    var currentStep = 2;
-                    var cameraStream = null;
+                    const backUrl = @json(route('citizen.identity-verification'));
+                    const titles = @json($labels);
+                    const MAX_SIZE = 5 * 1024 * 1024; // same as the Laravel rule (max:5120)
+                    const VISION = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
+                    const MODEL = 'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite';
+                    const GOOD_FRAMES = 6; // about 1 second of good position (6 x 150 ms)
 
-                    function byId(id) { return document.getElementById(id); }
+                    const $ = (id) => document.getElementById(id);
+                    const form = $('document-form');
+                    const idNumber = form.id_number;
+                    const idDrop = $('id-drop');
+                    const selfieInput = $('selfie');
+                    const selfieDrop = $('selfie-drop');
+                    const selfieError = $('selfie-error');
+                    const tabUpload = $('tab-upload');
+                    const tabCamera = $('open-camera');
+                    const cameraBox = $('camera-box');
+                    const video = $('camera-video');
+                    const takeButton = $('take-photo');
+                    const faceStatus = $('face-status');
+                    const faceGuide = $('face-guide');
 
-                    var form = byId('document-form');
-                    var idNumber = form.id_number;
-                    var idInput = byId('document');
-                    var idDrop = byId('id-drop');
-                    var selfieInput = byId('selfie');
-                    var selfieDrop = byId('selfie-drop');
-                    var selfieSource = byId('selfie-source');
-                    var selfieError = byId('selfie-error');
-                    var tabUpload = byId('tab-upload');
-                    var tabCamera = byId('open-camera');
-                    var cameraBox = byId('camera-box');
-                    var video = byId('camera-video');
+                    let currentStep = 2;
+                    let cameraStream = null;
+                    let detector = null;
+                    let faceTimer = null;
+                    let goodFrames = 0;
+                    let faceReady = false;
 
                     // ---------- Photo helpers ----------
 
-                    // Make a photo smaller (max 1800px, JPEG) so it uploads easily
+                    // Shrink a photo (max 1800px, JPEG) so it uploads easily
                     function shrinkImage(file, done) {
-                        var img = new Image();
-                        img.onload = function () {
-                            var scale = Math.min(1, 1800 / Math.max(img.width, img.height));
-                            var canvas = document.createElement('canvas');
+                        const img = new Image();
+                        img.onload = () => {
+                            const scale = Math.min(1, 1800 / Math.max(img.width, img.height));
+                            const canvas = document.createElement('canvas');
                             canvas.width = img.width * scale;
                             canvas.height = img.height * scale;
 
-                            var ctx = canvas.getContext('2d');
+                            const ctx = canvas.getContext('2d');
                             ctx.fillStyle = '#fff'; // white background for transparent PNGs
                             ctx.fillRect(0, 0, canvas.width, canvas.height);
                             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-                            canvas.toBlob(function (blob) {
-                                done(new File([blob], 'photo.jpg', { type: 'image/jpeg' }));
-                            }, 'image/jpeg', 0.85);
+                            canvas.toBlob((blob) => done(new File([blob], 'photo.jpg', { type: 'image/jpeg' })), 'image/jpeg', 0.85);
                         };
-                        img.onerror = function () { done(file); }; // cannot read it, keep the original
+                        img.onerror = () => done(file); // cannot read it, keep the original
                         img.src = URL.createObjectURL(file);
                     }
 
-                    // Put a file inside a file input
                     function setFile(input, file) {
-                        var list = new DataTransfer();
+                        const list = new DataTransfer();
                         list.items.add(file);
                         input.files = list.files;
                     }
 
                     // Switch a drop area between "empty" and "has a file"
                     function showDrop(drop, file) {
-                        var filled = drop.querySelector('[data-filled]');
+                        const filled = drop.querySelector('[data-filled]');
                         drop.querySelector('[data-empty]').classList.toggle('hidden', !!file);
                         filled.classList.toggle('hidden', !file);
                         filled.classList.toggle('flex', !!file);
@@ -405,16 +397,15 @@
 
                     // Makes a file input work: shrink, check, preview, drag and drop
                     function setupUpload(input, drop, errorBox, types, typeError) {
-                        var img = drop.querySelector('img');
-                        var pdf = drop.querySelector('[data-pdf]');
+                        const img = drop.querySelector('img');
+                        const pdf = drop.querySelector('[data-pdf]');
 
-                        // Show the current file (or an error) in the drop area
                         function refresh(error) {
                             errorBox.textContent = error || '';
                             if (error) input.value = '';
 
-                            var file = input.files[0];
-                            var isImage = file && file.type.startsWith('image/');
+                            const file = input.files[0];
+                            const isImage = file && file.type.startsWith('image/');
                             if (isImage) img.src = URL.createObjectURL(file);
                             img.classList.toggle('hidden', !isImage);
                             if (pdf) pdf.classList.toggle('hidden', !file || isImage);
@@ -423,35 +414,27 @@
 
                         function check(file) {
                             if (!types.includes(file.type)) return refresh(typeError);
-                            if (file.size > maxSize) return refresh('The file must not be larger than 5 MB.');
+                            if (file.size > MAX_SIZE) return refresh('The file must not be larger than 5 MB.');
                             refresh();
                         }
 
-                        input.addEventListener('change', function () {
-                            var file = input.files[0];
+                        input.addEventListener('change', () => {
+                            const file = input.files[0];
                             if (!file) return refresh();
 
                             if (file.type.startsWith('image/')) {
-                                shrinkImage(file, function (small) {
-                                    setFile(input, small);
-                                    check(small);
-                                });
+                                shrinkImage(file, (small) => { setFile(input, small); check(small); });
                             } else {
                                 check(file);
                             }
                         });
 
-                        // Drag and drop
-                        drop.addEventListener('dragover', function (e) {
+                        const highlight = (on) => drop.classList.toggle('bg-slate-100', on);
+                        drop.addEventListener('dragover', (e) => { e.preventDefault(); highlight(true); });
+                        drop.addEventListener('dragleave', () => highlight(false));
+                        drop.addEventListener('drop', (e) => {
                             e.preventDefault();
-                            drop.classList.add('border-[#17325c]', 'bg-slate-100');
-                        });
-                        drop.addEventListener('dragleave', function () {
-                            drop.classList.remove('border-[#17325c]', 'bg-slate-100');
-                        });
-                        drop.addEventListener('drop', function (e) {
-                            e.preventDefault();
-                            drop.classList.remove('border-[#17325c]', 'bg-slate-100');
+                            highlight(false);
                             if (e.dataTransfer.files.length) {
                                 setFile(input, e.dataTransfer.files[0]);
                                 input.dispatchEvent(new Event('change'));
@@ -459,14 +442,18 @@
                         });
                     }
 
-                    // ---------- Step 2: ID ----------
-                    setupUpload(idInput, idDrop, byId('file-error'),
+                    setupUpload($('document'), idDrop, $('file-error'),
                         ['image/jpeg', 'image/png', 'application/pdf'], 'The ID must be a JPG, PNG, or PDF file.');
+                    setupUpload(selfieInput, selfieDrop, selfieError,
+                        ['image/jpeg', 'image/png'], 'The selfie must be a JPG or PNG file.');
 
-                    // Checked when the user clicks Next, so it can be fixed before submit
+                    // A chosen file means the selfie was uploaded
+                    selfieInput.addEventListener('change', () => { $('selfie-source').value = 'upload'; });
+
+                    // ---------- ID number ----------
                     function checkIdNumber() {
-                        var value = idNumber.value.trim();
-                        var message = '';
+                        const value = idNumber.value.trim();
+                        let message = '';
                         idNumber.value = value;
 
                         if (value === '') message = 'Please enter your ID number.';
@@ -476,30 +463,107 @@
 
                         idNumber.setCustomValidity(message); // empty message = valid
                     }
+                    idNumber.addEventListener('input', () => idNumber.setCustomValidity(''));
 
-                    // Remove the error as soon as the user types again
-                    idNumber.addEventListener('input', function () { idNumber.setCustomValidity(''); });
+                    // ---------- Face check ----------
+                    function loadDetector() {
+                        if (detector) return Promise.resolve(detector);
 
-                    // ---------- Step 3: Selfie ----------
-                    setupUpload(selfieInput, selfieDrop, selfieError,
-                        ['image/jpeg', 'image/png'], 'The selfie must be a JPG or PNG file.');
+                        return import(VISION + '/vision_bundle.mjs')
+                            .then((v) => v.FilesetResolver.forVisionTasks(VISION + '/wasm').then((files) =>
+                                v.FaceDetector.createFromOptions(files, {
+                                    baseOptions: { modelAssetPath: MODEL },
+                                    runningMode: 'VIDEO',
+                                    minDetectionConfidence: 0.6,
+                                })))
+                            .then((d) => (detector = d));
+                    }
 
-                    // A chosen file means the selfie was uploaded
-                    selfieInput.addEventListener('change', function () { selfieSource.value = 'upload'; });
+                    // Enable or disable the Take photo button and show the message
+                    function setFace(ok, message) {
+                        faceReady = ok;
+                        takeButton.disabled = !ok;
+                        takeButton.classList.toggle('opacity-50', !ok);
+                        takeButton.classList.toggle('cursor-not-allowed', !ok);
+                        faceStatus.textContent = message;
+                        faceStatus.classList.toggle('text-emerald-600', ok);
+                        faceStatus.classList.toggle('text-slate-600', !ok);
+                        faceGuide.classList.toggle('border-emerald-400', ok);
+                        faceGuide.classList.toggle('border-white/70', !ok);
+                    }
 
-                    // Highlight the active tab
+                    // Returns '' if the face is in position, or a message about what to fix
+                    function checkFace(faces) {
+                        if (faces.length === 0) return 'No face found. Look at the camera.';
+                        if (faces.length > 1) return 'Only one face should be in the picture.';
+
+                        const { boundingBox: box, keypoints } = faces[0];
+                        const vw = video.videoWidth;
+                        const vh = video.videoHeight;
+                        const x = 1 - (box.originX + box.width / 2) / vw; // flipped: the preview is mirrored
+                        const y = (box.originY + box.height / 2) / vh;
+                        const size = box.height / vh;
+
+                        if (size < 0.28) return 'Move closer to the camera.';
+                        if (size > 0.6) return 'Move a little farther from the camera.';
+                        if (x < 0.35) return 'Move to the right.';
+                        if (x > 0.65) return 'Move to the left.';
+                        if (y < 0.35) return 'Move down a little.';
+                        if (y > 0.65) return 'Move up a little.';
+
+                        // keypoints: 0 and 1 are the eyes, 2 is the nose tip
+                        const [eyeA, eyeB, nose] = keypoints;
+                        let tilt = Math.abs(Math.atan2((eyeB.y - eyeA.y) * vh, (eyeB.x - eyeA.x) * vw) * 180 / Math.PI);
+                        if (tilt > 90) tilt = 180 - tilt;
+                        if (tilt > 15) return 'Keep your head straight.';
+
+                        const turn = Math.abs(nose.x - (eyeA.x + eyeB.x) / 2) / (Math.abs(eyeB.x - eyeA.x) || 1);
+                        if (turn > 0.35) return 'Look straight at the camera.';
+
+                        return '';
+                    }
+
+                    function startFaceCheck() {
+                        clearInterval(faceTimer);
+                        goodFrames = 0;
+                        setFace(false, 'Loading face check...');
+
+                        loadDetector().then((d) => {
+                            if (!cameraStream) return; // camera was closed while loading
+                            setFace(false, 'Fit your face inside the oval.');
+
+                            faceTimer = setInterval(() => {
+                                if (video.readyState < 2 || !video.videoWidth) return;
+
+                                const message = checkFace(d.detectForVideo(video, performance.now()).detections);
+                                goodFrames = message ? 0 : goodFrames + 1;
+
+                                if (message) setFace(false, message);
+                                else if (goodFrames >= GOOD_FRAMES) setFace(true, 'Good! Hold still and take the photo.');
+                                else setFace(false, 'Hold still...');
+                            }, 150);
+                        }).catch(() => {
+                            // Detector could not load (offline, blocked). Do not block the user.
+                            setFace(true, 'Face check unavailable. Make sure your face is inside the oval.');
+                        });
+                    }
+
+                    // ---------- Camera ----------
                     function setTab(cameraOn) {
-                        var base = 'rounded-md px-4 py-2 transition ';
-                        tabUpload.className = base + (cameraOn ? 'text-slate-600 hover:text-slate-900' : 'bg-white text-slate-900 shadow-sm');
-                        tabCamera.className = base + (cameraOn ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900');
+                        const base = 'rounded-md px-4 py-2 transition ';
+                        const on = 'bg-white text-slate-900 shadow-sm';
+                        const off = 'text-slate-600 hover:text-slate-900';
+                        tabUpload.className = base + (cameraOn ? off : on);
+                        tabCamera.className = base + (cameraOn ? on : off);
                         tabUpload.setAttribute('aria-selected', !cameraOn);
                         tabCamera.setAttribute('aria-selected', cameraOn);
                     }
 
                     // Turn the camera off and show the upload area again
                     function stopCamera() {
+                        clearInterval(faceTimer);
                         if (cameraStream) {
-                            cameraStream.getTracks().forEach(function (track) { track.stop(); });
+                            cameraStream.getTracks().forEach((track) => track.stop());
                             cameraStream = null;
                         }
                         cameraBox.classList.add('hidden');
@@ -510,34 +574,35 @@
                     tabUpload.addEventListener('click', stopCamera);
 
                     // Open the camera (needs HTTPS or localhost)
-                    tabCamera.addEventListener('click', function () {
+                    tabCamera.addEventListener('click', () => {
                         selfieError.textContent = '';
                         navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
-                            .then(function (stream) {
+                            .then((stream) => {
                                 cameraStream = stream;
                                 video.srcObject = stream;
                                 selfieDrop.classList.add('hidden');
                                 cameraBox.classList.remove('hidden');
                                 setTab(true);
+                                startFaceCheck();
                             })
-                            .catch(function () {
-                                selfieError.textContent = 'Camera not available. Please upload a photo instead.';
-                            });
+                            .catch(() => { selfieError.textContent = 'Camera not available. Please upload a photo instead.'; });
                     });
 
-                    // Take a photo and put it in the selfie input
-                    byId('take-photo').addEventListener('click', function () {
-                        var canvas = document.createElement('canvas');
+                    // Take a photo (only when the face is in position) and put it in the selfie input
+                    takeButton.addEventListener('click', () => {
+                        if (!faceReady) return;
+
+                        const canvas = document.createElement('canvas');
                         canvas.width = video.videoWidth;
                         canvas.height = video.videoHeight;
                         canvas.getContext('2d').drawImage(video, 0, 0);
 
-                        canvas.toBlob(function (blob) {
-                            var file = new File([blob], 'selfie.jpg', { type: 'image/jpeg' });
-                            var img = selfieDrop.querySelector('img');
+                        canvas.toBlob((blob) => {
+                            const file = new File([blob], 'selfie.jpg', { type: 'image/jpeg' });
+                            const img = selfieDrop.querySelector('img');
 
                             setFile(selfieInput, file);
-                            selfieSource.value = 'camera';
+                            $('selfie-source').value = 'camera';
                             selfieError.textContent = '';
                             img.src = URL.createObjectURL(blob);
                             img.classList.remove('hidden');
@@ -546,27 +611,26 @@
                         }, 'image/jpeg', 0.85);
                     });
 
-                    // ---------- Step 4: Review ----------
+                    // ---------- Review ----------
                     function fillReview() {
-                        var number = idNumber.value.trim();
-                        var idImg = idDrop.querySelector('img');
-                        var idFile = idInput.files[0];
-                        var reviewId = byId('review-id');
-                        var showIdImage = !idImg.classList.contains('hidden');
+                        const idImg = idDrop.querySelector('img');
+                        const idFile = $('document').files[0];
+                        const showImage = !idImg.classList.contains('hidden');
+                        let number = idNumber.value.trim();
 
                         // Show only the last 4 characters of the ID number
                         if (number.length > 4) number = '•'.repeat(number.length - 4) + number.slice(-4);
 
-                        byId('review-type').textContent = form.document_type.value;
-                        byId('review-number').textContent = number;
+                        $('review-type').textContent = form.document_type.value;
+                        $('review-number').textContent = number;
 
                         // A PDF has no picture, so show its file name instead
-                        reviewId.src = showIdImage ? idImg.src : '';
-                        reviewId.classList.toggle('hidden', !showIdImage);
-                        byId('review-id-empty').textContent = showIdImage || !idFile ? '' : idFile.name;
+                        $('review-id').src = showImage ? idImg.src : '';
+                        $('review-id').classList.toggle('hidden', !showImage);
+                        $('review-id-empty').textContent = showImage || !idFile ? '' : idFile.name;
 
-                        byId('review-selfie').src = selfieDrop.querySelector('img').src;
-                        byId('review-selfie').classList.remove('hidden');
+                        $('review-selfie').src = selfieDrop.querySelector('img').src;
+                        $('review-selfie').classList.remove('hidden');
                     }
 
                     // ---------- Steps ----------
@@ -574,19 +638,16 @@
                         stopCamera();
                         currentStep = step;
 
-                        // Show only the panel of this step
-                        document.querySelectorAll('[data-panel]').forEach(function (panel) {
+                        document.querySelectorAll('[data-panel]').forEach((panel) => {
                             panel.classList.toggle('hidden', Number(panel.dataset.panel) !== step);
                         });
 
-                        // Update the progress bar
-                        document.querySelectorAll('[data-step]').forEach(function (item) {
-                            var number = Number(item.dataset.step);
-                            var bar = item.querySelector('[data-bar]');
-                            var text = item.querySelector('[data-text]');
+                        document.querySelectorAll('[data-step]').forEach((item) => {
+                            const number = Number(item.dataset.step);
+                            const text = item.querySelector('[data-text]');
 
-                            bar.classList.toggle('bg-[#17325c]', number <= step);
-                            bar.classList.toggle('bg-slate-200', number > step);
+                            item.querySelector('[data-bar]').classList.toggle('bg-[#17325c]', number <= step);
+                            item.querySelector('[data-bar]').classList.toggle('bg-slate-200', number > step);
                             text.classList.toggle('font-semibold', number === step);
                             text.classList.toggle('text-slate-900', number === step);
                             text.classList.toggle('text-slate-500', number !== step);
@@ -595,47 +656,43 @@
                             else item.removeAttribute('aria-current');
                         });
 
-                        byId('step-count').textContent = step;
-                        byId('step-title').textContent = titles[step];
+                        $('step-count').textContent = step;
+                        $('step-title').textContent = titles[step];
 
                         // Submit shows ONLY on the last step, Next shows on the others
-                        byId('next-wrap').classList.toggle('hidden', step === 4);
-                        byId('submit-wrap').classList.toggle('hidden', step !== 4);
+                        $('next-wrap').classList.toggle('hidden', step === 4);
+                        $('submit-wrap').classList.toggle('hidden', step !== 4);
 
                         if (step === 4) fillReview();
                         form.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }
 
                     // Next: check the fields of this step first
-                    byId('next-button').addEventListener('click', function () {
+                    $('next-button').addEventListener('click', () => {
                         if (currentStep === 2) checkIdNumber();
 
-                        var fields = document.querySelectorAll(
-                            '[data-panel="' + currentStep + '"] input, [data-panel="' + currentStep + '"] select'
-                        );
-                        var allValid = Array.from(fields).every(function (field) { return field.reportValidity(); });
-
-                        if (allValid) goToStep(currentStep + 1);
+                        const fields = document.querySelectorAll(`[data-panel="${currentStep}"] input, [data-panel="${currentStep}"] select`);
+                        if (Array.from(fields).every((field) => field.reportValidity())) goToStep(currentStep + 1);
                     });
 
                     // Back: from step 2 go back to the personal information page
-                    byId('back-button').addEventListener('click', function () {
+                    $('back-button').addEventListener('click', () => {
                         if (currentStep === 2) window.location.href = backUrl;
                         else goToStep(currentStep - 1);
                     });
 
                     // Pressing Enter goes to the next step instead of submitting
-                    form.addEventListener('keydown', function (e) {
+                    form.addEventListener('keydown', (e) => {
                         if (e.key === 'Enter' && e.target.tagName === 'INPUT' && currentStep < 4) {
                             e.preventDefault();
-                            byId('next-button').click();
+                            $('next-button').click();
                         }
                     });
 
                     // Only submit on the last step, and stop double submit
-                    form.addEventListener('submit', function (e) {
+                    form.addEventListener('submit', (e) => {
                         if (currentStep !== 4) e.preventDefault();
-                        else byId('submit-button').disabled = true;
+                        else $('submit-button').disabled = true;
                     });
                 </script>
             @endif
