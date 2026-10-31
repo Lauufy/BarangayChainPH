@@ -13,7 +13,9 @@
         "laravel/socialite": "^5.31",
         "laravel/tinker": "^3.0",
         "league/flysystem-aws-s3-v3": "3.0",
-        "resend/resend-laravel": "^1.6"
+        "resend/resend-laravel": "^1.6",
+        "symfony/brevo-mailer": "^8.1",
+        "symfony/http-client": "^8.1"
     },
     "require-dev": {
         "barryvdh/laravel-ide-helper": "^3.7",
