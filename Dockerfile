@@ -1,4 +1,3 @@
-
 # Stage 1: Build frontend assets
 FROM node:24-alpine AS frontend
 
@@ -54,6 +53,14 @@ RUN printf '%s\n' \
     'session.cookie_samesite = Lax' \
     > /usr/local/etc/php/conf.d/zz-production.ini
 
+# OPcache tuning for production
+RUN printf '%s\n' \
+    'opcache.enable = 1' \
+    'opcache.memory_consumption = 128' \
+    'opcache.max_accelerated_files = 10000' \
+    'opcache.validate_timestamps = 0' \
+    > /usr/local/etc/php/conf.d/zz-opcache.ini
+
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
@@ -93,23 +100,21 @@ RUN sed -ri 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
         '    Options -Indexes' \
         '</Directory>' \
         > /etc/apache2/conf-available/laravel.conf \
-    && a2enconf laravel
+    && printf '%s\n' \
+        'ServerName localhost' \
+        'ServerTokens Prod' \
+        'ServerSignature Off' \
+        > /etc/apache2/conf-available/server-basics.conf \
+    && a2enconf laravel server-basics
 
 # Render startup script
+# Uploads are stored in Supabase Storage, so no local disk handling is needed.
 RUN printf '%s\n' \
     '#!/bin/sh' \
     'set -eu' \
     'PORT="${PORT:-10000}"' \
     'sed -ri "s/^Listen .*/Listen ${PORT}/" /etc/apache2/ports.conf' \
     'sed -ri "s/<VirtualHost \*:[0-9]+>/<VirtualHost *:${PORT}>/" /etc/apache2/sites-available/000-default.conf' \
-    'if [ -n "${FILESYSTEM_LOCAL_ROOT:-}" ]; then' \
-    '    if [ -d "$FILESYSTEM_LOCAL_ROOT" ]; then' \
-    '        chown www-data:www-data "$FILESYSTEM_LOCAL_ROOT"' \
-    '    else' \
-    '        echo "WARNING: FILESYSTEM_LOCAL_ROOT does not exist; uploaded files may be lost." >&2' \
-    '        unset FILESYSTEM_LOCAL_ROOT' \
-    '    fi' \
-    'fi' \
     'php artisan config:clear' \
     'exec apache2-foreground' \
     > /usr/local/bin/start-render.sh \
