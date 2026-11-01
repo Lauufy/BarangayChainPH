@@ -92,7 +92,7 @@ class UserController extends Controller
 
                 if ($validated['role'] !== 'citizen') {
                     $user->employeeProfile()->create([
-                        'employee_id' => 'BSLCNPH-' . str_pad((string) $user->id, 6, '0', STR_PAD_LEFT),
+                        'employee_id' => 'BSLCNPH-'.str_pad((string) $user->id, 6, '0', STR_PAD_LEFT),
                         'department' => $validated['department'],
                         'position' => $validated['position'],
                         'phone' => $validated['phone'] ?? null,
@@ -307,6 +307,13 @@ class UserController extends Controller
         return redirect()
             ->route('admin.users.index')
             ->with('success', 'The account was deleted successfully.');
+    }
+
+    public function permissions(User $user): RedirectResponse
+    {
+        abort_unless($user->isStaff(), 404);
+
+        return redirect()->route('admin.users.index');
     }
 
     public function updatePermissions(Request $request, User $user): RedirectResponse

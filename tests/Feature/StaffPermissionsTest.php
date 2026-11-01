@@ -74,7 +74,7 @@ class StaffPermissionsTest extends TestCase
 
         $this->actingAs($this->admin())
             ->put(route('admin.users.permissions.update', $staff), ['permissions' => ['everything']])
-            ->assertSessionHasErrors('permissions.0');
+            ->assertSessionHasErrorsIn('updatePermissions', 'permissions.0');
 
         $this->assertSame(['reports.view'], $staff->fresh()->permissions);
     }
@@ -95,9 +95,14 @@ class StaffPermissionsTest extends TestCase
     public function test_permissions_page_is_only_for_staff_accounts(): void
     {
         $admin = $this->admin();
+        $staff = $this->staff();
 
         $this->actingAs($admin)
             ->get(route('admin.users.permissions', $admin))
             ->assertNotFound();
+
+        $this->actingAs($admin)
+            ->get(route('admin.users.permissions', $staff))
+            ->assertRedirect(route('admin.users.index'));
     }
 }
