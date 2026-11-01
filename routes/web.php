@@ -1,0 +1,327 @@
+<?php
+
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\IdentityReviewController;
+use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
+use App\Http\Controllers\Admin\PermitController;
+use App\Http\Controllers\Admin\ProfileController as AdminProfileController;
+use App\Http\Controllers\Admin\TicketInboxController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Auth\EmailVerificationController;
+use App\Http\Controllers\Auth\ForgotPasswordController;
+use App\Http\Controllers\Auth\GoogleController;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Auth\ResetPasswordController;
+use App\Http\Controllers\Citizen\IdentityVerificationController;
+use App\Http\Controllers\Citizen\NotificationController;
+use App\Http\Controllers\Citizen\ProfileController;
+use App\Http\Controllers\Citizen\ServiceRequestController;
+use App\Http\Controllers\Citizen\TicketController;
+use App\Http\Controllers\PermitVerificationController;
+use App\Http\Controllers\TicketParticipantPhotoController;
+use App\Models\ServiceRequest;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+
+/*
+|--------------------------------------------------------------------------
+| Public Routes
+|--------------------------------------------------------------------------
+*/
+
+Route::view('/', 'home')->name('home');
+Route::view('/terms', 'legal.terms')->name('terms');
+Route::view('/privacy', 'legal.privacy')->name('privacy');
+
+Route::get('/tickets/{ticket}/participants/{participant}/photo', [
+    TicketParticipantPhotoController::class,
+    'show',
+])->middleware(['auth', 'role:citizen,admin,staff'])
+    ->name('tickets.participants.photo');
+
+Route::get('/verify/permit/{documentUuid}', [
+    PermitVerificationController::class,
+    'show',
+])->whereUuid('documentUuid')
+    ->name('permits.verify');
+
+/*
+|--------------------------------------------------------------------------
+| Guest Routes
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware('guest')->group(function () {
+
+    // Registration
+    Route::get('/register', [RegisterController::class, 'create'])->name('register');
+    Route::post('/register', [RegisterController::class, 'store'])->name('register.store');
+
+    // Login
+    Route::get('/login', [LoginController::class, 'create'])->name('login');
+    Route::post('/login', [LoginController::class, 'store'])->name('login.store');
+
+    // Password reset
+    Route::get('/forgot-password', [ForgotPasswordController::class, 'showForgotPassword'])
+        ->name('password.request');
+
+    Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLink'])
+        ->middleware('throttle:3,1')
+        ->name('password.email');
+
+    Route::get('/reset-password/{token}', [ResetPasswordController::class, 'showResetPassword'])
+        ->name('password.reset');
+
+    Route::post('/reset-password', [ResetPasswordController::class, 'resetPassword'])
+        ->middleware('throttle:5,1')
+        ->name('password.update');
+
+    // Google authentication
+    Route::get('/auth/google', [GoogleController::class, 'redirect'])
+        ->name('google.redirect');
+
+    Route::get('/auth/google/callback', [GoogleController::class, 'callback']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Email Verification
+|--------------------------------------------------------------------------
+*/
+
+Route::view('/email/verification/notice', 'auth.verify-email')
+    ->middleware('auth')
+    ->name('verification.notice');
+
+Route::get('/email/verify', [EmailVerificationController::class, 'show'])
+    ->name('verification.otp.show');
+
+Route::post('/email/verify', [EmailVerificationController::class, 'verify'])
+    ->middleware('throttle:10,1')
+    ->name('verification.otp.verify');
+
+Route::post('/email/verification/resend', [EmailVerificationController::class, 'resend'])
+    ->middleware('throttle:3,1')
+    ->name('verification.otp.resend');
+
+Route::post('/email/verification/cancel', [EmailVerificationController::class, 'cancel'])
+    ->name('verification.cancel');
+
+/*
+|--------------------------------------------------------------------------
+| Citizen Routes
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth', 'role:citizen'])
+    ->prefix('citizen')
+    ->name('citizen.')
+    ->group(function () {
+
+        // Dashboard
+        Route::view('/dashboard', 'citizen.dashboard.index')->name('dashboard');
+
+        // Available services
+        Route::get('/services', function (Request $request) {
+            $pendingServices = ServiceRequest::whereBelongsTo($request->user())
+                ->where('status', ServiceRequest::PENDING)
+                ->pluck('service_type')
+                ->all();
+
+            return view('citizen.services.index', compact('pendingServices'));
+        })->name('services');
+
+        // Documents and applications
+        Route::controller(ServiceRequestController::class)->group(function () {
+
+            Route::get('/documents', 'documents')->name('documents');
+
+            Route::get('/applications', 'applications')->name('applications');
+            Route::get('/applications/{serviceRequest}', 'showApplication')->name('applications.show');
+            Route::get('/applications/{serviceRequest}/print', 'printApplication')->name('applications.print');
+            Route::post('/applications/{serviceRequest}/cancel', 'cancelApplication')->name('applications.cancel');
+
+            // Barangay Clearance
+            Route::get('/barangay-clearance', 'clearance')->name('barangay-clearance');
+            Route::post('/barangay-clearance/preview', 'previewClearance')->name('barangay-clearance.preview');
+            Route::post('/barangay-clearance/modify', 'modifyClearance')->name('barangay-clearance.modify');
+            Route::post('/barangay-clearance/proceed', 'proceedClearance')->name('barangay-clearance.proceed');
+
+            // Certificate of Residency
+            Route::get('/certificate-of-residency', 'residency')->name('certificate-of-residency');
+            Route::post('/certificate-of-residency/preview', 'previewResidency')->name('certificate-of-residency.preview');
+            Route::post('/certificate-of-residency/modify', 'modifyResidency')->name('certificate-of-residency.modify');
+            Route::post('/certificate-of-residency/proceed', 'proceedResidency')->name('certificate-of-residency.proceed');
+
+            // Certificate of Indigency
+            Route::get('/certificate-of-indigency', 'indigency')->name('certificate-of-indigency');
+            Route::post('/certificate-of-indigency/preview', 'previewIndigency')->name('certificate-of-indigency.preview');
+            Route::post('/certificate-of-indigency/modify', 'modifyIndigency')->name('certificate-of-indigency.modify');
+            Route::post('/certificate-of-indigency/proceed', 'proceedIndigency')->name('certificate-of-indigency.proceed');
+        });
+
+        // Tickets
+        Route::get('/applications/{serviceRequest}/ticket', [TicketController::class, 'show'])
+            ->name('tickets.show');
+
+        Route::post('/applications/{serviceRequest}/ticket', [TicketController::class, 'reply'])
+            ->middleware('throttle:20,1')
+            ->name('tickets.reply');
+
+        // Profile
+        Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
+        Route::get('/profile/photo', [ProfileController::class, 'showPhoto'])->name('profile.photo.show');
+
+        // Identity verification
+        Route::controller(IdentityVerificationController::class)->group(function () {
+            Route::get('/identity-verification', 'show')->name('identity-verification');
+            Route::post('/identity-verification/details', 'storeDetails')->name('identity-verification.details');
+
+            Route::post('/identity-verification/document', 'storeDocument')
+                ->middleware('throttle:10,1')
+                ->name('identity-verification.document');
+
+            Route::get('/identity-verification/document/{verification}', 'document')
+                ->name('identity-verification.file');
+        });
+
+        // Notifications
+        Route::get('/notifications', [NotificationController::class, 'index'])
+            ->name('notifications');
+
+        Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])
+            ->name('notifications.read-all');
+
+        Route::post('/notifications/{id}/read', [NotificationController::class, 'read'])
+            ->name('notifications.read');
+
+        // Verified citizens only
+        Route::middleware('identity.verified')->group(function () {
+            Route::put('/profile', [ProfileController::class, 'update'])
+                ->name('profile.update');
+
+            Route::post('/profile/photo', [ProfileController::class, 'photo'])
+                ->name('profile.photo');
+        });
+    });
+
+/*
+|--------------------------------------------------------------------------
+| Admin and Staff Routes
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth', 'role:admin,staff'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+
+        // Dashboard
+        Route::get('/dashboard', [DashboardController::class, 'index'])
+            ->name('dashboard');
+
+        // Profile
+        Route::get('/profile', [AdminProfileController::class, 'show'])->name('profile');
+        Route::put('/profile', [AdminProfileController::class, 'update'])->name('profile.update');
+        Route::get('/profile/photo', [AdminProfileController::class, 'showPhoto'])->name('profile.photo.show');
+        Route::post('/profile/photo', [AdminProfileController::class, 'photo'])->name('profile.photo');
+
+        // Notifications
+        Route::post('/notifications/read-all', [AdminNotificationController::class, 'readAll'])
+            ->name('notifications.read-all');
+
+        Route::post('/notifications/{id}/read', [AdminNotificationController::class, 'read'])
+            ->name('notifications.read');
+
+        Route::view('/notifications', 'admin.notifications.index')
+            ->name('notifications.index');
+
+        // Admin-only user management
+        Route::middleware('role:admin')->group(function () {
+            Route::get('/users', [UserController::class, 'index'])->name('users.index');
+            Route::post('/users', [UserController::class, 'store'])->name('users.store');
+
+            Route::patch('/users/{user}/status', [UserController::class, 'toggleStatus'])
+                ->name('users.toggle-status');
+
+            Route::get('/users/{user}/permissions', [UserController::class, 'permissions'])
+                ->name('users.permissions');
+
+            Route::put('/users/{user}/permissions', [UserController::class, 'updatePermissions'])
+                ->name('users.permissions.update');
+        });
+
+        // Permit management
+        Route::middleware('permission:permits.review')
+            ->controller(PermitController::class)
+            ->group(function () {
+                Route::get('/permits', 'index')->name('permits.index');
+                Route::get('/permits/{serviceRequest}', 'show')->name('permits.show');
+                Route::post('/permits/{serviceRequest}/approve', 'approve')->name('permits.approve');
+                Route::post('/permits/{serviceRequest}/reissue', 'reissue')->name('permits.reissue');
+                Route::post('/permits/{serviceRequest}/reject', 'reject')->name('permits.reject');
+
+                Route::patch('/permits/{serviceRequest}/print-limit', 'updatePrintLimit')
+                    ->middleware('permission:permits.print-limit')
+                    ->name('permits.print-limit.update');
+            });
+
+        // Citizen ticket inbox
+        Route::middleware('permission:tickets.reply')
+            ->controller(TicketInboxController::class)
+            ->group(function () {
+                Route::get('/tickets', 'index')->name('tickets.index');
+                Route::get('/tickets/{ticket}', 'show')->name('tickets.show');
+
+                Route::post('/tickets/{ticket}', 'reply')
+                    ->middleware('throttle:30,1')
+                    ->name('tickets.reply');
+            });
+
+        // Restricted pages
+        Route::view('/document-authentication', 'admin.document-authentication.index')
+            ->middleware('permission:documents.authenticate')
+            ->name('document-authentication.index');
+
+        Route::view('/blockchain-ledger', 'admin.blockchain-ledger.index')
+            ->middleware('permission:blockchain.view')
+            ->name('blockchain-ledger.index');
+
+        Route::view('/reports', 'admin.reports.index')
+            ->middleware('permission:reports.view')
+            ->name('reports.index');
+
+        Route::view('/audit-logs', 'admin.audit-logs.index')
+            ->middleware('permission:audit.view')
+            ->name('audit-logs.index');
+    });
+
+/*
+|--------------------------------------------------------------------------
+| Identity Verification Review
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth', 'role:admin,staff', 'permission:identity.review'])
+    ->prefix('admin/identity-verification')
+    ->name('admin.identity-verification.')
+    ->controller(IdentityReviewController::class)
+    ->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/{verification}', 'show')->name('show');
+        Route::get('/{verification}/document', 'document')->name('document');
+        Route::get('/{verification}/selfie', 'selfie')->name('selfie');
+        Route::post('/{verification}/approve', 'approve')->name('approve');
+        Route::post('/{verification}/reject', 'reject')->name('reject');
+    });
+
+/*
+|--------------------------------------------------------------------------
+| Logout
+|--------------------------------------------------------------------------
+*/
+
+Route::post('/logout', [LoginController::class, 'destroy'])
+    ->middleware('auth')
+    ->name('logout');
