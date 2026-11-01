@@ -240,7 +240,8 @@ Route::middleware(['auth', 'role:admin,staff'])
         // Admin-only user management
         Route::middleware('role:admin')->group(function () {
             Route::get('/users', [UserController::class, 'index'])->name('users.index');
-            Route::post('/users', [UserController::class, 'store'])->name('users.store');
+            Route::post('users', [UserController::class, 'store'])->name('users.store');
+           Route::resource('users', UserController::class)->only(['update', 'destroy']);
 
             Route::patch('/users/{user}/status', [UserController::class, 'toggleStatus'])
                 ->name('users.toggle-status');

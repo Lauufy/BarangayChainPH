@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Notifications\Notifiable;
+use App\Services\SupabaseStorage;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 
 #[Fillable([
     'name',
@@ -100,5 +102,14 @@ class User extends Authenticatable implements MustVerifyEmail
     public function isIdentityVerified(): bool
     {
         return $this->identityStatus() === IdentityVerification::VERIFIED;
+    }
+
+    protected function avatarUrl(): Attribute
+    {
+        return Attribute::get(function () {
+            $path = $this->employeeProfile?->photo_path ?? $this->citizenProfile?->photo_path;
+
+            return app(SupabaseStorage::class)->url($path);
+        });
     }
 }
