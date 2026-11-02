@@ -220,12 +220,6 @@
                     @endauth
                     <a href="#services" class="{{ $ghost }}">See available services</a>
                 </div>
-                @guest
-                    <p class="mt-4 text-sm text-blue-100">
-                        New here? Create an account first, then choose a service.
-                        <a href="{{ route('login') }}" class="font-semibold text-white underline underline-offset-4 hover:text-emerald-300">Already registered? Sign in</a>
-                    </p>
-                @endguest
 
                 <p class="absolute bottom-4 right-5 hidden text-xs text-white/70 sm:right-8 lg:block">
                     Ynares Hall, Barangay San Luis
