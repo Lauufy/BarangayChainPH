@@ -3,7 +3,6 @@
 @section('title', 'User & Role Management')
 
 @section('content')
-    <x-feedbacks.toast />
     <div class="space-y-6">
         <x-admin.page-header label="Administration" title="User & Role Management"
             text="Manage citizen accounts, staff members, and administrator access." />

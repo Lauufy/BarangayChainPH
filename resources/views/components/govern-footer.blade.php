@@ -1,12 +1,13 @@
 @php
     // Shared footer styles (kept identical in citizen-footer.blade.php)
-    $heading = 'border-l-2 border-green-600 pl-3 text-sm font-bold text-white';
-    $link = 'transition hover:text-white hover:underline';
-    $contactLink = 'text-blue-50 transition hover:underline';
+    $heading = 'border-l-2 border-emerald-500 pl-3 text-sm font-bold text-white';
+    $link = 'inline-block transition duration-200 hover:translate-x-0.5 hover:text-emerald-300';
+    $contactLink = 'text-blue-50 underline-offset-4 transition-colors hover:text-emerald-300 hover:underline';
     $term = 'text-xs text-blue-200/60';
-    $facebookLink = 'font-semibold text-white underline underline-offset-4 decoration-green-600 hover:decoration-white';
+    $facebookLink = 'font-semibold text-white underline underline-offset-4 decoration-emerald-500 transition-colors hover:text-emerald-300';
     $bottomRow =
         'mt-12 flex flex-col gap-2 border-t border-white/15 pt-6 text-xs text-blue-200/60 sm:flex-row sm:items-center sm:justify-between';
+    $legal = 'transition-colors hover:text-emerald-300';
 
     $links = [
         [url('/') . '#services', 'Services'],
@@ -17,8 +18,8 @@
     ];
 @endphp
 
-<footer class="border-t-4 border-green-700 bg-blue-950 text-white">
-    <div class="mx-auto max-w-7xl px-5 py-14 sm:px-8">
+<footer class="border-t-4 border-emerald-500 bg-blue-950 text-white">
+    <div class="mx-auto max-w-7xl px-5 py-14 sm:px-8 sm:py-16">
 
         <div class="grid gap-10 md:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1fr]">
 
@@ -27,7 +28,6 @@
                 <span
                     class="block whitespace-nowrap font-['Barlow_Condensed'] text-4xl font-bold uppercase tracking-[0.06em] text-[#006aff]">
                     BarangayChain <span class="text-[#5fd47a]">PH</span>
-                </span>
                 </span>
                 <span class="mt-1 block text-xs font-medium text-blue-200/70">
                     Barangay San Luis, Antipolo City, Rizal
@@ -104,11 +104,11 @@
         {{-- Legal links and copyright --}}
         <div class="{{ $bottomRow }}">
             <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-                <a href="{{ route('privacy') }}" class="hover:text-white">Privacy Notice</a>
-                <a href="{{ route('terms') }}" class="border-l border-white/20 pl-4 hover:text-white">Terms of
+                <a href="{{ route('privacy') }}" class="{{ $legal }}">Privacy Notice</a>
+                <a href="{{ route('terms') }}" class="border-l border-white/20 pl-4 {{ $legal }}">Terms of
                     Service</a>
                 <button type="button" onclick="window.scrollTo({ top: 0, behavior: 'smooth' })"
-                    class="border-l border-white/20 pl-4 hover:text-white">Back to top ↑</button>
+                    class="border-l border-white/20 pl-4 {{ $legal }}">Back to top <svg class="inline-block h-4 w-4 align-[-2px]" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" /></svg></button>
             </div>
 
             <p>© {{ now()->year }} Barangay San Luis. All rights reserved.</p>

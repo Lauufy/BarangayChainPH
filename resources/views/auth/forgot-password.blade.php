@@ -9,7 +9,7 @@
             {{-- Header --}}
             <header class="mb-6">
                 <p class="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#1D3FBB]">
-                    Citizen Portal
+                    Community Services Portal
                 </p>
 
                 <h1 class="text-3xl font-bold leading-tight tracking-tight text-[#0F1B3D]">

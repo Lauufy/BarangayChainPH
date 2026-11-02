@@ -52,8 +52,10 @@ class LoginController extends Controller
         }
 
         return match ($user->role) {
-            'admin', 'staff' => redirect()->route('admin.dashboard'),
-            'citizen' => redirect()->route('citizen.dashboard'),
+            'admin', 'staff' => redirect()->route('admin.dashboard')
+                ->with('success', 'You are now logged in successfully.'),
+            'citizen' => redirect()->route('citizen.dashboard')
+                ->with('success', 'You are now logged in successfully.'),
             default => tap(redirect('/'), fn() => Auth::logout()),
         };
     }
@@ -62,7 +64,7 @@ class LoginController extends Controller
     {
         $this->logout($request);
 
-        return redirect()->route('login');
+        return redirect()->route('home')->with('success', 'You have been logged out successfully.');
     }
 
     private function sendOtp(Request $request, $user)

@@ -3,153 +3,422 @@
 @section('title', 'Citizen Dashboard')
 
 @section('content')
-@php
-    $user = auth()->user();
-    $profile = $user->citizenProfile;
+    @php
+        $user = auth()->user();
+        $profile = $user->citizenProfile;
+        $firstName = str($user->name)->before(' ');
+        $identity = $user->identityStatus();
+        $verified = $identity === 'verified';
+        $hour = now()->hour;
+        $greeting = $hour < 12 ? 'Good morning' : ($hour < 18 ? 'Good afternoon' : 'Good evening');
 
-    // Identity status: text and color
-    $statuses = [
-        'verified' => ['Verified', 'text-green-800'],
-        'pending' => ['Pending review', 'text-amber-700'],
-        'rejected' => ['Rejected', 'text-red-700'],
-    ];
-    [$statusText, $statusColor] = $statuses[$user->identityStatus()] ?? ['Not verified', 'text-slate-600'];
+        [$statusText, $statusBadge, $statusMessage, $statusAction] = [
+            'verified' => ['Verified', 'bg-emerald-600 text-white', 'Your identity is verified. You can use all barangay services.', null],
+            'pending' => ['Pending review', 'bg-amber-400 text-slate-900', 'The barangay is reviewing your documents.', 'View status'],
+            'rejected' => ['Rejected', 'bg-red-600 text-white', 'Your identity verification was not approved.', 'See why and resubmit'],
+        ][$identity] ?? ['Not verified', 'bg-slate-600 text-white', 'Verify your identity to request barangay services.', 'Verify your account'];
 
-    // Services: icon, name
-    $services = [
-        ['M8 7V3m8 4V3M4 11h16M5 5h14a1 1 0 0 1 1 1v13H4V6a1 1 0 0 1 1-1Z', 'Barangay clearance'],
-        ['M3 10.5 12 3l9 7.5M5 9v11h14V9M9 20v-6h6v6', 'Certificate of residency'],
-        ['M7 3h7l5 5v13H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2ZM14 3v5h5M9 13h6M9 17h6', 'Certificate of indigency'],
-    ];
+        $actions = [
+            ['Request a service', 'Choose a certificate and submit', route('citizen.services')],
+            ['My applications', 'Check the status of your requests', route('citizen.applications')],
+            ['My documents', 'View your issued documents', route('citizen.documents')],
+        ];
 
-    // Profile rows: label, value
-    $details = [
-        ['Phone', $profile?->phone ?: 'Not added'],
-        ['Date of birth', $profile?->date_of_birth?->format('M j, Y') ?? 'Not added'],
-        ['Address', $profile?->full_address ?: 'Add your address to complete your profile'],
-    ];
+        $navItems = [['services', 'Services'], ['announcements', 'Announcements'], ['profile', 'Profile'], ['help', 'Help']];
 
-    // Classes used many times
-    $card = 'rounded-md border border-slate-200 bg-white p-6';
-    $heading = 'border-l-2 border-green-800 pl-3 font-bold text-blue-950';
-    $link = 'text-sm font-semibold text-blue-900 underline underline-offset-4 hover:text-blue-700';
-@endphp
-    <div class="space-y-6">
+        $services = $services ?? [
+            ['name' => 'Barangay clearance', 'description' => 'For employment, applications, and other official transactions.'],
+            ['name' => 'Certificate of residency', 'description' => 'Proof of residence in Barangay San Luis.'],
+            ['name' => 'Certificate of indigency', 'description' => 'For residents applying for assistance.'],
+        ];
+
+        $details = [
+            ['Phone', $profile?->phone],
+            ['Date of birth', $profile?->date_of_birth?->format('M j, Y')],
+            ['Address', $profile?->full_address],
+        ];
+
+        $missing = collect($details)->filter(fn($row) => blank($row[1]))->count();
+        $percent = (int) round((count($details) - $missing) / count($details) * 100);
+
+        $steps = [
+            ['01', 'Verify your identity', 'Submit your profile and a valid ID.', $verified, route('citizen.identity-verification')],
+            ['02', 'Complete your profile', 'Add your phone, birth date, and address.', $missing === 0, route('citizen.profile')],
+            ['03', 'Request a service', 'Choose a certificate and submit.', false, route('citizen.services')],
+        ];
+
+        $ready = $verified && $missing === 0;
+        $doneCount = (int) $verified + (int) ($missing === 0);
+
+        $stats = $stats ?? [];
+        $announcements = collect($announcements ?? []);
+        $hasImportant = $announcements->contains(fn($a) => data_get($a, 'important'));
+
+        $contacts = [
+            ['Location', 'Barangay San Luis, Antipolo City, Rizal 1870', null],
+            ['Office hours', 'Monday to Friday, 8:00 AM to 5:00 PM', null],
+            ['Phone', '8-8555-245', 'tel:88555245'],
+            ['Email', 'barangaychain@gmail.com', 'mailto:barangaychain@gmail.com'],
+        ];
+
+        $arrow = fn($class = 'h-4 w-4') => '<svg class="' . $class . '" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>';
+
+        $btn = 'inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-5 py-3 text-sm font-semibold text-white transition hover:shadow-md';
+        $button = "$btn bg-blue-950 hover:bg-blue-800";
+        $accent = "$btn bg-emerald-700 hover:bg-emerald-600";
+        $ghost = 'inline-flex min-h-11 items-center justify-center rounded-md border border-white/50 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-white hover:text-blue-950';
+        $textLink = 'inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-blue-900 underline decoration-emerald-600 decoration-2 underline-offset-4 hover:text-emerald-700';
+        $label = 'text-sm font-semibold text-blue-800';
+        $title = 'mt-2 text-2xl font-bold tracking-tight text-blue-950 sm:text-3xl';
+        $card = 'rounded-md border border-slate-200 bg-white';
+        $focus = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600';
+
+        $band = 'relative left-1/2 w-screen max-w-[100vw] -translate-x-1/2';
+        $gray = 'border-y border-slate-200 bg-slate-50';
+        $inner = 'mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-16 lg:py-20';
+        $head = 'flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between';
+    @endphp
+
+    <div class="min-w-0 overflow-x-clip">
 
         {{-- Hero --}}
-        <section class="grid overflow-hidden rounded-md border border-slate-200 bg-white lg:grid-cols-[1.4fr_1fr]">
+        <section class="{{ $band }} isolate overflow-hidden bg-blue-950">
+            <img src="{{ asset('img/photos/ynares-hall-front.jpg') }}" alt="" width="1214" height="724"
+                class="absolute inset-0 -z-20 h-full w-full object-cover object-center sm:object-right">
+            <div aria-hidden="true" class="absolute inset-0 -z-10 bg-linear-to-r from-blue-950 via-blue-950/85 to-blue-950/50"></div>
 
-            {{-- Welcome --}}
-            <div class="bg-linear-to-br from-blue-900 via-blue-950 to-green-950 p-8 text-white sm:p-10">
-                <p class="flex items-center gap-3 text-xs font-bold uppercase tracking-[0.18em] text-blue-200">
-                    <span class="h-px w-8 bg-green-500"></span> Barangay San Luis, Antipolo City
-                </p>
-                <h1 class="mt-4 text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
-                    Maasikaso at maaasahang serbisyo, para sa bawat San Luiseño.
-                </h1>
-                <p class="mt-4 max-w-lg text-sm leading-6 text-blue-100">
-                    Find barangay services, check your identity verification, and keep your account details up to date.
-                </p>
-                <div class="mt-6 flex flex-wrap gap-3">
-                    <a href="{{ route('citizen.services') }}"
-                        class="bg-white px-5 py-2.5 text-sm font-semibold text-blue-950 hover:bg-blue-50">View services</a>
-                    <a href="{{ route('citizen.applications') }}"
-                        class="border border-white/40 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/10">My applications</a>
-                </div>
-            </div>
-
-            {{-- Account and identity status --}}
-            <div class="flex flex-col justify-center gap-5 p-8">
-                <div class="flex items-center gap-3">
-                    <img src="{{ asset('img/branding/barangayChainPH-logo.png') }}" alt=""
-                        class="h-12 w-12 rounded-full border border-slate-200 bg-white object-contain p-0.5">
-                    <div class="min-w-0">
-                        <p class="truncate font-semibold text-blue-950">{{ $user->name }}</p>
-                        <p class="truncate text-sm text-slate-500">{{ $user->email }}</p>
+            <div class="mx-auto grid max-w-7xl items-center gap-8 px-5 pb-36 pt-12 sm:px-8 sm:pb-40 sm:pt-20 lg:grid-cols-[1.3fr_1fr] lg:gap-14 lg:pb-44">
+                <div class="min-w-0 lg:ml-6">
+                    <p class="text-sm font-semibold text-emerald-300">Barangay San Luis, Antipolo City</p>
+                    <h1 class="mt-3 text-3xl font-bold leading-tight tracking-tight text-white sm:text-5xl">
+                        {{ $greeting }}, {{ $firstName }}.
+                    </h1>
+                    <p class="mt-5 max-w-xl text-sm leading-7 text-blue-100 sm:text-lg">
+                        Request barangay certificates, check your applications, and keep your account details up to date in one place.
+                    </p>
+                    <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                        <a href="{{ route('citizen.services') }}" class="{{ $accent }} w-full sm:w-auto">Request a service</a>
+                        <a href="{{ route('citizen.applications') }}" class="{{ $ghost }} w-full sm:w-auto">My applications</a>
                     </div>
                 </div>
 
-                <div class="border-t border-slate-200 pt-5">
-                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Identity status</p>
-                    <p class="mt-1 text-lg font-bold {{ $statusColor }}">{{ $statusText }}</p>
+                {{-- Account and identity status --}}
+                <div class="min-w-0 rounded-md bg-[#ffffffa1] p-5 text-slate-800 backdrop-blur-sm sm:mx-6 sm:p-6">
+                    <div class="flex min-w-0 items-center gap-3">
+                        <img src="{{ asset('img/branding/barangayChainPH-logo.png') }}" alt=""
+                            class="h-12 w-12 shrink-0 rounded-full border border-slate-200 bg-white object-contain p-0.5">
+                        <div class="min-w-0">
+                            <p class="truncate font-semibold text-slate-900">{{ $user->name }}</p>
+                            <p class="break-all text-xs text-slate-700 sm:text-sm">{{ $user->email }}</p>
+                        </div>
+                    </div>
 
-                    @unless ($user->isIdentityVerified())
-                        <a href="{{ route('citizen.identity-verification') }}" class="{{ $link }} mt-2 inline-block">
-                            {{ $user->identityStatus() === 'pending' ? 'View status' : 'Verify your account' }}
-                        </a>
-                    @endunless
+                    <div class="mt-5 border-t border-slate-400/50 pt-5">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <p class="text-sm font-semibold text-slate-800">Identity status</p>
+                            <span class="{{ $statusBadge }} rounded px-2.5 py-1 text-xs font-semibold sm:text-sm">{{ $statusText }}</span>
+                        </div>
+                        <p class="mt-3 text-sm leading-6 text-slate-800">{{ $statusMessage }}</p>
+                        @if ($statusAction)
+                            <a href="{{ route('citizen.identity-verification') }}" class="{{ $button }} mt-4 w-full sm:w-auto">{{ $statusAction }}</a>
+                        @endif
+                    </div>
                 </div>
             </div>
         </section>
 
-        {{-- Services and announcements --}}
-        <div class="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+        {{-- Quick actions --}}
+        <section aria-label="Quick actions" class="{{ $band }} relative z-10 -mt-28 sm:-mt-24 lg:-mt-36">
+            <div class="mx-auto max-w-7xl px-5 sm:px-8">
+                <div class="mx-0 overflow-hidden rounded-md border border-t-4 border-slate-200 border-t-emerald-500 bg-white shadow-lg sm:mx-6">
+                    <div class="grid divide-y divide-slate-200 md:grid-cols-3 md:divide-x md:divide-y-0">
+                        @foreach ($actions as [$name, $caption, $href])
+                            <a href="{{ $href }}" class="{{ $focus }} group flex items-center justify-between gap-4 p-5 transition-colors hover:bg-emerald-50 sm:p-6">
+                                <div class="min-w-0">
+                                    <p class="text-base font-bold text-blue-950 sm:text-lg">{{ $name }}</p>
+                                    <p class="mt-1 text-sm text-slate-600">{{ $caption }}</p>
+                                </div>
+                                {!! $arrow('h-6 w-6 shrink-0 text-emerald-700 transition-transform group-hover:translate-x-1') !!}
+                            </a>
+                        @endforeach
+                    </div>
 
-            <section class="{{ $card }}">
-                <h2 class="{{ $heading }}">Barangay services</h2>
+                    @if ($stats)
+                        <dl class="grid grid-cols-2 divide-x divide-y divide-slate-200 border-t border-slate-200 bg-slate-50 md:grid-cols-4 md:divide-y-0">
+                            @foreach ($stats as $name => $count)
+                                <div class="px-4 py-4 transition-colors hover:bg-emerald-50 sm:px-6">
+                                    <dt class="text-sm font-semibold text-slate-600">{{ $name }}</dt>
+                                    <dd class="mt-0.5 text-2xl font-bold text-blue-950">{{ $count }}</dd>
+                                </div>
+                            @endforeach
+                        </dl>
+                    @endif
+                </div>
+            </div>
+        </section>
 
-                <div class="mt-3 divide-y divide-slate-200">
-                    @foreach ($services as [$icon, $name])
-                        <a href="{{ route('citizen.services') }}" class="group flex items-center gap-4 py-4">
-                            <svg class="h-6 w-6 shrink-0 text-green-800" viewBox="0 0 24 24" fill="none"
-                                stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-                                <path d="{{ $icon }}" />
-                            </svg>
-                            <span class="flex-1 text-sm font-semibold text-blue-950 group-hover:text-blue-700">{{ $name }}</span>
-                            <span class="text-slate-400 group-hover:text-blue-900">→</span>
-                        </a>
-                    @endforeach
+        {{-- Getting started --}}
+        @unless ($ready)
+            <section id="getting-started" aria-labelledby="ready-title" class="{{ $band }}">
+                <div class="{{ $inner }}">
+                    <div class="{{ $head }}">
+                        <div class="max-w-xl">
+                            <p class="{{ $label }}">Getting started</p>
+                            <h2 id="ready-title" class="{{ $title }}">Before you apply.</h2>
+                        </div>
+                        <p class="text-sm font-semibold text-slate-700">{{ $doneCount }} of 2 required steps done</p>
+                    </div>
+
+                    <div class="mt-4 h-2 overflow-hidden rounded-full bg-slate-200" role="progressbar"
+                        aria-valuenow="{{ $doneCount }}" aria-valuemin="0" aria-valuemax="2" aria-label="Required steps completed">
+                        <div class="h-full rounded-full bg-emerald-600 transition-all duration-700" style="width: {{ $doneCount * 50 }}%"></div>
+                    </div>
+
+                    <ol class="mt-8 grid divide-y divide-slate-300 overflow-hidden rounded-md border border-slate-300 bg-white md:grid-cols-3 md:divide-x md:divide-y-0">
+                        @foreach ($steps as [$number, $name, $text, $done, $href])
+                            <li class="group relative p-5 transition-colors hover:bg-emerald-50 sm:p-7">
+                                <span aria-hidden="true" class="{{ $done ? 'bg-emerald-600' : ['bg-blue-950', 'bg-blue-900', 'bg-emerald-800'][$loop->index] }} absolute inset-x-0 top-0 h-1"></span>
+                                <div class="flex items-center justify-between gap-3">
+                                    <p class="text-3xl font-bold tracking-tight text-blue-950 sm:text-4xl">{{ $number }}</p>
+                                    @if ($done)
+                                        <span class="rounded bg-emerald-600 px-2 py-1 text-xs font-semibold text-white">✓ Done</span>
+                                    @endif
+                                </div>
+                                <h3 class="mt-5 text-lg font-bold text-blue-950">{{ $name }}</h3>
+                                <p class="mt-2 text-sm leading-6 text-slate-600">{{ $text }}</p>
+                                @unless ($done)
+                                    <a href="{{ $href }}" class="{{ $textLink }} mt-4">Go to this step<span class="sr-only">: {{ $name }}</span></a>
+                                @endunless
+                            </li>
+                        @endforeach
+                    </ol>
+                </div>
+            </section>
+        @endunless
+
+        {{-- Section navigation --}}
+        <x-navigation.section-nav :items="$navItems" label="Dashboard sections" bleed
+            class="{{ $ready ? 'mt-10 sm:mt-20' : '' }}" />
+
+        {{-- Services --}}
+        <section id="services" aria-labelledby="services-title" class="{{ $band }} {{ $gray }} scroll-mt-4 border-t-0">
+            <div class="{{ $inner }}">
+                <div class="{{ $head }}">
+                    <div class="max-w-xl">
+                        <p class="{{ $label }}">Online services</p>
+                        <h2 id="services-title" class="{{ $title }}">What can we help you with?</h2>
+                    </div>
+                    <a href="{{ route('citizen.services') }}" class="{{ $textLink }}">View all services</a>
                 </div>
 
-                <a href="{{ route('citizen.documents') }}" class="{{ $link }} mt-4 inline-block">Go to my documents</a>
-            </section>
+                <ul class="{{ $card }} mt-8 divide-y divide-slate-200 border-t-4 border-t-blue-950">
+                    @foreach ($services as $service)
+                        @php $requirements = data_get($service, 'requirements', []); @endphp
+                        <li>
+                            <details class="group">
+                                <summary class="{{ $focus }} flex cursor-pointer list-none items-center gap-3 p-4 transition-colors hover:bg-slate-50 sm:gap-4 sm:p-6 [&::-webkit-details-marker]:hidden">
+                                    <span class="w-7 shrink-0 text-sm font-semibold text-emerald-700 sm:w-8">{{ str_pad($loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
+                                    <span class="min-w-0 flex-1">
+                                        <span class="block text-base font-bold text-blue-950 sm:text-lg">{{ data_get($service, 'name') }}</span>
+                                        <span class="mt-1 block text-sm text-slate-600">{{ data_get($service, 'description') }}</span>
+                                    </span>
+                                    {!! $arrow('h-5 w-5 shrink-0 text-blue-950 transition-transform group-open:rotate-90') !!}
+                                </summary>
 
-            <section class="{{ $card }}">
-                <h2 class="{{ $heading }}">Announcements and notices</h2>
-
-                {{-- Pass $announcements from the controller: [['title' => '...', 'date' => '...'], ...] --}}
-                <ul class="mt-3 divide-y divide-slate-200">
-                    @forelse ($announcements ?? [] as $item)
-                        <li class="py-3">
-                            <p class="text-sm font-medium text-blue-950">{{ $item['title'] }}</p>
-                            <p class="mt-0.5 text-xs text-slate-500">{{ $item['date'] }}</p>
+                                <div class="border-t border-slate-200 bg-slate-50 px-5 py-5 text-sm sm:pl-20">
+                                    @if (is_array($requirements) && $requirements)
+                                        <p class="font-semibold text-blue-950">Requirements</p>
+                                        <ul class="mt-1 list-disc space-y-0.5 pl-5 text-slate-700">
+                                            @foreach ($requirements as $requirement)
+                                                <li>{{ $requirement }}</li>
+                                            @endforeach
+                                        </ul>
+                                    @endif
+                                    @unless ($verified)
+                                        <p class="mt-2 text-slate-700">Your identity must be verified before you can submit this request.</p>
+                                    @endunless
+                                    <a href="{{ route('citizen.services') }}" class="{{ $button }} mt-4 w-full sm:w-auto">Request this service</a>
+                                </div>
+                            </details>
                         </li>
-                    @empty
-                        <li class="py-3 text-sm text-slate-500">No announcements right now. Check back later.</li>
-                    @endforelse
+                    @endforeach
                 </ul>
-            </section>
-        </div>
 
-        {{-- Profile and support --}}
-        <div class="grid gap-6 md:grid-cols-2">
+                <p class="mt-4 text-sm leading-6 text-slate-600">
+                    Requirements, fees, and processing times are subject to confirmation by the barangay office.
+                </p>
+            </div>
+        </section>
 
-            <section class="{{ $card }}">
-                <div class="flex items-center justify-between">
-                    <h2 class="{{ $heading }}">Your profile</h2>
-                    <a href="{{ route('citizen.profile') }}" class="{{ $link }}">Open profile</a>
+        {{-- Announcements --}}
+        <section id="announcements" aria-labelledby="news-title" class="{{ $band }} scroll-mt-4">
+            <div class="{{ $inner }}">
+                <div class="{{ $head }}">
+                    <div class="max-w-xl">
+                        <p class="{{ $label }}">Announcements and updates</p>
+                        <h2 id="news-title" class="{{ $title }}">Latest from the barangay.</h2>
+                    </div>
+
+                    @if ($hasImportant)
+                        <div class="inline-flex w-full overflow-hidden rounded-md border border-slate-300 text-sm font-semibold sm:w-auto" role="group" aria-label="Filter announcements">
+                            <button type="button" data-news-filter="all" aria-pressed="true" class="{{ $focus }} flex-1 bg-blue-950 px-4 py-2 text-white sm:flex-none">All</button>
+                            <button type="button" data-news-filter="important" aria-pressed="false" class="{{ $focus }} flex-1 bg-white px-4 py-2 text-slate-800 hover:bg-slate-50 sm:flex-none">Important</button>
+                        </div>
+                    @endif
                 </div>
 
-                <dl class="mt-4 divide-y divide-slate-200 text-sm">
+                @if ($announcements->isNotEmpty())
+                    <div id="news-list" class="mt-8 grid gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
+                        @foreach ($announcements as $item)
+                            @php $important = (bool) data_get($item, 'important'); @endphp
+                            <article data-important="{{ (int) $important }}"
+                                class="{{ $card }} flex min-w-0 flex-col border-t-4 p-5 sm:p-6 {{ $important ? 'border-t-amber-500 bg-amber-50' : 'border-t-blue-950' }}">
+                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                    <p class="text-sm font-semibold text-emerald-700">{{ data_get($item, 'date') }}</p>
+                                    @if ($important)
+                                        <span class="rounded bg-amber-400 px-2 py-0.5 text-xs font-semibold text-slate-900">Important</span>
+                                    @endif
+                                </div>
+                                <h3 class="mt-2 wrap-break-word text-lg font-bold text-blue-950">{{ data_get($item, 'title') }}</h3>
+                                @if (data_get($item, 'description'))
+                                    <p class="mt-3 wrap-break-word text-sm leading-6 text-slate-600">{{ data_get($item, 'description') }}</p>
+                                @endif
+                            </article>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="{{ $card }} mt-8 border-t-4 border-t-blue-950 p-8 text-center">
+                        <p class="font-bold text-blue-950">No announcements right now.</p>
+                        <p class="mt-1 text-sm text-slate-600">New barangay notices will be posted here.</p>
+                    </div>
+                @endif
+            </div>
+        </section>
+
+        {{-- Profile --}}
+        <section id="profile" aria-labelledby="profile-title" class="{{ $band }} {{ $gray }} scroll-mt-4">
+            <div class="{{ $inner }}">
+                <div class="{{ $head }}">
+                    <div class="max-w-xl">
+                        <p class="{{ $label }}">Your account</p>
+                        <h2 id="profile-title" class="{{ $title }}">Keep your details up to date.</h2>
+                    </div>
+                    <a href="{{ route('citizen.profile') }}" class="{{ $textLink }}">Edit profile</a>
+                </div>
+
+                <div class="mt-6 flex items-center justify-between text-sm">
+                    <p class="font-semibold text-slate-700">Profile completion</p>
+                    <p class="font-bold text-blue-950">{{ $percent }}%</p>
+                </div>
+                <div class="mt-2 h-2 overflow-hidden rounded-full bg-slate-200" role="progressbar"
+                    aria-valuenow="{{ $percent }}" aria-valuemin="0" aria-valuemax="100" aria-label="Profile completion">
+                    <div class="h-full rounded-full bg-emerald-600 transition-all duration-700" style="width: {{ $percent }}%"></div>
+                </div>
+
+                <dl class="mt-8 grid divide-y divide-slate-300 overflow-hidden rounded-md border border-slate-300 bg-white sm:grid-cols-2 sm:divide-y-0 md:grid-cols-3 md:divide-x">
                     @foreach ($details as [$name, $value])
-                        <div class="py-3">
-                            <dt class="text-xs font-semibold uppercase tracking-wider text-slate-500">{{ $name }}</dt>
-                            <dd class="mt-1 font-medium text-blue-950">{{ $value }}</dd>
+                        <div class="min-w-0 p-5 sm:p-6">
+                            <dt class="text-sm font-semibold text-slate-600">{{ $name }}</dt>
+                            @if ($value)
+                                <dd class="mt-1 wrap-break-word font-bold text-blue-950">{{ $value }}</dd>
+                            @else
+                                <dd class="mt-1">
+                                    <a href="{{ route('citizen.profile') }}" class="{{ $textLink }}">Add {{ str($name)->lower() }}</a>
+                                </dd>
+                            @endif
                         </div>
                     @endforeach
                 </dl>
-            </section>
 
-            <section class="{{ $card }}">
-                <h2 class="{{ $heading }}">Citizen support</h2>
-                <p class="mt-3 text-sm leading-6 text-slate-600">
-                    Visit your barangay office for help with requests, requirements, fees, and profile changes.
-                </p>
-                <div class="mt-4 flex flex-wrap gap-4">
-                    <a href="{{ route('citizen.identity-verification') }}" class="{{ $link }}">Identity verification guide</a>
-                    <a href="{{ route('privacy') }}" class="{{ $link }}">Privacy notice</a>
+                @if ($missing)
+                    <p class="mt-4 rounded border border-amber-300 bg-amber-50 p-4 text-sm font-semibold text-amber-900">
+                        {{ $missing }} {{ str('detail')->plural($missing) }} missing from your profile.
+                        <a href="{{ route('citizen.profile') }}" class="{{ $textLink }} ml-1">Complete your profile</a>
+                    </p>
+                @else
+                    <p class="mt-4 text-sm text-slate-600">Your profile details are complete.</p>
+                @endif
+            </div>
+        </section>
+
+        {{-- Help --}}
+        <section id="help" aria-labelledby="support-title" class="{{ $band }} scroll-mt-4">
+            <div class="{{ $inner }}">
+                <div class="grid gap-8 lg:grid-cols-[1fr_1.2fr] lg:gap-16">
+                    <div class="min-w-0">
+                        <div class="flex flex-wrap items-center gap-3">
+                            <p class="{{ $label }}">Get in touch</p>
+                            <span id="office-status" class="hidden rounded px-2.5 py-0.5 text-xs font-semibold"></span>
+                        </div>
+                        <h2 id="support-title" class="{{ $title }}">Need help?</h2>
+                        <p class="mt-3 max-w-md text-sm leading-6 text-slate-600">
+                            Visit the barangay office for help with requests, requirements, fees, and profile changes.
+                        </p>
+                        <div class="mt-5 flex flex-wrap gap-x-6 gap-y-2">
+                            <a href="{{ route('citizen.identity-verification') }}" class="{{ $textLink }}">Identity verification guide</a>
+                            <a href="{{ route('privacy') }}" class="{{ $textLink }}">Privacy notice</a>
+                        </div>
+                    </div>
+
+                    <dl class="{{ $card }} grid gap-5 border-t-4 border-t-emerald-500 bg-slate-50 p-5 sm:grid-cols-2 sm:p-6">
+                        @foreach ($contacts as [$name, $value, $link])
+                            <div class="min-w-0">
+                                <dt class="text-sm font-semibold text-slate-600">{{ $name }}</dt>
+                                <dd class="mt-0.5 wrap-break-word text-sm font-semibold text-blue-950">
+                                    @if ($link)
+                                        <a href="{{ $link }}" class="underline-offset-4 hover:text-emerald-700 hover:underline">{{ $value }}</a>
+                                    @else
+                                        {{ $value }}
+                                    @endif
+                                </dd>
+                            </div>
+                        @endforeach
+                    </dl>
                 </div>
-            </section>
-        </div>
+            </div>
+        </section>
     </div>
+
+    <script>
+        // Announcement filter
+        const filters = document.querySelectorAll('[data-news-filter]');
+        const news = document.querySelectorAll('#news-list [data-important]');
+
+        filters.forEach(btn => btn.addEventListener('click', () => {
+            const important = btn.dataset.newsFilter === 'important';
+
+            filters.forEach(b => {
+                const active = b === btn;
+                b.setAttribute('aria-pressed', active);
+                b.classList.toggle('bg-blue-950', active);
+                b.classList.toggle('text-white', active);
+                b.classList.toggle('bg-white', !active);
+                b.classList.toggle('text-slate-800', !active);
+            });
+
+            news.forEach(item => {
+                item.hidden = important && item.dataset.important !== '1';
+            });
+        }));
+
+        // Office hours (Philippine time)
+        const badge = document.getElementById('office-status');
+
+        if (badge) {
+            const parts = new Intl.DateTimeFormat('en-US', {
+                timeZone: 'Asia/Manila',
+                weekday: 'short',
+                hour: 'numeric',
+                hourCycle: 'h23'
+            }).formatToParts(new Date());
+
+            const day = parts.find(p => p.type === 'weekday')?.value;
+            const hour = Number(parts.find(p => p.type === 'hour')?.value);
+            const open = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].includes(day) && hour >= 8 && hour < 17;
+
+            badge.textContent = open ? 'Office open now' : 'Office closed now';
+            badge.className = 'rounded px-2.5 py-0.5 text-xs font-semibold text-white ' +
+                (open ? 'bg-emerald-600' : 'bg-slate-600');
+        }
+    </script>
 @endsection

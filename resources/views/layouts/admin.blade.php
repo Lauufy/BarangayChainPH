@@ -424,6 +424,8 @@
         </div>
     </div>
 
+    <x:feedbacks.toast />
+
     <script>
         const root = document.documentElement;
         const $ = (id) => document.getElementById(id);
