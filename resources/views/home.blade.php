@@ -139,9 +139,9 @@
     {{-- Top bar --}}
     <div class="bg-blue-950 text-white">
         <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-2 text-xs sm:px-8">
-            <p>Republic of the Philippines / Province of Rizal / City of Antipolo</p>
+            <p>Republic of the Philippines | Province of Rizal </p>
             <a href="{{ $facebook }}" target="_blank" rel="noopener noreferrer"
-                class="hidden text-blue-100 transition-colors hover:text-emerald-300 sm:inline">Official announcements</a>
+                class="hidden text-blue-100 transition-colors hover:text-emerald-300 sm:inline">Official Barangay Website</a>
         </div>
     </div>
 
