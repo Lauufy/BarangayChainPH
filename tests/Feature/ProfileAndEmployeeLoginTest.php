@@ -4,8 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\EmployeeProfile;
 use App\Models\User;
+use App\Notifications\EmailVerificationOtp;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Route;
@@ -59,18 +59,38 @@ class ProfileAndEmployeeLoginTest extends TestCase
 
     public function test_email_verification_creates_a_separate_citizen_profile(): void
     {
-        $registration = [
+        Http::fake([
+            'https://www.google.com/recaptcha/api/siteverify' => Http::response(['success' => true], 200),
+            'https://api.pwnedpasswords.com/range/*' => Http::response('', 200),
+        ]);
+        Notification::fake();
+        config(['services.recaptcha.secret_key' => 'test-secret']);
+
+        $this->post(route('register.store'), [
             'name' => 'Jordan Citizen',
             'email' => 'jordan@example.com',
-            'password' => Hash::make('StrongPass123!'),
-            'phone' => '09171234567',
-            'otp_hash' => Hash::make('123456'),
-            'otp_expires_at' => now()->addMinutes(5)->timestamp,
-        ];
+            'password' => 'StrongPass123!',
+            'password_confirmation' => 'StrongPass123!',
+            'terms' => '1',
+            'g-recaptcha-response' => 'valid-token',
+        ])->assertRedirect(route('verification.otp.show'));
 
-        $response = $this
-            ->withSession(['pending_registration' => $registration])
-            ->post(route('verification.otp.verify'), ['otp' => '123456']);
+        $code = null;
+        Notification::assertSentOnDemand(EmailVerificationOtp::class, function (
+            EmailVerificationOtp $notification,
+            array $channels,
+            object $notifiable
+        ) use (&$code): bool {
+            foreach ($notification->toMail($notifiable)->introLines as $line) {
+                if (preg_match('/^\d{6}$/', $line)) {
+                    $code = $line;
+                }
+            }
+
+            return $code !== null && in_array('mail', $channels, true);
+        });
+
+        $response = $this->post(route('verification.otp.verify'), ['otp' => $code]);
 
         $response->assertRedirect(route('citizen.dashboard'));
         $this->assertDatabaseHas('users', [
@@ -84,7 +104,7 @@ class ProfileAndEmployeeLoginTest extends TestCase
         );
         $citizen = User::where('email', 'jordan@example.com')->firstOrFail();
         $this->assertModelExists($citizen->citizenProfile);
-        $this->assertSame('09171234567', $citizen->citizenProfile->phone);
+        $this->assertNull($citizen->phone);
         $this->assertNull($citizen->citizenProfile->date_of_birth);
         $this->assertNull($citizen->citizenProfile->civil_status);
         $this->assertNull($citizen->citizenProfile->nationality);
@@ -105,6 +125,7 @@ class ProfileAndEmployeeLoginTest extends TestCase
             'name' => 'Jordan Citizen',
             'email' => 'jordan@example.com',
             'phone' => '09171234567',
+            'mode' => 'email',
             'password' => 'StrongPass123!',
             'password_confirmation' => 'StrongPass123!',
             'terms' => '1',
@@ -112,11 +133,12 @@ class ProfileAndEmployeeLoginTest extends TestCase
         ]);
 
         $response->assertRedirect(route('verification.otp.show'));
-        $response->assertSessionHas('pending_registration.name', 'Jordan Citizen');
-        $response->assertSessionHas('pending_registration.email', 'jordan@example.com');
-        $response->assertSessionHas('pending_registration.phone', '09171234567');
-        $response->assertSessionMissing('pending_registration.date_of_birth');
-        $response->assertSessionMissing('pending_registration.civil_status');
+        $response->assertSessionHas('otp.name', 'Jordan Citizen');
+        $response->assertSessionHas('otp.to', 'jordan@example.com');
+        $response->assertSessionHas('otp.payload.email', 'jordan@example.com');
+        $this->assertNull(session('otp.payload.phone'));
+        $response->assertSessionMissing('otp.payload.date_of_birth');
+        $response->assertSessionMissing('otp.payload.civil_status');
         $this->assertDatabaseMissing('users', ['email' => 'jordan@example.com']);
     }
 
@@ -139,7 +161,6 @@ class ProfileAndEmployeeLoginTest extends TestCase
             'employee_id' => 'BSLCNPH-000123',
             'department' => 'Records',
             'position' => 'Clerk',
-            'phone' => '09171234567',
         ]);
 
         $response = $this->post(route('login.store'), [
@@ -182,7 +203,8 @@ class ProfileAndEmployeeLoginTest extends TestCase
 
         $response->assertRedirect(route('admin.users.index'));
         $employee = User::where('email', 'morgan@example.com')->firstOrFail();
-        $this->assertSame('BSLCNPH-' . str_pad((string) $employee->id, 6, '0', STR_PAD_LEFT), $employee->employeeProfile->employee_id);
+        $this->assertSame('+639170000000', $employee->phone);
+        $this->assertSame('BSLCNPH-'.str_pad((string) $employee->id, 6, '0', STR_PAD_LEFT), $employee->employeeProfile->employee_id);
         $this->assertSame('Records', $employee->employeeProfile->department);
         $this->assertSame('Barangay Hall', $employee->employeeProfile->office);
         $this->assertSame('2024-01-15', $employee->employeeProfile->date_hired->toDateString());

@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Notifications\EmailVerificationOtp;
+use App\Services\OtpService;
+use App\Support\Phone;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 
@@ -20,58 +20,57 @@ class RegisterController extends Controller
         return view('auth.register');
     }
 
-    public function store(Request $request)
+    public function store(Request $request, OtpService $otps)
     {
+        // The form has two tabs: sign up with an email or with a mobile number.
+        $byPhone = $request->input('mode') === 'phone';
+
+        // Only the tab the user picked is required.
+        if ($byPhone) {
+            // Save phone numbers in one format: +639XXXXXXXXX
+            $request->merge(['phone' => Phone::normalize($request->input('phone')) ?? $request->input('phone')]);
+
+            $contact = ['phone' => ['required', 'regex:/^\+639\d{9}$/', 'unique:users,phone']];
+        } else {
+            $contact = ['email' => ['required', 'string', 'email', 'max:255', 'unique:users,email']];
+        }
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'phone' => ['required', 'string', 'max:30'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => [
                 'required', 'string', 'confirmed', 'max:16',
                 Password::min(8)->mixedCase()->numbers()->symbols()->uncompromised(),
             ],
             'terms' => ['required', 'accepted'],
             'g-recaptcha-response' => ['required', 'string'],
-        ], [
+        ] + $contact, [
+            'phone.regex' => 'Enter a valid mobile number.',
+            'phone.unique' => 'This mobile number is already registered.',
             'terms.accepted' => 'You must agree to the Terms of Service and Privacy Policy.',
             'g-recaptcha-response.required' => 'Please complete the CAPTCHA verification.',
         ]);
 
         $this->verifyCaptcha($request, $data['g-recaptcha-response']);
 
-        $otp = (string) random_int(100000, 999999);
-
-        // No user is created yet; details are held in the session until the OTP is verified.
-        $request->session()->regenerate();
-        $request->session()->put([
-            'otp_flow' => 'register',
-            'pending_registration' => [
-                'name' => $data['name'],
-                'phone' => $data['phone'],
-                'email' => $data['email'],
+        // No user is created yet; details are held in the session until the code is verified.
+        $otp = $otps->start(
+            'register',
+            $byPhone ? 'sms' : 'email',
+            $byPhone ? $data['phone'] : $data['email'],
+            $data['name'],
+            [
+                'email' => $data['email'] ?? null,
+                'phone' => $data['phone'] ?? null,
                 'password' => Hash::make($data['password']),
-                'otp_hash' => Hash::make($otp),
-                'otp_expires_at' => now()->addMinutes(10)->timestamp,
-                'resend_count' => 0,
-            ],
-        ]);
+            ]
+        );
 
-        try {
-            Notification::route('mail', $data['email'])
-                ->notify(new EmailVerificationOtp($otp, $data['name']));
-        } catch (\Throwable $e) {
-            report($e);
-
-            $request->session()->forget(['pending_registration', 'otp_flow']);
-
-            throw ValidationException::withMessages([
-                'email' => 'We could not send your verification code. Please check your email settings and try again.',
-            ]);
-        }
+        $request->session()->regenerate();
+        $request->session()->put('otp', $otp);
 
         return redirect()
             ->route('verification.otp.show')
-            ->with('success', 'Registration successful. We sent a verification code to your email.');
+            ->with('success', 'We sent a verification code to your '.($byPhone ? 'mobile number.' : 'email.'));
     }
 
     private function verifyCaptcha(Request $request, string $token): void

@@ -16,7 +16,7 @@ class ServiceRequestApproved extends Notification implements ShouldQueue
 
     public function via(object $notifiable): array
     {
-        return ['database', 'mail'];
+        return empty($notifiable->email) ? ['database'] : ['database', 'mail'];
     }
 
     public function toArray(object $notifiable): array

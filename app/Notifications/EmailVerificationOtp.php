@@ -23,12 +23,11 @@ class EmailVerificationOtp extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('BarangayChain PH - Email Verification Code')
+            ->subject('BarangayChain PH - Verification Code')
             ->greeting("Hello {$this->name}!")
-            ->line('Thank you for registering with BarangayChain PH.')
-            ->line('Your email verification code is:')
+            ->line('Your verification code is:')
             ->line($this->otp)
             ->line('This code will expire in 10 minutes.')
-            ->line('If you did not create this account, you can ignore this email.');
+            ->line('If you did not request this code, you can ignore this email.');
     }
 }

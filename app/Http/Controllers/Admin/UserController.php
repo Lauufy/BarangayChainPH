@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\SupabaseStorage;
+use App\Support\Phone;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -44,13 +45,16 @@ class UserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+
+        $request->merge(['phone' => Phone::normalize($request->input('phone')) ?? $request->input('phone')]);
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'role' => ['required', Rule::in(['staff', 'admin', 'citizen'])],
             'department' => ['required_if:role,staff,admin', 'nullable', 'string', 'max:255'],
             'position' => ['required_if:role,staff,admin', 'nullable', 'string', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:30'],
+            'phone' => ['nullable', 'regex:/^\+639\d{9}$/', 'unique:users,phone'],
             'office' => ['nullable', 'string', 'max:255'],
             'date_hired' => ['nullable', 'date', 'before_or_equal:today'],
             'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
@@ -80,6 +84,7 @@ class UserController extends Controller
                 $user = User::create([
                     'name' => $validated['name'],
                     'email' => $validated['email'],
+                    'phone' => $validated['phone'] ?? null,
                     'password' => $validated['password'],
                     'role' => $validated['role'],
                     'is_active' => true,
@@ -95,7 +100,6 @@ class UserController extends Controller
                         'employee_id' => 'BSLCNPH-'.str_pad((string) $user->id, 6, '0', STR_PAD_LEFT),
                         'department' => $validated['department'],
                         'position' => $validated['position'],
-                        'phone' => $validated['phone'] ?? null,
                         'office' => $validated['office'] ?? null,
                         'date_hired' => $validated['date_hired'] ?? null,
                         'photo_path' => $avatarPath,
@@ -121,6 +125,9 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user): RedirectResponse
     {
+
+        $request->merge(['phone' => Phone::normalize($request->input('phone')) ?? $request->input('phone')]);
+
         // Named error bag so the Edit popup (not the Create popup) reopens on errors.
         $validated = $request->validateWithBag('updateUser', [
             'name' => ['required', 'string', 'max:255'],
@@ -134,7 +141,7 @@ class UserController extends Controller
             'role' => ['required', Rule::in($user->role === 'citizen' ? ['citizen'] : ['staff', 'admin'])],
             'department' => ['required_if:role,staff,admin', 'nullable', 'string', 'max:255'],
             'position' => ['required_if:role,staff,admin', 'nullable', 'string', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:30'],
+            'phone' => ['nullable', 'regex:/^\+639\d{9}$/', Rule::unique('users', 'phone')->ignore($user->id)],
             'office' => ['nullable', 'string', 'max:255'],
             'date_hired' => ['nullable', 'date', 'before_or_equal:today'],
             'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
@@ -151,7 +158,6 @@ class UserController extends Controller
 
         // Citizen details (saved to citizen_profiles)
         $citizen = ($user->role !== 'citizen' || ! $user->citizenProfile) ? [] : $request->validateWithBag('updateUser', [
-            'phone' => ['required', 'max:30', 'regex:/^[0-9+\-\s()]{7,20}$/'],
             'civil_status' => ['required', Rule::in(['Single', 'Married', 'Widowed', 'Separated', 'Divorced'])],
             'religion' => ['nullable', 'max:100'],
             'occupation' => ['nullable', 'max:255'],
@@ -200,8 +206,13 @@ class UserController extends Controller
                 $attributes = [
                     'name' => $validated['name'],
                     'email' => $validated['email'],
+                    'phone' => $validated['phone'] ?? null,
                     'role' => $validated['role'],
                 ];
+
+                if (($validated['phone'] ?? null) !== $user->phone) {
+                    $attributes['phone_verified_at'] = null;
+                }
 
                 if (! empty($validated['password'])) {
                     $attributes['password'] = $validated['password'];
@@ -222,7 +233,6 @@ class UserController extends Controller
                     $profile = [
                         'department' => $validated['department'],
                         'position' => $validated['position'],
-                        'phone' => $validated['phone'] ?? null,
                         'office' => $validated['office'] ?? null,
                         'date_hired' => $validated['date_hired'] ?? null,
                     ];

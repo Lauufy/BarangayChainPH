@@ -122,7 +122,7 @@
                             <p class="mt-1 text-sm text-slate-600">Use the address where you live now.</p>
 
                             <div class="mt-4 grid gap-4 sm:grid-cols-2">
-                                <x-form.input light placeholder=" " name="phone" label="Phone number" type="tel" required :value="$profile?->phone" />
+                                <x-form.input light placeholder=" " name="phone" label="Phone number" type="tel" required :value="$user->phone" />
                                 <x-form.input light placeholder=" " name="house_number" label="House number (optional)" :value="$profile?->house_number" />
                                 <x-form.input light placeholder=" " name="barangay" label="Barangay" required :value="$profile?->barangay" />
                                 <x-form.input light placeholder=" " name="city_municipality" label="City / Municipality" required :value="$profile?->city_municipality" />

@@ -7,9 +7,11 @@ use App\Models\IdentityVerification;
 use App\Models\User;
 use App\Notifications\CitizenSubmissionReceived;
 use App\Services\SupabaseStorage;
+use App\Support\Phone;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -42,6 +44,7 @@ class IdentityVerificationController extends Controller
             : 1;
 
         return view('citizen.identity-verifications.index', [
+            'user' => $user,
             'profile' => $profile,
             'verification' => $user->latestIdentityVerification,
             'status' => $user->identityStatus(),
@@ -59,8 +62,13 @@ class IdentityVerificationController extends Controller
             return $this->backToStatus();
         }
 
+        $phoneInput = $request->input('phone');
+        $request->merge([
+            'phone' => is_string($phoneInput) ? Phone::normalize($phoneInput) : null,
+        ]);
+
         $data = $request->validate([
-            'phone' => ['required', 'max:15', 'regex:/^[0-9+\-\s()]{7,20}$/'],
+            'phone' => ['required', 'string', 'max:20', Rule::unique('users', 'phone')->ignore($user->id)],
             'date_of_birth' => 'required|date|before:today|after:1900-01-01',
             'gender' => 'required|in:Male,Female',
             'civil_status' => 'required|in:Single,Married,Widowed,Separated,Divorced',
@@ -74,9 +82,11 @@ class IdentityVerificationController extends Controller
             'province' => 'required|string|max:255',
             'zip_code' => 'required|string|max:10',
         ], [
-            'phone.regex' => 'Enter a valid phone number.',
+            'phone.required' => 'Enter a valid phone number.',
         ]);
 
+        $phone = $data['phone'];
+        unset($data['phone']);
         $data['address'] = implode(', ', array_filter([
             $data['house_number'] ?? null,
             $data['barangay'],
@@ -85,7 +95,16 @@ class IdentityVerificationController extends Controller
             $data['zip_code'],
         ]));
 
-        $user->citizenProfile()->updateOrCreate([], $data);
+        DB::transaction(function () use ($user, $phone, $data): void {
+            if ($user->phone !== $phone) {
+                $user->update([
+                    'phone' => $phone,
+                    'phone_verified_at' => null,
+                ]);
+            }
+
+            $user->citizenProfile()->updateOrCreate([], $data);
+        });
 
         return redirect()->route('citizen.identity-verification', ['step' => 2]);
     }

@@ -8,14 +8,12 @@ use Illuminate\Notifications\Notification;
 
 class IdentityVerificationReviewed extends Notification
 {
-    public function __construct(public IdentityVerification $verification)
-    {
-    }
+    public function __construct(public IdentityVerification $verification) {}
 
     // Saved in the portal (bell) and sent by email
     public function via(object $notifiable): array
     {
-        return ['database', 'mail'];
+        return empty($notifiable->email) ? ['database'] : ['database', 'mail'];
     }
 
     // The bell / notifications page text (also reused by the email)

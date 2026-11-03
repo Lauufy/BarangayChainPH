@@ -2,22 +2,24 @@
 
 namespace App\Models;
 
+use App\Services\SupabaseStorage;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Notifications\Notifiable;
-use App\Services\SupabaseStorage;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 
 #[Fillable([
     'name',
     'email',
     'email_verified_at',
+    'phone',
+    'phone_verified_at',
     'password',
     'google_id',
     'role',
@@ -39,6 +41,7 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return [
             'email_verified_at' => 'datetime',
+            'phone_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
             'permissions' => 'array',

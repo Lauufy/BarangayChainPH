@@ -20,20 +20,6 @@
             </p>
         </header>
 
-        {{-- Log In / Sign Up tabs --}}
-        <div class="mb-5 flex rounded-md border border-[#DDE3F3] bg-[#E6ECFA] p-1">
-            <a href="{{ route('login') }}"
-                aria-current="page"
-                class="flex min-w-0 flex-1 items-center justify-center rounded bg-white px-3 py-2.5 text-sm font-semibold text-[#0F1B3D] shadow-sm">
-                Log In
-            </a>
-
-            <a href="{{ route('register') }}"
-                class="flex min-w-0 flex-1 items-center justify-center rounded px-3 py-2.5 text-sm font-semibold text-[#5A6788] transition hover:text-[#0F1B3D]">
-                Sign Up
-            </a>
-        </div>
-
         {{-- Errors --}}
         <x-feedbacks.form-errors />
 
@@ -41,15 +27,13 @@
         <form action="{{ route('login.store') }}" method="POST" class="space-y-4">
             @csrf
 
-            {{-- Email or Employee ID --}}
-            <x-form.input
-                light
-                name="identifier"
-                label="Email Address or Employee ID"
-                required
-                autofocus
-                autocomplete="username"
-                placeholder="Enter your email or employee ID"
+            {{-- Email / Employee ID tab  or  Mobile number tab --}}
+            <x-form.contact-tabs
+                email-name="identifier"
+                email-label="Email Address or Employee ID"
+                email-type="text"
+                email-autocomplete="username"
+                email-placeholder="Enter your email or employee ID"
             />
 
             {{-- Password --}}

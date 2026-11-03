@@ -17,33 +17,33 @@
                 </h1>
 
                 <p class="mt-2 text-sm leading-6 text-[#3B4868]">
-                    Enter your registered email address. We'll send you a secure link to reset your password.
+                    Use your email to get a reset link, or your verified mobile number to get a code by SMS.
                 </p>
             </header>
 
             {{-- Errors --}}
             <x-feedbacks.form-errors />
 
-            {{-- Request reset link --}}
+            {{-- Request reset link or code --}}
             <div class="rounded-md border border-[#DDE3F3] bg-white p-5 shadow-sm sm:p-6">
                 <form method="POST" action="{{ route('password.email') }}" class="space-y-4">
                     @csrf
 
-                    {{-- Email --}}
-                    <x-form.input light name="email" label="Email Address" type="email" required autofocus
-                        autocomplete="email" placeholder="Enter your registered email" />
+                    <x-form.contact-tabs
+                        email-name="email"
+                        email-label="Email Address"
+                        email-placeholder="Enter your registered email"
+                    />
 
                     {{-- Submit --}}
                     <x-form.button type="submit" color="blue" class="w-full" loading-text="Sending...">
-                        Send Reset Link
+                        Send Reset Link or Code
                     </x-form.button>
-
-
                 </form>
             </div>
 
             <p class="mt-6 text-center text-xs leading-5 text-[#5A6788]">
-                Reset links expire after a limited time.
+                Reset links and codes expire after a limited time.
                 Check your spam or junk folder if needed.
             </p>
 

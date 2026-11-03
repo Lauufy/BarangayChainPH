@@ -33,7 +33,7 @@
         ];
 
         $details = [
-            ['Phone', $profile?->phone],
+            ['Phone', $user->phone],
             ['Date of birth', $profile?->date_of_birth?->format('M j, Y')],
             ['Address', $profile?->full_address],
         ];

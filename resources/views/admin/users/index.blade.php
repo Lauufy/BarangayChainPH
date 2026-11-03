@@ -84,7 +84,7 @@
                         'permissions' => array_values($u->permissions ?? []),
                         'permissions_url' => route('admin.users.permissions.update', $u),
                         'avatar_url' => $u->avatar_url,
-                        'phone' => $p?->phone ?? $c?->phone,
+                        'phone' => $u->phone,
                         // staff / admin
                         'employee_id' => $p?->employee_id,
                         'department' => $p?->department,

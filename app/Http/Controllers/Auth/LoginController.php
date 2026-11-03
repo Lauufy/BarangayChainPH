@@ -4,12 +4,12 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\EmployeeProfile;
-use App\Notifications\EmailVerificationOtp;
+use App\Models\User;
+use App\Services\OtpService;
+use App\Support\Phone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
 
 class LoginController extends Controller
@@ -19,99 +19,108 @@ class LoginController extends Controller
         return view('auth.login');
     }
 
-    public function store(Request $request)
+    public function store(Request $request, OtpService $otps)
     {
-        $data = $request->validate([
-            'identifier' => ['required', 'string', 'max:255'],
-            'password' => ['required', 'string'],
-        ]);
+        // The form has two tabs: email / employee ID, or mobile number.
+        $byPhone = $request->input('mode') === 'phone';
+        $field = $byPhone ? 'phone' : 'identifier';
 
-        $identifier = trim($data['identifier']);
+        if ($byPhone) {
+            $request->merge(['phone' => Phone::normalize($request->input('phone')) ?? $request->input('phone')]);
 
-        $employee = EmployeeProfile::with('user')
-            ->where('employee_id', strtoupper($identifier))
-            ->first();
+            $data = $request->validate([
+                'phone' => ['required', 'regex:/^\+639\d{9}$/'],
+                'password' => ['required', 'string'],
+            ], ['phone.regex' => 'Enter a valid mobile number.']);
 
-        $email = $employee?->user?->email ?? $identifier;
-
-        if (! Auth::attempt(['email' => $email, 'password' => $data['password']], $request->boolean('remember'))) {
-            throw ValidationException::withMessages([
-                'identifier' => 'The email/employee ID or password is incorrect.',
+            $user = User::where('phone', $data['phone'])->first();
+        } else {
+            $data = $request->validate([
+                'identifier' => ['required', 'string', 'max:255'],
+                'password' => ['required', 'string'],
             ]);
+
+            $identifier = trim($data['identifier']);
+
+            $employee = EmployeeProfile::with('user')
+                ->where('employee_id', strtoupper($identifier))
+                ->first();
+
+            $user = $employee?->user ?? User::where('email', $identifier)->first();
+        }
+
+        if (! $user || ! Hash::check($data['password'], $user->password)) {
+            $this->fail($field, 'The login details or password are incorrect.');
+        }
+
+        if (! $user->is_active) {
+            $this->fail($field, 'Your account is inactive. Please contact the administrator.');
         }
 
         $request->session()->regenerate();
-        $user = Auth::user();
+        $remember = $request->boolean('remember');
 
-        if (! $user->is_active) {
-            $this->fail($request, 'Your account is inactive. Please contact the administrator.');
+        // Staff and admins log in with the password only.
+        if (in_array($user->role, ['admin', 'staff'], true)) {
+            Auth::login($user, $remember);
+
+            return redirect()->route('admin.dashboard')->with('success', 'You are now logged in successfully.');
         }
 
-        if ($user->role === 'citizen' && ! $user->email_verified_at) {
-            return $this->sendOtp($request, $user);
+        if (! $user->isCitizen()) {
+            $this->fail($field, 'This account cannot log in.');
         }
 
-        return match ($user->role) {
-            'admin', 'staff' => redirect()->route('admin.dashboard')
-                ->with('success', 'You are now logged in successfully.'),
-            'citizen' => redirect()->route('citizen.dashboard')
-                ->with('success', 'You are now logged in successfully.'),
-            default => tap(redirect('/'), fn() => Auth::logout()),
-        };
+        if ($byPhone) {
+            $request->session()->put('otp', $otps->startLogin($user, 'sms', $remember));
+
+            return redirect()->route('verification.otp.show')
+                ->with('success', 'We sent a verification code to '.$otps->mask('sms', $user->phone).'.');
+        }
+
+        // Email login still requires a verified email, or an available verified channel.
+        $channels = $otps->channelsFor($user);
+
+        if (! $channels) {
+            $this->fail($field, 'No email or verified mobile number is saved for this account.');
+        }
+
+        if ($user->email && ! $user->email_verified_at) {
+            $request->session()->put('otp', $otps->startLogin($user, 'email', $remember));
+
+            return redirect()->route('verification.otp.show')
+                ->with('success', 'We sent an email verification code to '.$otps->mask('email', $user->email).'.');
+        }
+
+        // Two ways to get the code: let the citizen choose.
+        if (count($channels) > 1) {
+            $request->session()->put('login_pending', [
+                'user_id' => $user->id,
+                'remember' => $remember,
+                'expires' => now()->addMinutes(10)->timestamp,
+            ]);
+
+            return redirect()->route('two-factor.choose');
+        }
+
+        // Only one way: send the code right away.
+        $request->session()->put('otp', $otps->startLogin($user, array_key_first($channels), $remember));
+
+        return redirect()->route('verification.otp.show')
+            ->with('success', 'We sent a verification code to '.reset($channels).'.');
     }
 
     public function destroy(Request $request)
     {
-        $this->logout($request);
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
 
         return redirect()->route('home')->with('success', 'You have been logged out successfully.');
     }
 
-    private function sendOtp(Request $request, $user)
+    private function fail(string $field, string $message): never
     {
-        $smtp = config('mail.mailers.smtp', []);
-
-        if (config('mail.default') === 'smtp' && (blank($smtp['host'] ?? null) || empty($smtp['port'] ?? null))) {
-            Log::error('SMTP configuration is incomplete.', ['user_id' => $user->id]);
-
-            $this->fail($request, 'Email verification is temporarily unavailable. Please contact the administrator.');
-        }
-
-        $otp = (string) random_int(100000, 999999);
-
-        $user->forceFill([
-            'email_verification_otp' => Hash::make($otp),
-            'email_verification_otp_expires_at' => now()->addMinutes(10),
-        ])->save();
-
-        try {
-            Notification::route('mail', $user->email)
-                ->notify(new EmailVerificationOtp($otp, $user->name));
-        } catch (\Throwable $e) {
-            report($e);
-
-            $this->fail($request, 'We could not send your verification code. Please try again later.');
-        }
-
-        Auth::logout();
-        $request->session()->regenerate();
-        $request->session()->put(['verification_email' => $user->email, 'otp_flow' => 'login']);
-
-        return redirect()->route('verification.otp.show')
-            ->with('success', 'Your email is not verified. We sent you a new verification code.');
-    }
-
-    private function logout(Request $request): void
-    {
-        Auth::logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-    }
-
-    private function fail(Request $request, string $message): never
-    {
-        $this->logout($request);
-
-        throw ValidationException::withMessages(['identifier' => $message]);
+        throw ValidationException::withMessages([$field => $message]);
     }
 }

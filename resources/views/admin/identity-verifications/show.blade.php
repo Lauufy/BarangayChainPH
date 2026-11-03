@@ -84,7 +84,7 @@
                     </div>
                     <div>
                         <dt class="text-[11px] font-semibold uppercase text-slate-500">Phone</dt>
-                        <dd class="wrap-break-word text-sm text-slate-900">{{ $profile?->phone ?: 'Not provided' }}</dd>
+                        <dd class="wrap-break-word text-sm text-slate-900">{{ $verification->user->phone ?: 'Not provided' }}</dd>
                     </div>
                     <div class="sm:col-span-2 xl:col-span-3">
                         <dt class="text-[11px] font-semibold uppercase text-slate-500">Email</dt>

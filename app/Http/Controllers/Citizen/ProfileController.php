@@ -33,7 +33,6 @@ class ProfileController extends Controller
         $profile = $this->verifiedProfile($request);
 
         $data = $request->validate([
-            'phone' => 'required|max:30|regex:/^[0-9+\-\s()]{7,20}$/',
             'civil_status' => 'required|in:Single,Married,Widowed,Separated,Divorced',
             'religion' => 'nullable|max:100',
             'occupation' => 'nullable|max:255',
@@ -42,8 +41,6 @@ class ProfileController extends Controller
             'city_municipality' => 'required|max:255',
             'province' => 'required|max:255',
             'zip_code' => 'required|max:10',
-        ], [
-            'phone.regex' => 'Enter a valid phone number.',
         ]);
 
         $data['address'] = implode(', ', array_filter([

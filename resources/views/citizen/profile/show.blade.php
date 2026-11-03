@@ -154,7 +154,7 @@
 
                 <div class="mt-4 grid gap-4 sm:grid-cols-2">
                     <x-form.input light placeholder=" " name="phone" label="Phone number" type="tel"
-                        :value="$profile?->phone" :disabled="!$editing" />
+                        :value="$user->phone" :disabled="!$editing" />
 
                     <x-form.input light placeholder=" " name="house_number" label="House number"
                         :value="$profile?->house_number" :disabled="!$editing" />

@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
     'user_id',
-    'phone',
     'date_of_birth',
     'address',
     'barangay',
@@ -29,7 +28,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class CitizenProfile extends Model
 {
     private const REQUIRED_FIELDS = [
-        'phone',
         'date_of_birth',
         'gender',
         'civil_status',
@@ -56,7 +54,7 @@ class CitizenProfile extends Model
 
     public function hasCompleteDetails(): bool
     {
-        return collect(self::REQUIRED_FIELDS)->every(fn($field) => filled($this->$field));
+        return collect(self::REQUIRED_FIELDS)->every(fn ($field) => filled($this->$field));
     }
 
     public function age(): ?int

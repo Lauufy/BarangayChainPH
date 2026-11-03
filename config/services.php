@@ -46,4 +46,9 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
 
+    'textbee' => [
+        'key' => env('TEXTBEE_API_KEY'),
+        'device' => env('TEXTBEE_DEVICE_ID'),
+    ],
+
 ];

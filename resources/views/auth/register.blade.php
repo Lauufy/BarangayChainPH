@@ -22,20 +22,6 @@
             </p>
         </header>
 
-        {{-- Log In / Sign Up tabs --}}
-        <div class="mb-5 flex rounded-md border border-[#DDE3F3] bg-[#E6ECFA] p-1">
-            <a href="{{ route('login') }}"
-                class="flex min-w-0 flex-1 items-center justify-center rounded px-3 py-2.5 text-sm font-semibold text-[#5A6788] transition hover:text-[#0F1B3D]">
-                Log In
-            </a>
-
-            <a href="{{ route('register') }}"
-                aria-current="page"
-                class="flex min-w-0 flex-1 items-center justify-center rounded bg-white px-3 py-2.5 text-sm font-semibold text-[#0F1B3D] shadow-sm">
-                Sign Up
-            </a>
-        </div>
-
         {{-- Errors --}}
         <x-feedbacks.form-errors />
 
@@ -43,44 +29,22 @@
         <form action="{{ route('register.store') }}" method="POST" class="space-y-4" data-validate>
             @csrf
 
-            {{-- Full name + Phone --}}
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <x-form.input
-                    light
-                    name="name"
-                    label="Full Name"
-                    required
-                    autofocus
-                    autocomplete="name"
-                    placeholder="Enter your full name"
-                />
+            {{-- Sign up with an email or with a mobile number --}}
+            <x-form.contact-tabs
+                email-name="email"
+                email-label="Email Address"
+                email-placeholder="you@example.com"
+            />
 
-                <x-form.input
-                    light
-                    name="phone"
-                    label="Phone Number"
-                    type="tel"
-                    inputmode="numeric"
-                    pattern="[0-9]{11}"
-                    maxlength="11"
-                    minlength="11"
-                    required
-                    autocomplete="tel"
-                    placeholder="Enter your 11-digit phone number"
-                />
-            </div>
-
-            {{-- Email --}}
+            {{-- Full name --}}
             <x-form.input
                 light
-                name="email"
-                label="Email Address"
-                type="email"
+                name="name"
+                label="Full Name"
                 required
-                data-blur
-                data-error="Please enter a valid email address."
-                autocomplete="email"
-                placeholder="you@example.com"
+                autofocus
+                autocomplete="name"
+                placeholder="Enter your full name"
             />
 
             {{-- Password + Confirm Password --}}
@@ -160,8 +124,8 @@
 
         {{-- Verification notice --}}
         <p class="mt-3 text-center text-xs leading-5 text-[#5A6788]">
-            Your account requires email verification before you can access
-            BarangayChain PH services.
+            We will send a verification code to your email or mobile number
+            before you can access BarangayChain PH services.
         </p>
 
     </div>

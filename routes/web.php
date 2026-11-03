@@ -7,10 +7,10 @@ use App\Http\Controllers\Admin\PermitController;
 use App\Http\Controllers\Admin\ProfileController as AdminProfileController;
 use App\Http\Controllers\Admin\TicketInboxController;
 use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\OtpController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Citizen\IdentityVerificationController;
@@ -60,7 +60,9 @@ Route::middleware('guest')->group(function () {
 
     // Login
     Route::get('/login', [LoginController::class, 'create'])->name('login');
-    Route::post('/login', [LoginController::class, 'store'])->name('login.store');
+    Route::post('/login', [LoginController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('login.store');
 
     // Password reset
     Route::get('/forgot-password', [ForgotPasswordController::class, 'showForgotPassword'])
@@ -77,6 +79,14 @@ Route::middleware('guest')->group(function () {
         ->middleware('throttle:5,1')
         ->name('password.update');
 
+    // sms password reset
+    Route::get('/reset-password-sms', [ResetPasswordController::class, 'showSms'])
+        ->name('password.sms.show');
+
+    Route::post('/reset-password-sms', [ResetPasswordController::class, 'resetSms'])
+        ->middleware('throttle:5,1')
+        ->name('password.sms.update');
+
     // Google authentication
     Route::get('/auth/google', [GoogleController::class, 'redirect'])
         ->name('google.redirect');
@@ -90,23 +100,27 @@ Route::middleware('guest')->group(function () {
 |--------------------------------------------------------------------------
 */
 
-Route::view('/email/verification/notice', 'auth.verify-email')
-    ->middleware('auth')
-    ->name('verification.notice');
-
-Route::get('/email/verify', [EmailVerificationController::class, 'show'])
+Route::get('/email/verify', [OtpController::class, 'show'])
     ->name('verification.otp.show');
 
-Route::post('/email/verify', [EmailVerificationController::class, 'verify'])
+Route::post('/email/verify', [OtpController::class, 'verify'])
     ->middleware('throttle:10,1')
     ->name('verification.otp.verify');
 
-Route::post('/email/verification/resend', [EmailVerificationController::class, 'resend'])
+Route::post('/email/verification/resend', [OtpController::class, 'resend'])
     ->middleware('throttle:3,1')
     ->name('verification.otp.resend');
 
-Route::post('/email/verification/cancel', [EmailVerificationController::class, 'cancel'])
+Route::post('/email/verification/cancel', [OtpController::class, 'cancel'])
     ->name('verification.cancel');
+
+// Login 2FA: choose email or SMS
+Route::get('/two-factor', [OtpController::class, 'choose'])
+    ->name('two-factor.choose');
+
+Route::post('/two-factor', [OtpController::class, 'sendLogin'])
+    ->middleware('throttle:3,1')
+    ->name('two-factor.send');
 
 /*
 |--------------------------------------------------------------------------
@@ -241,7 +255,7 @@ Route::middleware(['auth', 'role:admin,staff'])
         Route::middleware('role:admin')->group(function () {
             Route::get('/users', [UserController::class, 'index'])->name('users.index');
             Route::post('users', [UserController::class, 'store'])->name('users.store');
-           Route::resource('users', UserController::class)->only(['update', 'destroy']);
+            Route::resource('users', UserController::class)->only(['update', 'destroy']);
 
             Route::patch('/users/{user}/status', [UserController::class, 'toggleStatus'])
                 ->name('users.toggle-status');
