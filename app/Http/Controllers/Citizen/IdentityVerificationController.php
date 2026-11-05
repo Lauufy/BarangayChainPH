@@ -69,6 +69,12 @@ class IdentityVerificationController extends Controller
 
         $data = $request->validate([
             'phone' => ['required', 'string', 'max:20', Rule::unique('users', 'phone')->ignore($user->id)],
+            // Email is only asked when the account has none (SMS sign-up)
+            'email' => [
+                Rule::excludeIf($user->email !== null),
+                'required', 'email', 'max:255',
+                Rule::unique('users', 'email')->ignore($user->id),
+            ],
             'date_of_birth' => 'required|date|before:today|after:1900-01-01',
             'gender' => 'required|in:Male,Female',
             'civil_status' => 'required|in:Single,Married,Widowed,Separated,Divorced',
@@ -86,7 +92,8 @@ class IdentityVerificationController extends Controller
         ]);
 
         $phone = $data['phone'];
-        unset($data['phone']);
+        $email = $data['email'] ?? null;
+        unset($data['phone'], $data['email']);
         $data['address'] = implode(', ', array_filter([
             $data['house_number'] ?? null,
             $data['barangay'],
@@ -95,12 +102,16 @@ class IdentityVerificationController extends Controller
             $data['zip_code'],
         ]));
 
-        DB::transaction(function () use ($user, $phone, $data): void {
+        DB::transaction(function () use ($user, $phone, $email, $data): void {
             if ($user->phone !== $phone) {
                 $user->update([
                     'phone' => $phone,
                     'phone_verified_at' => null,
                 ]);
+            }
+
+            if ($email) {
+                $user->update(['email' => $email]);
             }
 
             $user->citizenProfile()->updateOrCreate([], $data);
