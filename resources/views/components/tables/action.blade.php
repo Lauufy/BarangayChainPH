@@ -1,8 +1,8 @@
 {{--
-    Icon-only action (Lucide icons), name shows as a tooltip. Wrap several in <div class="flex justify-center gap-1">.
-
-    Link:      <x-tables.action label="View" icon="eye" :href="route('x.show', $x)" />
-    Form:      <x-tables.action label="Delete" icon="trash" variant="danger" :action="route('x.destroy', $x)" method="DELETE" confirm="Delete this record?" />
+    Use `icon-only` for each action in a row that has multiple actions.
+    Link:      <x-tables.action label="Review" icon="eye" :href="route('x.show', $x)" />
+    Icon link: <x-tables.action label="View" icon="eye" :href="route('x.show', $x)" icon-only />
+    Form:      <x-tables.action label="Delete" icon="trash" variant="danger" :action="route('x.destroy', $x)" method="DELETE" confirm="Delete this record?" icon-only />
     Livewire:  <x-tables.action label="Delete" icon="trash" variant="danger" wire:click="delete({{ $x->id }})" wire:confirm="Delete this record?" />
     Modal/JS:  <x-tables.action label="Edit" icon="pencil" onclick="openEditModal({{ $x->id }})" />
 
@@ -16,6 +16,7 @@
     'method' => 'POST',
     'variant' => 'default',
     'confirm' => null,
+    'iconOnly' => false,
 ])
 
 @php
@@ -39,13 +40,16 @@
 
     $color =
         [
-            'default' => 'hover:bg-slate-100 hover:text-[#17325c]',
-            'success' => 'hover:bg-emerald-50 hover:text-emerald-700',
-            'danger' => 'hover:bg-rose-50 hover:text-rose-600',
+            'default' => 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-[#17325c]',
+            'success' => 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100',
+            'danger' => 'bg-rose-50 text-rose-600 hover:bg-rose-100',
         ][$variant] ?? '';
 
     $btn =
-        'grid size-8 place-items-center rounded-md text-slate-500 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 ' .
+        ($iconOnly
+            ? 'grid size-8 place-items-center rounded-md text-slate-500'
+            : 'inline-flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium') .
+        ' transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 ' .
         $color;
 @endphp
 
@@ -58,16 +62,36 @@
                 @method($method)
             @endif
             <button type="submit" aria-label="{{ $label }}"
-                {{ $attributes->class($btn) }}>{!! $svg !!}</button>
+                {{ $attributes->class($btn) }}>
+                @if ($iconOnly)
+                    {!! $svg !!}
+                @else
+                    {{ $label }}
+                @endif
+            </button>
         </form>
     @elseif ($href)
         <a href="{{ $href }}" aria-label="{{ $label }}"
-            {{ $attributes->class($btn) }}>{!! $svg !!}</a>
+            {{ $attributes->class($btn) }}>
+            @if ($iconOnly)
+                {!! $svg !!}
+            @else
+                {{ $label }}
+            @endif
+        </a>
     @else
         <button type="button" aria-label="{{ $label }}"
-            {{ $attributes->class($btn) }}>{!! $svg !!}</button>
+            {{ $attributes->class($btn) }}>
+            @if ($iconOnly)
+                {!! $svg !!}
+            @else
+                {{ $label }}
+            @endif
+        </button>
     @endif
 
-    <span role="tooltip"
-        class="pointer-events-none absolute -top-8 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded bg-slate-900 px-2 py-1 text-xs font-medium text-white opacity-0 transition group-focus-within:opacity-100 group-hover:opacity-100">{{ $label }}</span>
+    @if ($iconOnly)
+        <span role="tooltip"
+            class="pointer-events-none absolute -top-8 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded bg-slate-900 px-2 py-1 text-xs font-medium text-white opacity-0 transition group-focus-within:opacity-100 group-hover:opacity-100">{{ $label }}</span>
+    @endif
 </div>

@@ -32,7 +32,9 @@
                     <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span> Pending review
                 </span>
             @else
-                <x-badge :variant="$verification->isVerified() ? 'success' : 'danger'">{{ $verification->status }}</x-badge>
+                <x-tables.badge :variant="$verification->isVerified() ? 'success' : 'danger'">
+                    {{ $verification->status }}
+                </x-tables.badge>
             @endif
         </header>
 

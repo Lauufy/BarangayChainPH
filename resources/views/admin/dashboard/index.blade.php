@@ -6,17 +6,6 @@
     @php
         $recentPermits ??= collect();
 
-        $statusVariants = [
-            'approved' => 'success',
-            'completed' => 'success',
-            'authenticated' => 'success',
-            'rejected' => 'danger',
-            'denied' => 'danger',
-            'pending' => 'warning',
-            'processing' => 'warning',
-            'under_review' => 'warning',
-        ];
-
         $shortcuts = [
             'admin.users.index' => 'User & Role Management',
             'admin.identity-verification.index' => 'Identity Verification',
@@ -61,18 +50,16 @@
 
         <div class="grid gap-6 xl:grid-cols-3">
             {{-- Recent Permit Requests --}}
-            <section class="admin-card min-w-0 xl:col-span-2">
-                <div class="flex items-center justify-between gap-3 border-b border-slate-200 p-5">
-                    <h2 class="font-semibold text-slate-900">Recent Permit Requests</h2>
-
-                    <a href="{{ route('admin.permits.index') }}"
-                       class="text-sm font-semibold text-[#17325c] transition-colors duration-200 hover:text-emerald-700">
-                        View all
-                    </a>
-                </div>
-
-                <div class="overflow-x-auto">
-                    <x-admin.table
+            <section class="min-w-0 xl:col-span-2">
+                <x-tables.card title="Recent Permit Requests"
+                    description="The latest requests submitted by citizens." :searchable="false">
+                    <div class="flex justify-end px-3 pt-3">
+                        <a href="{{ route('admin.permits.index') }}"
+                            class="text-sm font-semibold text-[#17325c] transition-colors duration-200 hover:text-emerald-700">
+                            View all
+                        </a>
+                    </div>
+                    <x-tables.table
                         :heads="['Reference', 'Citizen', 'Permit Type', 'Status']"
                         :empty="$recentPermits->isEmpty()"
                         message="No recent permit requests to display."
@@ -81,24 +68,30 @@
                             @php $status = strtolower($permit->status ?? 'pending'); @endphp
 
                             <tr class="transition-colors duration-150 hover:bg-slate-50">
-                                <td class="whitespace-nowrap px-5 py-3 font-medium text-slate-800">
+                                <td class="whitespace-nowrap font-medium text-slate-800">
                                     {{ $permit->reference_number ?? 'REQ-'.$permit->id }}
                                 </td>
-                                <td class="px-5 py-3 text-slate-600">
-                                    {{ $permit->user->name ?? ($permit->citizen_name ?? '—') }}
+                                <td class="text-slate-600">
+                                    <x-tables.user-cell :name="$permit->user->name ?? ($permit->citizen_name ?? '—')"
+                                        :avatar="$permit->user->avatar_url ?? null" />
                                 </td>
-                                <td class="px-5 py-3 text-slate-600">
+                                <td class="text-slate-600">
                                     {{ $permit->permit_type ?? ($permit->type ?? '—') }}
                                 </td>
-                                <td class="whitespace-nowrap px-5 py-3">
-                                    <x-badge :variant="$statusVariants[$status] ?? 'secondary'">
+                                <td class="whitespace-nowrap">
+                                    <x-tables.badge :variant="match ($status) {
+                                        'approved', 'completed', 'authenticated' => 'success',
+                                        'rejected', 'denied' => 'danger',
+                                        'pending', 'processing', 'under_review' => 'warning',
+                                        default => 'neutral',
+                                    }" class="capitalize">
                                         {{ ucfirst(str_replace('_', ' ', $status)) }}
-                                    </x-badge>
+                                    </x-tables.badge>
                                 </td>
                             </tr>
                         @endforeach
-                    </x-admin.table>
-                </div>
+                    </x-tables.table>
+                </x-tables.card>
             </section>
 
             {{-- Admin Shortcuts --}}

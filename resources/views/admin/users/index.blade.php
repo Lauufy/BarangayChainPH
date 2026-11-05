@@ -49,13 +49,16 @@
 
                         <td class="text-center">
                             <div class="flex justify-center gap-1">
-                                <x-tables.action label="View" icon="eye" onclick="openViewUserModal({{ $user->id }})" />
-                                <x-tables.action label="Edit" icon="pencil" onclick="openEditUserModal({{ $user->id }})" />
+                                <x-tables.action label="View" icon="eye" icon-only
+                                    onclick="openViewUserModal({{ $user->id }})" />
+                                <x-tables.action label="Edit" icon="pencil" icon-only
+                                    onclick="openEditUserModal({{ $user->id }})" />
 
                                 @if (auth()->user()->is($user))
                                     <span class="self-center pl-1 text-xs text-slate-400">You</span>
                                 @else
                                     <x-tables.action label="Delete" icon="trash" variant="danger"
+                                        icon-only
                                         :action="route('admin.users.destroy', $user)" method="DELETE"
                                         confirm="Delete {{ $user->name }}? This cannot be undone." />
                                 @endif

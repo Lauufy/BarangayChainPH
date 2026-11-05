@@ -14,40 +14,36 @@
             <x-admin.stat-card label="Rejected Requests" :value="$counts['rejected'] ?? 0" />
         </div>
 
-        <div class="admin-card">
-            <div class="border-b border-slate-200 p-5">
-                <h2 class="font-semibold text-slate-900">Identity Verification Requests</h2>
-                <p class="mt-1 text-sm text-slate-500">Review submissions before making a verification decision.</p>
-            </div>
-
-            <x-admin.table :heads="['Citizen', 'Submitted', 'Status', 'Action']"
+        <x-tables.card title="Identity Verification Requests"
+            description="Review submissions before making a verification decision."
+            :paginator="$verifications->hasPages() ? $verifications : null"
+            :searchable="false" :per-page-options="[]">
+            <x-tables.table :heads="['Citizen', 'Submitted', 'Status', ['label' => 'Action', 'align' => 'center']]"
                 :empty="$verifications->isEmpty()" message="No identity verification requests yet.">
                 @foreach ($verifications as $verification)
                     <tr>
-                        <td class="px-5 py-4">
-                            <p class="font-medium text-slate-900">{{ $verification->user->name }}</p>
-                            <p class="text-xs text-slate-500">{{ $verification->user->email }}</p>
+                        <td>
+                            <x-tables.user-cell :name="$verification->user->name"
+                                :sub="$verification->user->email" :avatar="$verification->user->avatar_url" />
                         </td>
 
-                        <td class="px-5 py-4 text-slate-600">{{ $verification->submitted_at->format('M j, Y g:i A') }}</td>
+                        <td class="text-slate-600">{{ $verification->submitted_at->format('M j, Y g:i A') }}</td>
 
-                        <td class="px-5 py-4">
-                            <x-badge :variant="$verification->isVerified() ? 'success' : ($verification->isRejected() ? 'danger' : 'warning')">
+                        <td>
+                            <x-tables.badge :variant="$verification->isVerified() ? 'success' : ($verification->isRejected() ? 'danger' : 'warning')">
                                 {{ $verification->status }}
-                            </x-badge>
+                            </x-tables.badge>
                         </td>
 
-                        <td class="px-5 py-4">
-                            <a href="{{ route('admin.identity-verification.show', $verification) }}"
-                                class="inline-flex rounded-md border border-[#17325c] px-3 py-1.5 text-xs font-semibold text-[#17325c] hover:bg-slate-50">
-                                Review
-                            </a>
+                        <td class="text-center">
+                            <div class="flex justify-center">
+                                <x-tables.action label="Review" icon="eye"
+                                    :href="route('admin.identity-verification.show', $verification)" />
+                            </div>
                         </td>
                     </tr>
                 @endforeach
-            </x-admin.table>
-
-            <div class="border-t border-slate-200 p-4">{{ $verifications->links() }}</div>
-        </div>
+            </x-tables.table>
+        </x-tables.card>
     </div>
 @endsection

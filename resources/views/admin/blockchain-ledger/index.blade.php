@@ -21,15 +21,12 @@
                 class="admin-field sm:max-w-lg">
         </div>
 
-        <div class="admin-card">
-            <div class="border-b border-slate-200 p-5">
-                <h2 class="font-semibold text-slate-900">Transaction History</h2>
-                <p class="mt-1 text-sm text-slate-500">Recorded transactions will appear here after blockchain integration.</p>
-            </div>
-
-            <x-admin.table :heads="['Transaction ID', 'Record Type', 'Document Hash', 'Timestamp', 'Status']"
+        <x-tables.card title="Transaction History"
+            description="Recorded transactions will appear here after blockchain integration."
+            :searchable="false">
+            <x-tables.table :heads="['Transaction ID', 'Record Type', 'Document Hash', 'Timestamp', 'Status']"
                 :empty="true" message="No blockchain transactions connected yet." />
-        </div>
+        </x-tables.card>
 
         <p class="text-xs leading-5 text-slate-500">
             Transaction details must come from a trusted blockchain integration or verified ledger source.

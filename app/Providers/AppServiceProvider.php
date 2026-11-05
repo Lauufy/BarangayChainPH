@@ -2,10 +2,13 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
+use App\Models\IssuedDocument;
+use App\Models\ServiceRequest;
+use App\Observers\AuditableObserver;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\ServiceProvider;
 use Symfony\Component\Mailer\Bridge\Brevo\Transport\BrevoTransportFactory;
 use Symfony\Component\Mailer\Transport\Dsn;
 
@@ -24,6 +27,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        ServiceRequest::observe(AuditableObserver::class);
+        IssuedDocument::observe(AuditableObserver::class);
+
         if (app()->environment('production')) {
             URL::forceScheme('https');
             Artisan::call('storage:link');

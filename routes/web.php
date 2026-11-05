@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\IdentityReviewController;
 use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
@@ -307,7 +308,7 @@ Route::middleware(['auth', 'role:admin,staff'])
             ->middleware('permission:reports.view')
             ->name('reports.index');
 
-        Route::view('/audit-logs', 'admin.audit-logs.index')
+        Route::get('/audit-logs', [AuditLogController::class, 'index'])
             ->middleware('permission:audit.view')
             ->name('audit-logs.index');
     });
