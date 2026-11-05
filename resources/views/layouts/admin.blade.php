@@ -480,7 +480,7 @@
             }
         });
 
-        // Keep the page in sync without a full reload (skipped while the user is typing).
+        // Keep the page in sync every 5s without a full reload (skipped while the user is typing).
         const swap = (fresh, current) => {
             if (!fresh || !current || fresh.innerHTML === current.innerHTML) return;
             const open = current.open;
@@ -513,7 +513,7 @@
             } catch (error) {
                 console.error(error);
             }
-        }, 15000);
+        }, 5000);
 
         // Close menus on outside click or Escape.
         document.addEventListener('click', (event) => {

@@ -101,8 +101,8 @@
                             <p class="mt-1 text-sm text-slate-600">Name and email come from your account and can't be changed here.</p>
 
                             <div class="mt-4 grid gap-4 sm:grid-cols-2">
-                                <x-form.input light disabled placeholder=" " name="name" label="Full name" :value="auth()->user()->name" />
-                                <x-form.input light disabled placeholder=" " name="email" label="Email" :value="auth()->user()->email" />
+                                <x-form.input light placeholder=" " name="name" label="Full name" :value="auth()->user()->name" />
+                                <x-form.input light placeholder=" " name="email" label="Email" :value="auth()->user()->email" />
                                 <x-form.input light placeholder=" " name="date_of_birth" label="Date of birth" type="date" required
                                     :value="$profile?->date_of_birth?->format('Y-m-d')" />
                                 <x-form.input light name="gender" label="Gender" type="select" required placeholder="Select"

@@ -283,7 +283,7 @@
             }
         });
 
-        // Refresh the page content every 15s without a full reload.
+        // Refresh the page content every 5s without a full reload.
         setInterval(async () => {
             const isEditing = document.activeElement?.matches('input, textarea, select, [contenteditable="true"]');
             const hasUnsavedInput = [...document.querySelectorAll('form input, form textarea, form select')]
@@ -318,7 +318,7 @@
             } catch (error) {
                 console.error(error);
             }
-        }, 15000);
+        }, 5000);
 
         // Close menus on outside click, close the other menu when one opens.
         document.addEventListener('click', (e) => {
