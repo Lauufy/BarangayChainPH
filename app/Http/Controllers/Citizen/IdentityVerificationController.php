@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
+/** Manages citizen identity verification submissions and private uploads. */
 class IdentityVerificationController extends Controller
 {
     public function __construct(private SupabaseStorage $supabaseStorage) {}

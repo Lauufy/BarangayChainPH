@@ -7,7 +7,7 @@ use App\Models\IssuedDocument;
 use App\Models\ServiceRequest;
 use App\Models\User;
 use App\Notifications\CitizenSubmissionReceived;
-use App\Services\DocumentIssuer;
+use App\Services\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
+/** Handles citizen service requests and access to issued certificates. */
 class ServiceRequestController extends Controller
 {
     private const TYPES = [
@@ -151,17 +152,17 @@ class ServiceRequestController extends Controller
 
     public function printApplication(
         Request $request,
-        ServiceRequest $serviceRequest,
-        DocumentIssuer $documentIssuer
-    ): Response {
+        ServiceRequest $serviceRequest
+    ): Response|RedirectResponse {
         $this->authorizeOwner($request, $serviceRequest);
 
         $printData = $this->recordPrint($serviceRequest);
 
-        if ($printData['requiresQrUpgrade']) {
-            $documentIssuer->ensureQrCode($serviceRequest);
-
-            $printData = $this->recordPrint($serviceRequest, afterUpgrade: true);
+        if ($printData === null) {
+            return back()->with(
+                'error',
+                'This certificate cannot be printed because its stored PDF or QR code is unavailable. Please contact the barangay office for assistance.'
+            );
         }
 
         return response($printData['fileContents'], 200, [
@@ -339,35 +340,35 @@ class ServiceRequestController extends Controller
 
     /**
      * Locks the request, validates the printable document and counts the print.
-     * The first pass skips counting when a QR upgrade is still needed;
-     * the pass after the upgrade aborts if the QR code is still missing.
      *
-     * @return array{document: IssuedDocument, fileContents: string, requiresQrUpgrade: bool}
+     * @return array{document: IssuedDocument, fileContents: string}|null
      */
-    private function recordPrint(ServiceRequest $serviceRequest, bool $afterUpgrade = false): array
+    private function recordPrint(ServiceRequest $serviceRequest): ?array
     {
-        return DB::transaction(function () use ($serviceRequest, $afterUpgrade) {
+        return DB::transaction(function () use ($serviceRequest) {
             $locked = $this->lock($serviceRequest);
             $printData = $this->printableDocument($locked);
 
-            abort_if(
-                $afterUpgrade && $printData['requiresQrUpgrade'],
-                409,
-                'The document QR code could not be generated. Please contact the barangay office.'
-            );
+            if ($printData === null) {
+                app(AuditLogger::class)->log(
+                    'document_print_blocked',
+                    $locked,
+                    note: 'The stored certificate PDF or QR code is unavailable.'
+                );
 
-            if (! $printData['requiresQrUpgrade']) {
-                $locked->increment('print_count');
+                return null;
             }
+
+            $locked->increment('print_count');
 
             return $printData;
         });
     }
 
     /**
-     * @return array{document: IssuedDocument, fileContents: string, requiresQrUpgrade: bool}
+     * @return array{document: IssuedDocument, fileContents: string}|null
      */
-    private function printableDocument(ServiceRequest $serviceRequest): array
+    private function printableDocument(ServiceRequest $serviceRequest): ?array
     {
         abort_unless($serviceRequest->status === ServiceRequest::APPROVED, 404);
         abort_unless($serviceRequest->canPrint(), 403, 'This permit has reached its print limit.');
@@ -377,12 +378,20 @@ class ServiceRequestController extends Controller
             ->latest('version')
             ->first();
 
-        abort_unless($document, 404, 'No valid issued document was found.');
+        if (
+            ! $document
+            || $document->qr_code_generated_at === null
+            || blank($document->file_path)
+            || ! Storage::disk($document->disk)->exists($document->file_path)
+        ) {
+            return null;
+        }
 
         $fileContents = Storage::disk($document->disk)->get($document->file_path);
 
         abort_unless(
-            hash_equals($document->file_hash, hash('sha256', $fileContents)),
+            filled($document->file_hash)
+                && hash_equals($document->file_hash, hash('sha256', $fileContents)),
             409,
             'The document failed its integrity check. Please contact the barangay office.'
         );
@@ -390,7 +399,6 @@ class ServiceRequestController extends Controller
         return [
             'document' => $document,
             'fileContents' => $fileContents,
-            'requiresQrUpgrade' => $document->qr_code_generated_at === null,
         ];
     }
 

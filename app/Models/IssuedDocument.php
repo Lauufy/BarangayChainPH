@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,8 +19,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'qr_code_generated_at',
     'revoked_at',
 ])]
+/** Stores an issued certificate and its verification metadata. */
 class IssuedDocument extends Model
 {
+    use Auditable;
+
     protected function casts(): array
     {
         return [

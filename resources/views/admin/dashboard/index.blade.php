@@ -41,9 +41,9 @@
                 :href="route('admin.identity-verification.index')"
             />
             <x-admin.stat-card
-                label="Documents Authenticated"
+                label="Verified identities"
                 :value="$authenticatedDocuments ?? 0"
-                note="Verified documents"
+                note="Verified identity records"
                 :href="route('admin.document-authentication.index')"
             />
         </div>

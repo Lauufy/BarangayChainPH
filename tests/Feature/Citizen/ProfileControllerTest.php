@@ -6,17 +6,17 @@ use App\Models\CitizenProfile;
 use App\Models\IdentityVerification;
 use App\Models\User;
 use App\Services\SupabaseStorage;
-use DateTimeInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
+/** Covers citizen profile updates and Supabase photo storage. */
 class ProfileControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_uploaded_profile_photo_is_saved_to_supabase_and_served_with_a_temporary_url(): void
+    public function test_uploaded_profile_photo_is_saved_and_served_through_a_signed_url(): void
     {
         $citizen = User::factory()->create([
             'role' => 'citizen',
@@ -36,12 +36,6 @@ class ProfileControllerTest extends TestCase
         ]);
 
         Storage::fake('supabase');
-        Storage::fake('local');
-        $this->mock(SupabaseStorage::class)
-            ->shouldReceive('temporaryUrl')
-            ->andReturnUsing(
-                fn (string $path, DateTimeInterface $expiration): string => 'https://storage.example.test/'.$path
-            );
 
         $response = $this->actingAs($citizen)
             ->post(route('citizen.profile.photo'), [
@@ -53,10 +47,15 @@ class ProfileControllerTest extends TestCase
         $photoPath = $citizen->fresh()->citizenProfile->photo_path;
         $this->assertNotEmpty($photoPath);
         $this->assertTrue(Storage::disk('supabase')->exists($photoPath));
-        $this->assertFalse(Storage::disk('local')->exists($photoPath));
+        $this->assertStringNotContainsString('http', $photoPath);
+
+        $this->mock(SupabaseStorage::class)
+            ->shouldReceive('temporaryUrl')
+            ->once()
+            ->andReturn('https://storage.example/profile.jpg');
 
         $this->actingAs($citizen)
             ->get(route('citizen.profile.photo.show'))
-            ->assertRedirect('https://storage.example.test/'.$photoPath);
+            ->assertRedirect('https://storage.example/profile.jpg');
     }
 }

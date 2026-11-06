@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use App\Services\SupabaseStorage;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -18,6 +19,9 @@ use Illuminate\Notifications\Notifiable;
     'name',
     'email',
     'email_verified_at',
+    'consent_given_at',
+    'privacy_policy_version',
+    'consent_ip',
     'phone',
     'phone_verified_at',
     'password',
@@ -32,15 +36,17 @@ use Illuminate\Notifications\Notifiable;
     'remember_token',
 ])]
 
+/** Represents an authenticated citizen or staff account. */
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use Auditable, HasFactory, Notifiable;
 
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
+            'consent_given_at' => 'datetime',
             'phone_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',

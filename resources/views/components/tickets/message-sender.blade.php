@@ -5,8 +5,11 @@
     $senderName = $sender?->name ?? 'Former account';
     $profile = $sender?->isCitizen() ? $sender->citizenProfile : $sender?->employeeProfile;
     $photoUrl = $sender && $profile?->photo_path
-        ? route('tickets.participants.photo', ['ticket' => $ticket, 'participant' => $sender])
-            . '?v=' . ($profile->updated_at?->timestamp ?? '')
+        ? route('tickets.participants.photo', [
+            'ticket' => $ticket,
+            'participant' => $sender,
+            'v' => $profile->updated_at?->timestamp,
+        ])
         : null;
 @endphp
 

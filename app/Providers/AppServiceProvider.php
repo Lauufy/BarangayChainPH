@@ -2,33 +2,57 @@
 
 namespace App\Providers;
 
-use App\Models\IssuedDocument;
-use App\Models\ServiceRequest;
-use App\Observers\AuditableObserver;
+use App\Services\AuditLogger;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
+use Illuminate\Console\Events\ScheduledTaskFailed;
+use Illuminate\Console\Events\ScheduledTaskFinished;
+use Illuminate\Console\Events\ScheduledTaskStarting;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Queue\Events\JobExceptionOccurred;
+use Illuminate\Queue\Events\JobProcessed;
+use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Symfony\Component\Mailer\Bridge\Brevo\Transport\BrevoTransportFactory;
 use Symfony\Component\Mailer\Transport\Dsn;
 
+/** Registers application-wide framework integrations and audit hooks. */
 class AppServiceProvider extends ServiceProvider
 {
     /**
      * Register any application services.
      */
-    public function register(): void
-    {
-        //
-    }
+    public function register(): void {}
 
     /**
      * Bootstrap any application services.
      */
     public function boot(): void
     {
-        ServiceRequest::observe(AuditableObserver::class);
-        IssuedDocument::observe(AuditableObserver::class);
+        Event::listen(Login::class, function (Login $event): void {
+            if ($event->user instanceof Model) {
+                app(AuditLogger::class)->log('login', $event->user, actor: $event->user);
+            }
+        });
+
+        Event::listen(Logout::class, function (Logout $event): void {
+            if ($event->user instanceof Model) {
+                app(AuditLogger::class)->log('logout', $event->user, actor: $event->user);
+            }
+        });
+
+        Queue::before(fn (JobProcessing $event) => AuditLogger::beginBackgroundExecution());
+        Queue::after(fn (JobProcessed $event) => AuditLogger::endBackgroundExecution());
+        Queue::exceptionOccurred(fn (JobExceptionOccurred $event) => AuditLogger::endBackgroundExecution());
+
+        Event::listen(ScheduledTaskStarting::class, fn () => AuditLogger::beginBackgroundExecution());
+        Event::listen(ScheduledTaskFinished::class, fn () => AuditLogger::endBackgroundExecution());
+        Event::listen(ScheduledTaskFailed::class, fn () => AuditLogger::endBackgroundExecution());
 
         if (app()->environment('production')) {
             URL::forceScheme('https');

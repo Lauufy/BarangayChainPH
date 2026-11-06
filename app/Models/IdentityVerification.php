@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Model;
@@ -35,9 +36,13 @@ use Illuminate\Support\Facades\Storage;
  * @property int $id
  * @property string $status
  * @property string|null $rejection_reason
+ *
+ * Stores a citizen's identity verification submission and review state.
  */
 class IdentityVerification extends Model
 {
+    use Auditable;
+
     // The possible statuses (Unverified = no row yet)
     public const PENDING = 'pending';
 

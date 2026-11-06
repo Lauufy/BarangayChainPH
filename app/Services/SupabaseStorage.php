@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Storage;
 use LogicException;
 use RuntimeException;
 
+/** Stores files and creates temporary URLs on the Supabase disk. */
 class SupabaseStorage
 {
     /** How long a signed photo link stays valid. */

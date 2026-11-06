@@ -1,25 +1,12 @@
 @php
     $states = [
-        'valid' => [
-            'headline' => 'This document is genuine',
-            'detail' => 'It was issued by '.$barangayName.' and the file on record is unchanged.',
-        ],
-        'revoked' => [
-            'headline' => 'This document has been revoked',
-            'detail' => 'It is no longer valid. Contact the barangay hall for details.',
-        ],
-        'invalid' => [
-            'headline' => 'This document cannot be confirmed',
-            'detail' => 'The record does not match the file on record. Do not accept this copy. Ask the holder to visit the barangay hall.',
-        ],
-        'unavailable' => [
-            'headline' => 'We could not check this document',
-            'detail' => 'The record service did not respond. Scan the code again in a few minutes.',
-        ],
-        'not_found' => [
-            'headline' => 'No record found',
-            'detail' => 'This code does not match any document issued by '.$barangayName.'.',
-        ],
+        'valid' => ['icon' => '✓', 'label' => 'Valid', 'message' => 'This certificate is valid.', 'style' => 'state-valid'],
+        'not_found' => ['icon' => '?', 'label' => 'Not found', 'message' => 'No matching certificate record was found.', 'style' => 'state-neutral'],
+        'invalid' => ['icon' => '!', 'label' => 'Invalid', 'message' => 'This certificate could not be verified.', 'style' => 'state-invalid'],
+        'revoked' => ['icon' => '×', 'label' => 'Revoked', 'message' => 'This certificate has been revoked.', 'style' => 'state-invalid'],
+        'unavailable' => ['icon' => '…', 'label' => 'Unavailable', 'message' => 'Verification could not be completed right now.', 'style' => 'state-warning'],
+        // TODO: Add an 'expired' state when valid_until is available.
+        // TODO: Add a 'mismatch' state when blockchain verification is implemented.
     ];
     $state = $states[$status] ?? $states['not_found'];
 @endphp
@@ -80,13 +67,26 @@
             border-radius: 8px;
             overflow: hidden;
         }
-        .result { padding: 20px; }
-        .result h1 { margin: 0 0 6px; font-size: 1.4rem; line-height: 1.25; }
+        .result { display: flex; align-items: flex-start; gap: 14px; padding: 20px; }
+        .status-icon {
+            display: grid;
+            flex: 0 0 44px;
+            width: 44px;
+            height: 44px;
+            place-items: center;
+            border: 2px solid currentColor;
+            border-radius: 50%;
+            font-family: Arial, sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .result h1 { margin: 0 0 6px; font-size: 1.5rem; line-height: 1.25; }
         .result p { margin: 0; font-size: 1rem; }
-        .valid .result { background: var(--ok-bg); color: var(--ok); }
-        .revoked .result, .invalid .result { background: var(--bad-bg); color: var(--bad); }
-        .unavailable .result { background: var(--warn-bg); color: var(--warn); }
-        .not_found .result { background: var(--neutral-bg); color: var(--neutral); }
+        .state-valid .result { background: var(--ok-bg); color: var(--ok); }
+        .state-invalid .result { background: var(--bad-bg); color: var(--bad); }
+        .state-warning .result { background: var(--warn-bg); color: var(--warn); }
+        .state-neutral .result { background: var(--neutral-bg); color: var(--neutral); }
         dl { margin: 0; padding: 4px 20px 12px; }
         .row { padding: 12px 0; border-bottom: 1px solid var(--line); }
         .row:last-child { border-bottom: 0; }
@@ -95,44 +95,53 @@
         .note { margin: 16px 4px 0; color: var(--muted); font-size: 0.85rem; }
     </style>
 </head>
-<body class="{{ $status }}">
+<body class="{{ $state['style'] }}">
 <main class="page">
     <p class="issuer">{{ $barangayName }} document verification</p>
 
     <div class="card">
         <div class="result" role="status">
-            <h1>{{ $state['headline'] }}</h1>
-            <p>{{ $state['detail'] }}</p>
+            <span class="status-icon" aria-hidden="true">{{ $state['icon'] }}</span>
+            <div>
+                <h1>{{ $state['label'] }}</h1>
+                <p>{{ $state['message'] }}</p>
+            </div>
         </div>
 
         @if ($status === 'valid')
             <dl>
                 <div class="row">
-                    <dt>Document</dt>
+                    <dt>Certificate type</dt>
                     <dd>{{ $documentTitle }}</dd>
                 </div>
                 <div class="row">
-                    <dt>Issued to</dt>
+                    <dt>Holder</dt>
                     <dd>{{ $maskedApplicantName }}</dd>
-                </div>
-                <div class="row">
-                    <dt>Document number</dt>
-                    <dd>{{ $permitNumber }}</dd>
                 </div>
                 <div class="row">
                     <dt>Reference number</dt>
                     <dd>{{ $referenceNumber }}</dd>
                 </div>
                 <div class="row">
-                    <dt>Date issued</dt>
+                    <dt>Issue date</dt>
                     <dd>{{ $issuedAt?->format('F j, Y') }}</dd>
                 </div>
-                {{-- Phase 1B: add a "Valid until" row from valid_until. --}}
+                <div class="row">
+                    <dt>Barangay</dt>
+                    <dd>{{ $barangayName }}</dd>
+                </div>
+                {{-- TODO: Show valid_until here once the column is added and passed to this view. --}}
+                @isset($validUntil)
+                    <div class="row">
+                        <dt>Valid until</dt>
+                        <dd>{{ $validUntil?->format('F j, Y') }}</dd>
+                    </div>
+                @endisset
             </dl>
         @elseif ($status === 'revoked')
             <dl>
                 <div class="row">
-                    <dt>Document</dt>
+                    <dt>Certificate type</dt>
                     <dd>{{ $documentTitle }}</dd>
                 </div>
                 <div class="row">
@@ -143,7 +152,9 @@
         @endif
     </div>
 
-    <p class="note">The holder's name is shortened on purpose to protect their privacy.</p>
+    @if ($status === 'valid')
+        <p class="note">The holder's name is masked to protect their privacy.</p>
+    @endif
 </main>
 </body>
 </html>

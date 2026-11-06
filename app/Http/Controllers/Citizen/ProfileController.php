@@ -9,6 +9,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
+/** Manages the signed-in citizen's profile and private photo. */
 class ProfileController extends Controller
 {
     public function __construct(private SupabaseStorage $supabaseStorage) {}

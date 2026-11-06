@@ -1,3 +1,2 @@
 # BarangayChainPH
-BarangayChain PH — A blockchain-integrated digital barangay permit and clearance management system for secure document processing, verification, and transparent record keeping.
-
+BarangayChain PH — A digital barangay permit and clearance system for service requests, identity verification, and QR-based certificate verification.

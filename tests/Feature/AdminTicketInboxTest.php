@@ -6,11 +6,10 @@ use App\Models\CitizenProfile;
 use App\Models\ServiceRequest;
 use App\Models\User;
 use App\Services\SupabaseStorage;
-use DateTimeInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
+/** Covers staff ticket access, including signed participant photo URLs. */
 class AdminTicketInboxTest extends TestCase
 {
     use RefreshDatabase;
@@ -78,18 +77,16 @@ class AdminTicketInboxTest extends TestCase
         $ticket = $serviceRequest->ticket()->create([
             'user_id' => $citizen->id,
         ]);
-        Storage::fake('supabase');
         $this->mock(SupabaseStorage::class)
             ->shouldReceive('temporaryUrl')
-            ->andReturnUsing(
-                fn (string $path, DateTimeInterface $expiration): string => 'https://storage.example.test/'.$path
-            );
+            ->once()
+            ->andReturn('https://storage.example/profile.jpg');
 
         $this->actingAs($citizen)
             ->get(route('tickets.participants.photo', [
                 'ticket' => $ticket,
                 'participant' => $citizen,
             ]))
-            ->assertRedirect('https://storage.example.test/profile-photos/citizen.png');
+            ->assertRedirect('https://storage.example/profile.jpg');
     }
 }

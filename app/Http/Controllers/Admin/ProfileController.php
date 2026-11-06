@@ -11,6 +11,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
+/** Manages the signed-in staff member's profile and private photo. */
 class ProfileController extends Controller
 {
     public function __construct(private SupabaseStorage $supabaseStorage) {}

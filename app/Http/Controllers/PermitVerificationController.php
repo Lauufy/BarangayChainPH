@@ -9,6 +9,7 @@ use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Throwable;
 
+/** Verifies issued certificates and prepares the public verification page. */
 class PermitVerificationController extends Controller
 {
     // Set to true once the office decides the public page must not reveal
@@ -31,7 +32,6 @@ class PermitVerificationController extends Controller
             'status' => $status,
             'documentTitle' => $this->documentTitle($application),
             'maskedApplicantName' => $isValid ? $this->maskApplicantName($application->applicant_name) : null,
-            'permitNumber' => $isValid ? $document->document_number : null,
             'referenceNumber' => $isValid ? $application->reference_number : null,
             'issuedAt' => $document?->issued_at,
             'revokedAt' => $document?->revoked_at,
@@ -101,10 +101,13 @@ class PermitVerificationController extends Controller
     {
         $parts = preg_split('/\s+/', trim($name), -1, PREG_SPLIT_NO_EMPTY);
 
-        if (count($parts) < 2) {
-            return Str::substr($parts[0] ?? '', 0, 1).'.';
+        if ($parts === []) {
+            return 'Applicant';
         }
 
-        return $parts[0].' '.Str::upper(Str::substr(end($parts), 0, 1)).'.';
+        return implode(' ', array_map(
+            fn (string $part): string => Str::substr($part, 0, 1).'***',
+            $parts
+        ));
     }
 }

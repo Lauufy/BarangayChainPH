@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\AuditLog;
 use App\Models\IdentityVerification;
 use App\Models\ServiceRequest;
 use App\Models\User;
@@ -42,12 +43,14 @@ class OtpAuthenticationTest extends TestCase
     {
         $this->fakeHttp();
         Notification::fake();
+        config(['privacy.policy_version' => '2026-11-v1']);
         $oldSessionId = $this->app['session']->getId();
 
-        $response = $this->post(route('register.store'), $this->registrationData([
-            'mode' => 'email',
-            'email' => 'new@example.com',
-        ]));
+        $response = $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.44'])
+            ->post(route('register.store'), $this->registrationData([
+                'mode' => 'email',
+                'email' => 'new@example.com',
+            ]));
 
         $response->assertRedirect(route('verification.otp.show'));
         $this->assertDatabaseMissing('users', ['email' => 'new@example.com']);
@@ -64,9 +67,18 @@ class OtpAuthenticationTest extends TestCase
 
         $user = User::where('email', 'new@example.com')->firstOrFail();
         $this->assertNotNull($user->email_verified_at);
+        $this->assertNotNull($user->consent_given_at);
+        $this->assertSame('2026-11-v1', $user->privacy_policy_version);
+        $this->assertSame('203.0.113.44', $user->consent_ip);
         $this->assertNull($user->phone);
         $this->assertAuthenticatedAs($user);
         $this->assertNotSame($oldSessionId, $this->app['session']->getId());
+        $registrationAudit = AuditLog::query()
+            ->where('subject_type', User::class)
+            ->where('subject_id', (string) $user->id)
+            ->where('action', 'users.created')
+            ->firstOrFail();
+        $this->assertSame('[redacted]', $registrationAudit->new_values['consent_ip']);
         Notification::assertSentOnDemandOnce(EmailVerificationOtp::class);
     }
 

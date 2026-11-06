@@ -5,17 +5,17 @@ namespace Tests\Feature\Citizen;
 use App\Models\CitizenProfile;
 use App\Models\User;
 use App\Services\SupabaseStorage;
-use DateTimeInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
+/** Covers Supabase storage for citizen identity-verification photos. */
 class IdentityVerificationPhotoTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_identity_photos_are_saved_to_supabase_and_served_with_temporary_urls(): void
+    public function test_identity_photos_are_saved_to_supabase_and_served_through_signed_urls(): void
     {
         $citizen = User::factory()->create([
             'role' => 'citizen',
@@ -38,12 +38,6 @@ class IdentityVerificationPhotoTest extends TestCase
 
         Storage::fake('supabase');
         Storage::fake('local');
-        $this->mock(SupabaseStorage::class)
-            ->shouldReceive('temporaryUrl')
-            ->twice()
-            ->andReturnUsing(
-                fn (string $path, DateTimeInterface $expiration): string => 'https://storage.example.test/'.$path
-            );
 
         $response = $this->actingAs($citizen)
             ->post(route('citizen.identity-verification.document'), [
@@ -63,22 +57,30 @@ class IdentityVerificationPhotoTest extends TestCase
         Storage::disk('supabase')->assertExists($verification->selfie_path);
         Storage::disk('local')->assertMissing($verification->document_path);
         Storage::disk('local')->assertMissing($verification->selfie_path);
+        $this->assertStringNotContainsString('http', $verification->document_path);
+        $this->assertStringNotContainsString('http', $verification->selfie_path);
+
+        $admin = User::factory()->create([
+            'role' => 'staff',
+            'is_active' => true,
+            'permissions' => ['identity.review'],
+        ]);
+
+        $this->mock(SupabaseStorage::class)
+            ->shouldReceive('temporaryUrl')
+            ->twice()
+            ->andReturn('https://storage.example/identity.jpg');
 
         $this->actingAs($citizen)
             ->get(route('citizen.identity-verification.file', $verification))
-            ->assertRedirect('https://storage.example.test/'.$verification->document_path);
-
-        $admin = User::factory()->create([
-            'role' => 'admin',
-            'is_active' => true,
-        ]);
+            ->assertRedirect('https://storage.example/identity.jpg');
 
         $this->actingAs($admin)
             ->get(route('admin.identity-verification.selfie', $verification))
-            ->assertRedirect('https://storage.example.test/'.$verification->selfie_path);
+            ->assertRedirect('https://storage.example/identity.jpg');
     }
 
-    public function test_uploaded_pdf_identity_documents_remain_on_the_private_local_disk(): void
+    public function test_uploaded_pdf_identity_documents_are_stored_locally(): void
     {
         $citizen = User::factory()->create([
             'role' => 'citizen',
@@ -117,7 +119,13 @@ class IdentityVerificationPhotoTest extends TestCase
 
         $verification = $citizen->identityVerifications()->latest()->firstOrFail();
         Storage::disk('local')->assertExists($verification->document_path);
-        Storage::disk('supabase')->assertMissing($verification->document_path);
         Storage::disk('supabase')->assertExists($verification->selfie_path);
+        Storage::disk('local')->assertMissing($verification->selfie_path);
+        $this->assertStringNotContainsString('http', $verification->document_path);
+        $this->assertStringNotContainsString('http', $verification->selfie_path);
+
+        $this->actingAs($citizen)
+            ->get(route('citizen.identity-verification.file', $verification))
+            ->assertOk();
     }
 }

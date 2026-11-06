@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
+/** Reviews citizen identity verification submissions. */
 class IdentityReviewController extends Controller
 {
     public function __construct(private SupabaseStorage $supabaseStorage) {}
@@ -99,6 +100,6 @@ class IdentityReviewController extends Controller
             report($exception);
         }
 
-        return redirect()->route($route)->with('success', 'The application was ' . $status . '.');
+        return redirect()->route($route)->with('success', 'The application was '.$status.'.');
     }
 }

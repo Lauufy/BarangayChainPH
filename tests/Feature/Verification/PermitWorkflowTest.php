@@ -1,7 +1,8 @@
 <?php
 
-namespace Tests\Feature;
+namespace Tests\Feature\Verification;
 
+use App\Models\AuditLog;
 use App\Models\IssuedDocument;
 use App\Models\ServiceRequest;
 use App\Models\User;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
+/** Covers certificate issuance, PDF delivery, and verification integration. */
 class PermitWorkflowTest extends TestCase
 {
     use RefreshDatabase;
@@ -66,7 +68,6 @@ class PermitWorkflowTest extends TestCase
                 ))->build()->getDataUri();
 
                 $this->assertSame($expectedQrCode, $data['qrCode']);
-                
 
                 return true;
             })
@@ -130,7 +131,7 @@ class PermitWorkflowTest extends TestCase
         $this->assertNull($document->revoked_at);
     }
 
-    public function test_printing_a_legacy_document_reissues_it_with_a_qr_code(): void
+    public function test_printing_a_legacy_document_without_a_qr_does_not_regenerate_it(): void
     {
         Storage::fake('supabase');
 
@@ -160,32 +161,59 @@ class PermitWorkflowTest extends TestCase
         ]);
 
         $response = $this->actingAs($user)
+            ->from(route('citizen.applications.show', $application))
             ->get(route('citizen.applications.print', $application));
 
-        $response->assertOk()
-            ->assertHeader('content-type', 'application/pdf');
+        $response->assertRedirect(route('citizen.applications.show', $application))
+            ->assertSessionHas('error', 'This certificate cannot be printed because its stored PDF or QR code is unavailable. Please contact the barangay office for assistance.');
 
-        $pdfContent = $response->getContent();
-        $currentDocument = $application->issuedDocuments()
-            ->whereNull('revoked_at')
-            ->firstOrFail();
+        $this->assertDatabaseCount('issued_documents', 1);
+        $this->assertNull($legacyDocument->fresh()->revoked_at);
+        $this->assertNull($legacyDocument->fresh()->qr_code_generated_at);
+        $this->assertSame(0, $application->fresh()->print_count);
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'document_print_blocked',
+            'subject_type' => ServiceRequest::class,
+            'subject_id' => (string) $application->id,
+        ]);
+    }
 
-        $this->assertStringStartsWith('%PDF', $pdfContent);
-        $this->assertStringContainsString('/Subtype /Image', $pdfContent);
-        $this->assertSame(2, $currentDocument->version);
-        $this->assertNotNull($legacyDocument->fresh()->revoked_at);
-        $this->assertNotNull($currentDocument->qr_code_generated_at);
-        $this->assertSame(
-            hash('sha256', $pdfContent),
-            $currentDocument->file_hash
-        );
+    public function test_printing_a_document_with_a_missing_pdf_is_blocked_and_audited(): void
+    {
+        Storage::fake('supabase');
+
+        $user = User::factory()->create([
+            'role' => 'citizen',
+            'is_active' => true,
+        ]);
+        $application = ServiceRequest::create([
+            'user_id' => $user->id,
+            'reference_number' => 'BRGY-20261106-0008',
+            'service_type' => ServiceRequest::BARANGAY_CLEARANCE,
+            'applicant_name' => 'Carlo Mamaril',
+            'address' => 'Barangay San Luis, Antipolo City',
+            'age' => 22,
+            'purpose' => 'Employment',
+            'status' => ServiceRequest::PENDING,
+        ]);
+
+        $document = app(DocumentIssuer::class)->issue($application);
+        Storage::disk('supabase')->delete($document->file_path);
 
         $this->actingAs($user)
+            ->from(route('citizen.applications.show', $application))
             ->get(route('citizen.applications.print', $application))
-            ->assertOk();
+            ->assertRedirect(route('citizen.applications.show', $application))
+            ->assertSessionHas('error');
 
-        $this->assertDatabaseCount('issued_documents', 2);
-        $this->assertSame(2, $application->fresh()->print_count);
+        $this->assertDatabaseCount('issued_documents', 1);
+        $this->assertNull($document->fresh()->revoked_at);
+        $this->assertSame(0, $application->fresh()->print_count);
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'document_print_blocked',
+            'subject_type' => ServiceRequest::class,
+            'subject_id' => (string) $application->id,
+        ]);
     }
 
     public function test_issuing_the_same_application_twice_does_not_create_duplicate_documents(): void
@@ -357,6 +385,19 @@ class PermitWorkflowTest extends TestCase
             'version' => 2,
             'revoked_at' => null,
         ]);
+        $revocationAudit = AuditLog::query()
+            ->where('subject_type', IssuedDocument::class)
+            ->where('subject_id', (string) $originalDocument->id)
+            ->where('action', 'issued_documents.updated')
+            ->firstOrFail();
+        $this->assertNull($revocationAudit->old_values['revoked_at']);
+        $this->assertNotNull($revocationAudit->new_values['revoked_at']);
+        $creationAudit = AuditLog::query()
+            ->where('subject_type', IssuedDocument::class)
+            ->where('subject_id', (string) $newDocument->id)
+            ->where('action', 'issued_documents.created')
+            ->firstOrFail();
+        $this->assertSame(2, $creationAudit->new_values['version']);
 
         $this->assertDatabaseHas('service_requests', [
             'id' => $application->id,

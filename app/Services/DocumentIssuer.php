@@ -13,6 +13,7 @@ use Illuminate\Support\Str;
 use RuntimeException;
 use Throwable;
 
+/** Generates, stores, and versions issued certificate PDFs. */
 class DocumentIssuer
 {
     private const DISK = 'supabase';
@@ -47,27 +48,6 @@ class DocumentIssuer
             $application->issuedDocuments()->save($document);
 
             return $document;
-        });
-    }
-
-    /**
-     * Returns the active document, regenerating it first if it has no QR code yet.
-     * Returns null when the application is not printable.
-     */
-    public function ensureQrCode(ServiceRequest $serviceRequest): ?IssuedDocument
-    {
-        return $this->locked($serviceRequest, function (ServiceRequest $application, ?string &$uploadedPath) {
-            if (! $application->canPrint()) {
-                return null;
-            }
-
-            $document = $this->activeDocument($application);
-
-            if (! $document || $document->qr_code_generated_at !== null) {
-                return $document;
-            }
-
-            return $this->replaceDocument($application, $document, $uploadedPath);
         });
     }
 

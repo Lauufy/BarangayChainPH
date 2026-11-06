@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -31,16 +32,25 @@ use Illuminate\Support\Str;
     'print_count',
     'print_limit',
 ])]
+/** Stores a citizen's request for a barangay service or certificate. */
 class ServiceRequest extends Model
 {
+    use Auditable;
+
     public const CERTIFICATE_OF_INDIGENCY = 'certificate_of_indigency';
+
     public const BARANGAY_CLEARANCE = 'barangay_clearance';
+
     public const CERTIFICATE_OF_RESIDENCY = 'certificate_of_residency';
 
     public const PENDING = 'pending';
+
     public const PROCESSING = 'processing';
+
     public const APPROVED = 'approved';
+
     public const REJECTED = 'rejected';
+
     public const CANCELLED = 'cancelled';
 
     public const MAX_PRINTS = 2;

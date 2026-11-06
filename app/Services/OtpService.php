@@ -41,7 +41,7 @@ class OtpService
         $limitKey = 'sms-limit:'.$otp['to'];
 
         // The textbee free plan is small, so allow only 5 texts per hour for each number.
-        if ($isSms && RateLimiter::tooManyAttempts($limitKey, 6)) {
+        if ($isSms && RateLimiter::tooManyAttempts($limitKey, 5)) {
             $this->fail('Too many codes were requested for this number. Please try again later.');
         }
 

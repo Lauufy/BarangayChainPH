@@ -2,54 +2,55 @@
 
 namespace App\Observers;
 
-use App\Models\AuditLog;
+use App\Models\User;
+use App\Services\AuditLogger;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Auth;
 
+/** Records model lifecycle changes through the shared audit logger. */
 class AuditableObserver
 {
-    /** Record the initial values when an auditable record is created. */
     public function created(Model $model): void
     {
-        $this->write($model, 'created', [], $this->values($model->getAttributes()));
+        app(AuditLogger::class)->logModelEvent(
+            $model,
+            $model->getTable().'.created',
+            [],
+            $this->values($model->getAttributes(), $model)
+        );
     }
 
-    /** Record only changed values so the audit entry stays readable. */
     public function updated(Model $model): void
     {
-        $changes = $this->values($model->getChanges());
-        $oldValues = array_intersect_key($this->values($model->getRawOriginal()), $changes);
+        $changes = $this->values($model->getChanges(), $model);
 
-        if ($changes !== []) {
-            $this->write($model, 'updated', $oldValues, $changes);
+        if ($changes === []) {
+            return;
         }
+
+        $oldValues = array_intersect_key($this->values($model->getRawOriginal(), $model), $changes);
+        $action = match (true) {
+            $model instanceof User && array_intersect(['role', 'permissions'], array_keys($changes)) !== [] => 'role_changed',
+            array_key_exists('status', $changes) => 'status_changed',
+            default => $model->getTable().'.updated',
+        };
+
+        app(AuditLogger::class)->logModelEvent($model, $action, $oldValues, $changes);
     }
 
-    /** Record the last persisted values before a record is removed. */
     public function deleted(Model $model): void
     {
-        $this->write($model, 'deleted', $this->values($model->getRawOriginal()), []);
+        app(AuditLogger::class)->logModelEvent(
+            $model,
+            $model->getTable().'.deleted',
+            $this->values($model->getRawOriginal(), $model),
+            []
+        );
     }
 
-    /** Remove timestamps and internal Eloquent fields from recorded data. */
-    private function values(array $values): array
+    private function values(array $values, Model $model): array
     {
-        unset($values['created_at'], $values['updated_at']);
+        unset($values[$model->getKeyName()], $values['created_at'], $values['updated_at']);
 
         return $values;
-    }
-
-    /** Save one model change with its authenticated actor. */
-    private function write(Model $model, string $action, array $oldValues, array $newValues): void
-    {
-        AuditLog::create([
-            'user_id' => Auth::id(),
-            'action' => $model->getTable().'.'.$action,
-            'subject_type' => $model::class,
-            'subject_id' => (string) $model->getKey(),
-            'old_values' => $oldValues === [] ? null : $oldValues,
-            'new_values' => $newValues === [] ? null : $newValues,
-            'created_at' => now(),
-        ]);
     }
 }

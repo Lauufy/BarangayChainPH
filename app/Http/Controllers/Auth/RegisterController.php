@@ -62,6 +62,9 @@ class RegisterController extends Controller
                 'email' => $data['email'] ?? null,
                 'phone' => $data['phone'] ?? null,
                 'password' => Hash::make($data['password']),
+                'consent_given_at' => now()->toIso8601String(),
+                'privacy_policy_version' => config('privacy.policy_version'),
+                'consent_ip' => $request->ip(),
             ]
         );
 

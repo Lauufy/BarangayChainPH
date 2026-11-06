@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature\Admin;
+namespace Tests\Feature\Audit;
 
 use App\Models\AuditLog;
 use App\Models\IssuedDocument;
@@ -9,7 +9,8 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-class AuditLogTest extends TestCase
+/** Covers audit record creation and the admin audit-log view. */
+class AdminAuditLogTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -21,17 +22,17 @@ class AuditLogTest extends TestCase
         $this->actingAs($admin);
 
         $application->update(['status' => ServiceRequest::PROCESSING]);
-        $updatedLog = AuditLog::query()->where('action', 'service_requests.updated')->firstOrFail();
+        $updatedLog = AuditLog::query()->where('action', 'status_changed')->firstOrFail();
 
         $this->assertSame('pending', $updatedLog->old_values['status']);
         $this->assertSame('processing', $updatedLog->new_values['status']);
         $this->get(route('admin.audit-logs.index', [
             'user_id' => $admin->id,
-            'action' => 'service_requests.updated',
+            'action' => 'status_changed',
             'date' => now()->toDateString(),
         ]))
             ->assertOk()
-            ->assertSee('Service request updated')
+            ->assertSee('Status Changed')
             ->assertSee('Status: pending -> processing')
             ->assertDontSee('No audit records match these filters.');
     }
