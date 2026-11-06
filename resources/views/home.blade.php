@@ -20,7 +20,9 @@
     $go = fn($name, $fallback) => $name && Route::has($name) ? route($name) : $fallback;
 
     // Small right-arrow icon
-    $arrow = fn($class = 'h-4 w-4') => '<svg class="' . $class . '" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>';
+    $arrow = fn($class = 'h-4 w-4') => '<svg class="' .
+        $class .
+        '" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>';
     $check = 'M4.5 12.75l6 6 9-13.5';
 
     $actions = [
@@ -36,8 +38,14 @@
     $navLinks = array_merge($navLinks, [['#verify', 'Verify'], ['#faq', 'FAQ'], ['#contact', 'Contact']]);
 
     $about = [
-        ['For residents', 'Apply for clearances and permits from home and follow your request online, with fewer trips to the barangay office.'],
-        ['For the barangay', 'Requests come into one system, which reduces paperwork and manual work for barangay staff.'],
+        [
+            'For residents',
+            'Apply for clearances and permits from home and follow your request online, with fewer trips to the barangay office.',
+        ],
+        [
+            'For the barangay',
+            'Requests come into one system, which reduces paperwork and manual work for barangay staff.',
+        ],
     ];
 
     $services = [
@@ -66,34 +74,67 @@
     ];
 
     $faqs = [
-        ['What do I need before I apply?', 'An email address you can open, your profile details, and a valid ID for identity verification.'],
-        ['How do I verify a document?', 'Scan the QR code on the document with your phone. It opens this website and shows whether the document is valid. No account is needed.'],
-        ['Are there fees or processing times?', 'Requirements, fees, and processing times are confirmed by the barangay office. Contact the office before applying.'],
+        [
+            'What do I need before I apply?',
+            'An email address you can open, your profile details, and a valid ID for identity verification.',
+        ],
+        [
+            'How do I verify a document?',
+            'Scan the QR code on the document with your phone. It opens this website and shows whether the document is valid. No account is needed.',
+        ],
+        [
+            'Are there fees or processing times?',
+            'Requirements, fees, and processing times are confirmed by the barangay office. Contact the office before applying.',
+        ],
     ];
 
     $mapQuery = 'Barangay+San+Luis+Antipolo+City+Rizal';
 
     // Contact rows: icon path, label, value, link (null = no link)
     $contacts = [
-        ['M15 10.5a3 3 0 11-6 0 3 3 0 016 0zM19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z', 'Location', 'Barangay San Luis, Antipolo City, Rizal 1870', null],
+        [
+            'M15 10.5a3 3 0 11-6 0 3 3 0 016 0zM19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z',
+            'Location',
+            'Barangay San Luis, Antipolo City, Rizal 1870',
+            null,
+        ],
         ['M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z', 'Office hours', 'Monday to Friday, 8:00 AM to 5:00 PM', null],
-        ['M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z', 'Phone', '8-8555-245', 'tel:88555245'],
-        ['M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75', 'Email', 'barangaychain@gmail.com', 'mailto:barangaychain@gmail.com'],
-        ['M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25', 'Facebook', 'Visit our Facebook page', $facebook],
+        [
+            'M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z',
+            'Phone',
+            '8-8555-245',
+            'tel:88555245',
+        ],
+        [
+            'M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75',
+            'Email',
+            'barangaychain@gmail.com',
+            'mailto:barangaychain@gmail.com',
+        ],
+        [
+            'M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25',
+            'Facebook',
+            'Visit our Facebook page',
+            $facebook,
+        ],
     ];
 
     // Shared classes
-    $btn = 'inline-flex items-center justify-center gap-2 rounded-md px-5 py-3 text-sm font-semibold text-white transition duration-200 hover:-translate-y-0.5 hover:shadow-md';
+    $btn =
+        'inline-flex items-center justify-center gap-2 rounded-md px-5 py-3 text-sm font-semibold text-white transition duration-200 hover:-translate-y-0.5 hover:shadow-md';
     $button = "$btn bg-blue-950 hover:bg-blue-800";
     $accent = "$btn bg-emerald-700 hover:bg-emerald-600";
-    $ghost = 'inline-flex items-center justify-center rounded-md border border-white/50 px-5 py-3 text-sm font-semibold text-white transition-colors duration-200 hover:bg-white hover:text-blue-950';
-    $textLink = 'inline-flex items-center gap-2 text-sm font-semibold text-blue-900 underline decoration-emerald-600 decoration-2 underline-offset-4 transition-colors hover:text-emerald-700';
+    $ghost =
+        'inline-flex items-center justify-center rounded-md border border-white/50 px-5 py-3 text-sm font-semibold text-white transition-colors duration-200 hover:bg-white hover:text-blue-950';
+    $textLink =
+        'inline-flex items-center gap-2 text-sm font-semibold text-blue-900 underline decoration-emerald-600 decoration-2 underline-offset-4 transition-colors hover:text-emerald-700';
     $label = 'text-sm font-semibold text-blue-800';
     $title = 'mt-2 text-3xl font-bold tracking-tight text-blue-950 sm:text-4xl';
     $section = 'mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-24';
     $gray = 'border-y border-slate-200 bg-slate-50';
     $card = 'rounded-md border border-slate-200 bg-white';
-    $navLink = 'relative py-1 transition-colors hover:text-blue-900 focus-visible:text-blue-900 aria-[current=true]:font-semibold aria-[current=true]:text-blue-900 after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:origin-left after:scale-x-0 after:bg-emerald-600 after:transition-transform after:duration-200 hover:after:scale-x-100 focus-visible:after:scale-x-100 aria-[current=true]:after:scale-x-100';
+    $navLink =
+        'relative py-1 transition-colors hover:text-blue-900 focus-visible:text-blue-900 aria-[current=true]:font-semibold aria-[current=true]:text-blue-900 after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:origin-left after:scale-x-0 after:bg-emerald-600 after:transition-transform after:duration-200 hover:after:scale-x-100 focus-visible:after:scale-x-100 aria-[current=true]:after:scale-x-100';
 @endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="scroll-pt-24 scroll-smooth">
@@ -104,11 +145,18 @@
     <meta name="description"
         content="BarangayChain PH is the online service portal of Barangay San Luis, Antipolo City, Rizal. Request barangay certificates, track your application, and verify documents.">
     <title>BarangayChain PH — Barangay San Luis, Antipolo City</title>
-    <script>document.documentElement.classList.add('js')</script>
+    <script>
+        document.documentElement.classList.add('js')
+    </script>
     <style>
-        body { overflow-x: clip; }
+        body {
+            overflow-x: clip;
+        }
 
-        :focus-visible { outline: 2px solid #059669; outline-offset: 3px; }
+        :focus-visible {
+            outline: 2px solid #059669;
+            outline-offset: 3px;
+        }
 
         /* Fade-in on scroll (only when JavaScript is on) */
         .js [data-reveal] {
@@ -118,13 +166,26 @@
             transition-delay: var(--d, 0ms);
         }
 
-        .js [data-reveal].is-visible { opacity: 1; transform: none; }
+        .js [data-reveal].is-visible {
+            opacity: 1;
+            transform: none;
+        }
 
         @media (prefers-reduced-motion: reduce) {
-            html { scroll-behavior: auto; }
-            .js [data-reveal] { opacity: 1; transform: none; transition: none; }
+            html {
+                scroll-behavior: auto;
+            }
+
+            .js [data-reveal] {
+                opacity: 1;
+                transform: none;
+                transition: none;
+            }
         }
     </style>
+
+    <link rel="icon" type="image/png" href="{{ asset('img/branding/barangayChainPH-logo.png') }}">
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
@@ -133,7 +194,7 @@
     <x-feedbacks.toast />
 
     <a href="#main"
-        class="sr-only z-60 rounded-md bg-white px-4 py-2 text-sm font-semibold text-blue-950 focus:not-sr-only focus:fixed focus:left-4 focus:top-4">Skip
+        class="z-60 sr-only rounded-md bg-white px-4 py-2 text-sm font-semibold text-blue-950 focus:not-sr-only focus:fixed focus:left-4 focus:top-4">Skip
         to main content</a>
 
     {{-- Top bar --}}
@@ -141,7 +202,8 @@
         <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-2 text-xs sm:px-8">
             <p>Republic of the Philippines | Province of Rizal </p>
             <a href="{{ $facebook }}" target="_blank" rel="noopener noreferrer"
-                class="hidden text-blue-100 transition-colors hover:text-emerald-300 sm:inline">Official Barangay Website</a>
+                class="hidden text-blue-100 transition-colors hover:text-emerald-300 sm:inline">Official Barangay
+                Website</a>
         </div>
     </div>
 
@@ -167,7 +229,8 @@
             </div>
 
             <button type="button" id="menu-button" aria-label="Toggle menu" aria-controls="mobile-menu"
-                aria-expanded="false" class="rounded-md p-2 text-blue-950 transition-colors hover:bg-slate-100 xl:hidden">
+                aria-expanded="false"
+                class="rounded-md p-2 text-blue-950 transition-colors hover:bg-slate-100 xl:hidden">
                 <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path id="icon-open" stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16" />
                     <path id="icon-close" class="hidden" stroke-linecap="round" d="M6 6l12 12M18 6L6 18" />
@@ -187,7 +250,8 @@
                         <a href="{{ $dashboard }}" class="{{ $button }}">Open dashboard</a>
                     @else
                         <a href="{{ route('login') }}"
-                            class="rounded-md border border-blue-950 px-5 py-3 text-center font-semibold text-blue-950">Sign in</a>
+                            class="rounded-md border border-blue-950 px-5 py-3 text-center font-semibold text-blue-950">Sign
+                            in</a>
                         <a href="{{ route('register') }}" class="{{ $button }}">Create account</a>
                     @endauth
                 </div>
@@ -204,8 +268,9 @@
             <div class="bg-linear-to-r absolute inset-0 -z-10 from-blue-950 via-blue-950/85 to-blue-950/50"></div>
 
             <div class="mx-auto max-w-7xl px-5 pb-28 pt-16 sm:px-8 sm:pb-32 sm:pt-20 lg:pb-40 lg:pt-28">
-                <p class="text-sm font-semibold text-emerald-300">Official Online Portal of Barangay San Luis</p>
-                <h1 class="mt-3 max-w-3xl text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
+                <p class="text-sm font-semibold text-emerald-300 uppercase">Official Online Portal of Barangay San Luis</p>
+                <h1
+                    class="mt-3 max-w-3xl text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
                     Barangay services, made easier and more accessible.
                 </h1>
                 <p class="mt-6 max-w-xl text-base leading-7 text-blue-100 sm:text-lg">
@@ -229,7 +294,8 @@
 
         {{-- Quick actions and office info --}}
         <section class="relative z-10 mx-auto -mt-20 max-w-7xl px-5 sm:px-8 lg:-mt-24">
-            <div data-reveal class="overflow-hidden rounded-md border border-slate-200 border-t-4 border-t-emerald-500 bg-white shadow-lg">
+            <div data-reveal
+                class="overflow-hidden rounded-md border border-t-4 border-slate-200 border-t-emerald-500 bg-white shadow-lg">
                 <div class="grid divide-y divide-slate-200 md:grid-cols-3 md:divide-x md:divide-y-0">
                     @foreach ($actions as [$name, $caption, $href])
                         <a href="{{ $href }}"
@@ -249,7 +315,8 @@
                             <dt class="text-sm font-semibold text-slate-600">{{ $name }}</dt>
                             <dd class="mt-0.5 font-semibold text-blue-950">
                                 @if ($link)
-                                    <a href="{{ $link }}" class="underline-offset-4 hover:text-emerald-700 hover:underline">{{ $value }}</a>
+                                    <a href="{{ $link }}"
+                                        class="underline-offset-4 hover:text-emerald-700 hover:underline">{{ $value }}</a>
                                 @else
                                     {{ $value }}
                                 @endif
@@ -286,7 +353,7 @@
                     class="absolute bottom-0 right-0 h-[calc(100%-0.75rem)] w-[calc(100%-0.75rem)] rounded-md border-2 border-emerald-600"></span>
                 <img src="{{ asset('img/photos/ynares-hall-side.jpg') }}" alt="Entrance of Ynares Hall"
                     width="548" height="428" loading="lazy"
-                    class="relative aspect-4/3 w-full rounded-md object-cover shadow-md">
+                    class="aspect-4/3 relative w-full rounded-md object-cover shadow-md">
             </div>
         </section>
 
@@ -335,7 +402,9 @@
                         <li class="group relative p-7 transition-colors duration-300 hover:bg-emerald-50">
                             <span aria-hidden="true"
                                 class="{{ ['bg-blue-950', 'bg-blue-900', 'bg-emerald-800', 'bg-emerald-600'][$loop->index] }} absolute inset-x-0 top-0 h-1"></span>
-                            <p class="text-4xl font-bold tracking-tight text-blue-950 transition-colors duration-300 group-hover:text-emerald-700">{{ $number }}</p>
+                            <p
+                                class="text-4xl font-bold tracking-tight text-blue-950 transition-colors duration-300 group-hover:text-emerald-700">
+                                {{ $number }}</p>
                             <h3 class="mt-6 text-lg font-bold text-blue-950">{{ $name }}</h3>
                             <p class="mt-2 text-sm leading-6 text-slate-600">{{ $text }}</p>
                         </li>
@@ -344,7 +413,9 @@
 
                 <div data-reveal class="mt-8">
                     <a href="{{ $actions[0][2] }}" class="{{ $accent }}">
-                        @auth Go to your dashboard @else Get started @endauth
+                        @auth Go to your dashboard
+                        @else
+                        Get started @endauth
                         {!! $arrow() !!}
                     </a>
                 </div>
@@ -360,7 +431,8 @@
                             <p class="{{ $label }}">Announcements and updates</p>
                             <h2 class="{{ $title }}">Latest from the barangay.</h2>
                         </div>
-                        <a href="{{ $facebook }}" target="_blank" rel="noopener noreferrer" class="{{ $textLink }}">
+                        <a href="{{ $facebook }}" target="_blank" rel="noopener noreferrer"
+                            class="{{ $textLink }}">
                             More on Facebook {!! $arrow() !!}
                         </a>
                     </div>
@@ -369,7 +441,9 @@
                         @foreach ($announcements as $item)
                             @php
                                 $url = data_get($item, 'url');
-                                $when = filled(data_get($item, 'date')) ? \Illuminate\Support\Carbon::parse(data_get($item, 'date')) : null;
+                                $when = filled(data_get($item, 'date'))
+                                    ? \Illuminate\Support\Carbon::parse(data_get($item, 'date'))
+                                    : null;
                             @endphp
                             <article data-reveal style="--d: {{ $loop->index * 120 }}ms"
                                 class="{{ $card }} flex flex-col border-t-4 border-t-blue-950 p-6">
@@ -379,10 +453,12 @@
                                 @endif
                                 <h3 class="mt-2 text-lg font-bold text-blue-950">{{ data_get($item, 'title') }}</h3>
                                 @if (data_get($item, 'summary'))
-                                    <p class="mt-3 flex-1 text-sm leading-6 text-slate-600">{{ data_get($item, 'summary') }}</p>
+                                    <p class="mt-3 flex-1 text-sm leading-6 text-slate-600">
+                                        {{ data_get($item, 'summary') }}</p>
                                 @endif
                                 @if ($url)
-                                    <a href="{{ $url }}" class="{{ $textLink }} mt-5 w-fit">Read more</a>
+                                    <a href="{{ $url }}" class="{{ $textLink }} mt-5 w-fit">Read
+                                        more</a>
                                 @endif
                             </article>
                         @endforeach
@@ -409,7 +485,8 @@
                         <ol class="mt-4 space-y-4">
                             @foreach ($verifySteps as $text)
                                 <li class="flex gap-4 text-sm leading-6 text-blue-100">
-                                    <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-sm font-bold text-white">{{ $loop->iteration }}</span>
+                                    <span
+                                        class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-sm font-bold text-white">{{ $loop->iteration }}</span>
                                     <span class="pt-0.5">{{ $text }}</span>
                                 </li>
                             @endforeach
@@ -422,7 +499,8 @@
                     </div>
 
                     <figure data-reveal style="--d: 120ms">
-                        <figcaption class="mb-3 text-sm font-semibold text-blue-100">What you will see after scanning</figcaption>
+                        <figcaption class="mb-3 text-sm font-semibold text-blue-100">What you will see after scanning
+                        </figcaption>
                         <img src="{{ asset('img/photos/verify-sample.png') }}"
                             alt="Sample verification result showing a valid Barangay Clearance with its permit number, reference number and applicant name"
                             width="992" height="704" loading="lazy"
@@ -433,8 +511,8 @@
                 <dl data-reveal class="mt-14 grid gap-6 border-t border-white/15 pt-8 md:grid-cols-3 md:gap-8">
                     @foreach ($features as [$name, $text])
                         <div class="flex gap-3">
-                            <svg class="mt-0.5 h-5 w-5 shrink-0 text-emerald-400" fill="none" stroke="currentColor"
-                                stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true">
+                            <svg class="mt-0.5 h-5 w-5 shrink-0 text-emerald-400" fill="none"
+                                stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="{{ $check }}" />
                             </svg>
                             <div>
@@ -454,7 +532,8 @@
                 <h2 class="{{ $title }}">Quick answers.</h2>
                 <p class="mt-4 text-sm leading-6 text-slate-600">
                     Need more help? Visit the barangay office or see the
-                    <a href="#contact" class="font-semibold text-blue-900 underline underline-offset-2">contact details</a>.
+                    <a href="#contact" class="font-semibold text-blue-900 underline underline-offset-2">contact
+                        details</a>.
                 </p>
             </div>
 
@@ -511,9 +590,10 @@
                 </p>
             </div>
 
-            <div class="flex min-w-0 flex-col px-5 pb-14 sm:px-8 sm:pb-20 lg:py-20 lg:pl-0 lg:pr-[max(2rem,calc(50vw-38rem))]">
+            <div
+                class="flex min-w-0 flex-col px-5 pb-14 sm:px-8 sm:pb-20 lg:py-20 lg:pl-0 lg:pr-[max(2rem,calc(50vw-38rem))]">
                 <iframe title="Map of Barangay San Luis, Antipolo City" loading="lazy"
-                    class="min-h-80 w-full flex-1 rounded-md border border-slate-300 border-t-4 border-t-emerald-500 bg-white sm:min-h-96 lg:min-h-100"
+                    class="lg:min-h-100 min-h-80 w-full flex-1 rounded-md border border-t-4 border-slate-300 border-t-emerald-500 bg-white sm:min-h-96"
                     src="https://www.google.com/maps?q={{ $mapQuery }}&output=embed">
                 </iframe>
                 <a href="https://www.google.com/maps/search/?api=1&query={{ $mapQuery }}" target="_blank"
@@ -549,7 +629,9 @@
         // Header shadow after scrolling
         const header = document.querySelector('header');
         const onScroll = () => header.classList.toggle('shadow-md', scrollY > 8);
-        addEventListener('scroll', onScroll, { passive: true });
+        addEventListener('scroll', onScroll, {
+            passive: true
+        });
         onScroll();
 
         // Fade in on scroll and highlight the current section in the nav
@@ -564,7 +646,9 @@
                 if (item.isIntersecting) {
                     navLinks.forEach((a) => a.setAttribute('aria-current', a.hash === '#' + item.target.id));
                 }
-            }), { rootMargin: '-40% 0px -55% 0px' });
+            }), {
+                rootMargin: '-40% 0px -55% 0px'
+            });
 
             navLinks.forEach((a) => {
                 const target = document.querySelector(a.hash);
@@ -575,7 +659,9 @@
                 if (!item.isIntersecting) return;
                 item.target.classList.add('is-visible');
                 reveal.unobserve(item.target);
-            }), { threshold: 0.12 });
+            }), {
+                threshold: 0.12
+            });
 
             reveals.forEach((el) => reveal.observe(el));
         }
