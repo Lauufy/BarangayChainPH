@@ -52,3 +52,13 @@
         @apply overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm;
     }
 }
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root { --bg: #ffffff; --fg: #000b24; }
+.dark { --bg: #000000; --fg: #f1f5f9; }
+
+@theme inline {
+    --color-surface: var(--bg);
+    --color-content: var(--fg);
+}
