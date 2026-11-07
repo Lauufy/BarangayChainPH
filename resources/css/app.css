@@ -1,64 +1,76 @@
 @import url('https://fonts.bunny.net/css?family=inter:400,500,600,700,800&display=swap');
 @import 'tailwindcss';
+@import './theme.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
+/* Dark mode: add class "dark" to <html> (theme.css also supports data-theme="dark") */
+@custom-variant dark (&:where(.dark, .dark *, [data-theme='dark'], [data-theme='dark'] *));
+
+/* ---------- Tailwind tokens (map to theme.css variables) ---------- */
 @theme {
     --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
+@theme inline {
+    /* Surfaces */
+    --color-app: var(--bg-app);
+    --color-surface: var(--bg-surface);
+    --color-surface-2: var(--bg-surface-2);
 
-/* Custom Scrollbar */
+    /* Text */
+    --color-content: var(--text-primary);
+    --color-content-2: var(--text-secondary);
+    --color-muted: var(--text-muted);
+
+    /* Brand */
+    --color-primary: var(--btn-primary-bg);
+    --color-primary-hover: var(--btn-primary-bg-hover);
+    --color-secondary: var(--btn-secondary-bg);
+    --color-secondary-hover: var(--btn-secondary-bg-hover);
+
+    /* Borders */
+    --color-line: var(--border-default);
+    --color-line-strong: var(--border-strong);
+}
+
+/* ---------- Scrollbar ---------- */
 ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
 }
 
-/* Scrollbar Track */
 ::-webkit-scrollbar-track {
-    background: #09172D;
+    background: var(--bg-app);
 }
 
-/* Scrollbar Thumb */
 ::-webkit-scrollbar-thumb {
-    background: #334155;
+    background: var(--border-strong);
     border-radius: 10px;
 }
 
-/* Scrollbar Thumb on Hover */
 ::-webkit-scrollbar-thumb:hover {
-    background: #10B981;
+    background: var(--btn-secondary-bg);
 }
 
-/* Firefox */
 * {
     scrollbar-width: thin;
-    scrollbar-color: #334155 #09172D;
+    scrollbar-color: var(--border-strong) var(--bg-app);
 }
 
-.custom-button-color:hover:not(:disabled) {
-    filter: brightness(1.15);
-}
-
-
+/* ---------- Components ---------- */
 @layer components {
     .admin-field {
-        @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-[#17325c] focus:ring-2 focus:ring-[#17325c]/20;
+        @apply w-full rounded-lg border border-line-strong bg-surface px-3 py-2.5 text-sm text-content outline-none placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/25;
     }
 
     .admin-card {
-        @apply overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm;
+        @apply overflow-hidden rounded-xl border border-line bg-surface shadow-sm;
     }
-}
 
-@custom-variant dark (&:where(.dark, .dark *));
-
-:root { --bg: #ffffff; --fg: #000b24; }
-.dark { --bg: #000000; --fg: #f1f5f9; }
-
-@theme inline {
-    --color-surface: var(--bg);
-    --color-content: var(--fg);
+    .custom-button-color:hover:not(:disabled) {
+        filter: brightness(1.15);
+    }
 }
