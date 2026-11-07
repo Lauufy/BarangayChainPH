@@ -1,122 +1,96 @@
 @php
-    // Shared footer styles (kept identical in citizen-footer.blade.php)
-    // Light mode: blue-900 + white. Dark mode: green glass + white + light emerald accents.
-    $heading = 'border-l-2 border-white/60 pl-3 text-sm font-bold text-white dark:border-emerald-300';
-    $link = 'inline-block transition duration-200 hover:translate-x-0.5 hover:text-blue-200 dark:hover:text-emerald-300';
-    $contactLink =
-        'text-blue-50 underline-offset-4 transition-colors hover:text-blue-200 hover:underline dark:text-white dark:hover:text-emerald-300';
-    $term = 'text-xs text-blue-200/60 dark:text-white/50';
-    $facebookLink =
-        'font-semibold text-white underline underline-offset-4 decoration-white/60 transition-colors hover:text-blue-200 dark:decoration-emerald-300/60 dark:hover:text-emerald-300';
-    $bottomRow =
-        'mt-12 flex flex-col gap-2 border-t border-white/15 pt-6 text-xs text-blue-200/60 sm:flex-row sm:items-center sm:justify-between dark:border-white/10 dark:text-white/50';
-    $legal = 'transition-colors hover:text-blue-200 dark:hover:text-emerald-300';
+    $home = url('/');
 
-    $links = [
-        [url('/') . '#services', 'Services'],
-        [url('/') . '#announcements', 'Announcements'],
-        [url('/') . '#about', 'About'],
-        [route('login'), 'Log in'],
-        [route('register'), 'Create account'],
+    $footerLinks = [
+        [$home . '#about', 'About'],
+        [$home . '#services', 'Services'],
+        [$home . '#process', 'How it works'],
+        [$home . '#verification', 'Verify'],
+        [$home . '#faq', 'FAQ'],
     ];
+
+    $ring = 'focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--blue-700) dark:focus-visible:outline-(--blue-300)';
+    $focus = 'rounded-sm ' . $ring;
+    $legal = 'rounded-sm text-(--gray-600) transition-colors hover:text-(--blue-700) dark:text-(--gray-400) dark:hover:text-(--blue-300) ' . $ring;
+    $btn = 'inline-flex items-center justify-center rounded-md px-5 py-2.5 text-sm font-semibold transition-colors ' . $ring;
 @endphp
 
-<footer
-    class="border-t-4 border-white/30 bg-blue-900/90 text-white backdrop-blur-2xl dark:border-emerald-300/60 dark:bg-[#152a1c]/50">
-    <div class="mx-auto max-w-7xl px-5 py-14 sm:px-8 sm:py-16">
+<footer class="border-t border-(--gray-200) dark:border-(--gray-800)">
 
-        <div class="grid gap-10 md:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1fr]">
+    {{-- Upper section --}}
+    <div class="mx-auto flex max-w-7xl flex-col items-center justify-between gap-8 px-5 py-4 sm:px-8 lg:flex-row">
 
-            {{-- Brand --}}
-            <div>
-                <span
-                    class="block whitespace-nowrap font-['Barlow_Condensed'] text-4xl font-bold uppercase tracking-[0.06em] text-white">
-                    BarangayChain <span class="text-blue-200 dark:text-emerald-300">PH</span>
+        {{-- Brand --}}
+        <a href="{{ $home }}" class="block {{ $focus }}">
+            <span class="block leading-tight">
+                <span class="block font-['Barlow_Condensed'] text-4xl font-bold uppercase tracking-wide text-(--blue-900) dark:text-(--blue-300) sm:text-4xl">
+                    BarangayChain PH
                 </span>
-                <span class="mt-1 block text-xs font-medium text-blue-200/70 dark:text-white/60">
-                    Barangay San Luis, Antipolo City, Rizal
+                <span class="block text-[9px] font-semibold uppercase tracking-[0.14em] text-(--gray-600) dark:text-(--gray-400)">
+                    Barangay San Luis | Antipolo City
                 </span>
+            </span>
+        </a>
 
-                <p class="mt-5 max-w-xs text-sm leading-6 text-blue-100/75 dark:text-white/70">
-                    The official online portal of Barangay San Luis, for public information and
-                    barangay services.
-                </p>
-            </div>
+        {{-- Footer navigation --}}
+        <nav aria-label="Footer navigation"
+            class="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm font-medium text-(--gray-700) dark:text-(--gray-300)">
+            @foreach ($footerLinks as [$href, $text])
+                <a href="{{ $href }}"
+                    class="transition-colors hover:text-(--blue-700) dark:hover:text-(--blue-300) {{ $focus }}">
+                    {{ $text }}
+                </a>
+            @endforeach
+        </nav>
 
-            {{-- Quick links --}}
-            <nav aria-label="Footer">
-                <h3 class="{{ $heading }}">Explore</h3>
-                <ul class="mt-4 space-y-2.5 text-sm text-blue-100/80 dark:text-white/75">
-                    @foreach ($links as [$href, $text])
-                        <li><a href="{{ $href }}" class="{{ $link }}">{{ $text }}</a></li>
-                    @endforeach
-                </ul>
-            </nav>
+        {{-- Actions --}}
+        <div class="flex flex-wrap items-center justify-center gap-3">
+            <a href="{{ route('login') }}"
+                class="{{ $btn }} border border-(--gray-300) text-(--gray-800) hover:bg-(--gray-100) dark:border-(--gray-700) dark:text-white dark:hover:bg-white/10">
+                Sign in
+            </a>
 
-            {{-- Contact --}}
-            <div>
-                <h3 class="{{ $heading }}">Contact</h3>
-
-                <dl class="mt-4 space-y-3 text-sm">
-                    <div>
-                        <dt class="{{ $term }}">Address</dt>
-                        <dd class="mt-0.5 text-blue-50 dark:text-white">Barangay San Luis, Antipolo City, Rizal</dd>
-                    </div>
-                    <div>
-                        <dt class="{{ $term }}">Phone</dt>
-                        <dd class="mt-0.5">
-                            <a href="tel:+639233232322" class="{{ $contactLink }}">+63 923 323 2322</a>
-                        </dd>
-                    </div>
-                    <div>
-                        <dt class="{{ $term }}">Email</dt>
-                        <dd class="mt-0.5 break-all">
-                            <a href="mailto:barangaychain@gmail.com"
-                                class="{{ $contactLink }}">barangaychain@gmail.com</a>
-                        </dd>
-                    </div>
-                    <div>
-                        <dt class="{{ $term }}">Facebook</dt>
-                        <dd class="mt-0.5">
-                            <a href="https://www.facebook.com/barangay.sanluis.35" target="_blank"
-                                rel="noopener noreferrer" class="{{ $facebookLink }}">
-                                Visit our Facebook page
-                            </a>
-                        </dd>
-                    </div>
-                </dl>
-            </div>
-
-            {{-- Office hours --}}
-            <div>
-                <h3 class="{{ $heading }}">Office hours</h3>
-
-                <dl class="mt-4 space-y-3 text-sm">
-                    <div>
-                        <dt class="font-semibold text-blue-50 dark:text-white">Monday to Friday</dt>
-                        <dd class="mt-0.5 text-blue-100/75 dark:text-white/70">8:00 AM to 5:00 PM</dd>
-                    </div>
-                    <div>
-                        <dt class="font-semibold text-blue-50 dark:text-white">Saturday and Sunday</dt>
-                        <dd class="mt-0.5 text-blue-100/75 dark:text-white/70">Closed</dd>
-                    </div>
-                </dl>
-            </div>
-
+            <a href="{{ $home }}#contact"
+                class="{{ $btn }} bg-(--blue-900) text-white hover:bg-(--blue-700) dark:bg-white dark:text-(--blue-900) dark:hover:bg-blue-50">
+                Contact
+            </a>
         </div>
-
-        {{-- Legal links and copyright --}}
-        <div class="{{ $bottomRow }}">
-            <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-                <a href="{{ route('privacy') }}" class="{{ $legal }}">Privacy Notice</a>
-                <a href="{{ route('terms') }}" class="border-l border-white/20 pl-4 {{ $legal }}">Terms of
-                    Service</a>
-                <button type="button" onclick="window.scrollTo({ top: 0, behavior: 'smooth' })"
-                    class="border-l border-white/20 pl-4 {{ $legal }}">Back to top <svg class="inline-block h-4 w-4 align-[-2px]" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" /></svg></button>
-            </div>
-
-            <p>© {{ now()->year }} Barangay San Luis. All rights reserved.</p>
-        </div>
-
     </div>
+
+    {{-- Bottom bar --}}
+    <div class="">
+        <div class="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-6 text-xs sm:px-8 md:flex-row md:items-center md:justify-between">
+
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+                <a href="{{ route('privacy') }}" class="{{ $legal }} ">
+                    Privacy Notice
+                </a>
+
+                <span class="h-4 border-l border-(--gray-300) dark:border-(--gray-700)" aria-hidden="true"></span>
+
+                <a href="{{ route('terms') }}" class="{{ $legal }} ">
+                    Terms of Service
+                </a>
+
+                <span class="h-4 border-l border-(--gray-300) dark:border-(--gray-700)" aria-hidden="true"></span>
+
+                <button type="button"
+                    onclick="window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })"
+                    class="{{ $legal }}">
+                    Back to top
+                    <svg class="inline-block h-4 w-4 align-[-2px]" fill="none"
+                        stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"
+                        aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M4.5 15.75l7.5-7.5 7.5 7.5" />
+                    </svg>
+                </button>
+            </div>
+
+            <p class="text-(--gray-500) dark:text-(--gray-500)">
+                &copy; {{ now()->year }} Barangay San Luis. All rights reserved.
+            </p>
+        </div>
+    </div>
+
 </footer>

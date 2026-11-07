@@ -2,7 +2,7 @@
 
 {{-- Where the popups appear --}}
 <div id="toast-container"
-    class="pointer-events-none fixed right-4 top-4 z-[60] flex w-[min(20rem,calc(100vw-2rem))] flex-col gap-3"
+    class="pointer-events-none fixed right-4 top-4 z-60 flex w-[min(20rem,calc(100vw-2rem))] flex-col gap-3"
     aria-live="polite"></div>
 
 <script>

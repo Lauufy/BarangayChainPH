@@ -87,11 +87,7 @@
         {{-- Google login --}}
         <a href="{{ route('google.redirect') }}"
             class="flex w-full min-w-0 items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50 sm:px-4">
-            <img
-                src="https://www.svgrepo.com/show/475656/google-color.svg"
-                class="h-5 w-5 shrink-0"
-                alt="Google"
-            >
+            <img src="{{ asset('img/branding/g-logo.png') }}" alt="" width="20" height="20" class="h-5 w-5" aria-hidden="true">
             <span>Continue with Google</span>
         </a>
 
