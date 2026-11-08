@@ -7,7 +7,8 @@
     'options' => [],
     'hint' => null,
     'raised' => false, // true = label always floated, placeholder always visible
-    'light' => false, // true = white theme
+    'light' => false, // true = follows the theme toggle (white in light mode, dark in dark mode)
+                      // false = always the dark navy style (login, register, etc.)
     'useOld' => true, // false = always show $value, ignore old input
 ])
 
@@ -16,30 +17,47 @@
     $current = $useOld ? old($name, $value) : $value;
 
     // ------------------------------------------------------------------
-    // Theme colors (white theme or dark theme)
+    // Colors. Uses the theme tokens (resources/css/theme.css).
+    // $light = adaptive: white in light mode, dark in dark mode (the toggle changes it)
+    // else   = always dark navy
+    // (full class names are written out so Tailwind can find them)
     // ------------------------------------------------------------------
     $fieldColors = $light
-        ? 'border-slate-300 bg-white text-slate-900 hover:border-slate-400 focus:border-[#17325c] focus:ring-[#17325c]/20'
-        : 'border-white/10 bg-[#0B2347] text-white hover:border-white/20 focus:border-emerald-400 focus:ring-emerald-400/10';
+        ? 'border-(--gray-300) bg-(--white) text-(--gray-900) hover:border-(--gray-400) focus:border-(--blue-600) focus:ring-[color-mix(in_srgb,var(--blue-600)_20%,transparent)] dark:border-(--gray-600) dark:bg-(--gray-800) dark:text-(--gray-50) dark:hover:border-(--gray-500) dark:focus:border-(--green-400) dark:focus:ring-[color-mix(in_srgb,var(--green-400)_15%,transparent)]'
+        : 'border-white/10 bg-(--blue-900) text-(--white) hover:border-white/20 focus:border-(--green-400) focus:ring-[color-mix(in_srgb,var(--green-400)_10%,transparent)]';
 
     // Paint over the browser's autofill background, keep text and caret readable
     $autofill = $light
-        ? '[&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_#ffffff] [&:-webkit-autofill]:[-webkit-text-fill-color:#0f172a] [&:-webkit-autofill]:caret-slate-900'
-        : '[&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_#0B2347] [&:-webkit-autofill]:[-webkit-text-fill-color:#ffffff] [&:-webkit-autofill]:caret-white';
+        ? '[&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_var(--white)] [&:-webkit-autofill]:[-webkit-text-fill-color:var(--gray-900)] [&:-webkit-autofill]:caret-(--gray-900) dark:[&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_var(--gray-800)] dark:[&:-webkit-autofill]:[-webkit-text-fill-color:var(--gray-50)] dark:[&:-webkit-autofill]:caret-(--white)'
+        : '[&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_var(--blue-900)] [&:-webkit-autofill]:[-webkit-text-fill-color:var(--white)] [&:-webkit-autofill]:caret-(--white)';
 
-    $muted = $light ? 'text-slate-500' : 'text-blue-100/60';
-    $labelFocus = $light ? 'peer-focus:text-[#17325c]' : 'peer-focus:text-emerald-400';
-    $optionBg = $light ? '[&>option]:bg-white' : '[&>option]:bg-[#0B2347]';
+    $muted = $light
+        ? 'text-(--gray-500) dark:text-(--gray-400)'
+        : 'text-[color-mix(in_srgb,var(--blue-100)_60%,transparent)]';
+
+    $labelFocus = $light
+        ? 'peer-focus:text-(--blue-600) dark:peer-focus:text-(--green-400)'
+        : 'peer-focus:text-(--green-400)';
+
+    $optionBg = $light
+        ? '[&>option]:bg-(--white) [&>option]:text-(--gray-900) dark:[&>option]:bg-(--gray-800) dark:[&>option]:text-(--gray-50)'
+        : '[&>option]:bg-(--blue-900)';
+
     $toggleColors = $light
-        ? 'hover:text-[#17325c] focus-visible:ring-[#17325c]'
-        : 'hover:text-emerald-400 focus-visible:ring-emerald-400';
+        ? 'hover:text-(--blue-600) focus-visible:ring-(--blue-600) dark:hover:text-(--green-400) dark:focus-visible:ring-(--green-400)'
+        : 'hover:text-(--green-400) focus-visible:ring-(--green-400)';
 
     // ------------------------------------------------------------------
     // Placeholder: hidden until focus, unless "raised"
-    // (full class names are written out so Tailwind can find them)
     // ------------------------------------------------------------------
-    $placeholderColor = $light ? 'placeholder:text-slate-400' : 'placeholder:text-blue-100/40';
-    $placeholderOnFocus = $light ? 'focus:placeholder:text-slate-400' : 'focus:placeholder:text-blue-100/40';
+    $placeholderColor = $light
+        ? 'placeholder:text-(--gray-400) dark:placeholder:text-(--gray-500)'
+        : 'placeholder:text-[color-mix(in_srgb,var(--blue-100)_40%,transparent)]';
+
+    $placeholderOnFocus = $light
+        ? 'focus:placeholder:text-(--gray-400) dark:focus:placeholder:text-(--gray-500)'
+        : 'focus:placeholder:text-[color-mix(in_srgb,var(--blue-100)_40%,transparent)]';
+
     $placeholder = $raised ? $placeholderColor : "placeholder:text-transparent $placeholderOnFocus";
 
     // ------------------------------------------------------------------
@@ -134,7 +152,7 @@
     </div>
 
     {{-- Error message (filled by JS on blur, hidden while typing) --}}
-    <p data-error-for="{{ $name }}" class="mt-1 hidden text-xs text-red-500"></p>
+    <p data-error-for="{{ $name }}" class="mt-1 hidden text-xs text-(--red-500)"></p>
 
     @if ($hint)
         <p class="{{ $muted }} mt-1 text-xs">{{ $hint }}</p>

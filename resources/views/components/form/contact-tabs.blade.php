@@ -1,6 +1,7 @@
 {{--
     Email | Mobile number tabs. Only the picked tab is sent to the server
     (the hidden tab's input is disabled), and "mode" says which one it was.
+    Colors follow the site theme (light / dark).
 
     Usage:
     <x-form.contact-tabs email-name="email" email-label="Email Address" />
@@ -16,13 +17,14 @@
 @php
     $mode = old('mode', 'email') === 'phone' ? 'phone' : 'email';
     $tab = 'flex min-w-0 flex-1 items-center justify-center rounded px-3 py-2.5 text-sm font-semibold transition';
+    $muted = 'text-(--gray-500) dark:text-(--gray-400)';
 @endphp
 
 <div data-contact-tabs data-mode="{{ $mode }}" class="space-y-4">
     <input type="hidden" name="mode" value="{{ $mode }}">
 
     {{-- Tabs --}}
-    <div class="flex rounded-md border border-[#DDE3F3] bg-[#E6ECFA] p-1">
+    <div class="flex rounded-md border border-(--gray-200) bg-(--blue-50) p-1 dark:border-(--gray-700) dark:bg-(--gray-900)">
         <button type="button" data-tab="email" class="{{ $tab }}">Email</button>
         <button type="button" data-tab="phone" class="{{ $tab }}">Mobile number</button>
     </div>
@@ -42,12 +44,12 @@
 
     {{-- Mobile number tab: the user types only the part after +63 --}}
     <div data-panel="phone" @if ($mode !== 'phone') hidden @endif>
-        <label for="phone" class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-500">
+        <label for="phone" class="{{ $muted }} mb-1.5 block text-xs font-semibold uppercase tracking-wider">
             Mobile number
         </label>
 
         <div class="relative">
-            <span class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center gap-1.5 text-sm text-slate-500">
+            <span class="{{ $muted }} pointer-events-none absolute inset-y-0 left-3.5 flex items-center gap-1.5 text-sm">
                 <span class="text-[10px] font-bold">PH</span> +63
             </span>
 
@@ -62,7 +64,7 @@
                 autocomplete="tel-national"
                 placeholder="9171234567"
                 value="{{ preg_replace('/^(\+?63|0)/', '', (string) old('phone')) }}"
-                class="block h-14 w-full rounded-md border border-slate-300 bg-white pl-20 pr-3.5 text-base text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-[#17325c] focus:ring-2 focus:ring-[#17325c]/20 disabled:opacity-60 sm:text-sm"
+                class="block h-14 w-full rounded-md border border-(--gray-300) bg-(--white) pl-20 pr-3.5 text-base text-(--gray-900) outline-none transition placeholder:text-(--gray-400) hover:border-(--gray-400) focus:border-(--blue-600) focus:ring-2 focus:ring-[color-mix(in_srgb,var(--blue-600)_20%,transparent)] disabled:opacity-60 dark:border-(--gray-600) dark:bg-(--gray-800) dark:text-(--gray-50) dark:placeholder:text-(--gray-500) dark:hover:border-(--gray-500) dark:focus:border-(--green-400) dark:focus:ring-[color-mix(in_srgb,var(--green-400)_15%,transparent)] sm:text-sm"
             >
         </div>
     </div>
@@ -70,6 +72,10 @@
 
 @once
     <script>
+        // Tab colors (full class names so Tailwind can find them)
+        const TAB_ON = ['bg-(--white)', 'shadow-sm', 'text-(--gray-900)', 'dark:bg-(--gray-700)', 'dark:text-(--gray-50)'];
+        const TAB_OFF = ['text-(--gray-500)', 'dark:text-(--gray-400)'];
+
         function setContactMode(box, mode) {
             box.querySelector('[name=mode]').value = mode;
 
@@ -82,10 +88,8 @@
 
             box.querySelectorAll('[data-tab]').forEach(tab => {
                 const on = tab.dataset.tab === mode;
-                tab.classList.toggle('bg-white', on);
-                tab.classList.toggle('shadow-sm', on);
-                tab.classList.toggle('text-[#0F1B3D]', on);
-                tab.classList.toggle('text-[#5A6788]', !on);
+                tab.classList.remove(...TAB_ON, ...TAB_OFF);
+                tab.classList.add(...(on ? TAB_ON : TAB_OFF));
             });
         }
 

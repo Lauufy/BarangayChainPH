@@ -5,117 +5,19 @@ namespace App\Http\Controllers\Citizen;
 use App\Http\Controllers\Controller;
 use App\Models\IssuedDocument;
 use App\Models\ServiceRequest;
-use App\Models\User;
-use App\Notifications\CitizenSubmissionReceived;
 use App\Services\AuditLogger;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
-/** Handles citizen service requests and access to issued certificates. */
+/** Lists a citizen's applications and issued documents, and handles printing and cancelling. */
 class ServiceRequestController extends Controller
 {
-    private const TYPES = [
-        'indigency' => [
-            'service' => ServiceRequest::CERTIFICATE_OF_INDIGENCY,
-            'title' => 'Certificate of Indigency',
-            'route' => 'citizen.certificate-of-indigency',
-            'heading' => 'Certificate of indigency',
-            'description' => 'Ask the barangay about eligibility and requirements for this certificate.',
-            'flag' => 'isIndigency',
-        ],
-        'clearance' => [
-            'service' => ServiceRequest::BARANGAY_CLEARANCE,
-            'title' => 'Barangay Clearance',
-            'route' => 'citizen.barangay-clearance',
-            'heading' => 'Barangay clearance',
-            'description' => 'Request a clearance for employment, business, or other official purposes.',
-            'flag' => 'isClearance',
-        ],
-        'residency' => [
-            'service' => ServiceRequest::CERTIFICATE_OF_RESIDENCY,
-            'title' => 'Certificate of Residency',
-            'route' => 'citizen.certificate-of-residency',
-            'heading' => 'Certificate of residency',
-            'description' => 'Request proof of residency within the barangay.',
-            'flag' => 'isResidency',
-        ],
-    ];
-
-    // Form pages
-
-    public function indigency(Request $request): View|RedirectResponse
-    {
-        return $this->form($request, 'indigency');
-    }
-
-    public function clearance(Request $request): View|RedirectResponse
-    {
-        return $this->form($request, 'clearance');
-    }
-
-    public function residency(Request $request): View|RedirectResponse
-    {
-        return $this->form($request, 'residency');
-    }
-
-    // Preview
-
-    public function previewIndigency(Request $request): View
-    {
-        return $this->previewRequest($request, 'indigency');
-    }
-
-    public function previewClearance(Request $request): View
-    {
-        return $this->previewRequest($request, 'clearance');
-    }
-
-    public function previewResidency(Request $request): View
-    {
-        return $this->previewRequest($request, 'residency');
-    }
-
-    // Modify
-
-    public function modifyIndigency(Request $request): RedirectResponse
-    {
-        return $this->modifyRequest($request, 'indigency');
-    }
-
-    public function modifyClearance(Request $request): RedirectResponse
-    {
-        return $this->modifyRequest($request, 'clearance');
-    }
-
-    public function modifyResidency(Request $request): RedirectResponse
-    {
-        return $this->modifyRequest($request, 'residency');
-    }
-
-    // Proceed
-
-    public function proceedIndigency(Request $request): RedirectResponse
-    {
-        return $this->proceedRequest($request, 'indigency');
-    }
-
-    public function proceedClearance(Request $request): RedirectResponse
-    {
-        return $this->proceedRequest($request, 'clearance');
-    }
-
-    public function proceedResidency(Request $request): RedirectResponse
-    {
-        return $this->proceedRequest($request, 'residency');
-    }
-
-    // Lists and details
-
+    /** Requests that are not yet approved. */
     public function applications(Request $request): View
     {
         $applications = $this->ownedRequests($request)
@@ -126,6 +28,7 @@ class ServiceRequestController extends Controller
         return view('citizen.applications.index', compact('applications'));
     }
 
+    /** Approved requests (the issued documents). */
     public function documents(Request $request): View
     {
         $documents = $this->ownedRequests($request)
@@ -144,16 +47,14 @@ class ServiceRequestController extends Controller
 
         return view('citizen.applications.review', [
             'application' => $serviceRequest,
-            'documentTitle' => $this->documentTitle($serviceRequest),
+            'documentTitle' => $serviceRequest->serviceTitle(),
             'ticket' => $ticket,
             'recentMessages' => $ticket?->messages()->latest()->take(3)->get()->reverse(),
         ]);
     }
 
-    public function printApplication(
-        Request $request,
-        ServiceRequest $serviceRequest
-    ): Response|RedirectResponse {
+    public function printApplication(Request $request, ServiceRequest $serviceRequest): Response|RedirectResponse
+    {
         $this->authorizeOwner($request, $serviceRequest);
 
         $printData = $this->recordPrint($serviceRequest);
@@ -167,7 +68,7 @@ class ServiceRequestController extends Controller
 
         return response($printData['fileContents'], 200, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="'.$printData['document']->document_number.'.pdf"',
+            'Content-Disposition' => "inline; filename=\"{$printData['document']->document_number}.pdf\"",
             'Cache-Control' => 'private, no-store, no-cache, must-revalidate',
             'X-Content-Type-Options' => 'nosniff',
         ]);
@@ -184,7 +85,11 @@ class ServiceRequestController extends Controller
         $cancelled = DB::transaction(function () use ($serviceRequest, $data) {
             $locked = $this->lock($serviceRequest);
 
-            $cancelled = $locked->isCancellable() && $locked->update([
+            if (! $locked->isCancellable()) {
+                return false;
+            }
+
+            $locked->update([
                 'status' => ServiceRequest::CANCELLED,
                 'cancellation_reason' => $data['cancellation_reason'],
                 'cancelled_at' => now(),
@@ -192,11 +97,9 @@ class ServiceRequestController extends Controller
                 'rejection_reason' => null,
             ]);
 
-            if ($cancelled) {
-                $locked->ticket?->postSystemMessage('This request was canceled.', close: true);
-            }
+            $locked->ticket?->postSystemMessage('This request was canceled.', close: true);
 
-            return $cancelled;
+            return true;
         });
 
         $redirect = redirect()->route('citizen.applications.show', $serviceRequest);
@@ -210,122 +113,9 @@ class ServiceRequestController extends Controller
 
     // Helpers
 
-    private function form(Request $request, string $type): View|RedirectResponse
+    private function ownedRequests(Request $request): Builder
     {
-        if ($this->pendingQuery($request, $type)->exists()) {
-            return $this->pendingBlocked();
-        }
-
-        $info = self::TYPES[$type];
-
-        return view('citizen.service-requests.create', [
-            'title' => $info['heading'],
-            'description' => $info['description'],
-            'profile' => $request->user()->citizenProfile,
-            $info['flag'] => true,
-        ]);
-    }
-
-    private function previewRequest(Request $request, string $type): View
-    {
-        $data = $request->validate($this->requestRules());
-        $request->session()->put("{$type}_request", $data);
-
-        return view('citizen.service-requests.preview', [
-            'requestData' => $data,
-            'documentTitle' => self::TYPES[$type]['title'],
-            'type' => $type,
-        ]);
-    }
-
-    private function modifyRequest(Request $request, string $type): RedirectResponse
-    {
-        $data = $request->session()->get("{$type}_request");
-
-        return is_array($data)
-            ? redirect()->route(self::TYPES[$type]['route'])->withInput($data)
-            : $this->previewExpired($type);
-    }
-
-    private function proceedRequest(Request $request, string $type): RedirectResponse
-    {
-        $data = $request->session()->get("{$type}_request");
-
-        if (! is_array($data)) {
-            return $this->previewExpired($type);
-        }
-
-        $validated = validator($data, $this->requestRules())->validate();
-
-        $serviceRequest = DB::transaction(function () use ($request, $type, $validated) {
-            if ($this->pendingQuery($request, $type)->lockForUpdate()->exists()) {
-                return null;
-            }
-
-            $serviceRequest = ServiceRequest::create([
-                'user_id' => $request->user()->id,
-                'reference_number' => 'BRGY-'.now()->format('YmdHis').'-'.str_pad(random_int(1, 9999), 4, '0', STR_PAD_LEFT),
-                'service_type' => self::TYPES[$type]['service'],
-                'applicant_name' => $validated['name'],
-                'address' => $validated['address'],
-                'age' => $validated['age'],
-                'purpose' => $validated['purpose'],
-                'status' => ServiceRequest::PENDING,
-            ]);
-
-            // Open a ticket with an automatic first message
-            $serviceRequest->ticket()
-                ->create(['user_id' => $request->user()->id])
-                ->messages()
-                ->create([
-                    'body' => "Your request {$serviceRequest->reference_number} was submitted. The barangay will post updates here.",
-                    'is_system' => true,
-                ]);
-
-            return $serviceRequest;
-        });
-
-        $request->session()->forget("{$type}_request");
-
-        if (! $serviceRequest) {
-            return $this->pendingBlocked();
-        }
-
-        $this->notifyAdmins($request->user(), $serviceRequest);
-
-        return redirect()
-            ->route('citizen.applications')
-            ->with('success', "Your certificate request {$serviceRequest->reference_number} was submitted for barangay processing.");
-    }
-
-    // A failed notification must not break the submission.
-    private function notifyAdmins(User $user, ServiceRequest $serviceRequest): void
-    {
-        try {
-            $admins = User::where('role', 'admin')->where('is_active', true)->get();
-
-            if ($admins->isNotEmpty()) {
-                Notification::send($admins, new CitizenSubmissionReceived(
-                    'New permit request',
-                    "{$user->name} submitted {$serviceRequest->reference_number} for review.",
-                    route('admin.permits.show', $serviceRequest),
-                ));
-            }
-        } catch (\Throwable $e) {
-            report($e);
-        }
-    }
-
-    private function ownedRequests(Request $request)
-    {
-        return ServiceRequest::whereBelongsTo($request->user())->latest();
-    }
-
-    private function pendingQuery(Request $request, string $type)
-    {
-        return ServiceRequest::whereBelongsTo($request->user())
-            ->where('service_type', self::TYPES[$type]['service'])
-            ->where('status', ServiceRequest::PENDING);
+        return ServiceRequest::query()->whereBelongsTo($request->user())->latest();
     }
 
     private function authorizeOwner(Request $request, ServiceRequest $serviceRequest): void
@@ -339,7 +129,7 @@ class ServiceRequestController extends Controller
     }
 
     /**
-     * Locks the request, validates the printable document and counts the print.
+     * Locks the request, checks the printable document and counts the print.
      *
      * @return array{document: IssuedDocument, fileContents: string}|null
      */
@@ -366,6 +156,8 @@ class ServiceRequestController extends Controller
     }
 
     /**
+     * Returns the latest active PDF after checking status, print limit, file and hash.
+     *
      * @return array{document: IssuedDocument, fileContents: string}|null
      */
     private function printableDocument(ServiceRequest $serviceRequest): ?array
@@ -389,9 +181,9 @@ class ServiceRequestController extends Controller
 
         $fileContents = Storage::disk($document->disk)->get($document->file_path);
 
+        // The stored file must match the hash saved when it was issued
         abort_unless(
-            filled($document->file_hash)
-                && hash_equals($document->file_hash, hash('sha256', $fileContents)),
+            filled($document->file_hash) && hash_equals($document->file_hash, hash('sha256', $fileContents)),
             409,
             'The document failed its integrity check. Please contact the barangay office.'
         );
@@ -400,35 +192,5 @@ class ServiceRequestController extends Controller
             'document' => $document,
             'fileContents' => $fileContents,
         ];
-    }
-
-    private function documentTitle(ServiceRequest $serviceRequest): string
-    {
-        return collect(self::TYPES)->firstWhere('service', $serviceRequest->service_type)['title']
-            ?? self::TYPES['indigency']['title'];
-    }
-
-    private function requestRules(): array
-    {
-        return [
-            'name' => ['required', 'string', 'max:255'],
-            'address' => ['required', 'string', 'max:500'],
-            'age' => ['required', 'integer', 'min:0', 'max:150'],
-            'purpose' => ['required', 'string', 'max:500'],
-        ];
-    }
-
-    private function previewExpired(string $type): RedirectResponse
-    {
-        return redirect()
-            ->route(self::TYPES[$type]['route'])
-            ->withErrors(['purpose' => 'Your preview expired. Please fill out the form again.']);
-    }
-
-    private function pendingBlocked(): RedirectResponse
-    {
-        return redirect()
-            ->route('citizen.applications')
-            ->with('error', 'You already have a pending request for this service.');
     }
 }

@@ -17,12 +17,11 @@ use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Citizen\IdentityVerificationController;
 use App\Http\Controllers\Citizen\NotificationController;
 use App\Http\Controllers\Citizen\ProfileController;
+use App\Http\Controllers\Citizen\ServiceApplicationController;
 use App\Http\Controllers\Citizen\ServiceRequestController;
 use App\Http\Controllers\Citizen\TicketController;
 use App\Http\Controllers\PermitVerificationController;
 use App\Http\Controllers\TicketParticipantPhotoController;
-use App\Models\ServiceRequest;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -41,6 +40,7 @@ Route::get('/tickets/{ticket}/participants/{participant}/photo', [
 ])->middleware(['auth', 'role:citizen,admin,staff'])
     ->name('tickets.participants.photo');
 
+// Opened from the QR code on issued documents
 Route::get('/verify/permit/{documentUuid}', [
     PermitVerificationController::class,
     'show',
@@ -65,7 +65,7 @@ Route::middleware('guest')->group(function () {
         ->middleware('throttle:10,1')
         ->name('login.store');
 
-    // Password reset
+    // Password reset (email)
     Route::get('/forgot-password', [ForgotPasswordController::class, 'showForgotPassword'])
         ->name('password.request');
 
@@ -80,7 +80,7 @@ Route::middleware('guest')->group(function () {
         ->middleware('throttle:5,1')
         ->name('password.update');
 
-    // sms password reset
+    // Password reset (SMS)
     Route::get('/reset-password-sms', [ResetPasswordController::class, 'showSms'])
         ->name('password.sms.show');
 
@@ -97,7 +97,7 @@ Route::middleware('guest')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| Email Verification
+| Email Verification and Login 2FA
 |--------------------------------------------------------------------------
 */
 
@@ -134,46 +134,19 @@ Route::middleware(['auth', 'role:citizen'])
     ->name('citizen.')
     ->group(function () {
 
-        // Dashboard
         Route::view('/dashboard', 'citizen.dashboard.index')->name('dashboard');
 
-        // Available services
-        Route::get('/services', function (Request $request) {
-            $pendingServices = ServiceRequest::whereBelongsTo($request->user())
-                ->where('status', ServiceRequest::PENDING)
-                ->pluck('service_type')
-                ->all();
-
-            return view('citizen.services.index', compact('pendingServices'));
-        })->name('services');
+        // The services page loads its own data
+        Route::view('/services', 'citizen.services.index')->name('services');
 
         // Documents and applications
         Route::controller(ServiceRequestController::class)->group(function () {
-
             Route::get('/documents', 'documents')->name('documents');
 
             Route::get('/applications', 'applications')->name('applications');
             Route::get('/applications/{serviceRequest}', 'showApplication')->name('applications.show');
             Route::get('/applications/{serviceRequest}/print', 'printApplication')->name('applications.print');
             Route::post('/applications/{serviceRequest}/cancel', 'cancelApplication')->name('applications.cancel');
-
-            // Barangay Clearance
-            Route::get('/barangay-clearance', 'clearance')->name('barangay-clearance');
-            Route::post('/barangay-clearance/preview', 'previewClearance')->name('barangay-clearance.preview');
-            Route::post('/barangay-clearance/modify', 'modifyClearance')->name('barangay-clearance.modify');
-            Route::post('/barangay-clearance/proceed', 'proceedClearance')->name('barangay-clearance.proceed');
-
-            // Certificate of Residency
-            Route::get('/certificate-of-residency', 'residency')->name('certificate-of-residency');
-            Route::post('/certificate-of-residency/preview', 'previewResidency')->name('certificate-of-residency.preview');
-            Route::post('/certificate-of-residency/modify', 'modifyResidency')->name('certificate-of-residency.modify');
-            Route::post('/certificate-of-residency/proceed', 'proceedResidency')->name('certificate-of-residency.proceed');
-
-            // Certificate of Indigency
-            Route::get('/certificate-of-indigency', 'indigency')->name('certificate-of-indigency');
-            Route::post('/certificate-of-indigency/preview', 'previewIndigency')->name('certificate-of-indigency.preview');
-            Route::post('/certificate-of-indigency/modify', 'modifyIndigency')->name('certificate-of-indigency.modify');
-            Route::post('/certificate-of-indigency/proceed', 'proceedIndigency')->name('certificate-of-indigency.proceed');
         });
 
         // Tickets
@@ -213,11 +186,19 @@ Route::middleware(['auth', 'role:citizen'])
 
         // Verified citizens only
         Route::middleware('identity.verified')->group(function () {
-            Route::put('/profile', [ProfileController::class, 'update'])
-                ->name('profile.update');
+            Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+            Route::post('/profile/photo', [ProfileController::class, 'photo'])->name('profile.photo');
 
-            Route::post('/profile/photo', [ProfileController::class, 'photo'])
-                ->name('profile.photo');
+            // Service application wizard (one route pair per service in the config)
+            foreach (array_keys(config('barangay_services.services')) as $slug) {
+                Route::get("/{$slug}", [ServiceApplicationController::class, 'create'])
+                    ->defaults('slug', $slug)
+                    ->name($slug);
+
+                Route::post("/{$slug}", [ServiceApplicationController::class, 'store'])
+                    ->defaults('slug', $slug)
+                    ->name("{$slug}.store");
+            }
         });
     });
 
@@ -232,9 +213,7 @@ Route::middleware(['auth', 'role:admin,staff'])
     ->name('admin.')
     ->group(function () {
 
-        // Dashboard
-        Route::get('/dashboard', [DashboardController::class, 'index'])
-            ->name('dashboard');
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
         // Profile
         Route::get('/profile', [AdminProfileController::class, 'show'])->name('profile');
@@ -243,20 +222,17 @@ Route::middleware(['auth', 'role:admin,staff'])
         Route::post('/profile/photo', [AdminProfileController::class, 'photo'])->name('profile.photo');
 
         // Notifications
+        Route::view('/notifications', 'admin.notifications.index')->name('notifications.index');
+
         Route::post('/notifications/read-all', [AdminNotificationController::class, 'readAll'])
             ->name('notifications.read-all');
 
         Route::post('/notifications/{id}/read', [AdminNotificationController::class, 'read'])
             ->name('notifications.read');
 
-        Route::view('/notifications', 'admin.notifications.index')
-            ->name('notifications.index');
-
         // Admin-only user management
         Route::middleware('role:admin')->group(function () {
-            Route::get('/users', [UserController::class, 'index'])->name('users.index');
-            Route::post('users', [UserController::class, 'store'])->name('users.store');
-            Route::resource('users', UserController::class)->only(['update', 'destroy']);
+            Route::resource('users', UserController::class)->only(['index', 'store', 'update', 'destroy']);
 
             Route::patch('/users/{user}/status', [UserController::class, 'toggleStatus'])
                 ->name('users.toggle-status');
@@ -281,6 +257,9 @@ Route::middleware(['auth', 'role:admin,staff'])
                 Route::patch('/permits/{serviceRequest}/print-limit', 'updatePrintLimit')
                     ->middleware('permission:permits.print-limit')
                     ->name('permits.print-limit.update');
+
+                Route::get('/permits/{serviceRequest}/documents/{document}', 'document')
+                    ->name('permits.documents.show');
             });
 
         // Citizen ticket inbox

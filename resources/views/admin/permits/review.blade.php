@@ -6,44 +6,45 @@
 
 @section('content')
     @php
-        $isApproved = $application->status === ServiceRequest::APPROVED;
+        $status = $application->status;
+        $isApproved = $status === ServiceRequest::APPROVED;
+        $isOpen = in_array($status, [ServiceRequest::PENDING, ServiceRequest::PROCESSING], true);
         $activeDocuments = $application->issuedDocuments->whereNull('revoked_at');
 
-        [$badgeClass, $dotClass] = [
-            'pending' => ['border-amber-200 bg-amber-50 text-amber-800', 'bg-amber-500'],
-            'processing' => ['border-blue-200 bg-blue-50 text-blue-800', 'bg-blue-500'],
-            'approved' => ['border-green-200 bg-green-50 text-green-800', 'bg-green-500'],
-            'rejected' => ['border-red-200 bg-red-50 text-red-800', 'bg-red-500'],
-            'cancelled' => ['border-slate-200 bg-slate-50 text-slate-700', 'bg-slate-400'],
-        ][$application->status] ?? ['', ''];
+        // Status badge: label, badge colours, dot colour
+        [$statusLabel, $badgeClass, $dotClass] = [
+            'pending' => ['Pending review', 'border-amber-200 bg-amber-50 text-amber-800', 'bg-amber-500'],
+            'processing' => ['Processing', 'border-blue-200 bg-blue-50 text-blue-800', 'bg-blue-500'],
+            'approved' => ['Approved', 'border-green-200 bg-green-50 text-green-800', 'bg-green-500'],
+            'rejected' => ['Rejected', 'border-red-200 bg-red-50 text-red-800', 'bg-red-500'],
+            'cancelled' => ['Cancelled', 'border-slate-200 bg-slate-50 text-slate-700', 'bg-slate-400'],
+        ][$status] ?? [ucfirst($status), '', ''];
 
-        $details = [];
+        // Applicant details (empty values are skipped)
+        $details = array_filter([
+            'Full name' => $application->applicant_name,
+            'Age' => $application->age,
+            'Civil status' => $application->civil_status,
+            'Contact number' => $application->contact_number,
+            'Email' => $application->user->email,
+            'Date submitted' => $application->created_at->timezone(config('app.timezone'))->format('M j, Y g:i A'),
+            'Permit number' => $application->permit_number,
+            'Prints remaining' => $isApproved
+                ? $application->printsRemaining().' of '.$application->effectivePrintLimit()
+                : null,
+        ], fn ($value) => filled($value));
 
-        if (filled($application->applicant_name)) {
-            $details['Full name'] = $application->applicant_name;
-        }
-        if (filled($application->age)) {
-            $details['Age'] = $application->age;
-        }
-        if (filled($application->user->email)) {
-            $details['Email'] = $application->user->email;
+        // Service-specific answers from step 2, labelled from config/barangay_services.php
+        $fieldLabels = collect($application->serviceConfig()['fields'] ?? [])->pluck('label', 'key');
+
+        $requestDetails = ['Purpose' => $application->purpose];
+
+        foreach ($application->details ?? [] as $key => $value) {
+            $requestDetails[$fieldLabels[$key] ?? ucfirst(str_replace('_', ' ', $key))] = $value;
         }
 
-        $details['Date submitted'] = $application->created_at
-            ->timezone(config('app.timezone'))
-            ->format('M j, Y g:i A');
-
-        if (filled($application->permit_number)) {
-            $details['Permit number'] = $application->permit_number;
-        }
-        if ($isApproved) {
-            $details['Prints remaining'] = $application->printsRemaining().' of '.$application->effectivePrintLimit();
-        }
-
-        $requestDetails = array_filter([
-            'Purpose' => $application->purpose,
-            'Cancellation reason' => $application->cancellation_reason,
-        ], fn($value) => filled($value));
+        $requestDetails['Cancellation reason'] = $application->cancellation_reason;
+        $requestDetails = array_filter($requestDetails, fn ($value) => filled($value));
     @endphp
 
     <div class="space-y-4">
@@ -62,20 +63,16 @@
 
                 <div class="min-w-0">
                     <h1 class="truncate text-xl font-bold leading-tight text-slate-900">
-                        {{ match ($application->service_type) {
-                            ServiceRequest::BARANGAY_CLEARANCE => 'Barangay clearance',
-                            ServiceRequest::CERTIFICATE_OF_RESIDENCY => 'Certificate of residency',
-                            default => 'Certificate of indigency',
-                        } }}
+                        {{ $application->serviceTitle() }}
                     </h1>
                     <p class="truncate text-xs text-slate-500">{{ $application->reference_number }}</p>
                 </div>
             </div>
 
             <span
-                class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold capitalize {{ $badgeClass }}">
+                class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold {{ $badgeClass }}">
                 <span class="h-1.5 w-1.5 rounded-full {{ $dotClass }}"></span>
-                {{ $application->status === ServiceRequest::PENDING ? 'Pending review' : $application->status }}
+                {{ $statusLabel }}
             </span>
         </header>
 
@@ -99,41 +96,40 @@
                 </dl>
 
                 {{-- Decision --}}
-                @if ($application->status === ServiceRequest::PENDING)
+                @if ($isOpen)
                     <div class="border-t border-slate-200 bg-slate-50/60 p-4">
                         <h3 class="text-sm font-semibold text-slate-900">Decision</h3>
                         <p class="mt-1 text-xs text-slate-500">Approve this request or reject it with a reason.</p>
 
-                        {{-- The reject form uses "contents" so its fields share the grid with the approve button. --}}
-                        <div class="mt-3 grid gap-4 sm:grid-cols-2">
-                            <form method="POST" action="{{ route('admin.permits.reject', $application) }}"
-                                class="contents">
-                                @csrf
+                        {{-- The reject button below submits this form through its "form" attribute --}}
+                        <form id="reject-form" method="POST" action="{{ route('admin.permits.reject', $application) }}"
+                            class="mt-3 space-y-1.5">
+                            @csrf
 
-                                <div class="order-1 space-y-1.5 sm:col-span-2 sm:row-start-1">
-                                    <label for="rejection_reason" class="block text-xs font-semibold text-slate-700">Reason
-                                        for rejection</label>
-                                    <textarea id="rejection_reason" name="rejection_reason" required minlength="5" maxlength="500" rows="3"
-                                        class="block w-full rounded-md border border-slate-300 bg-white p-3 text-sm text-slate-900 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20">{{ old('rejection_reason') }}</textarea>
-                                    @error('rejection_reason')
-                                        <p class="text-sm text-red-600">{{ $message }}</p>
-                                    @enderror
-                                </div>
+                            <label for="rejection_reason" class="block text-xs font-semibold text-slate-700">
+                                Reason for rejection
+                            </label>
+                            <textarea id="rejection_reason" name="rejection_reason" required minlength="5" maxlength="500" rows="3"
+                                class="block w-full rounded-md border border-slate-300 bg-white p-3 text-sm text-slate-900 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20">{{ old('rejection_reason') }}</textarea>
 
-                                <button
-                                    class="order-3 w-full rounded-md bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 sm:col-start-2 sm:row-start-2">
-                                    Reject application
-                                </button>
-                            </form>
+                            @error('rejection_reason')
+                                <p class="text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </form>
 
-                            <form method="POST" action="{{ route('admin.permits.approve', $application) }}"
-                                class="order-2 sm:col-start-1 sm:row-start-2">
+                        <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                            <form method="POST" action="{{ route('admin.permits.approve', $application) }}">
                                 @csrf
                                 <button
                                     class="w-full rounded-md bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">
                                     Approve application
                                 </button>
                             </form>
+
+                            <button type="submit" form="reject-form"
+                                class="w-full rounded-md bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700">
+                                Reject application
+                            </button>
                         </div>
                     </div>
                 @elseif ($application->rejection_reason)
@@ -148,11 +144,10 @@
                 @endif
             </section>
 
-            {{-- Right: request details + print access --}}
+            {{-- Right: request details, uploads, print access, reissue --}}
             <aside class="space-y-4 lg:w-96 lg:shrink-0">
                 <section class="admin-card">
-                    <h2 class="border-b border-slate-200 px-4 py-3 text-sm font-semibold text-slate-900">Request details
-                    </h2>
+                    <h2 class="border-b border-slate-200 px-4 py-3 text-sm font-semibold text-slate-900">Request details</h2>
 
                     <dl class="space-y-3 p-4">
                         @forelse ($requestDetails as $label => $value)
@@ -164,6 +159,34 @@
                             <p class="text-sm text-slate-500">No additional details.</p>
                         @endforelse
                     </dl>
+                </section>
+
+                {{-- Uploaded requirements (opened through a permission-checked route) --}}
+                <section class="admin-card">
+                    <h2 class="border-b border-slate-200 px-4 py-3 text-sm font-semibold text-slate-900">
+                        Submitted documents
+                    </h2>
+
+                    <ul class="divide-y divide-slate-100">
+                        @forelse ($application->documents as $document)
+                            <li class="flex items-center justify-between gap-3 px-4 py-3">
+                                <div class="min-w-0">
+                                    <p class="text-sm font-medium text-slate-900">{{ $document->label }}</p>
+                                    <p class="truncate text-xs text-slate-500">
+                                        {{ $document->original_name }} · {{ number_format($document->size / 1024) }} KB
+                                    </p>
+                                </div>
+
+                                <a href="{{ route('admin.permits.documents.show', [$application, $document]) }}"
+                                    target="_blank" rel="noopener"
+                                    class="shrink-0 rounded-md border border-[#17325c] px-3 py-1.5 text-xs font-semibold text-[#17325c] hover:bg-slate-50">
+                                    View
+                                </a>
+                            </li>
+                        @empty
+                            <li class="px-4 py-3 text-sm text-slate-500">No documents were uploaded.</li>
+                        @endforelse
+                    </ul>
                 </section>
 
                 @if ($isApproved && auth()->user()->hasPermission('permits.print-limit'))
@@ -181,8 +204,7 @@
                             @method('PATCH')
 
                             <div>
-                                <label for="print_limit" class="block text-xs font-semibold text-slate-700">Allowed
-                                    prints</label>
+                                <label for="print_limit" class="block text-xs font-semibold text-slate-700">Allowed prints</label>
                                 <input id="print_limit" name="print_limit" type="number" required max="1000"
                                     min="{{ $application->print_count }}"
                                     value="{{ old('print_limit', $application->effectivePrintLimit()) }}"

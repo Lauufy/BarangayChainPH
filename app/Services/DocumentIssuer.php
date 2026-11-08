@@ -18,6 +18,7 @@ class DocumentIssuer
 {
     private const DISK = 'supabase';
 
+    /** Approves an open request and issues version 1. Returns the existing document if already issued. */
     public function issue(ServiceRequest $serviceRequest): IssuedDocument
     {
         return $this->locked($serviceRequest, function (ServiceRequest $application, ?string &$uploadedPath) {
@@ -25,8 +26,8 @@ class DocumentIssuer
                 return $existing;
             }
 
-            if ($application->status !== ServiceRequest::PENDING) {
-                throw new RuntimeException('Only pending applications can be issued.');
+            if (! in_array($application->status, [ServiceRequest::PENDING, ServiceRequest::PROCESSING], true)) {
+                throw new RuntimeException('Only open applications can be issued.');
             }
 
             $documentNumber = $application->permit_number ?? ServiceRequest::generatePermitNumber();
@@ -51,6 +52,7 @@ class DocumentIssuer
         });
     }
 
+    /** Issues a new version of an approved request's document and revokes the old one. */
     public function reissue(ServiceRequest $serviceRequest): IssuedDocument
     {
         return $this->locked($serviceRequest, function (ServiceRequest $application, ?string &$uploadedPath) {
@@ -72,7 +74,7 @@ class DocumentIssuer
      * Runs the callback in a transaction on the locked request.
      * If anything fails, the PDF uploaded by the callback is deleted.
      */
-    private function locked(ServiceRequest $serviceRequest, callable $callback): ?IssuedDocument
+    private function locked(ServiceRequest $serviceRequest, callable $callback): IssuedDocument
     {
         $uploadedPath = null;
 
@@ -150,13 +152,15 @@ class DocumentIssuer
         $pdfContent = Pdf::loadView('permits.pdf', [
             'application' => $application,
             'document' => $document,
-            'documentTitle' => $this->documentTitle($application),
+            'documentTitle' => $application->serviceTitle(),
             'issuedAt' => $issuedAt,
             'qrCode' => $this->qrCodeDataUri($documentUuid),
         ])->output();
 
+        // Hash is checked again before every print
         $document->file_hash = hash('sha256', $pdfContent);
 
+        // Remember the path so the caller can delete it if the transaction fails
         $uploadedPath = $document->file_path;
 
         if (! Storage::disk(self::DISK)->put($uploadedPath, $pdfContent)) {
@@ -166,6 +170,7 @@ class DocumentIssuer
         return $document;
     }
 
+    /** QR code that links to the public verification page. */
     private function qrCodeDataUri(string $documentUuid): string
     {
         $verificationUrl = rtrim(config('app.url'), '/')
@@ -174,15 +179,5 @@ class DocumentIssuer
         return (new Builder(writer: new PngWriter, data: $verificationUrl, size: 120, margin: 4))
             ->build()
             ->getDataUri();
-    }
-
-    private function documentTitle(ServiceRequest $application): string
-    {
-        return match ($application->service_type) {
-            ServiceRequest::BARANGAY_CLEARANCE => 'Barangay Clearance',
-            ServiceRequest::CERTIFICATE_OF_RESIDENCY => 'Certificate of Residency',
-            ServiceRequest::CERTIFICATE_OF_INDIGENCY => 'Certificate of Indigency',
-            default => 'Barangay Document',
-        };
     }
 }

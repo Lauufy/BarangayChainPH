@@ -1,6 +1,8 @@
 <div class="flex min-w-0 items-center gap-2.5 sm:gap-2">
-    <img src="{{ asset('img/branding/barangaychain-lg2.png') }}" alt="BarangayChain PH Logo"
+    <img src="{{ asset('img/branding/barangaychain-lg2.png') }}"
+        alt="BarangayChain PH Logo"
         width="36" height="36"
+        loading="lazy"
         class="h-9 w-9 shrink-0 object-contain mix-blend-multiply dark:mix-blend-normal dark:brightness-0 dark:invert">
 
     <span class="hidden min-w-0 border-l-2 border-(--blue-700) pl-2.5 leading-none min-[360px]:block sm:pl-2 dark:border-white/60">

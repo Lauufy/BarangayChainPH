@@ -7,12 +7,20 @@
 
     <title>@yield('title', 'Authentication') | BarangayChain PH</title>
 
-    <link rel="icon" type="image/png" href="{{ asset('img/branding/barangayChainPH-logo.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('img/branding/barangaychain-lg2.png') }}">
+
+    {{-- Follow the saved theme (set by the toggle on other pages) before first paint --}}
+    <script>
+        try {
+            const t = localStorage.getItem('theme');
+            document.documentElement.classList.toggle('dark', t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches);
+        } catch (e) {}
+    </script>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
-<body class="min-h-dvh bg-white text-slate-900 antialiased">
+<body class="min-h-dvh bg-(--white) text-(--gray-900) antialiased transition-colors duration-300 dark:bg-(--black-700) dark:text-(--gray-50)">
 
     <div class="relative grid min-h-dvh grid-cols-1 items-stretch lg:grid-cols-2">
 
