@@ -23,8 +23,6 @@
         $iconBox = 'flex h-12 w-12 items-center justify-center rounded-full bg-(--white) text-(--blue-600) shadow-sm ring-1 ring-(--gray-200) dark:bg-(--gray-800) dark:ring-(--gray-700)';
         $thumb = 'rounded-md bg-(--white) ring-1 ring-(--gray-200) dark:bg-(--gray-800) dark:ring-(--gray-700)';
         $link = 'text-xs font-semibold text-(--blue-700) underline dark:text-(--blue-300)';
-        $dot = 'relative z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ';
-        $check = '<svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.5 7.5a1 1 0 01-1.4 0L3.3 9.7a1 1 0 111.4-1.4l3.8 3.8 6.8-6.8a1 1 0 011.4 0z" clip-rule="evenodd"/></svg>';
     @endphp
 
     <div @class(['w-full space-y-4', 'pb-20 sm:pb-0' => $editing])>
@@ -119,18 +117,8 @@
                 </div>
             @endif
 
-            {{-- Stepper --}}
-            <ol class="{{ $card }} grid w-full grid-cols-4" aria-label="Progress">
-                @foreach ($labels as $number => $label)
-                    <li data-step="{{ $number }}" class="relative flex min-w-0 flex-col items-center text-center" @if ($number === $step) aria-current="step" @endif>
-                        @unless ($loop->first)
-                            <span data-line class="{{ $number <= $step ? 'bg-(--green-600)' : 'bg-(--gray-200) dark:bg-(--gray-700)' }} absolute right-1/2 top-3.5 h-0.5 w-full"></span>
-                        @endunless
-                        <span data-dot class="{{ $dot }}{{ $number < $step ? 'bg-(--green-600) text-(--white)' : ($number === $step ? 'bg-(--blue-600) text-(--white) ring-4 ring-[color-mix(in_srgb,var(--blue-600)_25%,transparent)]' : 'border-2 border-(--gray-300) bg-(--white) text-(--gray-500) dark:border-(--gray-600) dark:bg-(--gray-800)') }}">{!! $number < $step ? $check : $number !!}</span>
-                        <p data-step-label class="{{ $number <= $step ? 'text-(--blue-900) dark:text-(--blue-300)' : $muted }} mt-2 px-1 text-[11px] font-semibold sm:text-xs">{{ $label }}</p>
-                    </li>
-                @endforeach
-            </ol>
+            {{-- Stepper (resources/views/components/stepper.blade.php) --}}
+            <x-form.stepper id="identity-stepper" :steps="array_values($labels)" :current="$step" />
 
             @if ($step === 1)
                 {{-- STEP 1: Personal information --}}
@@ -725,34 +713,6 @@
                     }
 
                     // ---------- Steps ----------
-                    const CHECK = @json($check);
-                    const DOT = @json($dot);
-
-                    // Stepper: green check = done, blue number = current, outline number = upcoming
-                    function updateStepper(step) {
-                        all('[data-step]').forEach((item) => {
-                            const number = Number(item.dataset.step);
-                            const dot = item.querySelector('[data-dot]');
-                            const line = item.querySelector('[data-line]');
-                            const label = item.querySelector('[data-step-label]');
-
-                            dot.className = DOT + (
-                                number < step ? 'bg-(--green-600) text-(--white)' :
-                                number === step ? 'bg-(--blue-600) text-(--white) ring-4 ring-[color-mix(in_srgb,var(--blue-600)_25%,transparent)]' :
-                                'border-2 border-(--gray-300) bg-(--white) text-(--gray-500) dark:border-(--gray-600) dark:bg-(--gray-800)');
-                            dot.innerHTML = number < step ? CHECK : number;
-
-                            if (line) line.className = 'absolute right-1/2 top-3.5 h-0.5 w-full ' + (
-                                number <= step ? 'bg-(--green-600)' : 'bg-(--gray-200) dark:bg-(--gray-700)');
-
-                            label.classList.toggle('text-(--blue-900)', number <= step);
-                            label.classList.toggle('dark:text-(--blue-300)', number <= step);
-                            label.classList.toggle('text-(--gray-500)', number > step);
-                            label.classList.toggle('dark:text-(--gray-400)', number > step);
-                            item.toggleAttribute('aria-current', number === step);
-                        });
-                    }
-
                     function goToStep(step) {
                         stopCamera();
                         currentStep = step;
@@ -761,7 +721,8 @@
                             panel.classList.toggle('hidden', Number(panel.dataset.panel) !== step);
                         });
 
-                        updateStepper(step);
+                        // The animated stepper component moves the line, dot and check for us
+                        Stepper.set('identity-stepper', step);
 
                         // Submit shows ONLY on the last step, Next shows on the others
                         $('next-wrap').classList.toggle('hidden', step === 4);
