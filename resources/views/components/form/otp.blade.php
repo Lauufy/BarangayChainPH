@@ -31,7 +31,7 @@
     $invalid = $errors->has($name);
 
     $colors = $light
-        ? 'border-(--gray-300) bg-(--gray-50) text-(--gray-900) hover:border-(--gray-400) focus:border-(--blue-600) focus:bg-(--white) focus:ring-[color-mix(in_srgb,var(--blue-600)_25%,transparent)] dark:border-(--gray-600) dark:bg-(--gray-800) dark:text-(--gray-50) dark:hover:border-(--gray-500) dark:focus:border-(--green-400) dark:focus:ring-[color-mix(in_srgb,var(--green-400)_20%,transparent)]'
+        ? 'border-(--gray-300) bg-(--gray-50) text-(--gray-900) hover:border-(--gray-400) focus:border-(--blue-600) focus:bg-(--white) focus:ring-[color-mix(in_srgb,var(--blue-600)_25%,transparent)] dark:border-(--gray-600) dark:bg-(--gray-800) dark:text-(--gray-50) dark:hover:border-(--gray-500) dark:focus:border-(--green-400) dark:focus:bg-(--gray-900) dark:focus:text-(--white) dark:focus:ring-[color-mix(in_srgb,var(--green-400)_30%,transparent)]'
         : 'border-white/10 bg-(--blue-900) text-(--white) hover:border-white/20 focus:border-(--green-400) focus:ring-[color-mix(in_srgb,var(--green-400)_15%,transparent)]';
 
     $invalidColors = 'border-(--red-500) hover:border-(--red-500) focus:border-(--red-500)';
