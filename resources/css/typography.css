@@ -1,17 +1,4 @@
-/*
- * Typography: fluid type scale for the citizen portal.
- * Each style sets size, weight, line height and letter spacing in one class.
- * Sizes use clamp(), so they scale smoothly from phone (~320px) to desktop (~1280px).
- *
- * Usage:  <h1 class="text-display">   <h2 class="text-heading">   <p class="text-body">
- * Override one part when needed:  class="text-heading font-extrabold"
- */
-
 @theme {
-    /* Font family: Inter (self-hosted via @fontsource-variable/inter, imported at the top of app.css) */
-    --font-sans: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
-        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-
     /* Page title (h1) */
     --text-display: clamp(1.75rem, 1.4rem + 1.6vw, 2.5rem);
     --text-display--line-height: 1.15;

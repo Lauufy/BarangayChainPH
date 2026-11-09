@@ -1,6 +1,24 @@
+/* ---------- Fonts (installed with npm) ---------- */
+/* Inter: body, forms, labels */
 @import '@fontsource-variable/inter';
+
+/* Barlow: logo and headings (800 is used by text-display) */
+@import '@fontsource/barlow/500.css';
+@import '@fontsource/barlow/600.css';
+@import '@fontsource/barlow/700.css';
+@import '@fontsource/barlow/800.css';
+
+/* Extra fonts for the font sets in fonts.css */
+@import '@fontsource/barlow-semi-condensed/600.css';
+@import '@fontsource/barlow-semi-condensed/700.css';
+@import '@fontsource/barlow-semi-condensed/800.css';
+@import '@fontsource-variable/source-serif-4';
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/ibm-plex-mono/500.css';
+
 @import 'tailwindcss';
 @import './theme.css';
+@import './fonts.css';
 @import './typography.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';

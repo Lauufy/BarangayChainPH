@@ -1,0 +1,72 @@
+/* 1. CIVIC (default): Barlow + Inter. Exactly the look of your logo and labels. */
+:root,
+[data-font-set='civic'] {
+    --set-brand: 'Barlow', ui-sans-serif, system-ui, sans-serif;
+    --set-sans: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --set-doc: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+/* 2. CONDENSED: Barlow Semi Condensed + Inter. Tighter, stronger headings, fits long titles. */
+[data-font-set='condensed'] {
+    --set-brand: 'Barlow Semi Condensed', 'Barlow', ui-sans-serif, system-ui, sans-serif;
+    --set-sans: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --set-doc: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+/* 3. OFFICIAL: Barlow + Inter + Source Serif 4. A serif for printed clearances and certificates. */
+[data-font-set='official'] {
+    --set-brand: 'Barlow', ui-sans-serif, system-ui, sans-serif;
+    --set-sans: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --set-doc: 'Source Serif 4 Variable', 'Source Serif 4', Georgia, 'Times New Roman', serif;
+}
+
+/* 4. TECHNICAL: Barlow + Inter + IBM Plex Mono. Monospace for reference numbers, IDs and hashes. */
+[data-font-set='technical'] {
+    --set-brand: 'Barlow', ui-sans-serif, system-ui, sans-serif;
+    --set-sans: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --set-doc: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+}
+
+/* ---------- Tailwind tokens (read the active set) ---------- */
+@theme inline {
+    --font-brand: var(--set-brand);
+    --font-sans: var(--set-sans);
+    --font-doc: var(--set-doc);
+}
+
+/* ---------- Base: headings use the brand font ---------- */
+@layer base {
+    h1,
+    h2,
+    h3 {
+        font-family: var(--set-brand);
+    }
+}
+
+/* ---------- Ready-made styles from your two images ---------- */
+@layer components {
+    /* "BARANGAYCHAIN PH": bold uppercase brand text */
+    .brand-mark {
+        font-family: var(--set-brand);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        color: var(--blue-900);
+    }
+
+    /* "PASSWORD": small uppercase label in Inter */
+    .field-label {
+        font-family: var(--set-sans);
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--gray-500);
+    }
+
+    /* Reference numbers, IDs, dates: uses the set's third font, digits aligned */
+    .data-text {
+        font-family: var(--set-doc);
+        font-variant-numeric: tabular-nums;
+    }
+}
