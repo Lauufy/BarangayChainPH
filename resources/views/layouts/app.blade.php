@@ -27,7 +27,7 @@
     </header>
 
     <main class="flex items-center justify-center px-4 py-8 sm:px-6">
-        <div class="w-full max-w-md">
+        <div class="mx-auto my-auto w-full max-w-md py-4">
             @yield('content')
         </div>
     </main>

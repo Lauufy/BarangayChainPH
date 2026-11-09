@@ -3,14 +3,11 @@
 @section('title', 'Enter Verification Code')
 
 @section('content')
-    <main class="flex items-center justify-center px-5 py-10">
+    <div class="flex items-center justify-center">
         <section class="w-full max-w-md">
 
             {{-- Header --}}
             <header class="mb-6">
-                <p class="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-(--blue-600) dark:text-(--blue-300)">
-                    Community Services Portal
-                </p>
 
                 <h1 class="text-3xl font-bold leading-tight tracking-tight text-(--gray-900) dark:text-(--gray-50)">
                     Enter your code
@@ -27,19 +24,16 @@
 
             <div class="rounded-md border border-(--gray-200) bg-(--white) p-5 shadow-sm dark:border-(--gray-700) dark:bg-(--gray-800) sm:p-6">
                 {{-- Code --}}
-                <form method="POST" action="{{ route('verification.otp.verify') }}" class="space-y-4">
+                <form id="otp-form" method="POST" action="{{ route('verification.otp.verify') }}" class="space-y-4">
                     @csrf
 
-                    <x-form.input
+                    <x-form.otp
                         light
                         name="otp"
                         label="6-digit code"
-                        inputmode="numeric"
-                        maxlength="6"
+                        :length="6"
                         required
                         autofocus
-                        autocomplete="one-time-code"
-                        placeholder="000000"
                     />
 
                     <x-form.button type="submit" color="blue" class="w-full" loading-text="Verifying...">
@@ -70,5 +64,5 @@
             </p>
 
         </section>
-    </main>
+    </div>
 @endsection

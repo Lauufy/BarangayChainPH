@@ -16,8 +16,11 @@
 
 @php
     $mode = old('mode', 'email') === 'phone' ? 'phone' : 'email';
-    $tab = 'flex min-w-0 flex-1 items-center justify-center rounded px-3 py-2.5 text-sm font-semibold transition';
+    $tab = 'flex min-w-0 flex-1 items-center justify-center rounded px-3 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--blue-600) dark:focus-visible:ring-(--green-400)';
     $muted = 'text-(--gray-500) dark:text-(--gray-400)';
+
+    // Paint over the browser's blue autofill background, keep text and caret readable (same as x-form.input)
+    $autofill = '[&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_var(--white)] [&:-webkit-autofill]:[-webkit-text-fill-color:var(--gray-900)] [&:-webkit-autofill]:caret-(--gray-900) dark:[&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_var(--gray-800)] dark:[&:-webkit-autofill]:[-webkit-text-fill-color:var(--gray-50)] dark:[&:-webkit-autofill]:caret-(--white)';
 @endphp
 
 <div data-contact-tabs data-mode="{{ $mode }}" class="space-y-4">
@@ -43,8 +46,8 @@
     </div>
 
     {{-- Mobile number tab: the user types only the part after +63 --}}
-    <div data-panel="phone" @if ($mode !== 'phone') hidden @endif>
-        <label for="phone" class="{{ $muted }} mb-1.5 block text-xs font-semibold uppercase tracking-wider">
+    <div data-panel="phone" class="group" @if ($mode !== 'phone') hidden @endif>
+        <label for="phone" class="{{ $muted }} mb-1.5 block text-xs font-semibold uppercase tracking-wider transition-colors group-focus-within:text-(--blue-600) dark:group-focus-within:text-(--green-400)">
             Mobile number
         </label>
 
@@ -64,7 +67,7 @@
                 autocomplete="tel-national"
                 placeholder="9171234567"
                 value="{{ preg_replace('/^(\+?63|0)/', '', (string) old('phone')) }}"
-                class="block h-14 w-full rounded-md border border-(--gray-300) bg-(--white) pl-20 pr-3.5 text-base text-(--gray-900) outline-none transition placeholder:text-(--gray-400) hover:border-(--gray-400) focus:border-(--blue-600) focus:ring-2 focus:ring-[color-mix(in_srgb,var(--blue-600)_20%,transparent)] disabled:opacity-60 dark:border-(--gray-600) dark:bg-(--gray-800) dark:text-(--gray-50) dark:placeholder:text-(--gray-500) dark:hover:border-(--gray-500) dark:focus:border-(--green-400) dark:focus:ring-[color-mix(in_srgb,var(--green-400)_15%,transparent)] sm:text-sm"
+                class="{{ $autofill }} block h-14 w-full rounded-md border border-(--gray-300) bg-(--white) pl-20 pr-3.5 text-base text-(--gray-900) outline-none transition placeholder:text-(--gray-400) hover:border-(--gray-400) focus:border-(--blue-600) focus:ring-2 focus:ring-[color-mix(in_srgb,var(--blue-600)_20%,transparent)] disabled:opacity-60 dark:border-(--gray-600) dark:bg-(--gray-800) dark:text-(--gray-50) dark:placeholder:text-(--gray-500) dark:hover:border-(--gray-500) dark:focus:border-(--green-400) dark:focus:ring-[color-mix(in_srgb,var(--green-400)_15%,transparent)] sm:text-sm"
             >
         </div>
     </div>

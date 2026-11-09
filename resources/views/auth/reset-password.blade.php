@@ -3,12 +3,9 @@
 @section('title', 'Reset Password')
 
 @section('content')
-    <main class="flex items-center justify-center px-5 py-10">
+    <div class="flex items-center justify-center">
         <section class="w-full max-w-md">
             <header class="mb-6">
-                <p class="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-(--blue-600) dark:text-(--blue-300)">
-                    Community Services Portal
-                </p>
 
                 <h1 class="text-3xl font-bold leading-tight tracking-tight text-(--gray-900) dark:text-(--gray-50)">
                     Reset your password
@@ -23,7 +20,7 @@
 
             <x-feedbacks.form-errors />
 
-            <div class="rounded-md border border-(--gray-200) bg-(--white) p-5 shadow-sm dark:border-(--gray-700) dark:bg-(--gray-800) sm:p-6">
+            <div class="rounded-md border border-(--gray-200) bg-(--white) p-4 shadow-sm dark:border-(--gray-700) dark:bg-(--gray-800) sm:p-5">
                 <form method="POST"
                     action="{{ route($isSmsReset ? 'password.sms.update' : 'password.update') }}"
                     class="space-y-4">
@@ -55,5 +52,5 @@
                 For your security, choose a password you haven't used before.
             </p>
         </section>
-    </main>
+    </div>
 @endsection

@@ -12,10 +12,6 @@
 
         {{-- Header --}}
         <header class="mb-5">
-            <p class="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-(--blue-600) dark:text-(--blue-300)">
-                Community Services Portal
-            </p>
-
             <h1 class="text-2xl font-bold leading-tight tracking-tight text-(--gray-900) dark:text-(--gray-50) sm:text-3xl">
                 Sign In to Continue
             </h1>
