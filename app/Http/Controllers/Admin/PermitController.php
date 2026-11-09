@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\UpdatesTwoFactor;
 use App\Models\ServiceRequest;
 use App\Models\ServiceRequestDocument;
 use App\Notifications\ServiceRequestApproved;
@@ -21,6 +22,8 @@ use Throwable;
 
 class PermitController extends Controller
 {
+    use UpdatesTwoFactor;
+
     public function index(): View
     {
         $requests = ServiceRequest::with('user')->latest()->paginate(10);

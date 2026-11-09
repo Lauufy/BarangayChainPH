@@ -8,8 +8,9 @@
         $emailFailed = old('_form') === 'email' && $errors->has('email');
 
         // Email errors are shown inside the modal, so keep them out of the page summary.
+        // Two-factor errors are shown inside their own card.
         $pageErrors = collect($errors->getMessages())
-            ->except($emailFailed ? ['email', 'photo'] : ['photo'])
+            ->except($emailFailed ? ['email', 'photo', 'two_factor_enabled'] : ['photo', 'two_factor_enabled'])
             ->flatten();
     @endphp
 
@@ -19,8 +20,9 @@
             <p class="mt-1 text-sm text-slate-500">Update the details shown in your administrator account.</p>
         </div>
 
-        @if (session('success'))i
-            <div role="status" class="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-700">
+        @if (session('success'))
+            <div role="status"
+                class="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-700">
                 {{ session('success') }}
             </div>
         @endif
@@ -56,8 +58,8 @@
             </div>
 
             {{-- Photo --}}
-            <form id="photo-form" method="POST" action="{{ route('admin.profile.photo') }}"
-                enctype="multipart/form-data" class="mb-6">
+            <form id="photo-form" method="POST" action="{{ route('admin.profile.photo') }}" enctype="multipart/form-data"
+                class="mb-6">
                 @csrf
                 <label for="admin-profile-photo"
                     class="block w-fit cursor-pointer rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 focus-within:ring-2 focus-within:ring-[#17325c]/30 hover:bg-slate-50">
@@ -67,7 +69,8 @@
                     <input id="admin-profile-photo" type="file" name="photo" accept=".jpg,.jpeg,.png" class="sr-only">
                 </label>
                 <p class="mt-1 text-xs text-slate-500">JPG or PNG, up to 2 MB.</p>
-                <p id="photo-error" role="alert" class="mt-1 text-sm text-red-700 {{ $errors->has('photo') ? '' : 'hidden' }}">
+                <p id="photo-error" role="alert"
+                    class="{{ $errors->has('photo') ? '' : 'hidden' }} mt-1 text-sm text-red-700">
                     {{ $errors->first('photo') }}
                 </p>
             </form>
@@ -79,16 +82,16 @@
 
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div class="pt-7">
-                        <x-form.input light placeholder=" " name="name" label="Full name"
-                            :value="$user->name" required maxlength="255" autocomplete="name" />
+                        <x-form.input light placeholder=" " name="name" label="Full name" :value="$user->name" required
+                            maxlength="255" autocomplete="name" />
                     </div>
                     <div>
                         <button type="button" id="open-email-modal"
                             class="mb-1 ml-auto block text-sm font-semibold text-[#17325c] underline-offset-4 hover:underline">
                             Modify
                         </button>
-                        <x-form.input light placeholder=" " name="email" label="Email address"
-                            type="email" :value="$user->email" :use-old="false" readonly
+                        <x-form.input light placeholder=" " name="email" label="Email address" type="email"
+                            :value="$user->email" :use-old="false" readonly
                             class="read-only:cursor-not-allowed read-only:bg-slate-100 read-only:text-slate-600" />
                     </div>
                 </div>
@@ -111,8 +114,8 @@
                     <p class="mt-1 text-sm text-slate-500">Leave these fields blank to keep your current password.</p>
 
                     <div class="mt-4 grid gap-4 sm:grid-cols-2">
-                        <x-form.input light placeholder=" " name="current_password" label="Current password"
-                            type="password" autocomplete="current-password" />
+                        <x-form.input light placeholder=" " name="current_password" label="Current password" type="password"
+                            autocomplete="current-password" />
 
                         <x-form.input light placeholder=" " name="password" label="New password" type="password"
                             data-password-strength maxlength="16" autocomplete="new-password">
@@ -120,9 +123,8 @@
                         </x-form.input>
 
                         <div>
-                            <x-form.input light placeholder=" " name="password_confirmation"
-                                label="Confirm new password" type="password"
-                                data-password-confirmation maxlength="16" autocomplete="new-password"
+                            <x-form.input light placeholder=" " name="password_confirmation" label="Confirm new password"
+                                type="password" data-password-confirmation maxlength="16" autocomplete="new-password"
                                 aria-describedby="password_confirmation-feedback">
                                 <p id="password_confirmation-feedback" data-password-confirmation-feedback
                                     class="mt-1 hidden text-xs font-medium text-red-600" aria-live="polite"></p>
@@ -138,6 +140,18 @@
                     </button>
                 </div>
             </form>
+        </section>
+
+        {{-- Login security: its own form, so it never submits with the profile form --}}
+        <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm text-slate-900 sm:p-6">
+            <h3 class="font-semibold text-slate-900">Two-factor login</h3>
+            <p class="mt-1 text-sm text-slate-500">
+                When on, you enter a code sent to your verified email or mobile number each time you log in.
+            </p>
+
+            <div class="mt-4">
+                @include('components.partials.two-factor-form', ['action' => route('admin.profile.two-factor')])
+            </div>
         </section>
     </div>
 
@@ -167,7 +181,8 @@
                         type="email" :value="$user->email" required maxlength="255" autocomplete="email"
                         aria-describedby="modal-email-error" />
 
-                    <p id="modal-email-error" role="alert" class="mt-1 text-sm text-red-700 {{ $emailFailed ? '' : 'hidden' }}">
+                    <p id="modal-email-error" role="alert"
+                        class="{{ $emailFailed ? '' : 'hidden' }} mt-1 text-sm text-red-700">
                         {{ $emailFailed ? $errors->first('email') : '' }}
                     </p>
                 </div>

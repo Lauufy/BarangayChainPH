@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Citizen;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\UpdatesTwoFactor;
 use App\Models\CitizenProfile;
 use App\Services\SupabaseStorage;
 use Illuminate\Http\RedirectResponse;
@@ -12,6 +13,8 @@ use Illuminate\Support\Facades\Storage;
 /** Manages the signed-in citizen's profile and private photo. */
 class ProfileController extends Controller
 {
+    use UpdatesTwoFactor;
+
     public function __construct(private SupabaseStorage $supabaseStorage) {}
 
     public function show(Request $request)

@@ -12,6 +12,11 @@
         $primary = 'bg-[#17325c] text-white hover:bg-[#10244a] dark:bg-(--blue-600) dark:hover:bg-(--blue-700)';
         $outline = 'border border-(--gray-300) text-(--gray-700) hover:bg-(--gray-50) dark:border-(--gray-600) dark:text-(--gray-200) dark:hover:bg-(--gray-700)';
         $tile = 'rounded-md bg-(--gray-50) p-4 dark:bg-(--gray-900)';
+
+        // Two-factor errors are shown inside their own card, not in the page summary.
+        $pageErrors = collect($errors->getMessages())
+            ->except(['two_factor_enabled', 'current_password'])
+            ->flatten();
     @endphp
 
     <div class="space-y-6">
@@ -51,11 +56,11 @@
             </x-partials.citizen-notice>
         @endunless
 
-        @if ($errors->any())
+        @if ($pageErrors->isNotEmpty())
             <div role="alert"
                 class="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
                 <ul class="list-disc space-y-1 pl-5">
-                    @foreach ($errors->all() as $message)
+                    @foreach ($pageErrors as $message)
                         <li>{{ $message }}</li>
                     @endforeach
                 </ul>
@@ -223,6 +228,18 @@
                 </div>
             @endif
         </form>
+
+        {{-- Login security: its own form, so it never submits with the profile form --}}
+        <section class="{{ $card }} p-4 sm:p-6">
+            <h2 class="{{ $line }} {{ $title }} border-b pb-2 text-lg font-semibold">Login security</h2>
+            <p class="{{ $muted }} mt-3 text-sm">
+                When on, you enter a code sent to your verified email or mobile number each time you log in.
+            </p>
+
+            <div class="{{ $title }} mt-4">
+                @include('components.partials.two-factor-form', ['action' => route('citizen.profile.two-factor')])
+            </div>
+        </section>
     </div>
 
     @if ($verified)

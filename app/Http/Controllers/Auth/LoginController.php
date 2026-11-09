@@ -60,15 +60,24 @@ class LoginController extends Controller
         $request->session()->regenerate();
         $remember = $request->boolean('remember');
 
-        // Staff and admins log in with the password only.
-        if (in_array($user->role, ['admin', 'staff'], true)) {
-            Auth::login($user, $remember);
-
-            return redirect()->route('admin.dashboard')->with('success', 'You are now logged in successfully.');
+        if (! in_array($user->role, ['admin', 'staff', 'citizen'], true)) {
+            $this->fail($field, 'This account cannot log in.');
         }
 
-        if (! $user->isCitizen()) {
-            $this->fail($field, 'This account cannot log in.');
+        if ($byPhone && ! $user->phone_verified_at) {
+            $request->session()->put('otp', $otps->startLogin($user, 'sms', $remember));
+
+            return redirect()->route('verification.otp.show')
+                ->with('success', 'We sent a verification code to '.$otps->mask('sms', $user->phone).'.');
+        }
+
+        // Two-factor is optional: users turn it on in their settings.
+        if (! $user->two_factor_enabled) {
+            Auth::login($user, $remember);
+
+            return redirect()
+                ->route($user->role === 'citizen' ? 'citizen.dashboard' : 'admin.dashboard')
+                ->with('success', 'You are now logged in successfully.');
         }
 
         if ($byPhone) {

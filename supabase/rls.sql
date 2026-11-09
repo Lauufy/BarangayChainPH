@@ -41,13 +41,38 @@ alter table public.failed_jobs enable row level security;
 alter table public.password_reset_tokens enable row level security;
 alter table public.sessions enable row level security;
 
+-- ---------------------------------------------------------------------------
+-- Cleanup of old policies replaced below (safe to run even if they don't exist)
+-- ---------------------------------------------------------------------------
+drop policy if exists "Staff manage users" on public.users;
+drop policy if exists "Staff issue and update issued documents" on public.issued_documents;
+drop policy if exists "Users read own notifications" on public.notifications;
+drop policy if exists "Users update own notifications" on public.notifications;
+
+-- ---------------------------------------------------------------------------
+-- users: everyone reads own row; staff/admin read all; ONLY admins write.
+-- (Staff must never be able to change roles or promote themselves.)
+-- ---------------------------------------------------------------------------
+drop policy if exists "Users read own or staff records" on public.users;
 create policy "Users read own or staff records" on public.users
     for select to authenticated
     using (id = public.current_app_user_id() or public.current_app_role() in ('admin', 'staff'));
-create policy "Staff manage users" on public.users
-    for all to authenticated
-    using (public.current_app_role() in ('admin', 'staff'))
-    with check (public.current_app_role() in ('admin', 'staff'));
+
+drop policy if exists "Admins insert users" on public.users;
+create policy "Admins insert users" on public.users
+    for insert to authenticated
+    with check (public.current_app_role() = 'admin');
+
+drop policy if exists "Admins update users" on public.users;
+create policy "Admins update users" on public.users
+    for update to authenticated
+    using (public.current_app_role() = 'admin')
+    with check (public.current_app_role() = 'admin');
+
+drop policy if exists "Admins delete users" on public.users;
+create policy "Admins delete users" on public.users
+    for delete to authenticated
+    using (public.current_app_role() = 'admin');
 
 create policy "Citizens and staff read citizen profiles" on public.citizen_profiles
     for select to authenticated
@@ -76,13 +101,16 @@ create policy "Staff review identity verifications" on public.identity_verificat
     using (public.current_app_role() in ('admin', 'staff'))
     with check (public.current_app_role() in ('admin', 'staff'));
 
+-- notifications: the stored type is App\Models\User (single backslashes).
+-- The old script used 'App\\Models\\User', which does not match when
+-- standard_conforming_strings is on (the Postgres default), so owners saw nothing.
 create policy "Users read own notifications" on public.notifications
     for select to authenticated
-    using (notifiable_id = public.current_app_user_id() and notifiable_type = 'App\\Models\\User');
+    using (notifiable_id = public.current_app_user_id() and notifiable_type = 'App\Models\User');
 create policy "Users update own notifications" on public.notifications
     for update to authenticated
-    using (notifiable_id = public.current_app_user_id() and notifiable_type = 'App\\Models\\User')
-    with check (notifiable_id = public.current_app_user_id() and notifiable_type = 'App\\Models\\User');
+    using (notifiable_id = public.current_app_user_id() and notifiable_type = 'App\Models\User')
+    with check (notifiable_id = public.current_app_user_id() and notifiable_type = 'App\Models\User');
 
 create policy "Citizens and staff read service requests" on public.service_requests
     for select to authenticated
@@ -100,22 +128,6 @@ create policy "Participants and staff read tickets" on public.tickets
     using (
         user_id = public.current_app_user_id()
         or public.current_app_role() in ('admin', 'staff')
-    );
-create policy "Staff issue and update issued documents" on public.issued_documents
-    for all to authenticated
-    using (
-        public.current_app_role() = 'admin'
-        or (
-            public.current_app_role() = 'staff'
-            and coalesce(auth.jwt() -> 'app_metadata' -> 'permissions', '[]'::jsonb) ? 'permits.review'
-        )
-    )
-    with check (
-        public.current_app_role() = 'admin'
-        or (
-            public.current_app_role() = 'staff'
-            and coalesce(auth.jwt() -> 'app_metadata' -> 'permissions', '[]'::jsonb) ? 'permits.review'
-        )
     );
 create policy "Citizens create own tickets" on public.tickets
     for insert to authenticated
@@ -153,6 +165,36 @@ create policy "Ticket participants create messages" on public.ticket_messages
         )
     );
 
+-- ---------------------------------------------------------------------------
+-- issued_documents: insert/update only. No delete policy, so issued documents
+-- cannot be removed through the Supabase API (important once they are anchored
+-- on a blockchain). Admins and staff with permits.review may issue and update.
+-- ---------------------------------------------------------------------------
+create policy "Staff issue documents" on public.issued_documents
+    for insert to authenticated
+    with check (
+        public.current_app_role() = 'admin'
+        or (
+            public.current_app_role() = 'staff'
+            and coalesce(auth.jwt() -> 'app_metadata' -> 'permissions', '[]'::jsonb) ? 'permits.review'
+        )
+    );
+create policy "Staff update issued documents" on public.issued_documents
+    for update to authenticated
+    using (
+        public.current_app_role() = 'admin'
+        or (
+            public.current_app_role() = 'staff'
+            and coalesce(auth.jwt() -> 'app_metadata' -> 'permissions', '[]'::jsonb) ? 'permits.review'
+        )
+    )
+    with check (
+        public.current_app_role() = 'admin'
+        or (
+            public.current_app_role() = 'staff'
+            and coalesce(auth.jwt() -> 'app_metadata' -> 'permissions', '[]'::jsonb) ? 'permits.review'
+        )
+    );
 create policy "Owners and staff read issued documents" on public.issued_documents
     for select to authenticated
     using (
@@ -177,10 +219,13 @@ create policy "Audit viewers read audit logs" on public.audit_logs
 -- Cache, queue, session, and password-reset tables have no client policies:
 -- only the trusted Laravel database role can read or write them.
 
--- Read access summary:
--- users and profiles: the owner; staff/admin as shown by each policy.
--- identity_verifications, service_requests, tickets, messages, issued_documents:
+-- Access summary:
+-- users: owner reads own row; staff/admin read all; only admins insert/update/delete.
+-- citizen_profiles: the owner; staff/admin as shown by each policy.
+-- employee_profiles: owner or staff read; only admins write.
+-- identity_verifications, service_requests, tickets, messages:
 --   the owning citizen and staff/admin as shown by each policy.
+-- issued_documents: owner/staff read; admins and staff with permits.review insert/update; nobody deletes.
 -- notifications: the owning Laravel user.
 -- audit_logs: admins and staff whose app_metadata permissions include audit.view.
 -- cache, cache_locks, jobs, job_batches, failed_jobs, password_reset_tokens, sessions:

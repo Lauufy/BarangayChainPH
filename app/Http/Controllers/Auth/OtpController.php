@@ -185,7 +185,8 @@ class OtpController extends Controller
         Auth::login($user, $otp['payload']['remember']);
         $request->session()->regenerate();
 
-        return redirect()->route('citizen.dashboard')
+        return redirect()
+            ->route($user->isCitizen() ? 'citizen.dashboard' : 'admin.dashboard')
             ->with('success', 'You are now logged in successfully.');
     }
 

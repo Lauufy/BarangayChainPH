@@ -28,8 +28,6 @@ use Illuminate\Notifications\Notifiable;
     'google_id',
     'role',
     'is_active',
-    'email_verification_otp',
-    'email_verification_otp_expires_at',
 ])]
 #[Hidden([
     'password',
@@ -50,7 +48,9 @@ class User extends Authenticatable implements MustVerifyEmail
             'phone_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'google_password_setup_required' => 'boolean',
             'permissions' => 'array',
+            'two_factor_enabled' => 'boolean',
         ];
     }
 

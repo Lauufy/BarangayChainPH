@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\UpdatesTwoFactor;
 use App\Services\SupabaseStorage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,6 +15,8 @@ use Illuminate\View\View;
 /** Manages the signed-in staff member's profile and private photo. */
 class ProfileController extends Controller
 {
+    use UpdatesTwoFactor;
+
     public function __construct(private SupabaseStorage $supabaseStorage) {}
 
     public function show(Request $request): View

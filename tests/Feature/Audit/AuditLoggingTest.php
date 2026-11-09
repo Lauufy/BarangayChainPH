@@ -160,6 +160,7 @@ class AuditLoggingTest extends TestCase
             'password' => 'StrongPass123!',
             'role' => 'admin',
             'is_active' => true,
+            'two_factor_enabled' => false,
         ]);
 
         $this->post(route('login.store'), [

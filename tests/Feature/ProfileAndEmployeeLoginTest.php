@@ -154,6 +154,8 @@ class ProfileAndEmployeeLoginTest extends TestCase
             'email' => 'taylor@example.com',
             'password' => 'StrongPass123!',
             'role' => 'staff',
+            'is_active' => true,
+            'two_factor_enabled' => false,
         ]);
 
         EmployeeProfile::create([
@@ -241,5 +243,107 @@ class ProfileAndEmployeeLoginTest extends TestCase
         $this->assertSame('Carlo Admin', $carloAdmin->name);
         $this->assertSame('BSLCNPH-000002', $carloAdmin->employeeProfile->employee_id);
         $this->assertSame('admin', $carloAdmin->role);
+    }
+
+    public function test_citizen_can_turn_two_factor_on(): void
+    {
+        $user = User::factory()->create([
+            'role' => 'citizen',
+            'is_active' => true,
+            'email_verified_at' => now(),
+            'password' => 'Password123!',
+            'two_factor_enabled' => false,
+        ]);
+
+        $this->actingAs($user)
+            ->put(route('citizen.profile.two-factor'), [
+                'two_factor_enabled' => 1,
+                'current_password' => 'Password123!',
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $this->assertTrue($user->fresh()->two_factor_enabled);
+    }
+
+    public function test_staff_can_turn_two_factor_on(): void
+    {
+        $user = User::factory()->create([
+            'role' => 'staff',
+            'is_active' => true,
+            'email_verified_at' => now(),
+            'password' => 'Password123!',
+            'two_factor_enabled' => false,
+        ]);
+
+        $this->actingAs($user)
+            ->put(route('admin.profile.two-factor'), [
+                'two_factor_enabled' => 1,
+                'current_password' => 'Password123!',
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $this->assertTrue($user->fresh()->two_factor_enabled);
+    }
+
+    public function test_user_can_turn_two_factor_off(): void
+    {
+        $user = User::factory()->create([
+            'role' => 'citizen',
+            'is_active' => true,
+            'email_verified_at' => now(),
+            'password' => 'Password123!',
+            'two_factor_enabled' => true,
+        ]);
+
+        $this->actingAs($user)
+            ->put(route('citizen.profile.two-factor'), [
+                'two_factor_enabled' => 0,
+                'current_password' => 'Password123!',
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $this->assertFalse($user->fresh()->two_factor_enabled);
+    }
+
+    public function test_toggle_requires_correct_password(): void
+    {
+        $user = User::factory()->create([
+            'role' => 'citizen',
+            'is_active' => true,
+            'email_verified_at' => now(),
+            'password' => 'Password123!',
+            'two_factor_enabled' => false,
+        ]);
+
+        $this->actingAs($user)
+            ->put(route('citizen.profile.two-factor'), [
+                'two_factor_enabled' => 1,
+                'current_password' => 'wrong',
+            ])->assertSessionHasErrors('current_password');
+
+        $this->assertFalse($user->fresh()->two_factor_enabled);
+    }
+
+    public function test_cannot_turn_on_without_a_verified_email_or_phone(): void
+    {
+        $user = User::factory()->create([
+            'role' => 'citizen',
+            'is_active' => true,
+            'email_verified_at' => null,
+            'phone_verified_at' => null,
+            'password' => 'Password123!',
+            'two_factor_enabled' => false,
+        ]);
+
+        $this->actingAs($user)
+            ->put(route('citizen.profile.two-factor'), [
+                'two_factor_enabled' => 1,
+                'current_password' => 'Password123!',
+            ])->assertSessionHasErrors('two_factor_enabled');
+
+        $this->assertFalse($user->fresh()->two_factor_enabled);
     }
 }

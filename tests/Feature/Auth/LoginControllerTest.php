@@ -5,6 +5,7 @@ namespace Tests\Feature\Auth;
 use App\Models\User;
 use App\Notifications\EmailVerificationOtp;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
@@ -62,6 +63,7 @@ class LoginControllerTest extends TestCase
             'password' => 'StrongPass123!',
             'role' => 'admin',
             'is_active' => true,
+            'two_factor_enabled' => false,
         ]);
 
         $response = $this->post(route('login.store'), [
@@ -76,5 +78,53 @@ class LoginControllerTest extends TestCase
             ->assertOk()
             ->assertSee('toast-container')
             ->assertSee('You are now logged in successfully.');
+    }
+
+    public function test_phone_login_requires_otp_for_unverified_phone_even_when_two_factor_is_off(): void
+    {
+        Http::fake([
+            'https://api.textbee.dev/api/v1/gateway/devices/*/send-sms' => Http::response(['ok' => true]),
+        ]);
+        $user = User::factory()->create([
+            'phone' => '+639171234567',
+            'password' => 'StrongPass123!',
+            'role' => 'citizen',
+            'is_active' => true,
+            'two_factor_enabled' => false,
+            'phone_verified_at' => null,
+        ]);
+
+        $this->post(route('login.store'), [
+            'mode' => 'phone',
+            'phone' => '+639171234567',
+            'password' => 'StrongPass123!',
+        ])->assertRedirect(route('verification.otp.show'));
+
+        $this->assertGuest();
+        $this->assertSame('login', session('otp.purpose'));
+        $this->assertSame('sms', session('otp.channel'));
+        $this->assertNull($user->fresh()->phone_verified_at);
+        $this->assertFalse($user->fresh()->two_factor_enabled);
+    }
+
+    public function test_verified_phone_login_skips_otp_when_two_factor_is_off(): void
+    {
+        $user = User::factory()->create([
+            'email' => null,
+            'phone' => '+639171234567',
+            'phone_verified_at' => now(),
+            'password' => 'StrongPass123!',
+            'role' => 'citizen',
+            'is_active' => true,
+            'two_factor_enabled' => false,
+        ]);
+
+        $this->post(route('login.store'), [
+            'mode' => 'phone',
+            'phone' => '+639171234567',
+            'password' => 'StrongPass123!',
+        ])->assertRedirect(route('citizen.dashboard'));
+
+        $this->assertAuthenticatedAs($user);
     }
 }

@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Password;
 use Laravel\Socialite\Facades\Socialite;
 
 class GoogleController extends Controller
@@ -18,7 +20,7 @@ class GoogleController extends Controller
     }
 
     // Google sends the user back here
-    public function callback(): RedirectResponse
+    public function callback(Request $request): RedirectResponse
     {
         $google = Socialite::driver('google')->user();
 
@@ -34,6 +36,10 @@ class GoogleController extends Controller
             ]
         );
 
+        if ($user->wasRecentlyCreated) {
+            $user->forceFill(['google_password_setup_required' => true])->save();
+        }
+
         if (! $user->is_active) {
             return redirect()->route('login')->withErrors([
                 'identifier' => 'Your account is inactive. Please contact the administrator.',
@@ -47,11 +53,86 @@ class GoogleController extends Controller
             ]);
         }
 
-        // Save the Google ID
-        $user->update(['google_id' => $google->getId()]);
+        // Completing Google sign-in verifies the email address returned by Google.
+        $user->forceFill([
+            'google_id' => $google->getId(),
+            'email_verified_at' => $user->email_verified_at ?? now(),
+        ])->save();
+
+        if ($user->google_password_setup_required) {
+            $request->session()->regenerate();
+            $request->session()->put('google_password_setup', [
+                'user_id' => $user->id,
+                'expires_at' => now()->addMinutes(20)->timestamp,
+            ]);
+
+            return redirect()->route('google.password.setup');
+        }
 
         Auth::login($user);
 
         return redirect()->route('citizen.dashboard')->with('success', 'You are now logged in with Google.');
+    }
+
+    public function showPasswordSetup(Request $request)
+    {
+        if (! $this->pendingPasswordSetupUser($request)) {
+            return redirect()->route('login')->withErrors([
+                'password' => 'Your Google sign-in session expired. Please continue with Google again.',
+            ]);
+        }
+
+        return view('auth.google-password-setup');
+    }
+
+    public function storePasswordSetup(Request $request): RedirectResponse
+    {
+        $user = $this->pendingPasswordSetupUser($request);
+
+        if (! $user) {
+            $request->session()->forget('google_password_setup');
+
+            return redirect()->route('login')->withErrors([
+                'password' => 'Your Google sign-in session expired. Please continue with Google again.',
+            ]);
+        }
+
+        $validated = $request->validate([
+            'password' => [
+                'required',
+                'confirmed',
+                'max:16',
+                Password::min(8)->mixedCase()->numbers()->symbols()->uncompromised(),
+            ],
+        ]);
+
+        $user->forceFill([
+            'password' => $validated['password'],
+            'google_password_setup_required' => false,
+        ])->save();
+
+        $request->session()->forget('google_password_setup');
+        Auth::login($user);
+        $request->session()->regenerate();
+
+        return redirect()->route('citizen.dashboard')
+            ->with('success', 'Your password is set and you are now logged in.');
+    }
+
+    private function pendingPasswordSetupUser(Request $request): ?User
+    {
+        $pending = $request->session()->get('google_password_setup');
+
+        if (! is_array($pending) || ($pending['expires_at'] ?? 0) < now()->timestamp) {
+            return null;
+        }
+
+        $user = User::find($pending['user_id'] ?? null);
+
+        if (! $user || ! $user->is_active || ! $user->isCitizen() || ! $user->google_password_setup_required) {
+            return null;
+        }
+
+        return $user;
     }
 }

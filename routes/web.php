@@ -95,6 +95,12 @@ Route::middleware('guest')->group(function () {
     Route::get('/auth/google/callback', [GoogleController::class, 'callback']);
 });
 
+Route::get('/auth/google/password', [GoogleController::class, 'showPasswordSetup'])
+    ->name('google.password.setup');
+Route::put('/auth/google/password', [GoogleController::class, 'storePasswordSetup'])
+    ->middleware('throttle:5,1')
+    ->name('google.password.setup.store');
+
 /*
 |--------------------------------------------------------------------------
 | Email Verification and Login 2FA
@@ -161,6 +167,9 @@ Route::middleware(['auth', 'role:citizen'])
         Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
         Route::get('/profile/photo', [ProfileController::class, 'showPhoto'])->name('profile.photo.show');
 
+        Route::put('/profile/two-factor', [ProfileController::class, 'updateTwoFactor'])
+            ->name('profile.two-factor');
+
         // Identity verification
         Route::controller(IdentityVerificationController::class)->group(function () {
             Route::get('/identity-verification', 'show')->name('identity-verification');
@@ -220,6 +229,8 @@ Route::middleware(['auth', 'role:admin,staff'])
         Route::put('/profile', [AdminProfileController::class, 'update'])->name('profile.update');
         Route::get('/profile/photo', [AdminProfileController::class, 'showPhoto'])->name('profile.photo.show');
         Route::post('/profile/photo', [AdminProfileController::class, 'photo'])->name('profile.photo');
+        Route::put('/profile/two-factor', [AdminProfileController::class, 'updateTwoFactor'])
+            ->name('profile.two-factor');
 
         // Notifications
         Route::view('/notifications', 'admin.notifications.index')->name('notifications.index');

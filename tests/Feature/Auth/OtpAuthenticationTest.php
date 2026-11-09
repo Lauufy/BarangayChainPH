@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Schema;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -37,6 +38,12 @@ class OtpAuthenticationTest extends TestCase
             'services.textbee.device' => 'test-device',
             'services.recaptcha.secret_key' => 'test-recaptcha-secret',
         ]);
+    }
+
+    public function test_user_table_does_not_store_email_verification_codes(): void
+    {
+        $this->assertFalse(Schema::hasColumn('users', 'email_verification_otp'));
+        $this->assertFalse(Schema::hasColumn('users', 'email_verification_otp_expires_at'));
     }
 
     public function test_email_signup_creates_and_logs_in_the_user_only_after_the_code_is_verified(): void
@@ -275,6 +282,7 @@ class OtpAuthenticationTest extends TestCase
             'email' => 'staff@example.com',
             'role' => 'staff',
             'password' => 'StrongPass123!',
+            'two_factor_enabled' => false,
         ]);
         $user->employeeProfile()->create([
             'employee_id' => 'BSLCNPH-000001',
@@ -300,6 +308,7 @@ class OtpAuthenticationTest extends TestCase
             'email' => "{$role}@example.com",
             'role' => $role,
             'password' => 'StrongPass123!',
+            'two_factor_enabled' => false,
         ]);
 
         $this->post(route('login.store'), [
@@ -921,5 +930,32 @@ class OtpAuthenticationTest extends TestCase
             'password' => 'StrongPass123!',
             'remember' => $remember,
         ])->assertRedirect(route('two-factor.choose'));
+    }
+
+    public function test_staff_with_two_factor_on_lands_on_the_admin_dashboard_after_the_code(): void
+    {
+        $this->fakeHttp();
+        Notification::fake();
+        $staff = User::factory()->create([
+            'email' => 'staff-2fa@example.com',
+            'role' => 'staff',
+            'password' => 'StrongPass123!',
+            'is_active' => true,
+            'email_verified_at' => now(),
+            'two_factor_enabled' => true,
+        ]);
+
+        $this->post(route('login.store'), [
+            'mode' => 'email',
+            'identifier' => $staff->email,
+            'password' => 'StrongPass123!',
+        ])->assertRedirect(route('verification.otp.show'));
+
+        $this->assertGuest();
+
+        $this->post(route('verification.otp.verify'), ['otp' => $this->emailCode($staff->email)])
+            ->assertRedirect(route('admin.dashboard'));
+
+        $this->assertAuthenticatedAs($staff);
     }
 }
