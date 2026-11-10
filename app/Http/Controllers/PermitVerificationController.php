@@ -12,9 +12,8 @@ use Throwable;
 /** Verifies issued certificates and prepares the public verification page. */
 class PermitVerificationController extends Controller
 {
-    // Set to true once the office decides the public page must not reveal
-    // that someone holds a Certificate of Indigency (open question #9).
-    private const HIDE_INDIGENCY_TITLE = false;
+
+    private const HIDE_INDIGENCY_TITLE = true;
 
     public function show(string $documentUuid): View
     {
@@ -85,6 +84,7 @@ class PermitVerificationController extends Controller
 
     private function documentTitle(?ServiceRequest $application): string
     {
+
         if (self::HIDE_INDIGENCY_TITLE && $application?->service_type === ServiceRequest::CERTIFICATE_OF_INDIGENCY) {
             return 'Barangay Certificate';
         }
@@ -93,6 +93,7 @@ class PermitVerificationController extends Controller
             ServiceRequest::BARANGAY_CLEARANCE => 'Barangay Clearance',
             ServiceRequest::CERTIFICATE_OF_RESIDENCY => 'Certificate of Residency',
             ServiceRequest::CERTIFICATE_OF_INDIGENCY => 'Certificate of Indigency',
+            ServiceRequest::BUSINESS_CLEARANCE => 'Barangay Business Clearance',
             default => 'Barangay Document',
         };
     }
@@ -106,7 +107,7 @@ class PermitVerificationController extends Controller
         }
 
         return implode(' ', array_map(
-            fn (string $part): string => Str::substr($part, 0, 1).'***',
+            fn(string $part): string => Str::substr($part, 0, 1) . '***',
             $parts
         ));
     }

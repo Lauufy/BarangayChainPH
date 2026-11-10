@@ -8,7 +8,7 @@ use App\Models\User;
 use App\Notifications\CitizenSubmissionReceived;
 use App\Services\SupabaseStorage;
 use App\Support\Phone;
-use Illuminate\Http\JsonResponse;
+use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +22,9 @@ class IdentityVerificationController extends Controller
     public function __construct(private SupabaseStorage $supabaseStorage) {}
 
     private const MAX_REJECTED_TRIES = 3;
+
+    // An ID number needs at least this many letters or digits (dashes and spaces do not count).
+    private const MIN_ID_NUMBER_LENGTH = 5;
 
     private const DOCUMENT_TYPES = [
         'Philippine National ID',
@@ -73,7 +76,9 @@ class IdentityVerificationController extends Controller
             // Email is only asked when the account has none (SMS sign-up)
             'email' => [
                 Rule::excludeIf($user->email !== null),
-                'required', 'email', 'max:255',
+                'required',
+                'email',
+                'max:255',
                 Rule::unique('users', 'email')->ignore($user->id),
             ],
             'date_of_birth' => 'required|date|before:today|after:1900-01-01',
@@ -196,18 +201,6 @@ class IdentityVerificationController extends Controller
         );
     }
 
-    // Check whether an ID number is already in use.
-    public function checkIdNumber(Request $request): JsonResponse
-    {
-        $data = $request->validate($this->idRules(), $this->idMessages());
-
-        $hash = $this->idNumberHash($data['document_type'], $data['id_number']);
-
-        return response()->json([
-            'used' => $this->idAlreadyUsed($hash, $request->user()->id),
-        ]);
-    }
-
     // Allow citizens to open only their own uploaded ID.
     public function document(Request $request, IdentityVerification $verification): BinaryFileResponse|RedirectResponse
     {
@@ -224,19 +217,33 @@ class IdentityVerificationController extends Controller
         return response()->file($verification->filePath());
     }
 
-    // Validation rules shared by submission and the live duplicate check.
+    // Validation rules for the ID details on submission.
     private function idRules(): array
     {
         return [
             'document_type' => ['required', 'string', Rule::in(self::DOCUMENT_TYPES)],
-            'id_number' => ['required', 'string', 'max:50', 'regex:/^[A-Za-z0-9\-\s]+$/'],
+            'id_number' => [
+                'bail',
+                'required',
+                'string',
+                'max:50',
+                'regex:/^[A-Za-z0-9][A-Za-z0-9\-\/ ]*$/',
+                // The duplicate check hashes only letters and digits, so that is what must be long enough.
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    $clean = preg_replace('/[^A-Za-z0-9]/', '', (string) $value);
+
+                    if (strlen($clean) < self::MIN_ID_NUMBER_LENGTH) {
+                        $fail('The ID number is too short. Check it again.');
+                    }
+                },
+            ],
         ];
     }
 
     private function idMessages(): array
     {
         return [
-            'id_number.regex' => 'The ID number may only contain letters, numbers, and dashes.',
+            'id_number.regex' => 'The ID number can only have letters, numbers, spaces, dashes, and slashes.',
         ];
     }
 
