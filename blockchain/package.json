@@ -10,13 +10,13 @@
   "type": "commonjs",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
-    "dotenv": "^18.0.10",
     "hardhat": "^2.29.1"
   },
   "directories": {
     "test": "test"
   },
   "dependencies": {
+    "dotenv": "^18.0.10",
     "ethers": "^6.17.0"
   }
 }

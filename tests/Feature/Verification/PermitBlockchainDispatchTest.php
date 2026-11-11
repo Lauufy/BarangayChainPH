@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
+use App\Services\BlockchainRegistry;
 use Tests\TestCase;
 
 class PermitBlockchainDispatchTest extends TestCase
@@ -73,5 +74,42 @@ class PermitBlockchainDispatchTest extends TestCase
             RecordPermitOnBlockchain::class,
             fn (RecordPermitOnBlockchain $job): bool => $job->issuedDocumentId === $secondDocument->id
         );
+    }
+
+        public function test_approval_still_works_when_the_blockchain_is_down(): void
+    {
+        Storage::fake('supabase');
+
+        // The registry says the blockchain cannot be reached
+        $registry = $this->mock(BlockchainRegistry::class);
+        $registry->shouldReceive('verify')->andReturn(['ok' => false, 'error' => 'RPC down']);
+
+        $staff = User::factory()->create([
+            'role' => 'staff',
+            'permissions' => ['permits.review'],
+            'is_active' => true,
+        ]);
+        $citizen = User::factory()->create([
+            'role' => 'citizen',
+            'is_active' => true,
+        ]);
+        $application = ServiceRequest::create([
+            'user_id' => $citizen->id,
+            'reference_number' => 'BRGY-20261110-0002',
+            'service_type' => ServiceRequest::BARANGAY_CLEARANCE,
+            'applicant_name' => 'Test Applicant',
+            'address' => 'Barangay San Luis',
+            'age' => 22,
+            'purpose' => 'Employment',
+            'status' => ServiceRequest::PENDING,
+        ]);
+
+        // This test does not fake the queue, so the job really runs (and fails)
+        $this->actingAs($staff)
+            ->post(route('admin.permits.approve', $application))
+            ->assertRedirect(route('admin.permits.show', $application))
+            ->assertSessionHas('success');
+
+        $this->assertSame(1, $application->issuedDocuments()->count());
     }
 }

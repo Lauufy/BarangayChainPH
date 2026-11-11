@@ -102,7 +102,7 @@ class PermitController extends Controller
 
         // A repeat click returns the existing document, so only notify the first time
         if ($document->wasRecentlyCreated) {
-            RecordPermitOnBlockchain::dispatch($document->id)->afterCommit();
+            $this->recordOnBlockchain($document);
 
             $approved = $serviceRequest->fresh(['user', 'ticket']);
 
@@ -136,8 +136,8 @@ class PermitController extends Controller
             ->where('version', $document->version - 1)
             ->firstOrFail();
 
-        RevokePermitOnBlockchain::dispatch($previousDocument->id)->afterCommit();
-        RecordPermitOnBlockchain::dispatch($document->id)->afterCommit();
+        $this->revokeOnBlockchain($previousDocument);
+        $this->recordOnBlockchain($document);
 
         return $this->back($serviceRequest, 'success', "Document reissued successfully. New document version: {$document->version}.");
     }
@@ -159,7 +159,7 @@ class PermitController extends Controller
 
         $this->notify($rejected, new ServiceRequestRejected($rejected));
 
-        $rejected->ticket?->postSystemMessage('Your request was rejected. Reason: '.$data['rejection_reason'], close: true);
+        $rejected->ticket?->postSystemMessage('Your request was rejected. Reason: ' . $data['rejection_reason'], close: true);
 
         return $this->back($serviceRequest, 'success', 'The application was rejected.');
     }
@@ -241,6 +241,26 @@ class PermitController extends Controller
     {
         try {
             $serviceRequest->user->notify($notification);
+        } catch (Throwable $e) {
+            report($e);
+        }
+    }
+
+    // The blockchain must never break an approval. The job saves its own error
+    // on the permit, so here we only log the problem and carry on.
+    private function recordOnBlockchain(IssuedDocument $document): void
+    {
+        try {
+            RecordPermitOnBlockchain::dispatch($document->id)->afterCommit();
+        } catch (Throwable $e) {
+            report($e);
+        }
+    }
+
+    private function revokeOnBlockchain(IssuedDocument $document): void
+    {
+        try {
+            RevokePermitOnBlockchain::dispatch($document->id)->afterCommit();
         } catch (Throwable $e) {
             report($e);
         }

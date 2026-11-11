@@ -12,6 +12,13 @@ COPY public ./public
 
 RUN npm run build
 
+# Stage: packages for the blockchain script (production packages only)
+FROM node:22-slim AS blockchain
+
+WORKDIR /blockchain
+
+COPY blockchain/package.json blockchain/package-lock.json ./
+RUN npm ci --omit=dev
 
 # Stage 2: Build Laravel application
 FROM php:8.4.27-apache
@@ -67,6 +74,10 @@ WORKDIR /var/www/html
 
 # Copy application source
 COPY . .
+
+# Node and packages for the blockchain script
+COPY --from=blockchain /usr/local/bin/node /usr/local/bin/node
+COPY --from=blockchain /blockchain/node_modules ./blockchain/node_modules
 
 # Copy compiled frontend assets
 COPY --from=frontend /app/public/build ./public/build

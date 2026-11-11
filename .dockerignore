@@ -1,14 +1,19 @@
-# Environment secrets
-.env
-.env.*
-!.env.example
+# Environment secrets (at any folder depth, so blockchain/.env is covered)
+**/.env
+**/.env.*
+!**/.env.example
+
+# Hardhat build output
+blockchain/artifacts
+blockchain/cache
+blockchain/typechain-types
 
 # Git
 .git
 .github
 
 # Dependencies installed inside the Docker image
-node_modules
+**/node_modules
 vendor
 
 # Built or generated locally (rebuilt inside the image)

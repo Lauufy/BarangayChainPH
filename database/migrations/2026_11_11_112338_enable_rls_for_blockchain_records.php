@@ -1,0 +1,19 @@
+<?php
+
+use App\Support\Rls;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\DB;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        if (DB::connection()->getDriverName() !== 'pgsql') {
+            return;
+        }
+
+        Rls::enable('blockchain_records');
+    }
+
+    public function down(): void {}
+};
