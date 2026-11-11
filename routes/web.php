@@ -45,8 +45,8 @@ Route::get('/verify/permit/{documentUuid}', [
     PermitVerificationController::class,
     'show',
 ])->whereUuid('documentUuid')
+    ->middleware('throttle:60,1')
     ->name('permits.verify');
-
 /*
 |--------------------------------------------------------------------------
 | Guest Routes

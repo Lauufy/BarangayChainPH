@@ -6,6 +6,7 @@ use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
     'service_request_id',
@@ -37,6 +38,11 @@ class IssuedDocument extends Model
     public function serviceRequest(): BelongsTo
     {
         return $this->belongsTo(ServiceRequest::class);
+    }
+
+    public function blockchainRecord(): HasOne
+    {
+        return $this->hasOne(BlockchainRecord::class);
     }
 
     public function isValid(): bool

@@ -4,25 +4,26 @@ namespace App\Http\Controllers;
 
 use App\Models\IssuedDocument;
 use App\Models\ServiceRequest;
+use App\Services\BlockchainRegistry;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Cache;
 use Throwable;
 
 /** Verifies issued certificates and prepares the public verification page. */
 class PermitVerificationController extends Controller
 {
-
     private const HIDE_INDIGENCY_TITLE = true;
 
     public function show(string $documentUuid): View
     {
-        $document = IssuedDocument::with('serviceRequest')
+        $document = IssuedDocument::with(['serviceRequest', 'blockchainRecord'])
             ->where('document_uuid', $documentUuid)
             ->first();
 
         $application = $document?->serviceRequest;
-        $status = $this->resolveStatus($document, $application);
+        $status = $this->cachedStatus($document, $application);
 
         // Only a valid document shows holder details.
         $isValid = $status === 'valid';
@@ -38,11 +39,29 @@ class PermitVerificationController extends Controller
         ]);
     }
 
-    /**
-     * One of: not_found, revoked, invalid, unavailable, valid.
-     * Phase 1B adds "expired" (after the revoked check, from valid_until).
-     * Phase 4 adds "mismatch" (database and chain disagree).
-     */
+    // The same permit is checked at most once a minute (saves slow blockchain calls)
+    private function cachedStatus(?IssuedDocument $document, ?ServiceRequest $application): string
+    {
+        if ($document === null) {
+            return $this->resolveStatus($document, $application);
+        }
+
+        $key = 'permit-status:' . $document->document_uuid;
+        $status = Cache::get($key);
+
+        if ($status === null) {
+            $status = $this->resolveStatus($document, $application);
+
+            // Never keep "unavailable", so a short outage is not remembered
+            if ($status !== 'unavailable') {
+                Cache::put($key, $status, 60);
+            }
+        }
+
+        return $status;
+    }
+
+    
     private function resolveStatus(?IssuedDocument $document, ?ServiceRequest $application): string
     {
         if ($document === null) {
@@ -69,9 +88,31 @@ class PermitVerificationController extends Controller
                 return 'invalid';
             }
 
-            $matches = hash_equals(
-                $document->file_hash,
-                hash('sha256', $disk->get($document->file_path))
+            // Hash of the PDF as it exists right now
+            $actualHash = hash('sha256', $disk->get($document->file_path));
+
+            // Old check: file against the hash in our own database
+            if (! hash_equals($document->file_hash, $actualHash)) {
+                return 'invalid';
+            }
+        } catch (Throwable $e) {
+            report($e);
+
+            return 'unavailable';
+        }
+
+        // Permits issued before the blockchain existed were never recorded.
+        // They keep the old database-only check.
+        if (! $document->blockchainRecord?->recorded_at) {
+            return 'valid';
+        }
+
+        // New check: ask the blockchain, using the hash of the real file
+        try {
+            $result = app(BlockchainRegistry::class)->verify(
+                $document->document_uuid,
+                $actualHash,
+                $document->blockchainRecord?->contract
             );
         } catch (Throwable $e) {
             report($e);
@@ -79,7 +120,16 @@ class PermitVerificationController extends Controller
             return 'unavailable';
         }
 
-        return $matches ? 'valid' : 'invalid';
+        if (! ($result['ok'] ?? false)) {
+            return 'unavailable';
+        }
+
+        return match ($result['status'] ?? null) {
+            'valid' => 'valid',
+            'revoked' => 'revoked',
+            'mismatch', 'not_found' => 'invalid',
+            default => 'unavailable',
+        };
     }
 
     private function documentTitle(?ServiceRequest $application): string

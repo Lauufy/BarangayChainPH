@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\UpdatesTwoFactor;
+use App\Jobs\RecordPermitOnBlockchain;
+use App\Jobs\RevokePermitOnBlockchain;
+use App\Models\IssuedDocument;
 use App\Models\ServiceRequest;
 use App\Models\ServiceRequestDocument;
 use App\Notifications\ServiceRequestApproved;
@@ -99,6 +102,8 @@ class PermitController extends Controller
 
         // A repeat click returns the existing document, so only notify the first time
         if ($document->wasRecentlyCreated) {
+            RecordPermitOnBlockchain::dispatch($document->id)->afterCommit();
+
             $approved = $serviceRequest->fresh(['user', 'ticket']);
 
             $this->notify($approved, new ServiceRequestApproved($approved));
@@ -125,6 +130,14 @@ class PermitController extends Controller
                 'The document could not be reissued. The existing document remains unchanged. Please try again.'
             );
         }
+
+        $previousDocument = IssuedDocument::query()
+            ->where('service_request_id', $document->service_request_id)
+            ->where('version', $document->version - 1)
+            ->firstOrFail();
+
+        RevokePermitOnBlockchain::dispatch($previousDocument->id)->afterCommit();
+        RecordPermitOnBlockchain::dispatch($document->id)->afterCommit();
 
         return $this->back($serviceRequest, 'success', "Document reissued successfully. New document version: {$document->version}.");
     }
