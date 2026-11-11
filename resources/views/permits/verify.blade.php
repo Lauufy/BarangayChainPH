@@ -1,160 +1,244 @@
+
 @php
     $states = [
-        'valid' => ['icon' => '✓', 'label' => 'Valid', 'message' => 'This certificate is valid.', 'style' => 'state-valid'],
-        'not_found' => ['icon' => '?', 'label' => 'Not found', 'message' => 'No matching certificate record was found.', 'style' => 'state-neutral'],
-        'invalid' => ['icon' => '!', 'label' => 'Invalid', 'message' => 'This certificate could not be verified.', 'style' => 'state-invalid'],
-        'revoked' => ['icon' => '×', 'label' => 'Revoked', 'message' => 'This certificate has been revoked.', 'style' => 'state-invalid'],
-        'unavailable' => ['icon' => '…', 'label' => 'Unavailable', 'message' => 'Verification could not be completed right now.', 'style' => 'state-warning'],
-        'pending' => ['icon' => '…', 'label' => 'Pending', 'message' => 'This certificate has not been confirmed on the blockchain yet. Please check again later.', 'style' => 'state-warning'],
-       
+        'valid' => [
+            'icon' => '✓',
+            'label' => 'Valid document',
+            'message' => 'This certificate matches an approved record in the barangay system.',
+        ],
+        'not_found' => [
+            'icon' => '?',
+            'label' => 'Document not found',
+            'message' => 'No matching certificate record was found.',
+        ],
+        'invalid' => [
+            'icon' => '!',
+            'label' => 'Invalid document',
+            'message' => 'This certificate could not be verified.',
+        ],
+        'revoked' => [
+            'icon' => '×',
+            'label' => 'Revoked document',
+            'message' => 'This certificate has been revoked by the issuing barangay.',
+        ],
+        'unavailable' => [
+            'icon' => '…',
+            'label' => 'Verification unavailable',
+            'message' => 'Verification could not be completed right now. Please try again later.',
+        ],
+        'pending' => [
+            'icon' => '…',
+            'label' => 'Verification pending',
+            'message' => 'This certificate has not been confirmed on the blockchain yet. Please check again later.',
+        ],
     ];
+
     $state = $states[$status] ?? $states['not_found'];
+
+    $isValid = $status === 'valid';
+    $isRevoked = $status === 'revoked';
+
+    $statusClasses = match ($status) {
+        'valid' => [
+            'banner' => 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300',
+            'icon' => 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300',
+        ],
+        'invalid', 'revoked' => [
+            'banner' => 'bg-red-50 text-red-800 dark:bg-red-950/40 dark:text-red-300',
+            'icon' => 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
+        ],
+        'pending', 'unavailable' => [
+            'banner' => 'bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300',
+            'icon' => 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300',
+        ],
+        default => [
+            'banner' => 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+            'icon' => 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
+        ],
+    };
 @endphp
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow">
-    <title>Verify document · {{ $barangayName }}</title>
-    <style>
-        :root {
-            --bg: #f6f5f1;
-            --surface: #ffffff;
-            --text: #1d2321;
-            --muted: #5d6662;
-            --line: #d9dcd6;
-            --ok: #1d6b45;
-            --ok-bg: #e4f2ea;
-            --bad: #a6322a;
-            --bad-bg: #f8e6e4;
-            --warn: #8a5a00;
-            --warn-bg: #fbf0d9;
-            --neutral: #4a5350;
-            --neutral-bg: #eceeea;
-        }
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg: #141816;
-                --surface: #1e2321;
-                --text: #eef0ed;
-                --muted: #a3ada8;
-                --line: #343b38;
-                --ok: #7fd1a3;
-                --ok-bg: #1a3328;
-                --bad: #f0a099;
-                --bad-bg: #3a1f1d;
-                --warn: #e8c070;
-                --warn-bg: #36290f;
-                --neutral: #c0c8c4;
-                --neutral-bg: #2a302d;
-            }
-        }
-        * { box-sizing: border-box; }
-        html, body { margin: 0; }
-        body {
-            background: var(--bg);
-            color: var(--text);
-            font-family: Georgia, 'Times New Roman', serif;
-            line-height: 1.5;
-            padding: 24px 16px 48px;
-        }
-        .page { max-width: 480px; margin: 0 auto; }
-        .issuer { margin: 0 0 20px; color: var(--muted); font-size: 0.95rem; }
-        .card {
-            background: var(--surface);
-            border: 1px solid var(--line);
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        .result { display: flex; align-items: flex-start; gap: 14px; padding: 20px; }
-        .status-icon {
-            display: grid;
-            flex: 0 0 44px;
-            width: 44px;
-            height: 44px;
-            place-items: center;
-            border: 2px solid currentColor;
-            border-radius: 50%;
-            font-family: Arial, sans-serif;
-            font-size: 1.5rem;
-            font-weight: 700;
-            line-height: 1;
-        }
-        .result h1 { margin: 0 0 6px; font-size: 1.5rem; line-height: 1.25; }
-        .result p { margin: 0; font-size: 1rem; }
-        .state-valid .result { background: var(--ok-bg); color: var(--ok); }
-        .state-invalid .result { background: var(--bad-bg); color: var(--bad); }
-        .state-warning .result { background: var(--warn-bg); color: var(--warn); }
-        .state-neutral .result { background: var(--neutral-bg); color: var(--neutral); }
-        dl { margin: 0; padding: 4px 20px 12px; }
-        .row { padding: 12px 0; border-bottom: 1px solid var(--line); }
-        .row:last-child { border-bottom: 0; }
-        dt { color: var(--muted); font-size: 0.85rem; }
-        dd { margin: 2px 0 0; font-size: 1.05rem; word-break: break-word; }
-        .note { margin: 16px 4px 0; color: var(--muted); font-size: 0.85rem; }
-    </style>
+
+    <title>Permit Verification | {{ $barangayName }}</title>
+
+    @vite(['resources/css/app.css'])
 </head>
-<body class="{{ $state['style'] }}">
-<main class="page">
-    <p class="issuer">{{ $barangayName }} document verification</p>
 
-    <div class="card">
-        <div class="result" role="status">
-            <span class="status-icon" aria-hidden="true">{{ $state['icon'] }}</span>
-            <div>
-                <h1>{{ $state['label'] }}</h1>
-                <p>{{ $state['message'] }}</p>
+<body class="min-h-screen bg-slate-50 font-sans text-slate-800 antialiased dark:bg-slate-950 dark:text-slate-100">
+
+    <main class="mx-auto flex min-h-screen w-full max-w-2xl flex-col px-5 py-10 sm:px-7 sm:py-14">
+
+        {{-- Page heading --}}
+        <header class="mb-7">
+            <p class="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                Public Document Verification
+            </p>
+
+            <h1 class="text-2xl font-bold tracking-tight text-[#17325c] dark:text-white sm:text-3xl">
+                Permit Verification
+            </h1>
+
+            <p class="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                Check the current status and authenticity of a document issued by {{ $barangayName }}.
+            </p>
+        </header>
+
+        {{-- Verification result --}}
+        <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900"
+            aria-label="Document verification result">
+
+            {{-- Status banner --}}
+            <div class="flex items-center gap-4 border-b border-black/5 px-5 py-5 {{ $statusClasses['banner'] }} sm:px-6">
+
+                <span class="flex size-11 shrink-0 items-center justify-center rounded-full text-xl font-bold {{ $statusClasses['icon'] }}"
+                    aria-hidden="true">
+                    {{ $state['icon'] }}
+                </span>
+
+                <div class="min-w-0">
+                    <h2 class="text-base font-bold tracking-tight">
+                        {{ $state['label'] }}
+                    </h2>
+
+                    <p class="mt-1 text-xs leading-relaxed opacity-90">
+                        {{ $state['message'] }}
+                    </p>
+                </div>
             </div>
-        </div>
 
-        @if ($status === 'valid')
-            <dl>
-                <div class="row">
-                    <dt>Certificate type</dt>
-                    <dd>{{ $documentTitle }}</dd>
+            {{-- Valid document details --}}
+            @if ($isValid)
+                <div class="p-5 sm:p-6">
+
+                    <h3 class="mb-5 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
+                        Document Information
+                    </h3>
+
+                    <dl class="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
+
+                        <div class="min-w-0">
+                            <dt class="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                Certificate Type
+                            </dt>
+                            <dd class="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                                {{ $documentTitle }}
+                            </dd>
+                        </div>
+
+                        <div class="min-w-0">
+                            <dt class="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                Reference Number
+                            </dt>
+                            <dd class="break-all text-sm font-semibold text-slate-800 dark:text-slate-100">
+                                {{ $referenceNumber }}
+                            </dd>
+                        </div>
+
+                        <div class="min-w-0">
+                            <dt class="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                Holder
+                            </dt>
+                            <dd class="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                                {{ $maskedApplicantName }}
+                            </dd>
+                        </div>
+
+                        <div class="min-w-0">
+                            <dt class="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                Issue Date
+                            </dt>
+                            <dd class="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                                {{ $issuedAt?->format('F j, Y') }}
+                            </dd>
+                        </div>
+
+                        <div class="min-w-0">
+                            <dt class="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                Issuing Barangay
+                            </dt>
+                            <dd class="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                                {{ $barangayName }}
+                            </dd>
+                        </div>
+
+                        @isset($validUntil)
+                            <div class="min-w-0">
+                                <dt class="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    Valid Until
+                                </dt>
+                                <dd class="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                                    {{ $validUntil?->format('F j, Y') }}
+                                </dd>
+                            </div>
+                        @endisset
+
+                    </dl>
                 </div>
-                <div class="row">
-                    <dt>Holder</dt>
-                    <dd>{{ $maskedApplicantName }}</dd>
+
+            {{-- Revoked document details --}}
+            @elseif ($isRevoked)
+                <div class="p-5 sm:p-6">
+
+                    <h3 class="mb-5 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
+                        Document Information
+                    </h3>
+
+                    <dl class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+
+                        <div>
+                            <dt class="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                Certificate Type
+                            </dt>
+                            <dd class="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                                {{ $documentTitle }}
+                            </dd>
+                        </div>
+
+                        <div>
+                            <dt class="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                Revoked On
+                            </dt>
+                            <dd class="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                                {{ $revokedAt?->format('F j, Y') }}
+                            </dd>
+                        </div>
+
+                    </dl>
                 </div>
-                <div class="row">
-                    <dt>Reference number</dt>
-                    <dd>{{ $referenceNumber }}</dd>
-                </div>
-                <div class="row">
-                    <dt>Issue date</dt>
-                    <dd>{{ $issuedAt?->format('F j, Y') }}</dd>
-                </div>
-                <div class="row">
-                    <dt>Barangay</dt>
-                    <dd>{{ $barangayName }}</dd>
-                </div>
-                {{-- TODO: Show valid_until here once the column is added and passed to this view. --}}
-                @isset($validUntil)
-                    <div class="row">
-                        <dt>Valid until</dt>
-                        <dd>{{ $validUntil?->format('F j, Y') }}</dd>
-                    </div>
-                @endisset
-            </dl>
-        @elseif ($status === 'revoked')
-            <dl>
-                <div class="row">
-                    <dt>Certificate type</dt>
-                    <dd>{{ $documentTitle }}</dd>
-                </div>
-                <div class="row">
-                    <dt>Revoked on</dt>
-                    <dd>{{ $revokedAt?->format('F j, Y') }}</dd>
-                </div>
-            </dl>
+            @endif
+
+        </section>
+
+        {{-- Privacy notice --}}
+        @if ($isValid)
+            <div class="mt-4 flex items-start gap-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                <span class="font-bold text-[#17325c] dark:text-blue-400" aria-hidden="true">i</span>
+                <p>
+                    The document holder's name is partially masked to protect their personal information.
+                </p>
+            </div>
         @endif
-    </div>
 
-    @if ($status === 'valid')
-        <p class="note">The holder's name is masked to protect their privacy.</p>
-    @endif
-</main>
+        {{-- Footer --}}
+        <footer class="mt-auto pt-12">
+            <div class="border-t border-slate-200 pt-4 dark:border-slate-800">
+                <p class="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    {{ $barangayName }}
+                </p>
+
+                <p class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                    Official public document verification page
+                </p>
+            </div>
+        </footer>
+
+    </main>
+
 </body>
 </html>
