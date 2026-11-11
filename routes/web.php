@@ -22,6 +22,7 @@ use App\Http\Controllers\Citizen\ServiceRequestController;
 use App\Http\Controllers\Citizen\TicketController;
 use App\Http\Controllers\PermitVerificationController;
 use App\Http\Controllers\TicketParticipantPhotoController;
+use App\Http\Controllers\Admin\BlockchainLedgerController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -293,7 +294,7 @@ Route::middleware(['auth', 'role:admin,staff'])
             ->middleware('permission:documents.authenticate')
             ->name('document-authentication.index');
 
-        Route::view('/blockchain-ledger', 'admin.blockchain-ledger.index')
+        Route::get('/blockchain-ledger', [BlockchainLedgerController::class, 'index'])
             ->middleware('permission:blockchain.view')
             ->name('blockchain-ledger.index');
 
