@@ -23,6 +23,7 @@ use App\Http\Controllers\Citizen\TicketController;
 use App\Http\Controllers\PermitVerificationController;
 use App\Http\Controllers\TicketParticipantPhotoController;
 use App\Http\Controllers\Admin\BlockchainLedgerController;
+use App\Http\Controllers\Admin\DocumentAuthenticationController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -289,8 +290,7 @@ Route::middleware(['auth', 'role:admin,staff'])
                     ->name('tickets.reply');
             });
 
-        // Restricted pages
-        Route::view('/document-authentication', 'admin.document-authentication.index')
+        Route::get('/document-authentication', [DocumentAuthenticationController::class, 'index'])
             ->middleware('permission:documents.authenticate')
             ->name('document-authentication.index');
 
