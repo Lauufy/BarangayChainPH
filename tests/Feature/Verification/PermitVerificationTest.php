@@ -5,6 +5,8 @@ namespace Tests\Feature\Verification;
 use App\Models\IssuedDocument;
 use App\Models\ServiceRequest;
 use App\Models\User;
+use App\Models\BlockchainRecord;
+use App\Services\BlockchainRegistry;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
@@ -44,7 +46,7 @@ class PermitVerificationTest extends TestCase
 
         $documentUuid = (string) Str::uuid();
 
-        IssuedDocument::create([
+        $document = IssuedDocument::create([
             'service_request_id' => $application->id,
             'document_uuid' => $documentUuid,
             'document_number' => 'PERMIT-20261030-ABCDEFGH',
@@ -54,6 +56,8 @@ class PermitVerificationTest extends TestCase
             'file_hash' => hash('sha256', $fileContents),
             'issued_at' => '2026-10-30 12:00:00',
         ]);
+
+        $this->recordedOnChain($document, ['ok' => true, 'status' => 'valid']);
 
         $this->get(route('permits.verify', [
             'documentUuid' => $documentUuid,
@@ -103,7 +107,7 @@ class PermitVerificationTest extends TestCase
         $documentUuid = (string) Str::uuid();
         $revokedAt = now();
 
-        IssuedDocument::create([
+        $document = IssuedDocument::create([
             'service_request_id' => $application->id,
             'document_uuid' => $documentUuid,
             'document_number' => 'PERMIT-20261030-REVOKED1',
@@ -114,6 +118,8 @@ class PermitVerificationTest extends TestCase
             'issued_at' => $revokedAt,
             'revoked_at' => $revokedAt,
         ]);
+
+        $this->recordedOnChain($document, ['ok' => true, 'status' => 'valid']);
 
         $this->get(route('permits.verify', [
             'documentUuid' => $documentUuid,
@@ -168,7 +174,7 @@ class PermitVerificationTest extends TestCase
 
         $documentUuid = (string) Str::uuid();
 
-        IssuedDocument::create([
+        $document = IssuedDocument::create([
             'service_request_id' => $application->id,
             'document_uuid' => $documentUuid,
             'document_number' => 'PERMIT-20261030-TAMPERED',
@@ -178,6 +184,8 @@ class PermitVerificationTest extends TestCase
             'file_hash' => hash('sha256', 'Original PDF document content'),
             'issued_at' => now(),
         ]);
+
+        $this->recordedOnChain($document, ['ok' => true, 'status' => 'valid']);
 
         $this->get(route('permits.verify', [
             'documentUuid' => $documentUuid,
@@ -218,7 +226,7 @@ class PermitVerificationTest extends TestCase
 
         $documentUuid = (string) Str::uuid();
 
-        IssuedDocument::create([
+        $document = IssuedDocument::create([
             'service_request_id' => $application->id,
             'document_uuid' => $documentUuid,
             'document_number' => 'PERMIT-20261030-PENDING1',
@@ -228,6 +236,8 @@ class PermitVerificationTest extends TestCase
             'file_hash' => hash('sha256', $fileContents),
             'issued_at' => now(),
         ]);
+
+        $this->recordedOnChain($document, ['ok' => true, 'status' => 'valid']);
 
         $this->get(route('permits.verify', [
             'documentUuid' => $documentUuid,
@@ -263,7 +273,7 @@ class PermitVerificationTest extends TestCase
         $documentUuid = (string) Str::uuid();
 
         // The PDF is never stored on the disk, so the record points at nothing.
-        IssuedDocument::create([
+        $document = IssuedDocument::create([
             'service_request_id' => $application->id,
             'document_uuid' => $documentUuid,
             'document_number' => 'PERMIT-20261030-MISSING1',
@@ -273,6 +283,8 @@ class PermitVerificationTest extends TestCase
             'file_hash' => hash('sha256', 'Missing PDF document content'),
             'issued_at' => now(),
         ]);
+
+        $this->recordedOnChain($document, ['ok' => true, 'status' => 'valid']);
 
         $this->get(route('permits.verify', [
             'documentUuid' => $documentUuid,
@@ -315,7 +327,7 @@ class PermitVerificationTest extends TestCase
 
         $documentUuid = (string) Str::uuid();
 
-        IssuedDocument::create([
+        $document = IssuedDocument::create([
             'service_request_id' => $application->id,
             'document_uuid' => $documentUuid,
             'document_number' => 'PERMIT-20261030-OFFLINE1',
@@ -325,6 +337,8 @@ class PermitVerificationTest extends TestCase
             'file_hash' => hash('sha256', 'Offline PDF document content'),
             'issued_at' => now(),
         ]);
+
+        $this->recordedOnChain($document, ['ok' => true, 'status' => 'valid']);
 
         $this->get(route('permits.verify', [
             'documentUuid' => $documentUuid,
@@ -363,7 +377,7 @@ class PermitVerificationTest extends TestCase
 
         $documentUuid = (string) Str::uuid();
 
-        IssuedDocument::create([
+        $document = IssuedDocument::create([
             'service_request_id' => $application->id,
             'document_uuid' => $documentUuid,
             'document_number' => 'PERMIT-20261030-BLANKNM1',
@@ -374,6 +388,8 @@ class PermitVerificationTest extends TestCase
             'issued_at' => now(),
         ]);
 
+        $this->recordedOnChain($document, ['ok' => true, 'status' => 'valid']);
+
         $this->get(route('permits.verify', [
             'documentUuid' => $documentUuid,
         ]))
@@ -381,5 +397,91 @@ class PermitVerificationTest extends TestCase
             ->assertSee('This certificate is valid.')
             ->assertSee('Applicant')
             ->assertViewHas('maskedApplicantName', 'Applicant');
+    }
+
+    // Pretends the permit is recorded on the blockchain, and that the chain answers with $answer
+    private function recordedOnChain(IssuedDocument $document, array $answer): void
+    {
+        BlockchainRecord::create(['issued_document_id' => $document->id, 'recorded_at' => now()]);
+
+        $registry = $this->mock(BlockchainRegistry::class);
+        $registry->shouldReceive('verify')->andReturn($answer);
+    }
+
+    private function makeIssuedDocument(): IssuedDocument
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create(['role' => 'citizen', 'is_active' => true]);
+
+        $application = ServiceRequest::create([
+            'user_id' => $user->id,
+            'reference_number' => 'BRGY-' . Str::upper(Str::random(12)),
+            'service_type' => ServiceRequest::BARANGAY_CLEARANCE,
+            'applicant_name' => 'Carlo Mamaril',
+            'address' => 'Private address',
+            'age' => 22,
+            'purpose' => 'Employment',
+            'status' => ServiceRequest::APPROVED,
+            'permit_number' => 'PERMIT-' . Str::upper(Str::random(12)),
+        ]);
+
+        Storage::disk('local')->put('issued-documents/chain-test.pdf', 'Chain test PDF content');
+
+        return IssuedDocument::create([
+            'service_request_id' => $application->id,
+            'document_uuid' => (string) Str::uuid(),
+            'document_number' => $application->permit_number,
+            'version' => 1,
+            'disk' => 'local',
+            'file_path' => 'issued-documents/chain-test.pdf',
+            'file_hash' => hash('sha256', 'Chain test PDF content'),
+            'issued_at' => now(),
+        ]);
+    }
+
+
+    public function test_permit_not_yet_recorded_on_the_blockchain_is_pending_not_valid(): void
+    {
+        $document = $this->makeIssuedDocument();
+
+        $this->get(route('permits.verify', $document->document_uuid))
+            ->assertOk()
+            ->assertSee('has not been confirmed on the blockchain')
+            ->assertDontSee('This certificate is valid.')
+            ->assertDontSee('Carlo Mamaril')
+            ->assertDontSee('C*** M***');
+    }
+
+    public function test_recorded_permit_is_valid_when_the_blockchain_agrees(): void
+    {
+        $document = $this->makeIssuedDocument();
+        $this->recordedOnChain($document, ['ok' => true, 'status' => 'valid']);
+
+        $this->get(route('permits.verify', $document->document_uuid))
+            ->assertOk()
+            ->assertSee('This certificate is valid.');
+    }
+
+    public function test_recorded_permit_is_invalid_when_the_blockchain_says_mismatch(): void
+    {
+        $document = $this->makeIssuedDocument();
+        $this->recordedOnChain($document, ['ok' => true, 'status' => 'mismatch']);
+
+        $this->get(route('permits.verify', $document->document_uuid))
+            ->assertOk()
+            ->assertSee('This certificate could not be verified.')
+            ->assertDontSee('This certificate is valid.');
+    }
+
+    public function test_recorded_permit_is_unavailable_when_the_blockchain_cannot_be_reached(): void
+    {
+        $document = $this->makeIssuedDocument();
+        $this->recordedOnChain($document, ['ok' => false, 'error' => 'RPC down']);
+
+        $this->get(route('permits.verify', $document->document_uuid))
+            ->assertOk()
+            ->assertSee('Verification could not be completed right now.')
+            ->assertDontSee('This certificate is valid.');
     }
 }

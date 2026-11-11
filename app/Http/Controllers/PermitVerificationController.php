@@ -52,8 +52,8 @@ class PermitVerificationController extends Controller
         if ($status === null) {
             $status = $this->resolveStatus($document, $application);
 
-            // Never keep "unavailable", so a short outage is not remembered
-            if ($status !== 'unavailable') {
+            // Never keep "unavailable" or "pending", so a change shows up right away
+            if (! in_array($status, ['unavailable', 'pending'], true)) {
                 Cache::put($key, $status, 60);
             }
         }
@@ -61,7 +61,7 @@ class PermitVerificationController extends Controller
         return $status;
     }
 
-    
+
     private function resolveStatus(?IssuedDocument $document, ?ServiceRequest $application): string
     {
         if ($document === null) {
@@ -101,10 +101,10 @@ class PermitVerificationController extends Controller
             return 'unavailable';
         }
 
-        // Permits issued before the blockchain existed were never recorded.
-        // They keep the old database-only check.
+        // A permit is only valid when the blockchain confirms it.
+        // Until it is recorded, the page shows "pending" and never "valid".
         if (! $document->blockchainRecord?->recorded_at) {
-            return 'valid';
+            return 'pending';
         }
 
         // New check: ask the blockchain, using the hash of the real file

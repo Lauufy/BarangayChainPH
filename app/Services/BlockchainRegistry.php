@@ -57,9 +57,10 @@ class BlockchainRegistry
 
     private function chainSettings(string $command, ?string $contract = null): array
     {
-        $settings = [
+                $settings = [
             'RPC_URL' => config('blockchain.rpc_url'),
             'REGISTRY_ADDRESS' => $contract ?: config('blockchain.contract'),
+            'EXPECTED_CHAIN_ID' => config('blockchain.chain_id'),
         ];
 
         // Only commands that write to the chain need the key

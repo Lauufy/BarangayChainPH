@@ -5,8 +5,8 @@
         'invalid' => ['icon' => '!', 'label' => 'Invalid', 'message' => 'This certificate could not be verified.', 'style' => 'state-invalid'],
         'revoked' => ['icon' => '×', 'label' => 'Revoked', 'message' => 'This certificate has been revoked.', 'style' => 'state-invalid'],
         'unavailable' => ['icon' => '…', 'label' => 'Unavailable', 'message' => 'Verification could not be completed right now.', 'style' => 'state-warning'],
-        // TODO: Add an 'expired' state when valid_until is available.
-        // TODO: Add a 'mismatch' state when blockchain verification is implemented.
+        'pending' => ['icon' => '…', 'label' => 'Pending', 'message' => 'This certificate has not been confirmed on the blockchain yet. Please check again later.', 'style' => 'state-warning'],
+       
     ];
     $state = $states[$status] ?? $states['not_found'];
 @endphp
