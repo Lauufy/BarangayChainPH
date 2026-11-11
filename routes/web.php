@@ -264,6 +264,9 @@ Route::middleware(['auth', 'role:admin,staff'])
                 Route::post('/permits/{serviceRequest}/approve', 'approve')->name('permits.approve');
                 Route::post('/permits/{serviceRequest}/reissue', 'reissue')->name('permits.reissue');
                 Route::post('/permits/{serviceRequest}/reject', 'reject')->name('permits.reject');
+                Route::post('/permits/{serviceRequest}/blockchain-retry', 'retryBlockchain')
+                    ->middleware('throttle:10,1')
+                    ->name('permits.blockchain-retry');
 
                 Route::patch('/permits/{serviceRequest}/print-limit', 'updatePrintLimit')
                     ->middleware('permission:permits.print-limit')

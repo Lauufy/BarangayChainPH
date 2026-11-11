@@ -10,6 +10,7 @@
         $isApproved = $status === ServiceRequest::APPROVED;
         $isOpen = in_array($status, [ServiceRequest::PENDING, ServiceRequest::PROCESSING], true);
         $activeDocuments = $application->issuedDocuments->whereNull('revoked_at');
+        $currentRecord = $activeDocuments->sortByDesc('version')->first()?->blockchainRecord;
 
         // Status badge: label, badge colours, dot colour
         [$statusLabel, $badgeClass, $dotClass] = [
@@ -21,18 +22,21 @@
         ][$status] ?? [ucfirst($status), '', ''];
 
         // Applicant details (empty values are skipped)
-        $details = array_filter([
-            'Full name' => $application->applicant_name,
-            'Age' => $application->age,
-            'Civil status' => $application->civil_status,
-            'Contact number' => $application->contact_number,
-            'Email' => $application->user->email,
-            'Date submitted' => $application->created_at->timezone(config('app.timezone'))->format('M j, Y g:i A'),
-            'Permit number' => $application->permit_number,
-            'Prints remaining' => $isApproved
-                ? $application->printsRemaining().' of '.$application->effectivePrintLimit()
-                : null,
-        ], fn ($value) => filled($value));
+        $details = array_filter(
+            [
+                'Full name' => $application->applicant_name,
+                'Age' => $application->age,
+                'Civil status' => $application->civil_status,
+                'Contact number' => $application->contact_number,
+                'Email' => $application->user->email,
+                'Date submitted' => $application->created_at->timezone(config('app.timezone'))->format('M j, Y g:i A'),
+                'Permit number' => $application->permit_number,
+                'Prints remaining' => $isApproved
+                    ? $application->printsRemaining() . ' of ' . $application->effectivePrintLimit()
+                    : null,
+            ],
+            fn($value) => filled($value),
+        );
 
         // Service-specific answers from step 2, labelled from config/barangay_services.php
         $fieldLabels = collect($application->serviceConfig()['fields'] ?? [])->pluck('label', 'key');
@@ -44,7 +48,7 @@
         }
 
         $requestDetails['Cancellation reason'] = $application->cancellation_reason;
-        $requestDetails = array_filter($requestDetails, fn ($value) => filled($value));
+        $requestDetails = array_filter($requestDetails, fn($value) => filled($value));
     @endphp
 
     <div class="space-y-4">
@@ -70,8 +74,8 @@
             </div>
 
             <span
-                class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold {{ $badgeClass }}">
-                <span class="h-1.5 w-1.5 rounded-full {{ $dotClass }}"></span>
+                class="{{ $badgeClass }} inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold">
+                <span class="{{ $dotClass }} h-1.5 w-1.5 rounded-full"></span>
                 {{ $statusLabel }}
             </span>
         </header>
@@ -147,7 +151,8 @@
             {{-- Right: request details, uploads, print access, reissue --}}
             <aside class="space-y-4 lg:w-96 lg:shrink-0">
                 <section class="admin-card">
-                    <h2 class="border-b border-slate-200 px-4 py-3 text-sm font-semibold text-slate-900">Request details</h2>
+                    <h2 class="border-b border-slate-200 px-4 py-3 text-sm font-semibold text-slate-900">Request details
+                    </h2>
 
                     <dl class="space-y-3 p-4">
                         @forelse ($requestDetails as $label => $value)
@@ -204,7 +209,8 @@
                             @method('PATCH')
 
                             <div>
-                                <label for="print_limit" class="block text-xs font-semibold text-slate-700">Allowed prints</label>
+                                <label for="print_limit" class="block text-xs font-semibold text-slate-700">Allowed
+                                    prints</label>
                                 <input id="print_limit" name="print_limit" type="number" required max="1000"
                                     min="{{ $application->print_count }}"
                                     value="{{ old('print_limit', $application->effectivePrintLimit()) }}"
@@ -235,7 +241,8 @@
                         <div class="space-y-3 p-4">
                             <p class="text-xs text-slate-600">
                                 Active document:
-                                <span class="font-semibold text-slate-900">Version {{ $activeDocuments->max('version') }}</span>
+                                <span class="font-semibold text-slate-900">Version
+                                    {{ $activeDocuments->max('version') }}</span>
                             </p>
 
                             <form method="POST" action="{{ route('admin.permits.reissue', $application) }}"
@@ -247,6 +254,38 @@
                                     Reissue document
                                 </button>
                             </form>
+                        </div>
+                    </section>
+                @endif
+                {{-- Blockchain record of the active document --}}
+                @if ($isApproved && $activeDocuments->isNotEmpty())
+                    <section class="admin-card">
+                        <h2 class="border-b border-slate-200 px-4 py-3 text-sm font-semibold text-slate-900">
+                            Blockchain record
+                        </h2>
+
+                        <div class="space-y-3 p-4">
+                            @if ($currentRecord?->recorded_at)
+                                <p class="text-sm text-emerald-700">
+                                    Recorded on
+                                    {{ $currentRecord->recorded_at->timezone(config('app.timezone'))->format('M j, Y g:i A') }}.
+                                </p>
+                            @else
+                                <p class="text-sm text-amber-700">Not recorded on the blockchain yet.</p>
+
+                                @if ($currentRecord?->error)
+                                    <p class="text-xs text-slate-500">The last attempt failed. You can try again.</p>
+                                @endif
+
+                                <form method="POST"
+                                    action="{{ route('admin.permits.blockchain-retry', $application) }}">
+                                    @csrf
+                                    <button
+                                        class="w-full rounded-md bg-[#17325c] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#10244a]">
+                                        Record on blockchain
+                                    </button>
+                                </form>
+                            @endif
                         </div>
                     </section>
                 @endif

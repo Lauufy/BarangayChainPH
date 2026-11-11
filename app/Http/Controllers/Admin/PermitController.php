@@ -52,7 +52,7 @@ class PermitController extends Controller
         $serviceRequest = $this->markProcessing($serviceRequest);
 
         return view('admin.permits.review', [
-            'application' => $serviceRequest->load(['user', 'issuedDocuments', 'documents']),
+            'application' => $serviceRequest->load(['user', 'issuedDocuments.blockchainRecord', 'documents']),
         ]);
     }
 
@@ -140,6 +140,31 @@ class PermitController extends Controller
         $this->recordOnBlockchain($document);
 
         return $this->back($serviceRequest, 'success', "Document reissued successfully. New document version: {$document->version}.");
+    }
+
+    // Tries again to record a permit on the blockchain (for when the first try failed)
+    public function retryBlockchain(ServiceRequest $serviceRequest): RedirectResponse
+    {
+        // The current document that is not revoked and not recorded yet
+        $document = $serviceRequest->issuedDocuments()
+            ->whereNull('revoked_at')
+            ->whereDoesntHave('blockchainRecord', fn($query) => $query->whereNotNull('recorded_at'))
+            ->latest('version')
+            ->first();
+
+        if (! $document) {
+            return $this->back($serviceRequest, 'error', 'This permit is already recorded on the blockchain, or has no active document.');
+        }
+
+        $this->recordOnBlockchain($document);
+
+        // This check works because the queue is "sync", so the job has already finished.
+        // With a real queue, change this message to "queued".
+        if (! $document->fresh()->blockchainRecord?->recorded_at) {
+            return $this->back($serviceRequest, 'error', 'The blockchain recording failed again. Please try again later.');
+        }
+
+        return $this->back($serviceRequest, 'success', 'The permit is now recorded on the blockchain.');
     }
 
     public function reject(Request $request, ServiceRequest $serviceRequest): RedirectResponse
