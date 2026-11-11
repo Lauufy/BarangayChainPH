@@ -181,10 +181,7 @@ class IdentityVerificationController extends Controller
         $user->identityVerifications()->create([
             'status' => IdentityVerification::PENDING,
             'document_type' => $data['document_type'],
-            'document_path' => $document->store(
-                "identity-documents/{$user->id}",
-                $document->getMimeType() === 'application/pdf' ? 'local' : 'supabase'
-            ),
+            'document_path' => $document->store("identity-documents/{$user->id}", 'supabase'),
             'document_original_name' => $document->getClientOriginalName(),
             'id_number_hash' => $hash,
             'selfie_path' => $request->file('selfie')->store("identity-selfies/{$user->id}", 'supabase'),
@@ -202,19 +199,13 @@ class IdentityVerificationController extends Controller
     }
 
     // Allow citizens to open only their own uploaded ID.
-    public function document(Request $request, IdentityVerification $verification): BinaryFileResponse|RedirectResponse
+    public function document(Request $request, IdentityVerification $verification): RedirectResponse
     {
         abort_unless($verification->user_id === $request->user()->id, 404);
 
-        if (! str_ends_with(strtolower($verification->document_path), '.pdf')) {
-            return redirect()->away(
-                $this->supabaseStorage->temporaryUrl($verification->document_path, now()->addMinutes(10))
-            );
-        }
-
-        abort_unless(is_file($verification->filePath()), 404);
-
-        return response()->file($verification->filePath());
+        return redirect()->away(
+            $this->supabaseStorage->temporaryUrl($verification->document_path, now()->addMinutes(10))
+        );
     }
 
     // Validation rules for the ID details on submission.

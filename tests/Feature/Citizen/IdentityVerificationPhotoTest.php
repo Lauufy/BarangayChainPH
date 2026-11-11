@@ -80,7 +80,7 @@ class IdentityVerificationPhotoTest extends TestCase
             ->assertRedirect('https://storage.example/identity.jpg');
     }
 
-    public function test_uploaded_pdf_identity_documents_are_stored_locally(): void
+    public function test_uploaded_pdf_identity_documents_are_stored_in_supabase(): void
     {
         $citizen = User::factory()->create([
             'role' => 'citizen',
@@ -118,14 +118,20 @@ class IdentityVerificationPhotoTest extends TestCase
         $response->assertRedirect(route('citizen.identity-verification'));
 
         $verification = $citizen->identityVerifications()->latest()->firstOrFail();
-        Storage::disk('local')->assertExists($verification->document_path);
+        Storage::disk('supabase')->assertExists($verification->document_path);
         Storage::disk('supabase')->assertExists($verification->selfie_path);
+        Storage::disk('local')->assertMissing($verification->document_path);
         Storage::disk('local')->assertMissing($verification->selfie_path);
         $this->assertStringNotContainsString('http', $verification->document_path);
         $this->assertStringNotContainsString('http', $verification->selfie_path);
 
+        $this->mock(SupabaseStorage::class)
+            ->shouldReceive('temporaryUrl')
+            ->once()
+            ->andReturn('https://storage.example/identity.pdf');
+
         $this->actingAs($citizen)
             ->get(route('citizen.identity-verification.file', $verification))
-            ->assertOk();
+            ->assertRedirect('https://storage.example/identity.pdf');
     }
 }

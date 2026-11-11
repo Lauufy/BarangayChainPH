@@ -40,17 +40,11 @@ class IdentityReviewController extends Controller
     }
 
     // Open the uploaded ID
-    public function document(IdentityVerification $verification): BinaryFileResponse|RedirectResponse
+    public function document(IdentityVerification $verification): RedirectResponse
     {
-        if (! str_ends_with(strtolower($verification->document_path), '.pdf')) {
-            return redirect()->away(
-                $this->supabaseStorage->temporaryUrl($verification->document_path, now()->addMinutes(10))
-            );
-        }
-
-        abort_unless(is_file($verification->filePath()), 404);
-
-        return response()->file($verification->filePath());
+        return redirect()->away(
+            $this->supabaseStorage->temporaryUrl($verification->document_path, now()->addMinutes(10))
+        );
     }
 
     // Open the selfie
@@ -100,6 +94,6 @@ class IdentityReviewController extends Controller
             report($exception);
         }
 
-        return redirect()->route($route)->with('success', 'The application was '.$status.'.');
+        return redirect()->route($route)->with('success', 'The application was ' . $status . '.');
     }
 }
