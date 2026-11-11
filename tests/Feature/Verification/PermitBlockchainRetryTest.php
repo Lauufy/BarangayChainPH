@@ -10,6 +10,8 @@ use App\Services\BlockchainRegistry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Tests\TestCase;
+use App\Jobs\RecordPermitOnBlockchain;
+use Illuminate\Support\Facades\Queue;
 
 class PermitBlockchainRetryTest extends TestCase
 {
@@ -91,5 +93,19 @@ class PermitBlockchainRetryTest extends TestCase
         ]);
 
         return [$staff, $application];
+    }
+
+        public function test_retry_says_queued_when_a_real_queue_is_used(): void
+    {
+        Queue::fake();
+        config(['queue.default' => 'database']);
+
+        [$staff, $application] = $this->makeApprovedApplication();
+
+        $this->actingAs($staff)
+            ->post(route('admin.permits.blockchain-retry', $application))
+            ->assertSessionHas('success');
+
+        Queue::assertPushed(RecordPermitOnBlockchain::class);
     }
 }

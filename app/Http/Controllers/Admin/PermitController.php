@@ -158,8 +158,11 @@ class PermitController extends Controller
 
         $this->recordOnBlockchain($document);
 
-        // This check works because the queue is "sync", so the job has already finished.
-        // With a real queue, change this message to "queued".
+        // With a real queue the job has not run yet, so we cannot know the result
+        if (config('queue.default') !== 'sync') {
+            return $this->back($serviceRequest, 'success', 'The recording was queued. Refresh this page in a moment to see the result.');
+        }
+
         if (! $document->fresh()->blockchainRecord?->recorded_at) {
             return $this->back($serviceRequest, 'error', 'The blockchain recording failed again. Please try again later.');
         }
