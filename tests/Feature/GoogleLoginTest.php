@@ -54,9 +54,12 @@ class GoogleLoginTest extends TestCase
 
     public function test_existing_google_account_with_pending_password_setup_continues_to_setup(): void
     {
+        // Signed up with Google earlier and never finished the password step.
+        // google_id is already set, so it must NOT be treated as a normal account.
         $user = User::factory()->create([
             'email' => 'legacy-google@example.com',
             'google_id' => 'legacy-google-user-id',
+            'email_verified_at' => now(),
             'google_password_setup_required' => true,
         ]);
         Socialite::fake('google', SocialiteUser::fake([
@@ -69,6 +72,74 @@ class GoogleLoginTest extends TestCase
 
         $this->assertGuest();
         $this->assertSame($user->id, session('google_password_setup.user_id'));
+        $this->assertTrue($user->fresh()->google_password_setup_required);
+    }
+
+    public function test_existing_account_with_verified_email_skips_password_setup(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'registered@example.com',
+            'email_verified_at' => now()->subDay(),
+            'phone_verified_at' => null,
+            'google_id' => null,
+            'google_password_setup_required' => true,
+        ]);
+        Socialite::fake('google', SocialiteUser::fake([
+            'id' => 'google-user-id',
+            'email' => $user->email,
+        ]));
+
+        $this->get('/auth/google/callback')
+            ->assertRedirect(route('citizen.dashboard'));
+
+        $this->assertAuthenticatedAs($user);
+        $this->assertNull(session('google_password_setup'));
+        $this->assertFalse($user->fresh()->google_password_setup_required);
+        $this->assertSame('google-user-id', $user->fresh()->google_id);
+    }
+
+    public function test_existing_account_with_verified_phone_skips_password_setup(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'phone-verified@example.com',
+            'email_verified_at' => null,
+            'phone_verified_at' => now()->subDay(),
+            'google_id' => null,
+            'google_password_setup_required' => true,
+        ]);
+        Socialite::fake('google', SocialiteUser::fake([
+            'id' => 'google-user-id',
+            'email' => $user->email,
+        ]));
+
+        $this->get('/auth/google/callback')
+            ->assertRedirect(route('citizen.dashboard'));
+
+        $this->assertAuthenticatedAs($user);
+        $this->assertNull(session('google_password_setup'));
+        $this->assertFalse($user->fresh()->google_password_setup_required);
+    }
+
+    public function test_existing_account_with_nothing_verified_keeps_pending_password_setup(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'unverified@example.com',
+            'email_verified_at' => null,
+            'phone_verified_at' => null,
+            'google_id' => null,
+            'google_password_setup_required' => true,
+        ]);
+        Socialite::fake('google', SocialiteUser::fake([
+            'id' => 'google-user-id',
+            'email' => $user->email,
+        ]));
+
+        $this->get('/auth/google/callback')
+            ->assertRedirect(route('google.password.setup'));
+
+        $this->assertGuest();
+        $this->assertSame($user->id, session('google_password_setup.user_id'));
+        $this->assertTrue($user->fresh()->google_password_setup_required);
     }
 
     public function test_new_google_account_must_set_a_local_password_before_login(): void

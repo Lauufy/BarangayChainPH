@@ -24,6 +24,13 @@ class GoogleController extends Controller
     {
         $google = Socialite::driver('google')->user();
 
+        // Look up the account BEFORE we create it or mark anything as verified.
+        // Google sign-in always stamps email_verified_at, so checking later
+        // would always come back true.
+        $existingUser = User::where('email', $google->getEmail())->first();
+        $alreadyHadVerifiedContact = $existingUser && $this->hasVerifiedContact($existingUser);
+        $hadNoGoogleLinkYet = $existingUser && is_null($existingUser->google_id);
+
         // Find the user by email, or create a new citizen
         $user = User::firstOrCreate(
             ['email' => $google->getEmail()],
@@ -37,7 +44,16 @@ class GoogleController extends Controller
         );
 
         if ($user->wasRecentlyCreated) {
+            // Brand-new Google account: the user never chose a password.
             $user->forceFill(['google_password_setup_required' => true])->save();
+        } elseif (
+            $alreadyHadVerifiedContact
+            && $hadNoGoogleLinkYet
+            && $user->google_password_setup_required
+        ) {
+            // Existing account (registered normally, never used Google before)
+            // with a verified email or phone: assume they already have a password.
+            $user->forceFill(['google_password_setup_required' => false])->save();
         }
 
         if (! $user->is_active) {
@@ -117,6 +133,18 @@ class GoogleController extends Controller
 
         return redirect()->route('citizen.dashboard')
             ->with('success', 'Your password is set and you are now logged in.');
+    }
+
+    /**
+     * An account that already had a verified email or phone before this Google
+     * sign-in was created through normal registration, so we assume it already
+     * has a password. Google never shares its password with us, so the
+     * "set a password" step is only needed for accounts created by Google itself.
+     */
+    private function hasVerifiedContact(User $user): bool
+    {
+        return ! is_null($user->email_verified_at)
+            || ! is_null($user->phone_verified_at);
     }
 
     private function pendingPasswordSetupUser(Request $request): ?User
