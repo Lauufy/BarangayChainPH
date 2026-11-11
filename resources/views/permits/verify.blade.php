@@ -1,34 +1,34 @@
-
 @php
+
     $states = [
         'valid' => [
             'icon' => '✓',
-            'label' => 'Valid document',
-            'message' => 'This certificate matches an approved record in the barangay system.',
+            'label' => 'Valid',
+            'message' => 'This certificate is valid.',
         ],
         'not_found' => [
             'icon' => '?',
-            'label' => 'Document not found',
+            'label' => 'Not found',
             'message' => 'No matching certificate record was found.',
         ],
         'invalid' => [
             'icon' => '!',
-            'label' => 'Invalid document',
+            'label' => 'Invalid',
             'message' => 'This certificate could not be verified.',
         ],
         'revoked' => [
             'icon' => '×',
-            'label' => 'Revoked document',
-            'message' => 'This certificate has been revoked by the issuing barangay.',
+            'label' => 'Revoked',
+            'message' => 'This certificate has been revoked.',
         ],
         'unavailable' => [
             'icon' => '…',
-            'label' => 'Verification unavailable',
-            'message' => 'Verification could not be completed right now. Please try again later.',
+            'label' => 'Unavailable',
+            'message' => 'Verification could not be completed right now.',
         ],
         'pending' => [
             'icon' => '…',
-            'label' => 'Verification pending',
+            'label' => 'Pending',
             'message' => 'This certificate has not been confirmed on the blockchain yet. Please check again later.',
         ],
     ];
@@ -60,6 +60,7 @@
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -80,7 +81,7 @@
                 Public Document Verification
             </p>
 
-            <h1 class="text-2xl font-bold tracking-tight text-[#17325c] dark:text-white sm:text-3xl">
+            <h1 class="text-2xl font-bold tracking-tight text-[#17325c] sm:text-3xl dark:text-white">
                 Permit Verification
             </h1>
 
@@ -90,13 +91,16 @@
         </header>
 
         {{-- Verification result --}}
-        <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900"
+        <section
+            class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900"
             aria-label="Document verification result">
 
             {{-- Status banner --}}
-            <div class="flex items-center gap-4 border-b border-black/5 px-5 py-5 {{ $statusClasses['banner'] }} sm:px-6">
+            <div
+                class="{{ $statusClasses['banner'] }} flex items-center gap-4 border-b border-black/5 px-5 py-5 sm:px-6">
 
-                <span class="flex size-11 shrink-0 items-center justify-center rounded-full text-xl font-bold {{ $statusClasses['icon'] }}"
+                <span
+                    class="{{ $statusClasses['icon'] }} flex size-11 shrink-0 items-center justify-center rounded-full text-xl font-bold"
                     aria-hidden="true">
                     {{ $state['icon'] }}
                 </span>
@@ -116,14 +120,16 @@
             @if ($isValid)
                 <div class="p-5 sm:p-6">
 
-                    <h3 class="mb-5 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
+                    <h3
+                        class="mb-5 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
                         Document Information
                     </h3>
 
                     <dl class="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
 
                         <div class="min-w-0">
-                            <dt class="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                            <dt
+                                class="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                                 Certificate Type
                             </dt>
                             <dd class="text-sm font-semibold text-slate-800 dark:text-slate-100">
@@ -132,7 +138,8 @@
                         </div>
 
                         <div class="min-w-0">
-                            <dt class="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                            <dt
+                                class="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                                 Reference Number
                             </dt>
                             <dd class="break-all text-sm font-semibold text-slate-800 dark:text-slate-100">
@@ -141,7 +148,8 @@
                         </div>
 
                         <div class="min-w-0">
-                            <dt class="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                            <dt
+                                class="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                                 Holder
                             </dt>
                             <dd class="text-sm font-semibold text-slate-800 dark:text-slate-100">
@@ -150,7 +158,8 @@
                         </div>
 
                         <div class="min-w-0">
-                            <dt class="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                            <dt
+                                class="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                                 Issue Date
                             </dt>
                             <dd class="text-sm font-semibold text-slate-800 dark:text-slate-100">
@@ -159,7 +168,8 @@
                         </div>
 
                         <div class="min-w-0">
-                            <dt class="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                            <dt
+                                class="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                                 Issuing Barangay
                             </dt>
                             <dd class="text-sm font-semibold text-slate-800 dark:text-slate-100">
@@ -169,7 +179,8 @@
 
                         @isset($validUntil)
                             <div class="min-w-0">
-                                <dt class="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                <dt
+                                    class="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                                     Valid Until
                                 </dt>
                                 <dd class="text-sm font-semibold text-slate-800 dark:text-slate-100">
@@ -181,18 +192,20 @@
                     </dl>
                 </div>
 
-            {{-- Revoked document details --}}
+                {{-- Revoked document details --}}
             @elseif ($isRevoked)
                 <div class="p-5 sm:p-6">
 
-                    <h3 class="mb-5 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
+                    <h3
+                        class="mb-5 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
                         Document Information
                     </h3>
 
                     <dl class="grid grid-cols-1 gap-6 sm:grid-cols-2">
 
                         <div>
-                            <dt class="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                            <dt
+                                class="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                                 Certificate Type
                             </dt>
                             <dd class="text-sm font-semibold text-slate-800 dark:text-slate-100">
@@ -201,8 +214,9 @@
                         </div>
 
                         <div>
-                            <dt class="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                                Revoked On
+                            <dt
+                                class="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                Revoked on
                             </dt>
                             <dd class="text-sm font-semibold text-slate-800 dark:text-slate-100">
                                 {{ $revokedAt?->format('F j, Y') }}
@@ -241,4 +255,5 @@
     </main>
 
 </body>
+
 </html>
