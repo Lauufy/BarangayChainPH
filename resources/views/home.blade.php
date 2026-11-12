@@ -103,7 +103,7 @@
 @endphp
 
 <body
-    class="bg-(--gray-50) text-(--gray-700) dark:text-(--gray-200) antialiased transition-colors duration-300 dark:bg-(--black-700)">
+    class="bg-(--gray-50) text-(--gray-700) dark:text-(--gray-200) dark:bg-(--black-700) antialiased transition-colors duration-300">
 
     <x-feedbacks.toast />
 
@@ -685,6 +685,11 @@
             reveals.forEach((el) => reveal.observe(el));
         }
     </script>
+
+
+    <script src="https://www.tuqlas.com/chatbot.js" data-key="tq_live_b008f3e486ad59592451ce7d324b4c54c94ccd3a"
+        data-api="https://www.tuqlas.com" defer></script>
+
 
     <x-govern-footer />
 </body>

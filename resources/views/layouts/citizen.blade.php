@@ -284,6 +284,9 @@
 
     <x-partials.c-footer />
 
+    <script src="https://www.tuqlas.com/chatbot.js" data-key="tq_live_b008f3e486ad59592451ce7d324b4c54c94ccd3a"
+        data-api="https://www.tuqlas.com" defer></script>
+
     <script>
         const $ = (id) => document.getElementById(id);
         const bell = $('notification-menu');
