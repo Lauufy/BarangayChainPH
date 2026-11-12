@@ -259,7 +259,7 @@ class PermitWorkflowTest extends TestCase
         $disk->shouldReceive('put')
             ->once()
             ->withArgs(
-                fn ($path, $content) => str_starts_with($path, 'issued-documents/')
+                fn($path, $content) => str_starts_with($path, 'issued-documents/')
                     && str_ends_with($path, '.pdf')
                     && str_starts_with($content, '%PDF')
             )
@@ -268,7 +268,7 @@ class PermitWorkflowTest extends TestCase
         $disk->shouldReceive('delete')
             ->once()
             ->withArgs(
-                fn ($path) => str_starts_with($path, 'issued-documents/')
+                fn($path) => str_starts_with($path, 'issued-documents/')
                     && str_ends_with($path, '.pdf')
             )
             ->andReturn(true);
@@ -445,7 +445,7 @@ class PermitWorkflowTest extends TestCase
         $disk->shouldReceive('delete')
             ->once()
             ->withArgs(
-                fn ($path) => str_starts_with($path, 'issued-documents/')
+                fn($path) => str_starts_with($path, 'issued-documents/')
                     && str_ends_with($path, '.pdf')
                     && $path !== $originalPath
             )
@@ -480,5 +480,32 @@ class PermitWorkflowTest extends TestCase
         $this->assertTrue(
             $originalDocument->fresh()->isValid()
         );
+    }
+
+    public function test_staff_chosen_expiry_is_saved_and_a_reissue_takes_a_new_one(): void
+    {
+        Storage::fake('supabase');
+
+        $user = User::factory()->create(['role' => 'citizen', 'is_active' => true]);
+
+        $application = ServiceRequest::create([
+            'user_id' => $user->id,
+            'reference_number' => 'BRGY-20261112-0001',
+            'service_type' => ServiceRequest::BARANGAY_CLEARANCE,
+            'applicant_name' => 'Carlo Mamaril',
+            'address' => 'Barangay San Luis, Antipolo City',
+            'age' => 22,
+            'purpose' => 'Employment',
+            'status' => ServiceRequest::PENDING,
+        ]);
+
+        $issuer = app(DocumentIssuer::class);
+
+        $first = $issuer->issue($application, now()->addMonths(6)->endOfDay());
+        $this->assertSame(now()->addMonths(6)->toDateString(), $first->fresh()->expires_at->toDateString());
+
+        $second = $issuer->reissue($application, now()->addYear()->endOfDay());
+        $this->assertSame(now()->addYear()->toDateString(), $second->fresh()->expires_at->toDateString());
+        $this->assertSame(now()->addMonths(6)->toDateString(), $first->fresh()->expires_at->toDateString());
     }
 }

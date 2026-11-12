@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Illuminate\Support\Carbon;
 use Throwable;
 
 class PermitController extends Controller
@@ -86,10 +87,12 @@ class PermitController extends Controller
         ]);
     }
 
-    public function approve(ServiceRequest $serviceRequest, DocumentIssuer $documentIssuer): RedirectResponse
+    public function approve(Request $request, ServiceRequest $serviceRequest, DocumentIssuer $documentIssuer): RedirectResponse
     {
+        $expiresAt = $this->validatedExpiry($request);
+
         try {
-            $document = $documentIssuer->issue($serviceRequest);
+            $document = $documentIssuer->issue($serviceRequest, $expiresAt);
         } catch (Throwable $e) {
             report($e);
 
@@ -117,10 +120,12 @@ class PermitController extends Controller
         return $this->back($serviceRequest, 'success', 'The application was approved and its authenticated PDF was generated successfully.');
     }
 
-    public function reissue(ServiceRequest $serviceRequest, DocumentIssuer $documentIssuer): RedirectResponse
+    public function reissue(Request $request, ServiceRequest $serviceRequest, DocumentIssuer $documentIssuer): RedirectResponse
     {
+        $expiresAt = $this->validatedExpiry($request);
+
         try {
-            $document = $documentIssuer->reissue($serviceRequest);
+            $document = $documentIssuer->reissue($serviceRequest, $expiresAt);
         } catch (Throwable $e) {
             report($e);
 
@@ -246,6 +251,21 @@ class PermitController extends Controller
         }
 
         return $updated;
+    }
+
+    /** The "valid until" date chosen by staff: required, in the future, valid through the end of that day. */
+    private function validatedExpiry(Request $request): Carbon
+    {
+        $data = $request->validate([
+            'expires_at' => [
+                'required',
+                'date',
+                'after:today',
+                'before_or_equal:' . now()->addYears(5)->toDateString(),
+            ],
+        ]);
+
+        return Carbon::parse($data['expires_at'], config('app.timezone'))->endOfDay();
     }
 
     /** Locks the row and applies the update only while the request is open (pending or processing). */

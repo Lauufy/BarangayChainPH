@@ -10,6 +10,7 @@ use App\Services\BlockchainRegistry;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -483,5 +484,74 @@ class PermitVerificationTest extends TestCase
             ->assertOk()
             ->assertSee('Verification could not be completed right now.')
             ->assertDontSee('This certificate is valid.');
+    }
+
+    public function test_revoking_a_document_clears_its_cached_status(): void
+    {
+        $document = $this->makeIssuedDocument();
+        $key = 'permit-status:' . $document->document_uuid;
+
+        Cache::put($key, 'valid', 60);
+
+        $document->revoked_at = now();
+        $document->save();
+
+        $this->assertNull(Cache::get($key));
+    }
+
+    public function test_document_expiry_is_detected(): void
+    {
+        $document = $this->makeIssuedDocument();
+
+        $document->expires_at = now()->addDay();
+        $this->assertFalse($document->isExpired());
+
+        $document->expires_at = now()->subMinute();
+        $this->assertTrue($document->isExpired());
+
+        $document->expires_at = null;
+        $this->assertFalse($document->isExpired()); // old documents never expire
+    }
+
+    public function test_expired_document_shows_expired_message_and_hides_holder_details(): void
+    {
+        $document = $this->makeIssuedDocument();
+        $document->expires_at = now()->subDay();
+        $document->save();
+
+        $this->get(route('permits.verify', $document->document_uuid))
+            ->assertOk()
+            ->assertSee('This permit has expired.')
+            ->assertSee('request a reissue')
+            ->assertSee('Expired on')
+            ->assertDontSee('Carlo Mamaril')
+            ->assertDontSee('This certificate is valid.');
+    }
+
+    public function test_revoked_takes_priority_over_expired(): void
+    {
+        $document = $this->makeIssuedDocument();
+        $document->expires_at = now()->subDay();
+        $document->revoked_at = now();
+        $document->save();
+
+        $this->get(route('permits.verify', $document->document_uuid))
+            ->assertOk()
+            ->assertSee('This certificate has been revoked.')
+            ->assertDontSee('This permit has expired.');
+    }
+
+    public function test_valid_document_shows_its_valid_until_date(): void
+    {
+        $document = $this->makeIssuedDocument();
+        $document->expires_at = now()->addMonth();
+        $document->save();
+        $this->recordedOnChain($document, ['ok' => true, 'status' => 'valid']);
+
+        $this->get(route('permits.verify', $document->document_uuid))
+            ->assertOk()
+            ->assertSee('This certificate is valid.')
+            ->assertSee('Valid Until')
+            ->assertSee($document->expires_at->format('F j, Y'));
     }
 }

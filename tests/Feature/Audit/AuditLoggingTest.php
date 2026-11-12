@@ -121,7 +121,7 @@ class AuditLoggingTest extends TestCase
         Auth::logout();
 
         app(AuditLogger::class)->withinBackgroundExecution(
-            fn () => $serviceRequest->update(['status' => ServiceRequest::PROCESSING])
+            fn() => $serviceRequest->update(['status' => ServiceRequest::PROCESSING])
         );
 
         $log = AuditLog::query()
@@ -198,7 +198,9 @@ class AuditLoggingTest extends TestCase
         $serviceRequest = $this->createServiceRequest();
 
         $this->actingAs($staff)
-            ->post(route('admin.permits.approve', $serviceRequest))
+            ->post(route('admin.permits.approve', $serviceRequest), [
+                'expires_at' => now()->addMonths(6)->toDateString(),
+            ])
             ->assertRedirect(route('admin.permits.show', $serviceRequest));
 
         $log = AuditLog::query()
@@ -292,7 +294,7 @@ class AuditLoggingTest extends TestCase
     {
         return ServiceRequest::create([
             'user_id' => User::factory()->create(['role' => 'citizen'])->id,
-            'reference_number' => 'BRGY-20261106-'.fake()->unique()->numerify('####'),
+            'reference_number' => 'BRGY-20261106-' . fake()->unique()->numerify('####'),
             'service_type' => ServiceRequest::BARANGAY_CLEARANCE,
             'applicant_name' => 'Jamie Citizen',
             'address' => 'Barangay San Luis',

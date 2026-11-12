@@ -313,6 +313,13 @@
             Antipolo City, Province of Rizal, Philippines.
         </p>
 
+        @if ($document->expires_at)
+            <p>
+                This certification is valid until
+                <strong>{{ $document->expires_at->format('F j, Y') }}</strong>.
+            </p>
+        @endif
+
     </div>
 
     {{-- QR Verification and Authorized Signature --}}
@@ -359,4 +366,5 @@
     </div>
 
 </body>
+
 </html>

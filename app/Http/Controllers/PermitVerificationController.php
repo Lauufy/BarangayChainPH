@@ -35,6 +35,7 @@ class PermitVerificationController extends Controller
             'referenceNumber' => $isValid ? $application->reference_number : null,
             'issuedAt' => $document?->issued_at,
             'revokedAt' => $document?->revoked_at,
+            'expiresAt' => $document?->expires_at,
             'barangayName' => config('app.barangay_name', 'Barangay San Luis'),
         ]);
     }
@@ -54,7 +55,14 @@ class PermitVerificationController extends Controller
 
             // Never keep "unavailable" or "pending", so a change shows up right away
             if (! in_array($status, ['unavailable', 'pending'], true)) {
-                Cache::put($key, $status, 60);
+                $ttl = 60;
+
+                // A cached "valid" must never outlive the expiry time
+                if ($status === 'valid' && $document->expires_at) {
+                    $ttl = max(1, min(60, (int) now()->diffInSeconds($document->expires_at, false)));
+                }
+
+                Cache::put($key, $status, $ttl);
             }
         }
 
@@ -71,6 +79,11 @@ class PermitVerificationController extends Controller
         if (! $document->isValid()) {
             return 'revoked';
         }
+
+        if ($document->isExpired()) {
+            return 'expired';
+        }
+
 
         if (
             $application === null
@@ -107,7 +120,6 @@ class PermitVerificationController extends Controller
             return 'pending';
         }
 
-        // New check: ask the blockchain, using the hash of the real file
         try {
             $result = app(BlockchainRegistry::class)->verify(
                 $document->document_uuid,
@@ -121,6 +133,8 @@ class PermitVerificationController extends Controller
         }
 
         if (! ($result['ok'] ?? false)) {
+            report(new \RuntimeException('Blockchain verify failed: ' . ($result['error'] ?? 'unknown')));
+
             return 'unavailable';
         }
 

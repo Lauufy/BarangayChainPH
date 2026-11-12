@@ -121,9 +121,32 @@
                             @enderror
                         </form>
 
-                        <div class="mt-3 grid gap-3 sm:grid-cols-2">
-                            <form method="POST" action="{{ route('admin.permits.approve', $application) }}">
+                        <div class="mt-3 grid gap-3 sm:grid-cols-2 sm:items-end">
+                            <form method="POST" action="{{ route('admin.permits.approve', $application) }}"
+                                class="space-y-2">
                                 @csrf
+
+                                <label for="expires_at" class="block text-xs font-semibold text-slate-700">
+                                    Valid until
+                                </label>
+                                <input id="expires_at" name="expires_at" type="date" required
+                                    min="{{ now()->addDay()->toDateString() }}" value="{{ old('expires_at') }}"
+                                    class="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20">
+
+                                @error('expires_at')
+                                    <p class="text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+
+                                <div class="flex flex-wrap gap-2">
+                                    @foreach ([3 => '3 months', 6 => '6 months', 12 => '1 year'] as $months => $label)
+                                        <button type="button"
+                                            onclick="const d = new Date(); d.setMonth(d.getMonth() + {{ $months }}); this.form.expires_at.value = d.toLocaleDateString('en-CA');"
+                                            class="rounded border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 hover:bg-slate-50">
+                                            {{ $label }}
+                                        </button>
+                                    @endforeach
+                                </div>
+
                                 <button
                                     class="w-full rounded-md bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">
                                     Approve application
@@ -135,16 +158,15 @@
                                 Reject application
                             </button>
                         </div>
-                    </div>
-                @elseif ($application->rejection_reason)
-                    <div class="border-t border-slate-200 bg-slate-50/60 p-4">
-                        <h3 class="text-sm font-semibold text-slate-900">Decision</h3>
+                    @elseif ($application->rejection_reason)
+                        <div class="border-t border-slate-200 bg-slate-50/60 p-4">
+                            <h3 class="text-sm font-semibold text-slate-900">Decision</h3>
 
-                        <div class="mt-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-                            <p class="text-[11px] font-bold uppercase">Rejection reason</p>
-                            <p class="mt-0.5">{{ $application->rejection_reason }}</p>
+                            <div class="mt-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+                                <p class="text-[11px] font-bold uppercase">Rejection reason</p>
+                                <p class="mt-0.5">{{ $application->rejection_reason }}</p>
+                            </div>
                         </div>
-                    </div>
                 @endif
             </section>
 
@@ -246,8 +268,30 @@
                             </p>
 
                             <form method="POST" action="{{ route('admin.permits.reissue', $application) }}"
+                                class="space-y-2"
                                 onsubmit="return confirm('Are you sure you want to reissue this document? The current document will become invalid after the replacement is successfully generated.');">
                                 @csrf
+
+                                <label for="expires_at" class="block text-xs font-semibold text-slate-700">
+                                    Valid until (new document)
+                                </label>
+                                <input id="expires_at" name="expires_at" type="date" required
+                                    min="{{ now()->addDay()->toDateString() }}" value="{{ old('expires_at') }}"
+                                    class="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#17325c] focus:ring-2 focus:ring-[#17325c]/20">
+
+                                @error('expires_at')
+                                    <p class="text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+
+                                <div class="flex flex-wrap gap-2">
+                                    @foreach ([3 => '3 months', 6 => '6 months', 12 => '1 year'] as $months => $label)
+                                        <button type="button"
+                                            onclick="const d = new Date(); d.setMonth(d.getMonth() + {{ $months }}); this.form.expires_at.value = d.toLocaleDateString('en-CA');"
+                                            class="rounded border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 hover:bg-slate-50">
+                                            {{ $label }}
+                                        </button>
+                                    @endforeach
+                                </div>
 
                                 <button type="submit"
                                     class="w-full rounded-md border border-[#17325c] bg-white px-4 py-2.5 text-sm font-semibold text-[#17325c] hover:bg-slate-50">

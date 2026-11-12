@@ -31,12 +31,19 @@
             'label' => 'Pending',
             'message' => 'This certificate has not been confirmed on the blockchain yet. Please check again later.',
         ],
+        'expired' => [
+            'icon' => '!',
+            'label' => 'Expired',
+            'message' =>
+                'This permit has expired. Please apply for a new one or request a reissue from the barangay office.',
+        ],
     ];
 
     $state = $states[$status] ?? $states['not_found'];
 
     $isValid = $status === 'valid';
     $isRevoked = $status === 'revoked';
+    $isExpired = $status === 'expired';
 
     $statusClasses = match ($status) {
         'valid' => [
@@ -47,7 +54,7 @@
             'banner' => 'bg-red-50 text-red-800 dark:bg-red-950/40 dark:text-red-300',
             'icon' => 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
         ],
-        'pending', 'unavailable' => [
+        'pending', 'unavailable', 'expired' => [
             'banner' => 'bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300',
             'icon' => 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300',
         ],
@@ -177,17 +184,17 @@
                             </dd>
                         </div>
 
-                        @isset($validUntil)
+                        @if ($expiresAt)
                             <div class="min-w-0">
                                 <dt
                                     class="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                                     Valid Until
                                 </dt>
                                 <dd class="text-sm font-semibold text-slate-800 dark:text-slate-100">
-                                    {{ $validUntil?->format('F j, Y') }}
+                                    {{ $expiresAt->format('F j, Y') }}
                                 </dd>
                             </div>
-                        @endisset
+                        @endif
 
                     </dl>
                 </div>
@@ -225,14 +232,45 @@
 
                     </dl>
                 </div>
-            @endif
+                {{-- Expired document details --}}
+            @elseif ($isExpired)
+                <div class="p-5 sm:p-6">
 
+                    <h3
+                        class="mb-5 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
+                        Document Information
+                    </h3>
+
+                    <dl class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                        <div>
+                            <dt
+                                class="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                Certificate Type
+                            </dt>
+                            <dd class="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                                {{ $documentTitle }}
+                            </dd>
+                        </div>
+
+                        <div>
+                            <dt
+                                class="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                Expired on
+                            </dt>
+                            <dd class="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                                {{ $expiresAt?->format('F j, Y') }}
+                            </dd>
+                        </div>
+                    </dl>
+                </div>
+
+            @endif
         </section>
 
         {{-- Privacy notice --}}
         @if ($isValid)
             <div class="mt-4 flex items-start gap-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                <span class="font-bold text-[#17325c] dark:text-blue-400" aria-hidden="true">i</span>
+                <span class="font-bold text-[#17325c] dark:text-blue-400" aria-hidden="true"></span>
                 <p>
                     The document holder's name is partially masked to protect their personal information.
                 </p>

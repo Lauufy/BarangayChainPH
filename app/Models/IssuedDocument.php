@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\Cache;
 
 #[Fillable([
     'service_request_id',
@@ -17,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'file_path',
     'file_hash',
     'issued_at',
+    'expires_at',
     'qr_code_generated_at',
     'revoked_at',
 ])]
@@ -30,6 +32,7 @@ class IssuedDocument extends Model
         return [
             'version' => 'integer',
             'issued_at' => 'datetime',
+            'expires_at' => 'datetime',
             'qr_code_generated_at' => 'datetime',
             'revoked_at' => 'datetime',
         ];
@@ -48,5 +51,19 @@ class IssuedDocument extends Model
     public function isValid(): bool
     {
         return $this->revoked_at === null;
+    }
+
+    protected static function booted(): void
+    {
+        static::saved(function (IssuedDocument $document) {
+            if ($document->wasChanged('revoked_at')) {
+                Cache::forget('permit-status:' . $document->document_uuid);
+            }
+        });
+    }
+
+    public function isExpired(): bool
+    {
+        return $this->expires_at !== null && $this->expires_at->isPast();
     }
 }

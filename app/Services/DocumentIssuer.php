@@ -10,6 +10,7 @@ use Endroid\QrCode\Writer\PngWriter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Carbon\CarbonInterface;
 use RuntimeException;
 use Throwable;
 
@@ -19,9 +20,9 @@ class DocumentIssuer
     private const DISK = 'supabase';
 
     /** Approves an open request and issues version 1. Returns the existing document if already issued. */
-    public function issue(ServiceRequest $serviceRequest): IssuedDocument
+    public function issue(ServiceRequest $serviceRequest, ?CarbonInterface $expiresAt = null): IssuedDocument
     {
-        return $this->locked($serviceRequest, function (ServiceRequest $application, ?string &$uploadedPath) {
+        return $this->locked($serviceRequest, function (ServiceRequest $application, ?string &$uploadedPath) use ($expiresAt) {
             if ($existing = $this->activeDocument($application)) {
                 return $existing;
             }
@@ -37,7 +38,8 @@ class DocumentIssuer
                 $documentNumber,
                 1,
                 $uploadedPath,
-                'The PDF could not be stored.'
+                'The PDF could not be stored.',
+                $expiresAt
             );
 
             $application->update([
@@ -53,9 +55,9 @@ class DocumentIssuer
     }
 
     /** Issues a new version of an approved request's document and revokes the old one. */
-    public function reissue(ServiceRequest $serviceRequest): IssuedDocument
+    public function reissue(ServiceRequest $serviceRequest, ?CarbonInterface $expiresAt = null): IssuedDocument
     {
-        return $this->locked($serviceRequest, function (ServiceRequest $application, ?string &$uploadedPath) {
+        return $this->locked($serviceRequest, function (ServiceRequest $application, ?string &$uploadedPath) use ($expiresAt) {
             if ($application->status !== ServiceRequest::APPROVED) {
                 throw new RuntimeException('Only approved applications can be reissued.');
             }
@@ -66,7 +68,7 @@ class DocumentIssuer
                 throw new RuntimeException('No active document is available for reissuance.');
             }
 
-            return $this->replaceDocument($application, $previous, $uploadedPath);
+            return $this->replaceDocument($application, $previous, $uploadedPath, $expiresAt);
         });
     }
 
@@ -111,14 +113,16 @@ class DocumentIssuer
     private function replaceDocument(
         ServiceRequest $application,
         IssuedDocument $previous,
-        ?string &$uploadedPath
+        ?string &$uploadedPath,
+        ?CarbonInterface $expiresAt = null
     ): IssuedDocument {
         $document = $this->createDocument(
             $application,
             $previous->document_number,
             $previous->version + 1,
             $uploadedPath,
-            'The replacement PDF could not be stored.'
+            'The replacement PDF could not be stored.',
+            $expiresAt
         );
 
         $previous->update(['revoked_at' => $document->issued_at]);
@@ -134,7 +138,8 @@ class DocumentIssuer
         string $documentNumber,
         int $version,
         ?string &$uploadedPath,
-        string $storeError
+        string $storeError,
+        ?CarbonInterface $expiresAt = null
     ): IssuedDocument {
         $issuedAt = now();
         $documentUuid = (string) Str::uuid();
@@ -146,6 +151,7 @@ class DocumentIssuer
             'disk' => self::DISK,
             'file_path' => "issued-documents/{$documentUuid}.pdf",
             'issued_at' => $issuedAt,
+            'expires_at' => $expiresAt,
             'qr_code_generated_at' => $issuedAt,
         ]);
 
@@ -174,7 +180,7 @@ class DocumentIssuer
     private function qrCodeDataUri(string $documentUuid): string
     {
         $verificationUrl = rtrim(config('app.url'), '/')
-            .route('permits.verify', ['documentUuid' => $documentUuid], false);
+            . route('permits.verify', ['documentUuid' => $documentUuid], false);
 
         return (new Builder(writer: new PngWriter, data: $verificationUrl, size: 120, margin: 4))
             ->build()

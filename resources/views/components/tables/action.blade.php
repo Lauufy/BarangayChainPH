@@ -31,6 +31,10 @@
             'shield' =>
                 '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',
             'power' => '<path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.77.04"/>',
+            'message' =>
+                '<path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"/>',
+            'printer' =>
+                '<path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"/><rect x="6" y="14" width="12" height="8" rx="1"/>',
         ][$icon] ?? '';
 
     $svg =
@@ -40,14 +44,14 @@
 
     $color =
         [
-            'default' => 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-[#17325c]',
-            'success' => 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100',
-            'danger' => 'bg-rose-50 text-rose-600 hover:bg-rose-100',
+            'default' => 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-[#17325c] dark:hover:text-sky-300',
+            'success' => 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-500/20',
+            'danger' => 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-500/20',
         ][$variant] ?? '';
 
     $btn =
         ($iconOnly
-            ? 'grid size-8 place-items-center rounded-md text-slate-500'
+            ? 'grid size-8 place-items-center rounded-md text-slate-500 dark:text-slate-400'
             : 'inline-flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium') .
         ' transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 ' .
         $color;
@@ -61,8 +65,7 @@
             @if (strtoupper($method) !== 'POST')
                 @method($method)
             @endif
-            <button type="submit" aria-label="{{ $label }}"
-                {{ $attributes->class($btn) }}>
+            <button type="submit" aria-label="{{ $label }}" {{ $attributes->class($btn) }}>
                 @if ($iconOnly)
                     {!! $svg !!}
                 @else
@@ -71,8 +74,7 @@
             </button>
         </form>
     @elseif ($href)
-        <a href="{{ $href }}" aria-label="{{ $label }}"
-            {{ $attributes->class($btn) }}>
+        <a href="{{ $href }}" aria-label="{{ $label }}" {{ $attributes->class($btn) }}>
             @if ($iconOnly)
                 {!! $svg !!}
             @else
@@ -80,8 +82,7 @@
             @endif
         </a>
     @else
-        <button type="button" aria-label="{{ $label }}"
-            {{ $attributes->class($btn) }}>
+        <button type="button" aria-label="{{ $label }}" {{ $attributes->class($btn) }}>
             @if ($iconOnly)
                 {!! $svg !!}
             @else
@@ -92,6 +93,6 @@
 
     @if ($iconOnly)
         <span role="tooltip"
-            class="pointer-events-none absolute -top-8 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded bg-slate-900 px-2 py-1 text-xs font-medium text-white opacity-0 transition group-focus-within:opacity-100 group-hover:opacity-100">{{ $label }}</span>
+            class="pointer-events-none absolute -top-8 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded bg-slate-900 px-2 py-1 text-xs font-medium text-white dark:bg-slate-100 dark:text-slate-900 opacity-0 transition group-focus-within:opacity-100 group-hover:opacity-100">{{ $label }}</span>
     @endif
 </div>
