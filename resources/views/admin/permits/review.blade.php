@@ -140,7 +140,7 @@
                                 <div class="flex flex-wrap gap-2">
                                     @foreach ([3 => '3 months', 6 => '6 months', 12 => '1 year'] as $months => $label)
                                         <button type="button"
-                                            onclick="const d = new Date(); d.setMonth(d.getMonth() + {{ $months }}); this.form.expires_at.value = d.toLocaleDateString('en-CA');"
+                                            onclick="setPermitExpiry(this, {{ $months }})"
                                             class="rounded border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 hover:bg-slate-50">
                                             {{ $label }}
                                         </button>
@@ -286,7 +286,7 @@
                                 <div class="flex flex-wrap gap-2">
                                     @foreach ([3 => '3 months', 6 => '6 months', 12 => '1 year'] as $months => $label)
                                         <button type="button"
-                                            onclick="const d = new Date(); d.setMonth(d.getMonth() + {{ $months }}); this.form.expires_at.value = d.toLocaleDateString('en-CA');"
+                                            onclick="setPermitExpiry(this, {{ $months }})"
                                             class="rounded border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 hover:bg-slate-50">
                                             {{ $label }}
                                         </button>
@@ -336,4 +336,20 @@
             </aside>
         </div>
     </div>
+    <script>
+        function setPermitExpiry(button, months) {
+            const date = new Date();
+            const day = date.getDate();
+
+            date.setDate(1);
+            date.setMonth(date.getMonth() + months);
+            date.setDate(Math.min(day, new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()));
+
+            button.form.elements.namedItem('expires_at').value = [
+                date.getFullYear(),
+                String(date.getMonth() + 1).padStart(2, '0'),
+                String(date.getDate()).padStart(2, '0'),
+            ].join('-');
+        }
+    </script>
 @endsection

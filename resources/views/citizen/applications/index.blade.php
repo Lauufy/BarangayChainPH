@@ -46,16 +46,16 @@
                             {{ $application->reference_number }}
                         </td>
                         <td class="text-slate-600 dark:text-slate-300">{{ $application->serviceTitle() }}</td>
+                        {{-- Details: revealed when the card is tapped on mobile --}}
+                        <x-tables.detail label="Date submitted" class="whitespace-nowrap text-slate-600 dark:text-slate-300">
+                            {{ $application->created_at->timezone(config('app.timezone'))->format('M j, Y g:i A') }}
+                        </x-tables.detail>
+
                         <td data-side="right">
                             <x-tables.badge :variant="$statuses[$application->status] ?? 'neutral'" labeled class="capitalize">
                                 {{ $application->status }}
                             </x-tables.badge>
                         </td>
-
-                        {{-- Details: revealed when the card is tapped on mobile --}}
-                        <x-tables.detail label="Date submitted" class="whitespace-nowrap text-slate-600 dark:text-slate-300">
-                            {{ $application->created_at->timezone(config('app.timezone'))->format('M j, Y g:i A') }}
-                        </x-tables.detail>
 
                         <x-tables.detail side="full" class="text-center">
                             <div class="flex flex-wrap items-start justify-center gap-2">
