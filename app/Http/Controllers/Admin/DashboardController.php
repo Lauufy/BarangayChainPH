@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\IdentityVerification;
+use App\Models\IssuedDocument;
 use App\Models\ServiceRequest;
 use App\Models\User;
 use Illuminate\View\View;
@@ -24,6 +25,12 @@ class DashboardController extends Controller
                 ->count(),
             'authenticatedDocuments' => IdentityVerification::query()
                 ->where('status', IdentityVerification::VERIFIED)
+                ->count(),
+            'recentPermits' => ServiceRequest::with('user')->latest()->limit(5)->get(),
+            // Issued permits that the blockchain has not confirmed yet
+            'unrecordedPermits' => IssuedDocument::query()
+                ->whereNull('revoked_at')
+                ->whereDoesntHave('blockchainRecord', fn ($query) => $query->whereNotNull('recorded_at'))
                 ->count(),
         ]);
     }

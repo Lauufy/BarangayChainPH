@@ -128,7 +128,7 @@
             <div class="hidden items-center gap-4 xl:flex">
                 <x-partials.theme-toggle />
                 @auth
-                    <a href="{{ $home }}" class="{{ $btn }}">Open dashboard</a>
+                    <a href="{{ $home }}" class="{{ $btn }}">Continue</a>
                 @else
                     <a href="{{ route('login') }}"
                         class="text-(--blue-700) dark:text-(--blue-300) hover:text-(--blue-800) dark:hover:text-(--blue-200) text-sm font-semibold transition-colors">Sign
@@ -161,7 +161,7 @@
 
                 <div class="mt-4 flex flex-col gap-3">
                     @auth
-                        <a href="{{ $home }}" class="{{ $btn }}">Open dashboard</a>
+                        <a href="{{ $home }}" class="{{ $btn }}">Continue</a>
                     @else
                         <a href="{{ route('login') }}" class="{{ $btnOutline }}">Sign in</a>
                         <a href="{{ route('register') }}" class="{{ $btn }}">Create account</a>
