@@ -93,7 +93,7 @@ class PermitController extends Controller
         $expiresAt = $this->validatedExpiry($request);
 
         try {
-            $document = $documentIssuer->issue($serviceRequest, $expiresAt);
+            $document = $documentIssuer->issue($serviceRequest, $expiresAt, $request->user()->id);
         } catch (Throwable $e) {
             report($e);
 
@@ -251,7 +251,11 @@ class PermitController extends Controller
                 return null;
             }
 
-            $locked->update(['status' => ServiceRequest::PROCESSING]);
+            $locked->update([
+                'status' => ServiceRequest::PROCESSING,
+                'processed_by' => auth()->id(),
+                'processed_at' => now(),
+            ]);
 
             return $locked->fresh();
         });
@@ -295,7 +299,11 @@ class PermitController extends Controller
                 return null;
             }
 
-            $locked->update($attributes);
+            $locked->update([
+                ...$attributes,
+                'processed_by' => auth()->id(),
+                'processed_at' => now(),
+            ]);
 
             return $locked->fresh();
         });

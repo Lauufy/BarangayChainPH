@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\IssuedDocument;
 use App\Models\ServiceRequest;
+use App\Models\VerificationLog;
 use App\Services\BlockchainRegistry;
 use App\Support\PermitStatusCache;
 use Illuminate\Support\Facades\Cache;
@@ -25,6 +26,15 @@ class PermitVerificationController extends Controller
 
         $application = $document?->serviceRequest;
         $status = $this->cachedStatus($document, $application);
+
+        try {
+            VerificationLog::query()->create([
+                'service_request_id' => $document?->service_request_id,
+                'result' => $status === 'expired' ? 'invalid' : $status,
+            ]);
+        } catch (Throwable $e) {
+            report($e);
+        }
 
         // Only a valid document shows holder details.
         $isValid = $status === 'valid';

@@ -31,6 +31,8 @@ use Illuminate\Support\Str;
     'age',
     'purpose',
     'status',
+    'processed_by',
+    'processed_at',
     'approved_at',
     'cancellation_reason',
     'cancelled_at',
@@ -73,6 +75,7 @@ class ServiceRequest extends Model
             'details' => 'array',
             'print_count' => 'integer',
             'print_limit' => 'integer',
+            'processed_at' => 'datetime',
             'cancelled_at' => 'datetime',
             'approved_at' => 'datetime',
         ];
@@ -81,6 +84,16 @@ class ServiceRequest extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function processor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'processed_by');
+    }
+
+    public function verificationLogs(): HasMany
+    {
+        return $this->hasMany(VerificationLog::class);
     }
 
     public function ticket(): HasOne

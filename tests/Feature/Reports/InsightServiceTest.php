@@ -94,6 +94,7 @@ class InsightServiceTest extends TestCase
         BlockchainRecord::factory()->create([
             'issued_document_id' => $failedDocument->id,
             'error' => 'transaction failed',
+            'created_at' => now(),
         ]);
         ServiceRequest::factory()->create([
             'status' => ServiceRequest::PENDING,
@@ -101,25 +102,33 @@ class InsightServiceTest extends TestCase
         ]);
 
         $pendingRequest = $this->approvedRequest();
-        IssuedDocument::factory()->create([
+        $pendingDocument = IssuedDocument::factory()->create([
             'service_request_id' => $pendingRequest->id,
             'issued_at' => now()->subMinutes(30),
         ]);
+        BlockchainRecord::factory()->create([
+            'issued_document_id' => $pendingDocument->id,
+            'created_at' => now()->subMinutes(30),
+        ]);
         $atThreshold = $this->insight('blockchain_health', $this->filters('2026-11-13', '2026-11-13'));
-        $this->assertSame('Blockchain: 1 failed, 0 stuck.', $atThreshold['message']);
+        $this->assertSame('Blockchain: 1 failed, 0 pending over 30 minutes.', $atThreshold['message']);
 
-        IssuedDocument::factory()->create([
+        $olderPendingDocument = IssuedDocument::factory()->create([
             'service_request_id' => $pendingRequest->id,
             'version' => 2,
             'document_uuid' => 'd1b3cd7d-e696-4a46-98da-8467f6845a43',
             'document_number' => 'PERMIT-SECOND',
             'issued_at' => now()->subMinutes(31),
         ]);
+        BlockchainRecord::factory()->create([
+            'issued_document_id' => $olderPendingDocument->id,
+            'created_at' => now()->subMinutes(31),
+        ]);
 
         $insights = app(InsightService::class)->insights($this->filters('2026-11-13', '2026-11-13'));
         $this->assertSame(['blockchain_health', 'backlog'], array_column($insights, 'type'));
         $this->assertSame('critical', $insights[0]['severity']);
-        $this->assertSame('Blockchain: 1 failed, 1 stuck.', $insights[0]['message']);
+        $this->assertSame('Blockchain: 1 failed, 1 pending over 30 minutes.', $insights[0]['message']);
         $this->assertSame(route('admin.blockchain-ledger.index'), $insights[0]['link']);
     }
 

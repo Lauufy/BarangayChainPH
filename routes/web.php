@@ -300,13 +300,19 @@ Route::middleware(['auth', 'role:admin,staff'])
             ->middleware('permission:blockchain.view')
             ->name('blockchain-ledger.index');
 
-        Route::middleware(['role:admin', 'permission:reports.view'])
+        Route::middleware('permission:reports.view')
             ->controller(ReportController::class)
             ->group(function () {
                 Route::get('/reports', 'index')->name('reports.index');
-                Route::get('/reports/export.csv', 'csv')
-                    ->middleware('throttle:10,1')
-                    ->name('reports.export.csv');
+
+                Route::middleware('role:admin')->group(function () {
+                    Route::get('/reports/export.csv', 'csv')
+                        ->middleware('throttle:10,1')
+                        ->name('reports.export.csv');
+                    Route::get('/reports/export.pdf', 'pdf')
+                        ->middleware('throttle:10,1')
+                        ->name('reports.export.pdf');
+                });
             });
 
         Route::get('/audit-logs', [AuditLogController::class, 'index'])

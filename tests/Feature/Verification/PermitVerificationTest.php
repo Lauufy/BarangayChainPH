@@ -7,6 +7,7 @@ use App\Models\BlockchainRecord;
 use App\Models\IssuedDocument;
 use App\Models\ServiceRequest;
 use App\Models\User;
+use App\Models\VerificationLog;
 use App\Services\BlockchainRegistry;
 use App\Support\PermitStatusCache;
 use Illuminate\Filesystem\FilesystemAdapter;
@@ -80,6 +81,49 @@ class PermitVerificationTest extends TestCase
             ->assertDontSee($filePath);
     }
 
+    public function test_verification_attempts_are_logged_for_each_public_check(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create(['role' => 'citizen']);
+        $application = ServiceRequest::create([
+            'user_id' => $user->id,
+            'reference_number' => 'BRGY-20261030-0002',
+            'service_type' => ServiceRequest::BARANGAY_CLEARANCE,
+            'applicant_name' => 'Carlo Mamaril',
+            'address' => 'Private address',
+            'age' => 22,
+            'purpose' => 'Employment',
+            'status' => ServiceRequest::APPROVED,
+            'permit_number' => 'PERMIT-20261030-VERIFYLOG',
+        ]);
+
+        $filePath = 'issued-documents/verify-log-document.pdf';
+        $fileContents = 'Verification log PDF content';
+        Storage::disk('local')->put($filePath, $fileContents);
+
+        $document = IssuedDocument::create([
+            'service_request_id' => $application->id,
+            'document_uuid' => (string) Str::uuid(),
+            'document_number' => 'PERMIT-20261030-VERIFYLOG',
+            'version' => 1,
+            'disk' => 'local',
+            'file_path' => $filePath,
+            'file_hash' => hash('sha256', $fileContents),
+            'issued_at' => now(),
+        ]);
+
+        $this->recordedOnChain($document, ['ok' => true, 'status' => 'valid']);
+
+        $this->get(route('permits.verify', ['documentUuid' => $document->document_uuid]))
+            ->assertOk();
+
+        $this->assertDatabaseHas('verification_logs', [
+            'service_request_id' => $application->id,
+            'result' => 'valid',
+        ]);
+    }
+
     public function test_revoked_document_hides_holder_details(): void
     {
         Storage::fake('local');
@@ -145,6 +189,39 @@ class PermitVerificationTest extends TestCase
             ->assertViewIs('permits.verify')
             ->assertSee('Not found')
             ->assertDontSee('Carlo Mamaril');
+
+        $this->assertDatabaseHas('verification_logs', [
+            'service_request_id' => null,
+            'result' => 'not_found',
+        ]);
+    }
+
+    public function test_verification_still_succeeds_when_logging_fails(): void
+    {
+        $document = $this->makeIssuedDocument();
+        $this->recordedOnChain($document, ['ok' => true, 'status' => 'valid']);
+        $this->app['events']->listen('eloquent.creating: '.VerificationLog::class, function (): void {
+            throw new \RuntimeException('Verification log storage failed.');
+        });
+
+        $this->get(route('permits.verify', $document->document_uuid))
+            ->assertOk()
+            ->assertSee('This certificate is valid.');
+
+        $this->assertDatabaseCount('verification_logs', 0);
+    }
+
+    public function test_public_verification_route_remains_throttled(): void
+    {
+        $documentUuid = (string) Str::uuid();
+        $url = route('permits.verify', ['documentUuid' => $documentUuid]);
+
+        for ($attempt = 0; $attempt < 60; $attempt++) {
+            $this->get($url)->assertOk();
+        }
+
+        $this->get($url)->assertTooManyRequests();
+        $this->assertDatabaseCount('verification_logs', 60);
     }
 
     public function test_document_with_tampered_file_displays_cannot_be_confirmed(): void

@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\BlockchainRecord;
-use App\Models\IssuedDocument;
 use App\Models\ServiceRequest;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -109,29 +108,19 @@ class InsightService
     private function blockchainInsight(array $filters): ?array
     {
         $pendingMinutes = (int) config('reports.thresholds.blockchain_pending_minutes');
-        $documents = IssuedDocument::query()
-            ->whereNull('revoked_at')
-            ->where('issued_at', '<', now()->subMinutes($pendingMinutes))
-            ->whereHas('serviceRequest', fn (Builder $query) => $query
-                ->when(
-                    ! empty($filters['document_type']),
-                    fn (Builder $builder) => $builder->where('service_type', $filters['document_type'])
-                ));
-        $failed = BlockchainRecord::query()
-            ->whereNotNull('error')
+        $type = $filters['permit_type'] ?? $filters['document_type'] ?? null;
+        $records = BlockchainRecord::query()
             ->whereHas('issuedDocument.serviceRequest', fn (Builder $query) => $query
-                ->when(
-                    ! empty($filters['document_type']),
-                    fn (Builder $builder) => $builder->where('service_type', $filters['document_type'])
-                ))
+                ->when($type, fn (Builder $builder) => $builder->where('service_type', $type)));
+        $failed = (clone $records)
+            ->whereNotNull('error')
+            ->whereNull('revoked_at')
             ->count();
-        $pending = (clone $documents)
-            ->where(function (Builder $query) {
-                $query->whereDoesntHave('blockchainRecord')
-                    ->orWhereHas('blockchainRecord', fn (Builder $record) => $record
-                        ->whereNull('recorded_at')
-                        ->whereNull('error'));
-            })
+        $pending = (clone $records)
+            ->whereNull('recorded_at')
+            ->whereNull('error')
+            ->whereNull('revoked_at')
+            ->where('created_at', '<', now()->subMinutes($pendingMinutes))
             ->count();
 
         if ($failed + $pending === 0) {
@@ -141,7 +130,7 @@ class InsightService
         return [
             'type' => 'blockchain_health',
             'severity' => 'critical',
-            'message' => "Blockchain: {$failed} failed, {$pending} stuck.",
+            'message' => "Blockchain: {$failed} failed, {$pending} pending over {$pendingMinutes} minutes.",
             'link' => route('admin.blockchain-ledger.index'),
         ];
     }

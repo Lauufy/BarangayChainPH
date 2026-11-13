@@ -20,9 +20,12 @@ class DocumentIssuer
     private const DISK = 'supabase';
 
     /** Approves an open request and issues version 1. Returns the existing document if already issued. */
-    public function issue(ServiceRequest $serviceRequest, ?CarbonInterface $expiresAt = null): IssuedDocument
-    {
-        return $this->locked($serviceRequest, function (ServiceRequest $application, ?string &$uploadedPath) use ($expiresAt) {
+    public function issue(
+        ServiceRequest $serviceRequest,
+        ?CarbonInterface $expiresAt = null,
+        ?int $processorId = null
+    ): IssuedDocument {
+        return $this->locked($serviceRequest, function (ServiceRequest $application, ?string &$uploadedPath) use ($expiresAt, $processorId) {
             if ($existing = $this->activeDocument($application)) {
                 return $existing;
             }
@@ -47,6 +50,10 @@ class DocumentIssuer
                 'approved_at' => now(),
                 'permit_number' => $documentNumber,
                 'rejection_reason' => null,
+                ...($processorId === null ? [] : [
+                    'processed_by' => $processorId,
+                    'processed_at' => now(),
+                ]),
             ]);
 
             $application->issuedDocuments()->save($document);

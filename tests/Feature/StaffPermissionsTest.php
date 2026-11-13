@@ -37,6 +37,7 @@ class StaffPermissionsTest extends TestCase
             'admin.blockchain-ledger.index' => 'blockchain.view',
             'admin.document-authentication.index' => 'documents.authenticate',
             'admin.permits.index' => 'permits.review',
+            'admin.reports.index' => 'reports.view',
             'admin.tickets.index' => 'tickets.reply',
         ];
 
@@ -44,10 +45,6 @@ class StaffPermissionsTest extends TestCase
             $this->actingAs($this->staff())->get(route($route))->assertForbidden();
             $this->actingAs($this->staff([$permission]))->get(route($route))->assertOk();
         }
-
-        $this->actingAs($this->staff(['reports.view']))
-            ->get(route('admin.reports.index'))
-            ->assertForbidden();
     }
 
     public function test_users_and_roles_is_admin_only(): void
