@@ -190,7 +190,7 @@ class ServiceApplicationController extends Controller
      */
     private function infoSections(User $user, Model $profile): array
     {
-        $skip = ['id', 'role', 'is_active', 'remember_token'];
+        $skip = ['id', 'role', 'remember_token'];
         $sections = ['Personal information' => [], 'Contact information' => [], 'Address' => []];
 
         foreach ([$user, $profile] as $model) {
@@ -408,7 +408,7 @@ class ServiceApplicationController extends Controller
     private function notifyAdmins(User $user, ServiceRequest $serviceRequest): void
     {
         try {
-            $admins = User::where('role', 'admin')->where('is_active', true)->get();
+            $admins = User::where('role', 'admin')->get();
 
             if ($admins->isNotEmpty()) {
                 Notification::send($admins, new CitizenSubmissionReceived(

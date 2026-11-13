@@ -88,7 +88,7 @@ class AuditLoggingTest extends TestCase
 
     public function test_staff_permission_update_records_actor_role_and_request_metadata(): void
     {
-        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $admin = User::factory()->create(['role' => 'admin']);
         $staff = User::factory()->create(['role' => 'staff', 'permissions' => []]);
 
         $this->actingAs($admin)
@@ -159,7 +159,6 @@ class AuditLoggingTest extends TestCase
             'email' => 'audit-admin@example.com',
             'password' => 'StrongPass123!',
             'role' => 'admin',
-            'is_active' => true,
             'two_factor_enabled' => false,
         ]);
 
@@ -193,7 +192,6 @@ class AuditLoggingTest extends TestCase
         $staff = User::factory()->create([
             'role' => 'staff',
             'permissions' => ['permits.review'],
-            'is_active' => true,
         ]);
         $serviceRequest = $this->createServiceRequest();
 
@@ -219,7 +217,6 @@ class AuditLoggingTest extends TestCase
         $staff = User::factory()->create([
             'role' => 'staff',
             'permissions' => ['permits.review'],
-            'is_active' => true,
         ]);
         $serviceRequest = $this->createServiceRequest();
 

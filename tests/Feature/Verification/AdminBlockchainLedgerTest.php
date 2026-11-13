@@ -19,9 +19,8 @@ class AdminBlockchainLedgerTest extends TestCase
         $staff = User::factory()->create([
             'role' => 'staff',
             'permissions' => ['blockchain.view'],
-            'is_active' => true,
         ]);
-        $citizen = User::factory()->create(['role' => 'citizen', 'is_active' => true]);
+        $citizen = User::factory()->create(['role' => 'citizen']);
 
         $application = ServiceRequest::create([
             'user_id' => $citizen->id,

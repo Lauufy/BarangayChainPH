@@ -89,7 +89,7 @@
                 'admin/reports*',
                 'Reports & Analytics',
                 '<path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/>',
-                $can('reports.view'),
+                $admin && $can('reports.view'),
             ],
             [
                 '/admin/audit-logs',

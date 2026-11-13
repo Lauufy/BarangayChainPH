@@ -162,7 +162,6 @@ class PermitBlockchainJobsTest extends TestCase
     {
         $citizen = User::factory()->create([
             'role' => 'citizen',
-            'is_active' => true,
         ]);
         $application = ServiceRequest::create([
             'user_id' => $citizen->id,

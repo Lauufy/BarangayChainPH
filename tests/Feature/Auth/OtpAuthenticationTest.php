@@ -104,6 +104,19 @@ class OtpAuthenticationTest extends TestCase
         Notification::assertNothingSent();
     }
 
+    public function test_registration_is_throttled_after_ten_attempts(): void
+    {
+        for ($attempt = 0; $attempt < 10; $attempt++) {
+            $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.45'])
+                ->post(route('register.store'), [])
+                ->assertInvalid(['name']);
+        }
+
+        $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.45'])
+            ->post(route('register.store'), [])
+            ->assertTooManyRequests();
+    }
+
     public function test_unverified_email_must_be_verified_before_channel_choice_and_login(): void
     {
         $this->fakeHttp();
@@ -327,12 +340,11 @@ class OtpAuthenticationTest extends TestCase
         return ['staff' => ['staff'], 'admin' => ['admin']];
     }
 
-    public function test_login_rejects_wrong_password_unknown_user_and_inactive_user(): void
+    public function test_login_rejects_wrong_password_and_unknown_user(): void
     {
         $this->fakeHttp();
         Notification::fake();
         $user = $this->citizen(['email' => 'active@example.com']);
-        $inactive = $this->citizen(['email' => 'inactive@example.com', 'is_active' => false]);
 
         $this->post(route('login.store'), [
             'mode' => 'email',
@@ -343,12 +355,6 @@ class OtpAuthenticationTest extends TestCase
         $this->post(route('login.store'), [
             'mode' => 'email',
             'identifier' => 'missing@example.com',
-            'password' => 'StrongPass123!',
-        ])->assertSessionHasErrors('identifier');
-
-        $this->post(route('login.store'), [
-            'mode' => 'email',
-            'identifier' => $inactive->email,
             'password' => 'StrongPass123!',
         ])->assertSessionHasErrors('identifier');
 
@@ -791,7 +797,7 @@ class OtpAuthenticationTest extends TestCase
 
     public function test_admin_user_listing_displays_the_users_phone_number(): void
     {
-        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $admin = User::factory()->create(['role' => 'admin']);
         $this->citizen([
             'email' => 'listed-phone@example.com',
             'phone' => '+639171234567',
@@ -890,7 +896,6 @@ class OtpAuthenticationTest extends TestCase
             'email' => 'citizen@example.com',
             'password' => 'StrongPass123!',
             'role' => 'citizen',
-            'is_active' => true,
         ], $attributes));
     }
 
@@ -940,7 +945,6 @@ class OtpAuthenticationTest extends TestCase
             'email' => 'staff-2fa@example.com',
             'role' => 'staff',
             'password' => 'StrongPass123!',
-            'is_active' => true,
             'email_verified_at' => now(),
             'two_factor_enabled' => true,
         ]);

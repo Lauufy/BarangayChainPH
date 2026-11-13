@@ -19,18 +19,6 @@ class RoleMiddleware
             return redirect()->route('login');
         }
 
-        if (! $user->is_active) {
-            auth()->guard()->logout();
-
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-
-            return redirect()->route('login')
-                ->withErrors([
-                    'email' => 'Your account is inactive.',
-                ]);
-        }
-
         if (! in_array($user->role, $roles, true)) {
             abort(403, 'You are not authorized to access this page.');
         }

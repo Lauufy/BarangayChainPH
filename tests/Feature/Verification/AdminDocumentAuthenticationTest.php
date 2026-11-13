@@ -18,13 +18,12 @@ class AdminDocumentAuthenticationTest extends TestCase
         return User::factory()->create([
             'role' => 'staff',
             'permissions' => ['documents.authenticate'],
-            'is_active' => true,
         ]);
     }
 
     private function issuePermit(string $number, string $name): void
     {
-        $citizen = User::factory()->create(['role' => 'citizen', 'is_active' => true]);
+        $citizen = User::factory()->create(['role' => 'citizen']);
 
         $application = ServiceRequest::create([
             'user_id' => $citizen->id,

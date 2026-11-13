@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -30,6 +31,7 @@ use Illuminate\Support\Str;
     'age',
     'purpose',
     'status',
+    'approved_at',
     'cancellation_reason',
     'cancelled_at',
     'rejection_reason',
@@ -39,7 +41,7 @@ use Illuminate\Support\Str;
 ])]
 class ServiceRequest extends Model
 {
-    use Auditable;
+    use Auditable, HasFactory;
 
     // Service types (must match 'type' in config/barangay_services.php)
     public const CERTIFICATE_OF_INDIGENCY = 'certificate_of_indigency';
@@ -72,6 +74,7 @@ class ServiceRequest extends Model
             'print_count' => 'integer',
             'print_limit' => 'integer',
             'cancelled_at' => 'datetime',
+            'approved_at' => 'datetime',
         ];
     }
 

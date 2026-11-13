@@ -24,11 +24,9 @@ class PermitBlockchainDispatchTest extends TestCase
         $staff = User::factory()->create([
             'role' => 'staff',
             'permissions' => ['permits.review'],
-            'is_active' => true,
         ]);
         $citizen = User::factory()->create([
             'role' => 'citizen',
-            'is_active' => true,
         ]);
         $application = ServiceRequest::create([
             'user_id' => $citizen->id,
@@ -91,11 +89,9 @@ class PermitBlockchainDispatchTest extends TestCase
         $staff = User::factory()->create([
             'role' => 'staff',
             'permissions' => ['permits.review'],
-            'is_active' => true,
         ]);
         $citizen = User::factory()->create([
             'role' => 'citizen',
-            'is_active' => true,
         ]);
         $application = ServiceRequest::create([
             'user_id' => $citizen->id,
@@ -130,11 +126,9 @@ class PermitBlockchainDispatchTest extends TestCase
         $staff = User::factory()->create([
             'role' => 'staff',
             'permissions' => ['permits.review'],
-            'is_active' => true,
         ]);
         $citizen = User::factory()->create([
             'role' => 'citizen',
-            'is_active' => true,
         ]);
         $application = ServiceRequest::create([
             'user_id' => $citizen->id,

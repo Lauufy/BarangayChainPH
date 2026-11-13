@@ -15,7 +15,6 @@ class PermitIdentityGateTest extends TestCase
     {
         return User::factory()->create([
             'role' => 'citizen',
-            'is_active' => true,
         ]);
     }
 

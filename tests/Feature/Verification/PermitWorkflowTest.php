@@ -31,7 +31,6 @@ class PermitWorkflowTest extends TestCase
 
         $user = User::factory()->create([
             'role' => 'citizen',
-            'is_active' => true,
         ]);
 
         $application = ServiceRequest::create([
@@ -84,7 +83,6 @@ class PermitWorkflowTest extends TestCase
 
         $user = User::factory()->create([
             'role' => 'citizen',
-            'is_active' => true,
         ]);
 
         $application = ServiceRequest::create([
@@ -107,6 +105,7 @@ class PermitWorkflowTest extends TestCase
             'status' => ServiceRequest::APPROVED,
             'permit_number' => $document->document_number,
         ]);
+        $this->assertNotNull($application->fresh()->approved_at);
 
         $this->assertDatabaseHas('issued_documents', [
             'id' => $document->id,
@@ -137,7 +136,6 @@ class PermitWorkflowTest extends TestCase
 
         $user = User::factory()->create([
             'role' => 'citizen',
-            'is_active' => true,
         ]);
 
         $application = ServiceRequest::create([
@@ -184,7 +182,6 @@ class PermitWorkflowTest extends TestCase
 
         $user = User::factory()->create([
             'role' => 'citizen',
-            'is_active' => true,
         ]);
         $application = ServiceRequest::create([
             'user_id' => $user->id,
@@ -222,7 +219,6 @@ class PermitWorkflowTest extends TestCase
 
         $user = User::factory()->create([
             'role' => 'citizen',
-            'is_active' => true,
         ]);
 
         $application = ServiceRequest::create([
@@ -259,7 +255,7 @@ class PermitWorkflowTest extends TestCase
         $disk->shouldReceive('put')
             ->once()
             ->withArgs(
-                fn($path, $content) => str_starts_with($path, 'issued-documents/')
+                fn ($path, $content) => str_starts_with($path, 'issued-documents/')
                     && str_ends_with($path, '.pdf')
                     && str_starts_with($content, '%PDF')
             )
@@ -268,7 +264,7 @@ class PermitWorkflowTest extends TestCase
         $disk->shouldReceive('delete')
             ->once()
             ->withArgs(
-                fn($path) => str_starts_with($path, 'issued-documents/')
+                fn ($path) => str_starts_with($path, 'issued-documents/')
                     && str_ends_with($path, '.pdf')
             )
             ->andReturn(true);
@@ -279,7 +275,6 @@ class PermitWorkflowTest extends TestCase
 
         $user = User::factory()->create([
             'role' => 'citizen',
-            'is_active' => true,
         ]);
 
         $application = ServiceRequest::create([
@@ -318,7 +313,6 @@ class PermitWorkflowTest extends TestCase
 
         $user = User::factory()->create([
             'role' => 'citizen',
-            'is_active' => true,
         ]);
 
         $application = ServiceRequest::create([
@@ -414,7 +408,6 @@ class PermitWorkflowTest extends TestCase
 
         $user = User::factory()->create([
             'role' => 'citizen',
-            'is_active' => true,
         ]);
 
         $application = ServiceRequest::create([
@@ -445,7 +438,7 @@ class PermitWorkflowTest extends TestCase
         $disk->shouldReceive('delete')
             ->once()
             ->withArgs(
-                fn($path) => str_starts_with($path, 'issued-documents/')
+                fn ($path) => str_starts_with($path, 'issued-documents/')
                     && str_ends_with($path, '.pdf')
                     && $path !== $originalPath
             )
@@ -486,7 +479,7 @@ class PermitWorkflowTest extends TestCase
     {
         Storage::fake('supabase');
 
-        $user = User::factory()->create(['role' => 'citizen', 'is_active' => true]);
+        $user = User::factory()->create(['role' => 'citizen']);
 
         $application = ServiceRequest::create([
             'user_id' => $user->id,

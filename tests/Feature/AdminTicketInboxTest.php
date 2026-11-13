@@ -18,7 +18,6 @@ class AdminTicketInboxTest extends TestCase
     {
         $admin = User::factory()->create([
             'role' => 'admin',
-            'is_active' => true,
         ]);
         $citizen = User::factory()->create(['role' => 'citizen']);
         $sender = User::factory()->create(['role' => 'staff']);
@@ -54,7 +53,6 @@ class AdminTicketInboxTest extends TestCase
     {
         $citizen = User::factory()->create([
             'role' => 'citizen',
-            'is_active' => true,
         ]);
         CitizenProfile::create([
             'user_id' => $citizen->id,

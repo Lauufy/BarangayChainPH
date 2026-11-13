@@ -53,10 +53,6 @@ class LoginController extends Controller
             $this->fail($field, 'The login details or password are incorrect.');
         }
 
-        if (! $user->is_active) {
-            $this->fail($field, 'Your account is inactive. Please contact the administrator.');
-        }
-
         $request->session()->regenerate();
         $remember = $request->boolean('remember');
 

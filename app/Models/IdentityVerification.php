@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
@@ -41,7 +42,7 @@ use Illuminate\Support\Facades\Storage;
  */
 class IdentityVerification extends Model
 {
-    use Auditable;
+    use Auditable, HasFactory;
 
     // The possible statuses (Unverified = no row yet)
     public const PENDING = 'pending';

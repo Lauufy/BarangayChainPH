@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\IdentityReviewController;
 use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
 use App\Http\Controllers\Admin\PermitController;
 use App\Http\Controllers\Admin\ProfileController as AdminProfileController;
+use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\TicketInboxController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\OtpController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
+use App\Http\Controllers\Citizen\DashboardController as CitizenDashboardController;
 use App\Http\Controllers\Citizen\IdentityVerificationController;
 use App\Http\Controllers\Citizen\NotificationController;
 use App\Http\Controllers\Citizen\ProfileController;
@@ -59,7 +61,9 @@ Route::middleware('guest')->group(function () {
 
     // Registration
     Route::get('/register', [RegisterController::class, 'create'])->name('register');
-    Route::post('/register', [RegisterController::class, 'store'])->name('register.store');
+    Route::post('/register', [RegisterController::class, 'store'])
+        ->middleware('throttle:10,1,registration')
+        ->name('register.store');
 
     // Login
     Route::get('/login', [LoginController::class, 'create'])->name('login');
@@ -142,7 +146,7 @@ Route::middleware(['auth', 'role:citizen'])
     ->name('citizen.')
     ->group(function () {
 
-        Route::view('/dashboard', 'citizen.dashboard.index')->name('dashboard');
+        Route::get('/dashboard', [CitizenDashboardController::class, 'index'])->name('dashboard');
 
         // The services page loads its own data
         Route::view('/services', 'citizen.services.index')->name('services');
@@ -248,9 +252,6 @@ Route::middleware(['auth', 'role:admin,staff'])
         Route::middleware('role:admin')->group(function () {
             Route::resource('users', UserController::class)->only(['index', 'store', 'update', 'destroy']);
 
-            Route::patch('/users/{user}/status', [UserController::class, 'toggleStatus'])
-                ->name('users.toggle-status');
-
             Route::get('/users/{user}/permissions', [UserController::class, 'permissions'])
                 ->name('users.permissions');
 
@@ -299,9 +300,14 @@ Route::middleware(['auth', 'role:admin,staff'])
             ->middleware('permission:blockchain.view')
             ->name('blockchain-ledger.index');
 
-        Route::view('/reports', 'admin.reports.index')
-            ->middleware('permission:reports.view')
-            ->name('reports.index');
+        Route::middleware(['role:admin', 'permission:reports.view'])
+            ->controller(ReportController::class)
+            ->group(function () {
+                Route::get('/reports', 'index')->name('reports.index');
+                Route::get('/reports/export.csv', 'csv')
+                    ->middleware('throttle:10,1')
+                    ->name('reports.export.csv');
+            });
 
         Route::get('/audit-logs', [AuditLogController::class, 'index'])
             ->middleware('permission:audit.view')

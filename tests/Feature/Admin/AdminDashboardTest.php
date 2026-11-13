@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Models\IdentityVerification;
 use App\Models\ServiceRequest;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -16,9 +17,8 @@ class AdminDashboardTest extends TestCase
         $staff = User::factory()->create([
             'role' => 'staff',
             'permissions' => ['permits.review'],
-            'is_active' => true,
         ]);
-        $citizen = User::factory()->create(['role' => 'citizen', 'is_active' => true]);
+        $citizen = User::factory()->create(['role' => 'citizen']);
 
         ServiceRequest::create([
             'user_id' => $citizen->id,
@@ -42,9 +42,8 @@ class AdminDashboardTest extends TestCase
         $staff = User::factory()->create([
             'role' => 'staff',
             'permissions' => ['permits.review'],
-            'is_active' => true,
         ]);
-        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $admin = User::factory()->create(['role' => 'admin']);
 
         $this->actingAs($staff)
             ->get(route('admin.dashboard'))
@@ -53,5 +52,33 @@ class AdminDashboardTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.dashboard'))
             ->assertSee('User & Role Management');
+    }
+
+    public function test_staff_dashboard_shows_workload_from_permitted_shared_queues(): void
+    {
+        $staff = User::factory()->create([
+            'role' => 'staff',
+            'permissions' => ['permits.review', 'identity.review'],
+        ]);
+        $citizen = User::factory()->create(['role' => 'citizen']);
+        $request = ServiceRequest::factory()->create([
+            'user_id' => $citizen->id,
+            'reference_number' => 'BRGY-WORKLOAD-0001',
+            'status' => ServiceRequest::PENDING,
+            'created_at' => now()->subDays(4),
+        ]);
+        IdentityVerification::factory()->create([
+            'user_id' => $citizen->id,
+            'status' => IdentityVerification::PENDING,
+        ]);
+
+        $this->actingAs($staff)
+            ->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee('My workload')
+            ->assertSee('Requests awaiting action')
+            ->assertSee('Identity reviews in queue')
+            ->assertSee('BRGY-WORKLOAD-0001')
+            ->assertSee('4 days old');
     }
 }

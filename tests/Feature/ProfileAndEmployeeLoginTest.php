@@ -154,7 +154,6 @@ class ProfileAndEmployeeLoginTest extends TestCase
             'email' => 'taylor@example.com',
             'password' => 'StrongPass123!',
             'role' => 'staff',
-            'is_active' => true,
             'two_factor_enabled' => false,
         ]);
 
@@ -182,7 +181,6 @@ class ProfileAndEmployeeLoginTest extends TestCase
 
         $admin = User::factory()->create([
             'role' => 'admin',
-            'is_active' => true,
         ]);
 
         $this->actingAs($admin)
@@ -221,7 +219,6 @@ class ProfileAndEmployeeLoginTest extends TestCase
 
         $signedInAdmin = User::factory()->create([
             'role' => 'admin',
-            'is_active' => true,
         ]);
 
         $this->actingAs($signedInAdmin)
@@ -249,7 +246,6 @@ class ProfileAndEmployeeLoginTest extends TestCase
     {
         $user = User::factory()->create([
             'role' => 'citizen',
-            'is_active' => true,
             'email_verified_at' => now(),
             'password' => 'Password123!',
             'two_factor_enabled' => false,
@@ -270,7 +266,6 @@ class ProfileAndEmployeeLoginTest extends TestCase
     {
         $user = User::factory()->create([
             'role' => 'staff',
-            'is_active' => true,
             'email_verified_at' => now(),
             'password' => 'Password123!',
             'two_factor_enabled' => false,
@@ -291,7 +286,6 @@ class ProfileAndEmployeeLoginTest extends TestCase
     {
         $user = User::factory()->create([
             'role' => 'citizen',
-            'is_active' => true,
             'email_verified_at' => now(),
             'password' => 'Password123!',
             'two_factor_enabled' => true,
@@ -312,7 +306,6 @@ class ProfileAndEmployeeLoginTest extends TestCase
     {
         $user = User::factory()->create([
             'role' => 'citizen',
-            'is_active' => true,
             'email_verified_at' => now(),
             'password' => 'Password123!',
             'two_factor_enabled' => false,
@@ -331,7 +324,6 @@ class ProfileAndEmployeeLoginTest extends TestCase
     {
         $user = User::factory()->create([
             'role' => 'citizen',
-            'is_active' => true,
             'email_verified_at' => null,
             'phone_verified_at' => null,
             'password' => 'Password123!',

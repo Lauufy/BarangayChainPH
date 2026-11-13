@@ -87,7 +87,6 @@ class UserController extends Controller
                     'phone' => $validated['phone'] ?? null,
                     'password' => $validated['password'],
                     'role' => $validated['role'],
-                    'is_active' => true,
                 ]);
 
                 // New staff start with the default access. An admin can change it later.

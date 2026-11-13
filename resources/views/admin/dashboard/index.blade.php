@@ -13,7 +13,7 @@
             ['admin.users.index', 'User & Role Management', $isAdmin],
             ['admin.identity-verification.index', 'Identity Verification', $can('identity.review')],
             ['admin.permits.index', 'Permit Management', $can('permits.review')],
-            ['admin.reports.index', 'Reports & Analytics', $can('reports.view')],
+            ['admin.reports.index', 'Reports & Analytics', $isAdmin && $can('reports.view')],
         ])->filter(fn ($shortcut) => $shortcut[2]);
     @endphp
 
@@ -58,6 +58,44 @@
                 :href="$can('identity.review') ? route('admin.identity-verification.index') : null"
             />
         </div>
+
+        @if ($workload)
+            <section class="admin-card p-5" aria-labelledby="staff-workload-heading">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                        <h2 id="staff-workload-heading" class="font-semibold text-slate-900">My workload</h2>
+                        <p class="mt-1 text-sm text-slate-500">Open items in the queues you can review.</p>
+                    </div>
+                    @if (! $workload['can_review_permits'] && ! $workload['can_review_identity'])
+                        <p class="text-sm text-slate-500">No review queues are assigned to your account.</p>
+                    @endif
+                </div>
+
+                <div class="mt-4 grid gap-3 sm:grid-cols-3">
+                    @if ($workload['can_review_permits'])
+                        <div class="rounded-lg bg-slate-50 p-4">
+                            <p class="text-sm text-slate-600">Requests awaiting action</p>
+                            <p class="mt-1 text-2xl font-bold text-slate-900">{{ $workload['requests'] }}</p>
+                        </div>
+                    @endif
+                    @if ($workload['can_review_identity'])
+                        <div class="rounded-lg bg-slate-50 p-4">
+                            <p class="text-sm text-slate-600">Identity reviews in queue</p>
+                            <p class="mt-1 text-2xl font-bold text-slate-900">{{ $workload['identity_reviews'] }}</p>
+                        </div>
+                    @endif
+                    <div class="rounded-lg bg-slate-50 p-4">
+                        <p class="text-sm text-slate-600">Oldest pending item</p>
+                        @if ($workload['oldest_item'])
+                            <p class="mt-1 font-semibold text-slate-900">{{ $workload['oldest_item']['label'] }}</p>
+                            <p class="mt-1 text-xs text-slate-500">{{ $workload['oldest_item']['age_days'] }} days old</p>
+                        @else
+                            <p class="mt-1 text-sm text-slate-500">No open items.</p>
+                        @endif
+                    </div>
+                </div>
+            </section>
+        @endif
 
         <div class="grid gap-6 xl:grid-cols-3">
             {{-- Recent Permit Requests --}}

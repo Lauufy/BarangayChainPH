@@ -39,7 +39,6 @@ class GoogleController extends Controller
                 'password' => Str::random(24),
                 'email_verified_at' => now(),
                 'role' => 'citizen',
-                'is_active' => true,
             ]
         );
 
@@ -54,12 +53,6 @@ class GoogleController extends Controller
             // Existing account (registered normally, never used Google before)
             // with a verified email or phone: assume they already have a password.
             $user->forceFill(['google_password_setup_required' => false])->save();
-        }
-
-        if (! $user->is_active) {
-            return redirect()->route('login')->withErrors([
-                'identifier' => 'Your account is inactive. Please contact the administrator.',
-            ]);
         }
 
         // Staff and administrators must use the password login.
@@ -157,7 +150,7 @@ class GoogleController extends Controller
 
         $user = User::find($pending['user_id'] ?? null);
 
-        if (! $user || ! $user->is_active || ! $user->isCitizen() || ! $user->google_password_setup_required) {
+        if (! $user || ! $user->isCitizen() || ! $user->google_password_setup_required) {
             return null;
         }
 

@@ -15,7 +15,6 @@ class DashboardLabelTest extends TestCase
     {
         $admin = User::factory()->create([
             'role' => 'admin',
-            'is_active' => true,
         ]);
 
         $this->actingAs($admin)

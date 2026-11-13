@@ -64,7 +64,6 @@ class AuditFixesTest extends TestCase
 
         $user = User::factory()->withoutTwoFactor()->create([
             'role' => $role,
-            'is_active' => true,
         ]);
 
         $response = $this->post(self::LOGIN_URL, [
@@ -80,7 +79,6 @@ class AuditFixesTest extends TestCase
     {
         $user = User::factory()->withoutTwoFactor()->create([
             'role' => 'citizen',
-            'is_active' => true,
         ]);
 
         $this->post(self::LOGIN_URL, [

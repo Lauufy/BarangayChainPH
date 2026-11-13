@@ -60,6 +60,7 @@
         $doneCount = (int) $verified + (int) ($missing === 0);
 
         $stats = $stats ?? [];
+        $recentRequests = $recentRequests ?? collect();
         $announcements = collect($announcements ?? []);
         $hasImportant = $announcements->contains(fn($a) => data_get($a, 'important'));
 
@@ -179,6 +180,42 @@
                         @endforeach
                     </dl>
                 @endif
+            </div>
+        </section>
+
+        <section aria-labelledby="recent-requests-title" class="{{ $bleed }}">
+            <div class="{{ $inner }} py-8 sm:py-10">
+                <div class="{{ $head }}">
+                    <div>
+                        <p class="{{ $eyebrow }} uppercase">Your activity</p>
+                        <h2 id="recent-requests-title" class="{{ $h2 }}">Recent applications</h2>
+                    </div>
+                    <a href="{{ route('citizen.applications') }}" class="{{ $textLink }}">View all applications</a>
+                </div>
+
+                <div class="mt-6 grid gap-3">
+                    @forelse ($recentRequests as $application)
+                        @php
+                            [$badgeClass, $statusLabel] = match ($application->status) {
+                                'approved' => ['bg-(--green-600) text-(--white)', 'Approved'],
+                                'rejected' => ['bg-(--red-600) text-(--white)', 'Rejected'],
+                                'processing' => ['bg-(--amber-500) text-(--gray-900)', 'Processing'],
+                                'cancelled' => ['bg-(--gray-600) text-(--white)', 'Cancelled'],
+                                default => ['bg-(--amber-500) text-(--gray-900)', 'Pending'],
+                            };
+                        @endphp
+                        <a href="{{ route('citizen.applications.show', $application) }}"
+                            class="{{ $glass }} flex flex-wrap items-center justify-between gap-3 rounded-xl p-4 transition hover:-translate-y-0.5 sm:px-6">
+                            <span class="min-w-0">
+                                <span class="{{ $ink }} block font-semibold">{{ $application->serviceTitle() }}</span>
+                                <span class="{{ $muted }} mt-1 block text-sm">{{ $application->reference_number }} · Submitted {{ $application->created_at->format('M j, Y') }}</span>
+                            </span>
+                            <span class="{{ $badgeClass }} rounded-full px-3 py-1 text-xs font-semibold">{{ $statusLabel }}</span>
+                        </a>
+                    @empty
+                        <p class="{{ $glass }} {{ $muted }} rounded-xl p-5 text-sm">You have not submitted any applications yet.</p>
+                    @endforelse
+                </div>
             </div>
         </section>
 

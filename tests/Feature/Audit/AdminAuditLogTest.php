@@ -17,7 +17,7 @@ class AdminAuditLogTest extends TestCase
     /** Check service request edits are stored and readable in the filtered log. */
     public function test_admin_can_filter_a_service_request_change(): void
     {
-        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $admin = User::factory()->create(['role' => 'admin']);
         $application = $this->createServiceRequest();
         $this->actingAs($admin);
 
@@ -40,7 +40,7 @@ class AdminAuditLogTest extends TestCase
     /** Check issued document records use the same audit observer. */
     public function test_issued_document_creation_is_recorded(): void
     {
-        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $admin = User::factory()->create(['role' => 'admin']);
         $application = $this->createServiceRequest();
         $this->actingAs($admin);
 

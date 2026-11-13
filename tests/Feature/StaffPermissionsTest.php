@@ -14,14 +14,13 @@ class StaffPermissionsTest extends TestCase
     {
         return User::factory()->create([
             'role' => 'staff',
-            'is_active' => true,
             'permissions' => $permissions,
         ]);
     }
 
     private function admin(): User
     {
-        return User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        return User::factory()->create(['role' => 'admin']);
     }
 
     public function test_dashboard_is_open_to_every_staff_member(): void
@@ -34,7 +33,6 @@ class StaffPermissionsTest extends TestCase
     public function test_staff_pages_need_their_permission(): void
     {
         $pages = [
-            'admin.reports.index' => 'reports.view',
             'admin.audit-logs.index' => 'audit.view',
             'admin.blockchain-ledger.index' => 'blockchain.view',
             'admin.document-authentication.index' => 'documents.authenticate',
@@ -46,6 +44,10 @@ class StaffPermissionsTest extends TestCase
             $this->actingAs($this->staff())->get(route($route))->assertForbidden();
             $this->actingAs($this->staff([$permission]))->get(route($route))->assertOk();
         }
+
+        $this->actingAs($this->staff(['reports.view']))
+            ->get(route('admin.reports.index'))
+            ->assertForbidden();
     }
 
     public function test_users_and_roles_is_admin_only(): void

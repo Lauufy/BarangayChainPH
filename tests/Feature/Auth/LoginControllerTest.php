@@ -20,7 +20,6 @@ class LoginControllerTest extends TestCase
             'email' => 'citizen@example.com',
             'password' => 'StrongPass123!',
             'role' => 'citizen',
-            'is_active' => true,
         ]);
 
         $response = $this->post(route('login.store'), [
@@ -62,7 +61,6 @@ class LoginControllerTest extends TestCase
             'email' => 'admin@example.com',
             'password' => 'StrongPass123!',
             'role' => 'admin',
-            'is_active' => true,
             'two_factor_enabled' => false,
         ]);
 
@@ -89,7 +87,6 @@ class LoginControllerTest extends TestCase
             'phone' => '+639171234567',
             'password' => 'StrongPass123!',
             'role' => 'citizen',
-            'is_active' => true,
             'two_factor_enabled' => false,
             'phone_verified_at' => null,
         ]);
@@ -115,7 +112,6 @@ class LoginControllerTest extends TestCase
             'phone_verified_at' => now(),
             'password' => 'StrongPass123!',
             'role' => 'citizen',
-            'is_active' => true,
             'two_factor_enabled' => false,
         ]);
 

@@ -14,7 +14,6 @@ class StaffIdentityReviewAccessTest extends TestCase
     {
         return User::factory()->create([
             'role' => 'staff',
-            'is_active' => true,
             'permissions' => $permissions,
         ]);
     }
@@ -37,7 +36,6 @@ class StaffIdentityReviewAccessTest extends TestCase
     {
         $admin = User::factory()->create([
             'role' => 'admin',
-            'is_active' => true,
         ]);
 
         $this->actingAs($admin)

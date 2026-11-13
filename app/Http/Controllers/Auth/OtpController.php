@@ -146,7 +146,6 @@ class OtpController extends Controller
                 'privacy_policy_version' => $payload['privacy_policy_version'],
                 'consent_ip' => $payload['consent_ip'],
                 'role' => 'citizen',
-                'is_active' => true,
                 'email_verified_at' => $isSms ? null : now(),
                 'phone_verified_at' => $isSms ? now() : null,
             ]);
@@ -168,7 +167,7 @@ class OtpController extends Controller
     {
         $user = User::find($otp['payload']['user_id']);
 
-        if (! $user || ! $user->is_active) {
+        if (! $user) {
             return $this->expired('Your account is not available. Please contact the administrator.');
         }
 

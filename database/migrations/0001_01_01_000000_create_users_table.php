@@ -19,7 +19,6 @@ return new class extends Migration
 
             // Account role and status
             $table->string('role')->default('citizen')->index();
-            $table->boolean('is_active')->default(true);
 
             $table->rememberToken();
             $table->timestamps();

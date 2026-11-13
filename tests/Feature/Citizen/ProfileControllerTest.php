@@ -20,7 +20,6 @@ class ProfileControllerTest extends TestCase
     {
         $citizen = User::factory()->create([
             'role' => 'citizen',
-            'is_active' => true,
         ]);
         CitizenProfile::create([
             'user_id' => $citizen->id,

@@ -27,7 +27,6 @@ class PermitVerificationTest extends TestCase
 
         $user = User::factory()->create([
             'role' => 'citizen',
-            'is_active' => true,
         ]);
 
         $application = ServiceRequest::create([
@@ -87,7 +86,6 @@ class PermitVerificationTest extends TestCase
 
         $user = User::factory()->create([
             'role' => 'citizen',
-            'is_active' => true,
         ]);
 
         $application = ServiceRequest::create([
@@ -155,7 +153,6 @@ class PermitVerificationTest extends TestCase
 
         $user = User::factory()->create([
             'role' => 'citizen',
-            'is_active' => true,
         ]);
 
         $application = ServiceRequest::create([
@@ -206,7 +203,6 @@ class PermitVerificationTest extends TestCase
 
         $user = User::factory()->create([
             'role' => 'citizen',
-            'is_active' => true,
         ]);
 
         $application = ServiceRequest::create([
@@ -258,7 +254,6 @@ class PermitVerificationTest extends TestCase
 
         $user = User::factory()->create([
             'role' => 'citizen',
-            'is_active' => true,
         ]);
 
         $application = ServiceRequest::create([
@@ -313,7 +308,6 @@ class PermitVerificationTest extends TestCase
 
         $user = User::factory()->create([
             'role' => 'citizen',
-            'is_active' => true,
         ]);
 
         $application = ServiceRequest::create([
@@ -358,7 +352,6 @@ class PermitVerificationTest extends TestCase
 
         $user = User::factory()->create([
             'role' => 'citizen',
-            'is_active' => true,
         ]);
 
         $application = ServiceRequest::create([
@@ -415,7 +408,7 @@ class PermitVerificationTest extends TestCase
     {
         Storage::fake('local');
 
-        $user = User::factory()->create(['role' => 'citizen', 'is_active' => true]);
+        $user = User::factory()->create(['role' => 'citizen']);
 
         $application = ServiceRequest::create([
             'user_id' => $user->id,

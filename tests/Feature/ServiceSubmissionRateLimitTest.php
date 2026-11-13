@@ -51,7 +51,6 @@ class ServiceSubmissionRateLimitTest extends TestCase
     {
         $citizen = User::factory()->create([
             'role' => 'citizen',
-            'is_active' => true,
         ]);
 
         CitizenProfile::create([

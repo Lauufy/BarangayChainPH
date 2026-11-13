@@ -19,7 +19,6 @@ class IdentityVerificationPhotoTest extends TestCase
     {
         $citizen = User::factory()->create([
             'role' => 'citizen',
-            'is_active' => true,
         ]);
         CitizenProfile::create([
             'user_id' => $citizen->id,
@@ -62,7 +61,6 @@ class IdentityVerificationPhotoTest extends TestCase
 
         $admin = User::factory()->create([
             'role' => 'staff',
-            'is_active' => true,
             'permissions' => ['identity.review'],
         ]);
 
@@ -84,7 +82,6 @@ class IdentityVerificationPhotoTest extends TestCase
     {
         $citizen = User::factory()->create([
             'role' => 'citizen',
-            'is_active' => true,
         ]);
         CitizenProfile::create([
             'user_id' => $citizen->id,

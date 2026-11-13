@@ -14,7 +14,6 @@ class CitizenModulesTest extends TestCase
     {
         $this->actingAs(User::factory()->create([
             'role' => 'citizen',
-            'is_active' => true,
         ]));
 
         foreach ($this->citizenModulePages() as $routeName => $viewName) {
@@ -36,7 +35,6 @@ class CitizenModulesTest extends TestCase
     {
         $this->actingAs(User::factory()->create([
             'role' => 'staff',
-            'is_active' => true,
         ]));
 
         foreach (array_keys($this->citizenModulePages()) as $routeName) {

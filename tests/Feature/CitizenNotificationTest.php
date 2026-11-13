@@ -14,7 +14,6 @@ class CitizenNotificationTest extends TestCase
     {
         $citizen = User::factory()->create([
             'role' => 'citizen',
-            'is_active' => true,
         ]);
         $notification = $citizen->notifications()->create([
             'id' => 'a4d1ba9c-1a0b-4d44-a87b-100001234567',

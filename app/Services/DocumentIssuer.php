@@ -5,12 +5,12 @@ namespace App\Services;
 use App\Models\IssuedDocument;
 use App\Models\ServiceRequest;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\CarbonInterface;
 use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\Writer\PngWriter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Carbon\CarbonInterface;
 use RuntimeException;
 use Throwable;
 
@@ -44,6 +44,7 @@ class DocumentIssuer
 
             $application->update([
                 'status' => ServiceRequest::APPROVED,
+                'approved_at' => now(),
                 'permit_number' => $documentNumber,
                 'rejection_reason' => null,
             ]);
@@ -180,7 +181,7 @@ class DocumentIssuer
     private function qrCodeDataUri(string $documentUuid): string
     {
         $verificationUrl = rtrim(config('app.url'), '/')
-            . route('permits.verify', ['documentUuid' => $documentUuid], false);
+            .route('permits.verify', ['documentUuid' => $documentUuid], false);
 
         return (new Builder(writer: new PngWriter, data: $verificationUrl, size: 120, margin: 4))
             ->build()

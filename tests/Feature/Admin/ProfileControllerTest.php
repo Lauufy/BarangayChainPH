@@ -19,7 +19,6 @@ class ProfileControllerTest extends TestCase
     {
         $admin = User::factory()->create([
             'role' => 'admin',
-            'is_active' => true,
         ]);
         EmployeeProfile::create([
             'user_id' => $admin->id,

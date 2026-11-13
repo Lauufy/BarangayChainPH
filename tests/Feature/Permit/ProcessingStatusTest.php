@@ -16,7 +16,7 @@ class ProcessingStatusTest extends TestCase
 
     private function makeRequest(string $status = ServiceRequest::PENDING): ServiceRequest
     {
-        $citizen = User::factory()->create(['role' => 'citizen', 'is_active' => true]);
+        $citizen = User::factory()->create(['role' => 'citizen']);
 
         return ServiceRequest::create([
             'user_id' => $citizen->id,
@@ -32,7 +32,7 @@ class ProcessingStatusTest extends TestCase
 
     private function admin(): User
     {
-        return User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        return User::factory()->create(['role' => 'admin']);
     }
 
     /** Opens the review page as an admin. */

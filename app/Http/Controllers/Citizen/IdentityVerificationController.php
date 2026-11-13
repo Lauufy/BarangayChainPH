@@ -274,7 +274,7 @@ class IdentityVerificationController extends Controller
     private function notifyAdmins(User $user): void
     {
         try {
-            $admins = User::where('role', 'admin')->where('is_active', true)->get();
+            $admins = User::where('role', 'admin')->get();
 
             if ($admins->isEmpty()) {
                 return;
