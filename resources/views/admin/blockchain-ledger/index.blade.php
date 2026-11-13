@@ -59,7 +59,9 @@
                         </td>
 
                         <td>
-                            @if ($record->revoked_at)
+                            @if ($record->recorded_at && ! $record->tx_hash)
+                                <span class="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-800">Hash recovery needed</span>
+                            @elseif ($record->revoked_at)
                                 <span class="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-semibold text-slate-700">Revoked</span>
                             @elseif ($record->recorded_at)
                                 <span class="rounded-full border border-green-200 bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-green-800">Confirmed</span>

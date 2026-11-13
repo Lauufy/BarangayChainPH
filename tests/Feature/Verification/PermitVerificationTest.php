@@ -2,15 +2,17 @@
 
 namespace Tests\Feature\Verification;
 
+use App\Jobs\RevokePermitOnBlockchain;
+use App\Models\BlockchainRecord;
 use App\Models\IssuedDocument;
 use App\Models\ServiceRequest;
 use App\Models\User;
-use App\Models\BlockchainRecord;
 use App\Services\BlockchainRegistry;
+use App\Support\PermitStatusCache;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -409,7 +411,7 @@ class PermitVerificationTest extends TestCase
         $registry->shouldReceive('verify')->andReturn($answer);
     }
 
-    private function makeIssuedDocument(): IssuedDocument
+    private function makeIssuedDocument(array $attributes = []): IssuedDocument
     {
         Storage::fake('local');
 
@@ -417,19 +419,19 @@ class PermitVerificationTest extends TestCase
 
         $application = ServiceRequest::create([
             'user_id' => $user->id,
-            'reference_number' => 'BRGY-' . Str::upper(Str::random(12)),
+            'reference_number' => 'BRGY-'.Str::upper(Str::random(12)),
             'service_type' => ServiceRequest::BARANGAY_CLEARANCE,
             'applicant_name' => 'Carlo Mamaril',
             'address' => 'Private address',
             'age' => 22,
             'purpose' => 'Employment',
             'status' => ServiceRequest::APPROVED,
-            'permit_number' => 'PERMIT-' . Str::upper(Str::random(12)),
+            'permit_number' => 'PERMIT-'.Str::upper(Str::random(12)),
         ]);
 
         Storage::disk('local')->put('issued-documents/chain-test.pdf', 'Chain test PDF content');
 
-        return IssuedDocument::create([
+        return IssuedDocument::create(array_merge([
             'service_request_id' => $application->id,
             'document_uuid' => (string) Str::uuid(),
             'document_number' => $application->permit_number,
@@ -438,9 +440,8 @@ class PermitVerificationTest extends TestCase
             'file_path' => 'issued-documents/chain-test.pdf',
             'file_hash' => hash('sha256', 'Chain test PDF content'),
             'issued_at' => now(),
-        ]);
+        ], $attributes));
     }
-
 
     public function test_permit_not_yet_recorded_on_the_blockchain_is_pending_not_valid(): void
     {
@@ -488,13 +489,54 @@ class PermitVerificationTest extends TestCase
 
     public function test_revoking_a_document_clears_its_cached_status(): void
     {
-        $document = $this->makeIssuedDocument();
-        $key = 'permit-status:' . $document->document_uuid;
+        Storage::fake('local');
 
-        Cache::put($key, 'valid', 60);
+        $document = $this->makeIssuedDocument();
+        $key = PermitStatusCache::keyFor($document->document_uuid);
+        BlockchainRecord::create([
+            'issued_document_id' => $document->id,
+            'recorded_at' => now(),
+        ]);
+
+        $registry = $this->mock(BlockchainRegistry::class);
+        $registry->shouldReceive('verify')
+            ->twice()
+            ->with($document->document_uuid, $document->file_hash, null)
+            ->andReturn(['ok' => true, 'status' => 'valid']);
+        $registry->shouldReceive('revoke')
+            ->once()
+            ->with($document->document_uuid, null)
+            ->andReturn(['ok' => true, 'txHash' => '0xrevoke']);
+
+        $this->get(route('permits.verify', $document->document_uuid))
+            ->assertOk()
+            ->assertSee('This certificate is valid.');
+
+        $this->assertSame('valid', Cache::get($key));
 
         $document->revoked_at = now();
         $document->save();
+        Cache::put($key, 'valid', 60);
+
+        (new RevokePermitOnBlockchain($document->id))->handle($registry);
+        Cache::put($key, 'valid', 60);
+
+        $this->get(route('permits.verify', $document->document_uuid))
+            ->assertOk()
+            ->assertSee('This certificate has been revoked.')
+            ->assertDontSee('This certificate is valid.');
+
+        $this->assertNull(Cache::get($key));
+    }
+
+    public function test_revoked_status_is_not_cached(): void
+    {
+        $document = $this->makeIssuedDocument(['revoked_at' => now()]);
+        $key = PermitStatusCache::keyFor($document->document_uuid);
+
+        $this->get(route('permits.verify', $document->document_uuid))
+            ->assertOk()
+            ->assertSee('This certificate has been revoked.');
 
         $this->assertNull(Cache::get($key));
     }

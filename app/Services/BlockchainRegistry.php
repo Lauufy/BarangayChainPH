@@ -26,6 +26,11 @@ class BlockchainRegistry
         return $this->run(['verify', $uuid, $hash], $contract);
     }
 
+    public function findIssuanceTransaction(string $uuid, ?string $contract = null): array
+    {
+        return $this->run(['find-issuance-tx', $uuid], $contract);
+    }
+
     private function run(array $args, ?string $contract = null): array
     {
         // Safety lock: tests must never use the real blockchain
@@ -48,7 +53,7 @@ class BlockchainRegistry
 
         if (! is_array($result)) {
             throw new RuntimeException(
-                'Blockchain script gave no valid answer: ' . $process->getErrorOutput()
+                'Blockchain script gave no valid answer: '.$process->getErrorOutput()
             );
         }
 
@@ -57,7 +62,7 @@ class BlockchainRegistry
 
     private function chainSettings(string $command, ?string $contract = null): array
     {
-                $settings = [
+        $settings = [
             'RPC_URL' => config('blockchain.rpc_url'),
             'REGISTRY_ADDRESS' => $contract ?: config('blockchain.contract'),
             'EXPECTED_CHAIN_ID' => config('blockchain.chain_id'),

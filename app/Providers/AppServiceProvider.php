@@ -5,10 +5,12 @@ namespace App\Providers;
 use App\Services\AuditLogger;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Console\Events\ScheduledTaskFailed;
 use Illuminate\Console\Events\ScheduledTaskFinished;
 use Illuminate\Console\Events\ScheduledTaskStarting;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
 use Illuminate\Queue\Events\JobExceptionOccurred;
 use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
@@ -16,6 +18,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Symfony\Component\Mailer\Bridge\Brevo\Transport\BrevoTransportFactory;
@@ -34,6 +37,23 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        RateLimiter::for('service-submissions', function (Request $request) {
+            $key = $request->user()
+                ? 'user:'.$request->user()->getAuthIdentifier()
+                : 'ip:'.$request->ip();
+            $response = fn (Request $request, array $headers) => response()->view(
+                'citizen.service-requests.throttled',
+                [],
+                429,
+                $headers
+            );
+
+            return [
+                Limit::perMinute(5)->by($key)->response($response),
+                Limit::perHour(30)->by($key)->response($response),
+            ];
+        });
+
         Event::listen(Login::class, function (Login $event): void {
             if ($event->user instanceof Model) {
                 app(AuditLogger::class)->log('login', $event->user, actor: $event->user);

@@ -309,7 +309,20 @@
                         </h2>
 
                         <div class="space-y-3 p-4">
-                            @if ($currentRecord?->recorded_at)
+                            @if ($currentRecord?->recorded_at && ! $currentRecord->tx_hash)
+                                <p class="text-sm text-amber-700">
+                                    The permit is valid on-chain, but its transaction hash still needs recovery.
+                                </p>
+
+                                <form method="POST"
+                                    action="{{ route('admin.permits.blockchain-retry', $application) }}">
+                                    @csrf
+                                    <button
+                                        class="w-full rounded-md bg-[#17325c] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#10244a]">
+                                        Retry transaction lookup
+                                    </button>
+                                </form>
+                            @elseif ($currentRecord?->recorded_at)
                                 <p class="text-sm text-emerald-700">
                                     Recorded on
                                     {{ $currentRecord->recorded_at->timezone(config('app.timezone'))->format('M j, Y g:i A') }}.

@@ -13,15 +13,16 @@ use App\Notifications\ServiceRequestApproved;
 use App\Notifications\ServiceRequestRejected;
 use App\Services\AuditLogger;
 use App\Services\DocumentIssuer;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\StreamedResponse;
-use Illuminate\Support\Carbon;
 use Throwable;
 
 class PermitController extends Controller
@@ -150,10 +151,16 @@ class PermitController extends Controller
     // Tries again to record a permit on the blockchain (for when the first try failed)
     public function retryBlockchain(ServiceRequest $serviceRequest): RedirectResponse
     {
-        // The current document that is not revoked and not recorded yet
+        // The current document that is not recorded yet, or needs its recovered hash retried
         $document = $serviceRequest->issuedDocuments()
             ->whereNull('revoked_at')
-            ->whereDoesntHave('blockchainRecord', fn($query) => $query->whereNotNull('recorded_at'))
+            ->where(function (Builder $query) {
+                $query
+                    ->whereDoesntHave('blockchainRecord', fn (Builder $record) => $record->whereNotNull('recorded_at'))
+                    ->orWhereHas('blockchainRecord', fn (Builder $record) => $record
+                        ->whereNotNull('recorded_at')
+                        ->whereNull('tx_hash'));
+            })
             ->latest('version')
             ->first();
 
@@ -168,8 +175,18 @@ class PermitController extends Controller
             return $this->back($serviceRequest, 'success', 'The recording was queued. Refresh this page in a moment to see the result.');
         }
 
-        if (! $document->fresh()->blockchainRecord?->recorded_at) {
+        $record = $document->fresh()->blockchainRecord;
+
+        if (! $record?->recorded_at) {
             return $this->back($serviceRequest, 'error', 'The blockchain recording failed again. Please try again later.');
+        }
+
+        if (blank($record->tx_hash)) {
+            return $this->back(
+                $serviceRequest,
+                'error',
+                'The permit is valid on the blockchain, but its transaction hash could not be recovered. Please retry or backfill it.'
+            );
         }
 
         return $this->back($serviceRequest, 'success', 'The permit is now recorded on the blockchain.');
@@ -192,7 +209,7 @@ class PermitController extends Controller
 
         $this->notify($rejected, new ServiceRequestRejected($rejected));
 
-        $rejected->ticket?->postSystemMessage('Your request was rejected. Reason: ' . $data['rejection_reason'], close: true);
+        $rejected->ticket?->postSystemMessage('Your request was rejected. Reason: '.$data['rejection_reason'], close: true);
 
         return $this->back($serviceRequest, 'success', 'The application was rejected.');
     }
@@ -261,7 +278,7 @@ class PermitController extends Controller
                 'required',
                 'date',
                 'after:today',
-                'before_or_equal:' . now()->addYears(5)->toDateString(),
+                'before_or_equal:'.now()->addYears(5)->toDateString(),
             ],
         ]);
 

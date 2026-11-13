@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\BlockchainRecord;
 use App\Models\IssuedDocument;
 use App\Services\BlockchainRegistry;
+use App\Support\PermitStatusCache;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use RuntimeException;
@@ -36,7 +37,7 @@ class RevokePermitOnBlockchain implements ShouldQueue
         $existing = $registry->verify($document->document_uuid, $document->file_hash, $contract);
 
         if (! ($existing['ok'] ?? false)) {
-            throw new RuntimeException('Blockchain verification failed: ' . ($existing['error'] ?? 'unknown'));
+            throw new RuntimeException('Blockchain verification failed: '.($existing['error'] ?? 'unknown'));
         }
 
         // Never recorded on the chain, so there is nothing to revoke. Just clear the old error.
@@ -49,6 +50,7 @@ class RevokePermitOnBlockchain implements ShouldQueue
         // Already revoked on the chain: just remember it
         if (($existing['status'] ?? null) === 'revoked') {
             $this->save($document, ['revoked_at' => now()]);
+            PermitStatusCache::forget($document->document_uuid);
 
             return;
         }
@@ -60,7 +62,7 @@ class RevokePermitOnBlockchain implements ShouldQueue
         $result = $registry->revoke($document->document_uuid, $contract);
 
         if (! ($result['ok'] ?? false)) {
-            throw new RuntimeException('Blockchain revoke failed: ' . ($result['error'] ?? 'unknown'));
+            throw new RuntimeException('Blockchain revoke failed: '.($result['error'] ?? 'unknown'));
         }
 
         if (! is_string($result['txHash'] ?? null) || $result['txHash'] === '') {
@@ -71,6 +73,7 @@ class RevokePermitOnBlockchain implements ShouldQueue
             'revoke_tx_hash' => $result['txHash'],
             'revoked_at' => now(),
         ]);
+        PermitStatusCache::forget($document->document_uuid);
     }
 
     // Save into the permit's blockchain record (creates it if missing)

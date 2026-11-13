@@ -19,6 +19,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /** Where one issued permit is recorded on the blockchain. */
 class BlockchainRecord extends Model
 {
+    public const TX_HASH_RECOVERY_ERROR = 'Issuance transaction hash recovery failed:';
+
     protected function casts(): array
     {
         return [

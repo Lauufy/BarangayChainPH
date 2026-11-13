@@ -4,10 +4,10 @@ namespace Tests\Feature\Verification;
 
 use App\Jobs\RecordPermitOnBlockchain;
 use App\Jobs\RevokePermitOnBlockchain;
+use App\Models\BlockchainRecord;
 use App\Models\IssuedDocument;
 use App\Models\ServiceRequest;
 use App\Models\User;
-use App\Models\BlockchainRecord;
 use App\Services\BlockchainRegistry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
@@ -41,6 +41,49 @@ class PermitBlockchainJobsTest extends TestCase
         $this->assertSame(config('blockchain.network'), $record->network);
         $this->assertNotNull($record->recorded_at);
         $this->assertNull($record->error);
+    }
+
+    public function test_record_job_recovers_the_transaction_hash_when_the_permit_is_already_valid(): void
+    {
+        $document = $this->makeDocument();
+
+        $registry = $this->mock(BlockchainRegistry::class);
+        $registry->shouldReceive('verify')
+            ->once()
+            ->andReturn(['ok' => true, 'status' => 'valid']);
+        $registry->shouldReceive('findIssuanceTransaction')
+            ->once()
+            ->with($document->document_uuid, null)
+            ->andReturn(['ok' => true, 'found' => true, 'txHash' => '0xrecovered', 'blockNumber' => 42]);
+
+        (new RecordPermitOnBlockchain($document->id))->handle($registry);
+
+        $record = $document->fresh()->blockchainRecord;
+
+        $this->assertSame('0xrecovered', $record->tx_hash);
+        $this->assertNotNull($record->recorded_at);
+        $this->assertNull($record->error);
+    }
+
+    public function test_record_job_saves_a_retryable_warning_when_transaction_hash_recovery_fails(): void
+    {
+        $document = $this->makeDocument();
+
+        $registry = $this->mock(BlockchainRegistry::class);
+        $registry->shouldReceive('verify')
+            ->once()
+            ->andReturn(['ok' => true, 'status' => 'valid']);
+        $registry->shouldReceive('findIssuanceTransaction')
+            ->once()
+            ->andReturn(['ok' => true, 'found' => false]);
+
+        (new RecordPermitOnBlockchain($document->id))->handle($registry);
+
+        $record = $document->fresh()->blockchainRecord;
+
+        $this->assertNull($record->tx_hash);
+        $this->assertNotNull($record->recorded_at);
+        $this->assertStringStartsWith(BlockchainRecord::TX_HASH_RECOVERY_ERROR, $record->error);
     }
 
     public function test_revoke_job_saves_the_blockchain_transaction_after_success(): void
@@ -123,14 +166,14 @@ class PermitBlockchainJobsTest extends TestCase
         ]);
         $application = ServiceRequest::create([
             'user_id' => $citizen->id,
-            'reference_number' => 'BRGY-' . Str::upper(Str::random(12)),
+            'reference_number' => 'BRGY-'.Str::upper(Str::random(12)),
             'service_type' => ServiceRequest::BARANGAY_CLEARANCE,
             'applicant_name' => 'Test Applicant',
             'address' => 'Barangay San Luis',
             'age' => 22,
             'purpose' => 'Employment',
             'status' => ServiceRequest::APPROVED,
-            'permit_number' => 'PERMIT-' . Str::upper(Str::random(12)),
+            'permit_number' => 'PERMIT-'.Str::upper(Str::random(12)),
         ]);
 
         return IssuedDocument::create(array_merge([

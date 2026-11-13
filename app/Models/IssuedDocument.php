@@ -3,11 +3,11 @@
 namespace App\Models;
 
 use App\Models\Concerns\Auditable;
+use App\Support\PermitStatusCache;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Support\Facades\Cache;
 
 #[Fillable([
     'service_request_id',
@@ -57,7 +57,7 @@ class IssuedDocument extends Model
     {
         static::saved(function (IssuedDocument $document) {
             if ($document->wasChanged('revoked_at')) {
-                Cache::forget('permit-status:' . $document->document_uuid);
+                PermitStatusCache::forget($document->document_uuid);
             }
         });
     }

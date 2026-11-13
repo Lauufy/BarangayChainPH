@@ -5,6 +5,7 @@
 //   node scripts/registry-cli.js revoke <document-uuid>
 //   node scripts/registry-cli.js verify <document-uuid> <sha256-hex>
 //   node scripts/registry-cli.js get    <document-uuid>
+//   node scripts/registry-cli.js find-issuance-tx <document-uuid>
 //
 // It prints exactly one line of JSON and exits with code 1 on failure.
 // verify results: not_found, valid, revoked, mismatch.
@@ -21,6 +22,7 @@ const ABI = [
     "function revoke(bytes32 documentId)",
     "function verify(bytes32 documentId, bytes32 fileHash) view returns (uint8)",
     "function getRecord(bytes32 documentId) view returns (bool exists, bytes32 fileHash, address issuer, uint64 issuedAt, uint64 revokedAt)",
+    "event DocumentIssued(bytes32 indexed documentId, bytes32 fileHash, address indexed issuer, uint64 issuedAt)",
     "error NotOwner()",
     "error NotIssuer()",
     "error EmptyHash()",
@@ -57,15 +59,49 @@ function need(name) {
 }
 
 async function run([command, uuid, hash]) {
-    if (!["issue", "revoke", "verify", "get"].includes(command) || !uuid) {
+    if (!["issue", "revoke", "verify", "get", "find-issuance-tx"].includes(command) || !uuid) {
         throw new Error(
-            "Usage: registry-cli.js <issue|revoke|verify|get> <document-uuid> [sha256-hex]"
+            "Usage: registry-cli.js <issue|revoke|verify|get|find-issuance-tx> <document-uuid> [sha256-hex]"
         );
     }
 
     const provider = new ethers.JsonRpcProvider(need("RPC_URL"));
     const address = need("REGISTRY_ADDRESS");
     const documentId = toDocumentId(uuid);
+
+    if (command === "find-issuance-tx") {
+        const network = await provider.getNetwork();
+        const expected = process.env.EXPECTED_CHAIN_ID;
+
+        if (expected && Number(network.chainId) !== Number(expected)) {
+            throw new Error(
+                `Wrong network: expected chain ${expected} but connected to chain ${network.chainId}`
+            );
+        }
+
+        if ((await provider.getCode(address)) === "0x") {
+            throw new Error(
+                "No contract found at the configured address on this network."
+            );
+        }
+
+        const reader = new ethers.Contract(address, ABI, provider);
+        const events = await reader.queryFilter(
+            reader.filters.DocumentIssued(documentId),
+            0,
+            "latest"
+        );
+        const event = events.at(-1);
+
+        return event
+            ? {
+                  ok: true,
+                  found: true,
+                  txHash: event.transactionHash,
+                  blockNumber: event.blockNumber,
+              }
+            : { ok: true, found: false };
+    }
 
     if (command === "verify") {
         const reader = new ethers.Contract(address, ABI, provider);

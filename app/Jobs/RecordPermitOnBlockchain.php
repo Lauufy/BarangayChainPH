@@ -7,6 +7,7 @@ use App\Models\IssuedDocument;
 use App\Services\BlockchainRegistry;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 use Throwable;
 
@@ -29,7 +30,11 @@ class RecordPermitOnBlockchain implements ShouldQueue
         $document = IssuedDocument::with('blockchainRecord')->find($this->issuedDocumentId);
 
         // Row gone, revoked, or already recorded: nothing to do
-        if (! $document || $document->revoked_at || $document->blockchainRecord?->recorded_at) {
+        if (
+            ! $document
+            || $document->revoked_at
+            || ($document->blockchainRecord?->recorded_at && filled($document->blockchainRecord?->tx_hash))
+        ) {
             return;
         }
 
@@ -42,10 +47,38 @@ class RecordPermitOnBlockchain implements ShouldQueue
         }
 
         if (($existing['status'] ?? null) === 'valid') {
-            $this->save($document, [
-                'contract' => config('blockchain.contract'),
-                'recorded_at' => now(),
-            ]);
+            $values = [
+                'contract' => $document->blockchainRecord?->contract ?? config('blockchain.contract'),
+                'recorded_at' => $document->blockchainRecord?->recorded_at ?? now(),
+            ];
+
+            try {
+                $transaction = $registry->findIssuanceTransaction(
+                    $document->document_uuid,
+                    $document->blockchainRecord?->contract
+                );
+
+                if (
+                    ($transaction['ok'] ?? false)
+                    && ($transaction['found'] ?? false)
+                    && is_string($transaction['txHash'] ?? null)
+                    && $transaction['txHash'] !== ''
+                ) {
+                    $values['tx_hash'] = $transaction['txHash'];
+                } else {
+                    $values['error'] = BlockchainRecord::TX_HASH_RECOVERY_ERROR
+                        .' Retry the blockchain lookup or backfill the transaction hash.';
+                }
+            } catch (Throwable) {
+                $values['error'] = BlockchainRecord::TX_HASH_RECOVERY_ERROR
+                    .' Retry the blockchain lookup or backfill the transaction hash.';
+            }
+
+            if (isset($values['error'])) {
+                Log::warning($values['error'], ['issued_document_id' => $document->id]);
+            }
+
+            $this->save($document, $values);
 
             return;
         }

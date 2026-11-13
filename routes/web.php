@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\Admin\AuditLogController;
+use App\Http\Controllers\Admin\BlockchainLedgerController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\DocumentAuthenticationController;
 use App\Http\Controllers\Admin\IdentityReviewController;
 use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
 use App\Http\Controllers\Admin\PermitController;
@@ -22,8 +24,6 @@ use App\Http\Controllers\Citizen\ServiceRequestController;
 use App\Http\Controllers\Citizen\TicketController;
 use App\Http\Controllers\PermitVerificationController;
 use App\Http\Controllers\TicketParticipantPhotoController;
-use App\Http\Controllers\Admin\BlockchainLedgerController;
-use App\Http\Controllers\Admin\DocumentAuthenticationController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -208,6 +208,7 @@ Route::middleware(['auth', 'role:citizen'])
 
                 Route::post("/{$slug}", [ServiceApplicationController::class, 'store'])
                     ->defaults('slug', $slug)
+                    ->middleware('throttle:service-submissions')
                     ->name("{$slug}.store");
             }
         });

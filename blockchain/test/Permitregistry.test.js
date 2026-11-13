@@ -49,6 +49,21 @@ describe('PermitRegistry', () => {
       expect(record.revokedAt).to.equal(0n);
     });
 
+    it('finds an issuance event using its indexed document id', async () => {
+      const transaction = await registry.issue(documentId, fileHash);
+      const receipt = await transaction.wait();
+
+      const events = await registry.queryFilter(
+        registry.filters.DocumentIssued(documentId),
+        0,
+        'latest',
+      );
+
+      expect(events).to.have.length(1);
+      expect(events[0].transactionHash).to.equal(receipt.hash);
+      expect(events[0].blockNumber).to.equal(receipt.blockNumber);
+    });
+
     it('rejects a second issuance of the same document id', async () => {
       await registry.issue(documentId, fileHash);
 

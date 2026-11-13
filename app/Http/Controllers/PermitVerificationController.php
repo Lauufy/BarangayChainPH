@@ -5,10 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\IssuedDocument;
 use App\Models\ServiceRequest;
 use App\Services\BlockchainRegistry;
+use App\Support\PermitStatusCache;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
-use Illuminate\Support\Facades\Cache;
 use Throwable;
 
 /** Verifies issued certificates and prepares the public verification page. */
@@ -40,25 +41,35 @@ class PermitVerificationController extends Controller
         ]);
     }
 
-    // The same permit is checked at most once a minute (saves slow blockchain calls)
+    // A valid permit is checked at most once a minute to avoid slow blockchain calls.
     private function cachedStatus(?IssuedDocument $document, ?ServiceRequest $application): string
     {
         if ($document === null) {
             return $this->resolveStatus($document, $application);
         }
 
-        $key = 'permit-status:' . $document->document_uuid;
+        $key = PermitStatusCache::keyFor($document->document_uuid);
+
+        if (! $document->isValid()) {
+            PermitStatusCache::forget($document->document_uuid);
+
+            return 'revoked';
+        }
+
         $status = Cache::get($key);
+
+        if ($status !== 'valid') {
+            Cache::forget($key);
+            $status = null;
+        }
 
         if ($status === null) {
             $status = $this->resolveStatus($document, $application);
 
-            // Never keep "unavailable" or "pending", so a change shows up right away
-            if (! in_array($status, ['unavailable', 'pending'], true)) {
+            if ($status === 'valid') {
                 $ttl = 60;
 
-                // A cached "valid" must never outlive the expiry time
-                if ($status === 'valid' && $document->expires_at) {
+                if ($document->expires_at) {
                     $ttl = max(1, min(60, (int) now()->diffInSeconds($document->expires_at, false)));
                 }
 
@@ -68,7 +79,6 @@ class PermitVerificationController extends Controller
 
         return $status;
     }
-
 
     private function resolveStatus(?IssuedDocument $document, ?ServiceRequest $application): string
     {
@@ -83,7 +93,6 @@ class PermitVerificationController extends Controller
         if ($document->isExpired()) {
             return 'expired';
         }
-
 
         if (
             $application === null
@@ -133,7 +142,7 @@ class PermitVerificationController extends Controller
         }
 
         if (! ($result['ok'] ?? false)) {
-            report(new \RuntimeException('Blockchain verify failed: ' . ($result['error'] ?? 'unknown')));
+            report(new \RuntimeException('Blockchain verify failed: '.($result['error'] ?? 'unknown')));
 
             return 'unavailable';
         }
@@ -171,7 +180,7 @@ class PermitVerificationController extends Controller
         }
 
         return implode(' ', array_map(
-            fn(string $part): string => Str::substr($part, 0, 1) . '***',
+            fn (string $part): string => Str::substr($part, 0, 1).'***',
             $parts
         ));
     }
