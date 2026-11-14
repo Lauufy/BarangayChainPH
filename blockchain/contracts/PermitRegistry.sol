@@ -22,15 +22,18 @@ contract PermitRegistry {
     }
 
     address public owner;
+    bool public paused; // when true, new documents cannot be issued
     mapping(address => bool) public isIssuer;
     mapping(bytes32 => Record) private records;
 
     event IssuerChanged(address indexed account, bool allowed);
+    event PauseChanged(bool paused, address indexed by);
     event DocumentIssued(bytes32 indexed documentId, bytes32 fileHash, address indexed issuer, uint64 issuedAt);
     event DocumentRevoked(bytes32 indexed documentId, address indexed revokedBy, uint64 revokedAt);
 
     error NotOwner();
     error NotIssuer();
+    error ContractPaused();
     error EmptyHash();
     error AlreadyIssued();
     error DocumentNotFound();
@@ -46,6 +49,11 @@ contract PermitRegistry {
         _;
     }
 
+    modifier whenNotPaused() {
+        if (paused) revert ContractPaused();
+        _;
+    }
+
     constructor() {
         owner = msg.sender;
         isIssuer[msg.sender] = true;
@@ -58,8 +66,15 @@ contract PermitRegistry {
         emit IssuerChanged(account, allowed);
     }
 
+    /// @notice Emergency switch. While paused, no new documents can be issued.
+    /// @dev Revoking, verifying and reading records keep working during a pause.
+    function setPaused(bool state) external onlyOwner {
+        paused = state;
+        emit PauseChanged(state, msg.sender);
+    }
+
     /// @notice Record a newly issued document. A document id can only be issued once.
-    function issue(bytes32 documentId, bytes32 fileHash) external onlyIssuer {
+    function issue(bytes32 documentId, bytes32 fileHash) external onlyIssuer whenNotPaused {
         if (fileHash == bytes32(0)) revert EmptyHash();
 
         Record storage r = records[documentId];

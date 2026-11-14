@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\NotificationController as AdminNotificationContro
 use App\Http\Controllers\Admin\PermitController;
 use App\Http\Controllers\Admin\ProfileController as AdminProfileController;
 use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\SmartContractController;
 use App\Http\Controllers\Admin\TicketInboxController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
@@ -299,6 +300,17 @@ Route::middleware(['auth', 'role:admin,staff'])
         Route::get('/blockchain-ledger', [BlockchainLedgerController::class, 'index'])
             ->middleware('permission:blockchain.view')
             ->name('blockchain-ledger.index');
+
+        Route::get('/smart-contracts', [SmartContractController::class, 'index'])
+            ->middleware('permission:contracts.view')->name('smart-contracts.index');
+
+        Route::post('/smart-contracts/pause', [SmartContractController::class, 'togglePause'])
+            ->middleware(['role:admin', 'throttle:5,1'])
+            ->name('smart-contracts.pause');
+
+        Route::post('/smart-contracts/deployments', [SmartContractController::class, 'storeDeployment'])
+            ->middleware(['role:admin', 'throttle:10,1'])
+            ->name('smart-contracts.deployments.store');
 
         Route::middleware('permission:reports.view')
             ->controller(ReportController::class)

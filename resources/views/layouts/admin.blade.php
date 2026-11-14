@@ -73,6 +73,13 @@
                 '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
                 $can('blockchain.view'),
             ],
+            [
+                '/admin/smart-contracts',
+                'admin/smart-contracts*',
+                'Smart Contract Management',
+                '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v6h6"/><path d="m10 13-2 2 2 2"/><path d="m14 13 2 2-2 2"/>',
+                $can('contracts.view'),
+            ],
         ],
         'Communication' => [
             [
@@ -376,7 +383,7 @@
                                 <span
                                     class="block text-[10px] font-semibold uppercase tracking-wide text-emerald-600 transition-colors group-hover:text-[#2563EB]">{{ $admin ? 'Admin' : 'Staff' }}</span>
                             </span>
-                            <svg class="hidden h-4 w-4 text-slate-400 transition group-hover:text-[#0B1F3A] group-open:rotate-180 sm:block"
+                            <svg class="hidden h-4 w-4 text-slate-400 transition group-open:rotate-180 group-hover:text-[#0B1F3A] sm:block"
                                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path d="m6 9 6 6 6-6" />
@@ -390,8 +397,10 @@
                             </div>
 
                             <a href="{{ route('admin.profile') }}"
-                                class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors duration-200 hover:bg-[#0B1F3A]/6 hover:text-[#0B1F3A]">
-                                <svg class="h-4 w-4 shrink-0 text-slate-400 transition-colors group-hover:text-[#0B1F3A]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                class="hover:bg-[#0B1F3A]/6 group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors duration-200 hover:text-[#0B1F3A]">
+                                <svg class="h-4 w-4 shrink-0 text-slate-400 transition-colors group-hover:text-[#0B1F3A]"
+                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                     <circle cx="12" cy="8" r="4" />
                                     <path d="M5 21v-2a7 7 0 0 1 14 0v2" />
                                 </svg>
@@ -402,8 +411,10 @@
                                 class="mt-2 border-t border-slate-100 pt-2">
                                 @csrf
                                 <button type="submit"
-                                    class="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-red-600 transition-colors duration-200 hover:bg-red-500/6 hover:text-red-700">
-                                    <svg class="h-4 w-4 shrink-0 text-red-400 transition-colors group-hover:text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    class="hover:bg-red-500/6 group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-red-600 transition-colors duration-200 hover:text-red-700">
+                                    <svg class="h-4 w-4 shrink-0 text-red-400 transition-colors group-hover:text-red-600"
+                                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                         <path d="M10 17l5-5-5-5" />
                                         <path d="M15 12H3" />
                                         <path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6" />

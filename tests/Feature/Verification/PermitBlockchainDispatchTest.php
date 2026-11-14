@@ -6,10 +6,10 @@ use App\Jobs\RecordPermitOnBlockchain;
 use App\Jobs\RevokePermitOnBlockchain;
 use App\Models\ServiceRequest;
 use App\Models\User;
+use App\Services\BlockchainRegistry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
-use App\Services\BlockchainRegistry;
 use Tests\TestCase;
 
 class PermitBlockchainDispatchTest extends TestCase
@@ -49,8 +49,10 @@ class PermitBlockchainDispatchTest extends TestCase
 
         Queue::assertPushed(
             RecordPermitOnBlockchain::class,
-            fn(RecordPermitOnBlockchain $job): bool => $job->issuedDocumentId === $firstDocument->id
+            fn (RecordPermitOnBlockchain $job): bool => $job->issuedDocumentId === $firstDocument->id
         );
+        $this->assertModelExists($firstDocument->blockchainRecord);
+        $this->assertNull($firstDocument->fresh()->blockchainRecord->error);
 
         $this->actingAs($staff)
             ->post(route('admin.permits.reissue', $application), [
@@ -70,11 +72,11 @@ class PermitBlockchainDispatchTest extends TestCase
 
         Queue::assertPushed(
             RevokePermitOnBlockchain::class,
-            fn(RevokePermitOnBlockchain $job): bool => $job->issuedDocumentId === $firstDocument->id
+            fn (RevokePermitOnBlockchain $job): bool => $job->issuedDocumentId === $firstDocument->id
         );
         Queue::assertPushed(
             RecordPermitOnBlockchain::class,
-            fn(RecordPermitOnBlockchain $job): bool => $job->issuedDocumentId === $secondDocument->id
+            fn (RecordPermitOnBlockchain $job): bool => $job->issuedDocumentId === $secondDocument->id
         );
     }
 
@@ -84,6 +86,7 @@ class PermitBlockchainDispatchTest extends TestCase
 
         // The registry says the blockchain cannot be reached
         $registry = $this->mock(BlockchainRegistry::class);
+        $registry->shouldReceive('contractInfo')->once()->andReturn(null);
         $registry->shouldReceive('verify')->andReturn(['ok' => false, 'error' => 'RPC down']);
 
         $staff = User::factory()->create([
@@ -113,6 +116,59 @@ class PermitBlockchainDispatchTest extends TestCase
             ->assertSessionHas('success');
 
         $this->assertSame(1, $application->issuedDocuments()->count());
+    }
+
+    public function test_approval_while_contract_is_paused_is_logged_without_a_queue_worker(): void
+    {
+        Queue::fake();
+        Storage::fake('supabase');
+
+        $registry = $this->mock(BlockchainRegistry::class);
+        $registry->shouldReceive('contractInfo')->andReturn([
+            'ok' => true,
+            'contract' => '0x'.str_repeat('a', 40),
+            'chainId' => 1,
+            'chainMatches' => true,
+            'issuer' => '0x'.str_repeat('b', 40),
+            'balance' => '1',
+            'hasCode' => true,
+            'owner' => '0x'.str_repeat('b', 40),
+            'isOwner' => true,
+            'issuerAuthorized' => true,
+            'paused' => true,
+            'supportsPause' => true,
+        ]);
+
+        $admin = User::factory()->create(['role' => 'admin']);
+        $citizen = User::factory()->create(['role' => 'citizen']);
+        $application = ServiceRequest::create([
+            'user_id' => $citizen->id,
+            'reference_number' => 'BRGY-20261114-PAUSED',
+            'service_type' => ServiceRequest::BARANGAY_CLEARANCE,
+            'applicant_name' => 'Test Applicant',
+            'address' => 'Barangay San Luis',
+            'age' => 22,
+            'purpose' => 'Employment',
+            'status' => ServiceRequest::PENDING,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.permits.approve', $application), [
+                'expires_at' => now()->addMonths(6)->toDateString(),
+            ])
+            ->assertRedirect(route('admin.permits.show', $application));
+
+        $record = $application->issuedDocuments()->firstOrFail()->blockchainRecord;
+
+        $this->assertModelExists($record);
+        $this->assertSame('Blockchain issue failed: ContractPaused', $record->error);
+        Queue::assertNotPushed(RecordPermitOnBlockchain::class);
+
+        $this->actingAs($admin)
+            ->get(route('admin.smart-contracts.index'))
+            ->assertOk()
+            ->assertSee('Failed')
+            ->assertSee('ContractPaused');
     }
 
     public function test_approving_without_an_expiry_date_is_rejected(): void

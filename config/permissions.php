@@ -9,6 +9,7 @@ return [
         'tickets.reply' => 'Ticket Messages',
         'documents.authenticate' => 'Document Authentication',
         'blockchain.view' => 'Blockchain Ledger',
+        'contracts.view' => 'Contract Management',
         'reports.view' => 'Reports & Analytics',
         'audit.view' => 'Audit Logs',
     ],

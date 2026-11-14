@@ -6,12 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\UpdatesTwoFactor;
 use App\Jobs\RecordPermitOnBlockchain;
 use App\Jobs\RevokePermitOnBlockchain;
+use App\Models\BlockchainRecord;
 use App\Models\IssuedDocument;
 use App\Models\ServiceRequest;
 use App\Models\ServiceRequestDocument;
 use App\Notifications\ServiceRequestApproved;
 use App\Notifications\ServiceRequestRejected;
 use App\Services\AuditLogger;
+use App\Services\BlockchainRegistry;
 use App\Services\DocumentIssuer;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -88,8 +90,12 @@ class PermitController extends Controller
         ]);
     }
 
-    public function approve(Request $request, ServiceRequest $serviceRequest, DocumentIssuer $documentIssuer): RedirectResponse
-    {
+    public function approve(
+        Request $request,
+        ServiceRequest $serviceRequest,
+        DocumentIssuer $documentIssuer,
+        BlockchainRegistry $registry
+    ): RedirectResponse {
         $expiresAt = $this->validatedExpiry($request);
 
         try {
@@ -106,7 +112,8 @@ class PermitController extends Controller
 
         // A repeat click returns the existing document, so only notify the first time
         if ($document->wasRecentlyCreated) {
-            $this->recordOnBlockchain($document);
+            $contractInfo = $registry->contractInfo();
+            $this->recordOnBlockchain($document, ($contractInfo['paused'] ?? false) === true);
 
             $approved = $serviceRequest->fresh(['user', 'ticket']);
 
@@ -319,10 +326,26 @@ class PermitController extends Controller
         }
     }
 
-    // The blockchain must never break an approval. The job saves its own error
-    // on the permit, so here we only log the problem and carry on.
-    private function recordOnBlockchain(IssuedDocument $document): void
+    // Record a pending or known paused result before queuing the blockchain write.
+    private function recordOnBlockchain(IssuedDocument $document, bool $contractIsPaused = false): void
     {
+        try {
+            BlockchainRecord::updateOrCreate(
+                ['issued_document_id' => $document->id],
+                [
+                    'network' => config('blockchain.network'),
+                    'contract' => config('blockchain.contract'),
+                    'error' => $contractIsPaused ? 'Blockchain issue failed: ContractPaused' : null,
+                ]
+            );
+        } catch (Throwable $e) {
+            report($e);
+        }
+
+        if ($contractIsPaused) {
+            return;
+        }
+
         try {
             RecordPermitOnBlockchain::dispatch($document->id)->afterCommit();
         } catch (Throwable $e) {

@@ -18,6 +18,7 @@ abstract class TestCase extends BaseTestCase
             $mock->shouldReceive('verify')->andReturn(['ok' => true, 'status' => 'not_found']);
             $mock->shouldReceive('issue')->andReturn(['ok' => true, 'txHash' => '0xtest', 'contract' => '0xtest']);
             $mock->shouldReceive('revoke')->andReturn(['ok' => true, 'txHash' => '0xtest']);
+            $mock->shouldReceive('contractInfo')->andReturn(null);
         });
     }
 }

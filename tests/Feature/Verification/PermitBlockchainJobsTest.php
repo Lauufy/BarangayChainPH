@@ -43,6 +43,30 @@ class PermitBlockchainJobsTest extends TestCase
         $this->assertNull($record->error);
     }
 
+    public function test_paused_contract_issue_is_logged_as_a_failure_immediately(): void
+    {
+        $document = $this->makeDocument();
+
+        $registry = $this->mock(BlockchainRegistry::class);
+        $registry->shouldReceive('verify')
+            ->once()
+            ->with($document->document_uuid, $document->file_hash)
+            ->andReturn(['ok' => true, 'status' => 'not_found']);
+        $registry->shouldReceive('issue')
+            ->once()
+            ->with($document->document_uuid, $document->file_hash)
+            ->andReturn(['ok' => false, 'error' => 'ContractPaused']);
+
+        (new RecordPermitOnBlockchain($document->id))->handle($registry);
+
+        $record = $document->fresh()->blockchainRecord;
+
+        $this->assertModelExists($record);
+        $this->assertSame('Blockchain issue failed: ContractPaused', $record->error);
+        $this->assertSame(config('blockchain.contract'), $record->contract);
+        $this->assertNull($record->recorded_at);
+    }
+
     public function test_record_job_recovers_the_transaction_hash_when_the_permit_is_already_valid(): void
     {
         $document = $this->makeDocument();

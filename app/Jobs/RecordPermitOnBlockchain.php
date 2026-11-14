@@ -91,7 +91,18 @@ class RecordPermitOnBlockchain implements ShouldQueue
         $result = $registry->issue($document->document_uuid, $document->file_hash);
 
         if (! ($result['ok'] ?? false)) {
-            throw new RuntimeException('Blockchain issue failed: '.($result['error'] ?? 'unknown'));
+            $error = is_string($result['error'] ?? null) ? $result['error'] : 'unknown';
+
+            if (str_contains($error, 'ContractPaused')) {
+                $this->save($document, [
+                    'contract' => config('blockchain.contract'),
+                    'error' => 'Blockchain issue failed: '.$error,
+                ]);
+
+                return;
+            }
+
+            throw new RuntimeException('Blockchain issue failed: '.$error);
         }
 
         if (! is_string($result['txHash'] ?? null) || $result['txHash'] === '') {

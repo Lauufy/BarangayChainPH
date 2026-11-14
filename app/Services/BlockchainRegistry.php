@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Cache;
 use RuntimeException;
 use Symfony\Component\Process\Process;
 
@@ -29,6 +30,31 @@ class BlockchainRegistry
     public function findIssuanceTransaction(string $uuid, ?string $contract = null): array
     {
         return $this->run(['find-issuance-tx', $uuid], $contract);
+    }
+
+    // Emergency switch (owner only). While paused, new permits cannot be recorded.
+    // Revoking and verifying keep working. Slow: waits for a block.
+    public function setPaused(bool $paused): array
+    {
+        return $this->run([$paused ? 'pause' : 'unpause']);
+    }
+
+    // Health and details of the current contract, for the admin Smart Contract page.
+    // Returns null when the blockchain cannot be reached.
+    public function contractInfo(): ?array
+    {
+        return Cache::remember('blockchain.info', 30, function () {
+            try {
+                $info = $this->run(['info']);
+            } catch (\Throwable $e) {
+                report($e);
+
+                return null;
+            }
+
+            // The CLI answers {"ok":false,...} on failure. Never cache that.
+            return ($info['ok'] ?? false) === true ? $info : null;
+        });
     }
 
     private function run(array $args, ?string $contract = null): array
@@ -68,8 +94,8 @@ class BlockchainRegistry
             'EXPECTED_CHAIN_ID' => config('blockchain.chain_id'),
         ];
 
-        // Only commands that write to the chain need the key
-        if (in_array($command, ['issue', 'revoke'], true)) {
+        // Only these commands need the key ('info' only derives the wallet address from it)
+        if (in_array($command, ['issue', 'revoke', 'pause', 'unpause', 'info'], true)) {
             $settings['PRIVATE_KEY'] = config('blockchain.issuer_key');
         }
 
