@@ -22,10 +22,14 @@ contract PermitRegistry {
     }
 
     address public owner;
+    address public pendingOwner;
     bool public paused; // when true, new documents cannot be issued
     mapping(address => bool) public isIssuer;
     mapping(bytes32 => Record) private records;
 
+    event OwnershipTransferStarted(address indexed owner, address indexed pendingOwner);
+    event OwnershipTransferCancelled(address indexed owner, address indexed pendingOwner);
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
     event IssuerChanged(address indexed account, bool allowed);
     event PauseChanged(bool paused, address indexed by);
     event DocumentIssued(bytes32 indexed documentId, bytes32 fileHash, address indexed issuer, uint64 issuedAt);
@@ -33,6 +37,10 @@ contract PermitRegistry {
 
     error NotOwner();
     error NotIssuer();
+    error NotDocumentIssuer();
+    error NotPendingOwner();
+    error ZeroAddress();
+    error SameOwner();
     error ContractPaused();
     error EmptyHash();
     error AlreadyIssued();
@@ -57,11 +65,46 @@ contract PermitRegistry {
     constructor() {
         owner = msg.sender;
         isIssuer[msg.sender] = true;
+        emit OwnershipTransferred(address(0), msg.sender);
         emit IssuerChanged(msg.sender, true);
+    }
+
+    /// @notice Start a two-step ownership transfer. The new owner must accept it.
+    function transferOwnership(address newOwner) external onlyOwner {
+        if (newOwner == address(0)) revert ZeroAddress();
+        if (newOwner == owner) revert SameOwner();
+
+        pendingOwner = newOwner;
+        emit OwnershipTransferStarted(owner, newOwner);
+    }
+
+    /// @notice Cancel an ownership transfer that has not yet been accepted.
+    function cancelOwnershipTransfer() external onlyOwner {
+        address cancelledOwner = pendingOwner;
+        pendingOwner = address(0);
+        emit OwnershipTransferCancelled(owner, cancelledOwner);
+    }
+
+    /// @notice Accept ownership and remove the previous owner's issuer permission.
+    function acceptOwnership() external {
+        if (msg.sender != pendingOwner) revert NotPendingOwner();
+
+        address previousOwner = owner;
+        owner = msg.sender;
+        pendingOwner = address(0);
+
+        if (isIssuer[previousOwner]) {
+            isIssuer[previousOwner] = false;
+            emit IssuerChanged(previousOwner, false);
+        }
+
+        emit OwnershipTransferred(previousOwner, msg.sender);
     }
 
     /// @notice Allow or remove an account that may issue and revoke documents.
     function setIssuer(address account, bool allowed) external onlyOwner {
+        if (account == address(0)) revert ZeroAddress();
+
         isIssuer[account] = allowed;
         emit IssuerChanged(account, allowed);
     }
@@ -89,10 +132,13 @@ contract PermitRegistry {
     }
 
     /// @notice Mark an issued document as revoked. This cannot be undone.
-    function revoke(bytes32 documentId) external onlyIssuer {
+    function revoke(bytes32 documentId) external {
+        if (msg.sender != owner && !isIssuer[msg.sender]) revert NotIssuer();
+
         Record storage r = records[documentId];
         if (!r.exists) revert DocumentNotFound();
         if (r.revokedAt != 0) revert AlreadyRevoked();
+        if (msg.sender != owner && msg.sender != r.issuer) revert NotDocumentIssuer();
 
         r.revokedAt = uint64(block.timestamp);
 

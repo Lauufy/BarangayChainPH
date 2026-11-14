@@ -35,6 +35,57 @@ describe('PermitRegistry', () => {
       await registry.setIssuer(staff.address, false);
       expect(await registry.isIssuer(staff.address)).to.equal(false);
     });
+
+    it('transfers ownership in two steps and removes the previous owner as an issuer', async () => {
+      await expect(registry.transferOwnership(staff.address))
+        .to.emit(registry, 'OwnershipTransferStarted')
+        .withArgs(owner.address, staff.address);
+
+      await expect(registry.connect(stranger).acceptOwnership())
+        .to.be.revertedWithCustomError(registry, 'NotPendingOwner');
+
+      await expect(registry.connect(staff).acceptOwnership())
+        .to.emit(registry, 'OwnershipTransferred')
+        .withArgs(owner.address, staff.address);
+
+      expect(await registry.owner()).to.equal(staff.address);
+      expect(await registry.pendingOwner()).to.equal(ethers.ZeroAddress);
+      expect(await registry.isIssuer(owner.address)).to.equal(false);
+    });
+
+    it('lets the owner cancel a pending ownership transfer', async () => {
+      await registry.transferOwnership(staff.address);
+
+      await expect(registry.cancelOwnershipTransfer())
+        .to.emit(registry, 'OwnershipTransferCancelled')
+        .withArgs(owner.address, staff.address);
+
+      await expect(registry.connect(staff).acceptOwnership())
+        .to.be.revertedWithCustomError(registry, 'NotPendingOwner');
+    });
+
+    it('restricts ownership transfer controls to the current owner', async () => {
+      await expect(registry.connect(stranger).transferOwnership(staff.address))
+        .to.be.revertedWithCustomError(registry, 'NotOwner');
+
+      await registry.transferOwnership(staff.address);
+
+      await expect(registry.connect(stranger).cancelOwnershipTransfer())
+        .to.be.revertedWithCustomError(registry, 'NotOwner');
+    });
+
+    it('rejects zero-address and self ownership transfers', async () => {
+      await expect(registry.transferOwnership(ethers.ZeroAddress))
+        .to.be.revertedWithCustomError(registry, 'ZeroAddress');
+
+      await expect(registry.transferOwnership(owner.address))
+        .to.be.revertedWithCustomError(registry, 'SameOwner');
+    });
+
+    it('rejects the zero address as an issuer', async () => {
+      await expect(registry.setIssuer(ethers.ZeroAddress, true))
+        .to.be.revertedWithCustomError(registry, 'ZeroAddress');
+    });
   });
 
   describe('issuing', () => {
@@ -142,6 +193,24 @@ describe('PermitRegistry', () => {
     it('is not allowed for accounts that are not issuers', async () => {
       await expect(registry.connect(stranger).revoke(documentId))
         .to.be.revertedWithCustomError(registry, 'NotIssuer');
+    });
+
+    it('does not let an issuer revoke a document issued by another account', async () => {
+      await registry.setIssuer(staff.address, true);
+
+      await expect(registry.connect(staff).revoke(documentId))
+        .to.be.revertedWithCustomError(registry, 'NotDocumentIssuer');
+    });
+
+    it('lets the owner revoke a document even after losing issuer status', async () => {
+      const staffDocumentId = ethers.keccak256(ethers.toUtf8Bytes('staff-issued'));
+      await registry.setIssuer(staff.address, true);
+      await registry.connect(staff).issue(staffDocumentId, fileHash);
+      await registry.setIssuer(owner.address, false);
+
+      await registry.revoke(staffDocumentId);
+
+      expect(await registry.verify(staffDocumentId, fileHash)).to.equal(Status.Revoked);
     });
   });
 });

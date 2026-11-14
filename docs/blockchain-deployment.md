@@ -23,15 +23,15 @@ Contract source in this repository: `blockchain/contracts/PermitRegistry.sol` (S
 
 ## Key custody and governance
 
-- The current documented demo setup uses the same wallet as owner and issuer. The contract constructor also makes the deploying wallet the `owner` and enables it as an issuer; confirm the live values with the read-only checker below.
-- The owner can add or remove issuer addresses with `setIssuer`. Issuers can issue and revoke documents. Store the issuer key only in an approved secrets manager or protected runtime secret store; never put it in Git, source code, screenshots, or client-side code.
-- The contract has no ownership-transfer function. The owner cannot be rotated after deployment. Issuer access can be rotated only while the owner key remains available: enable a replacement issuer with `setIssuer`, verify it, then disable the previous issuer.
-- If an issuer key is lost or compromised, stop issuing immediately, revoke affected documents where a trusted authorized issuer can still do so, and redeploy the registry with a new owner key. Re-anchor active documents in the new registry and update the application configuration. A revoked document cannot be un-revoked or issued again under the same document ID in this contract.
-- If the owner key is lost or compromised, stop issuance, revoke affected documents where possible, redeploy and re-anchor; the contract does not support transferring ownership to recover the existing deployment.
+- The constructor makes the deploying wallet the `owner` and initially enables it as an issuer. The current source supports a two-step ownership transfer: the owner calls `transferOwnership`, then the new owner calls `acceptOwnership`. Acceptance removes the previous owner's issuer permission. For production, transfer ownership to a multisig and separately authorize the backend issuer with `setIssuer`.
+- Issuers can issue documents and revoke only documents they issued. The owner can revoke any document for emergency recovery. Store the issuer key only in an approved secrets manager or protected runtime secret store; never put it in Git, source code, screenshots, or client-side code.
+- These protections are in the current source, not retroactively in an already deployed contract. Existing deployments are immutable; deploy and verify this source as a new version before relying on ownership transfer or issuer-scoped revocation.
+- If an issuer key is lost or compromised, pause issuance, remove the issuer with `setIssuer`, and have the owner revoke affected records where needed. A revoked document cannot be un-revoked or issued again under the same document ID in this contract.
+- If the owner key is lost before transferring ownership to a multisig, recovery still requires deploying a new registry and re-anchoring active documents. Once a multisig owns the registry, apply its documented signer-recovery process.
 
 ## Read-only deployment check
 
-Set `RPC_URL` and `REGISTRY_ADDRESS` in the process environment, then run `npm run check-deployment` from the `blockchain` folder. The checker reads the configured address, verifies contract code, and reads the chain ID, owner, and owner's issuer status. It never sends a transaction and redacts RPC URLs from errors.
+Set `RPC_URL`, `REGISTRY_ADDRESS`, and `ISSUER_ADDRESS` in the process environment, then run `npm run check-deployment` from the `blockchain` folder. The checker reads the configured address, verifies contract code, and reads the chain ID, owner, and configured issuer's authorization. It never sends a transaction and redacts RPC URLs from errors.
 
 ## Live end-to-end demo checklist
 
