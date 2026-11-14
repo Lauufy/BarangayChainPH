@@ -36,7 +36,7 @@
         {{-- Header --}}
         <div class="flex flex-wrap items-center justify-between gap-4">
             <div>
-                <h1 class="text-2xl font-bold text-slate-900">Smart Contract Management</h1>
+                <h1 class="text-2xl font-bold text-slate-900">Smart ContractS Management</h1>
                 <p class="mt-1 text-sm text-slate-600">Monitor the permit registry contract and its health.</p>
             </div>
             <div class="flex flex-wrap gap-3">
