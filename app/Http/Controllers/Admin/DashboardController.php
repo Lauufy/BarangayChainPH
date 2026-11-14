@@ -7,6 +7,7 @@ use App\Models\IdentityVerification;
 use App\Models\IssuedDocument;
 use App\Models\ServiceRequest;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\View\View;
 
@@ -55,19 +56,32 @@ class DashboardController extends Controller
             ];
         }
 
+        // One query per card: the count and the "latest" date come from the same records.
+        // With no records the date is null; the stat card shows a temporary date for a 0 value.
+        $citizens = User::query()->where('role', 'citizen');
+        $pendingPermits = ServiceRequest::query()->where('status', ServiceRequest::PENDING);
+        $pendingVerifications = IdentityVerification::query()->where('status', IdentityVerification::PENDING);
+        $verified = IdentityVerification::query()->where('status', IdentityVerification::VERIFIED);
+
         return view('admin.dashboard.index', [
-            'totalCitizens' => User::query()
-                ->where('role', 'citizen')
-                ->count(),
-            'pendingPermits' => ServiceRequest::query()
-                ->where('status', ServiceRequest::PENDING)
-                ->count(),
-            'pendingVerifications' => IdentityVerification::query()
-                ->where('status', IdentityVerification::PENDING)
-                ->count(),
-            'authenticatedDocuments' => IdentityVerification::query()
-                ->where('status', IdentityVerification::VERIFIED)
-                ->count(),
+            'totalCitizens' => (clone $citizens)->count(),
+            'citizensLatest' => (clone $citizens)->max('created_at'), // last registered citizen
+            'citizensTrend' => $this->monthTrend($citizens),
+
+            'pendingPermits' => (clone $pendingPermits)->count(),
+            'permitsLatest' => (clone $pendingPermits)->max('created_at'), // last submitted request
+            'permitsTrend' => $this->monthTrend($pendingPermits),
+
+            'pendingVerifications' => (clone $pendingVerifications)->count(),
+            'verificationsLatest' => (clone $pendingVerifications)
+                ->selectRaw('MAX(COALESCE(submitted_at, created_at)) as latest')
+                ->value('latest'), // last submitted verification
+            'verificationsTrend' => $this->monthTrend($pendingVerifications),
+
+            'authenticatedDocuments' => (clone $verified)->count(),
+            'verifiedLatest' => (clone $verified)->max('created_at'), // swap to your verified date column if you have one
+            'verifiedTrend' => $this->monthTrend($verified),
+
             'recentPermits' => ServiceRequest::with('user')->latest()->limit(5)->get(),
             // Issued permits that the blockchain has not confirmed yet
             'unrecordedPermits' => IssuedDocument::query()
@@ -76,5 +90,21 @@ class DashboardController extends Controller
                 ->count(),
             'workload' => $workload,
         ]);
+    }
+
+    /**
+     * Percent change in new records: this month so far vs the same stretch of last month.
+     * Returns null when last month has nothing to compare against (the card hides the trend).
+     */
+    private function monthTrend(Builder $query): ?float
+    {
+        $startOfMonth = now()->startOfMonth();
+        $lastMonthStart = now()->subMonthNoOverflow()->startOfMonth();
+        $lastMonthSamePoint = now()->subMonthNoOverflow();
+
+        $thisMonth = (clone $query)->where('created_at', '>=', $startOfMonth)->count();
+        $lastMonth = (clone $query)->whereBetween('created_at', [$lastMonthStart, $lastMonthSamePoint])->count();
+
+        return $lastMonth > 0 ? round((($thisMonth - $lastMonth) / $lastMonth) * 100, 1) : null;
     }
 }

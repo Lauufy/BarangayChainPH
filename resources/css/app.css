@@ -40,6 +40,12 @@
     --color-line-strong: var(--border-strong);
 }
 
+@theme {
+    --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+    --font-brand: "Barlow", "Inter", sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+}
+
 /* ---------- Base ---------- */
 @layer base {
     body {
