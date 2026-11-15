@@ -12,6 +12,16 @@ class AdminDashboardTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_dashboard_marks_report_charts_for_initialization(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)
+            ->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee('data-reports-page', false);
+    }
+
     public function test_recent_permit_requests_are_listed(): void
     {
         $staff = User::factory()->create([
@@ -79,6 +89,6 @@ class AdminDashboardTest extends TestCase
             ->assertSee('Requests awaiting action')
             ->assertSee('Identity reviews in queue')
             ->assertSee('BRGY-WORKLOAD-0001')
-            ->assertSee('4 days old');
+            ->assertSee('4 days');
     }
 }

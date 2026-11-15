@@ -9,28 +9,27 @@
     // Notification status => [icon box classes, icon path]
     $notificationStyles = [
         'verified' => [
-            'bg-[color-mix(in_srgb,var(--green-500)_18%,transparent)] text-(--green-600) dark:text-(--green-300)',
-            'M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z',
+            'bg-[color-mix(in_srgb,var(--green-500)_16%,transparent)] text-(--green-600) dark:text-(--green-300)',
+            'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20ZM9 12l2 2 4-4',
         ],
         'rejected' => [
-            'bg-[color-mix(in_srgb,var(--red-500)_15%,transparent)] text-(--red-600) dark:text-(--red-500)',
-            'M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z',
+            'bg-[color-mix(in_srgb,var(--red-500)_14%,transparent)] text-(--red-600) dark:text-(--red-500)',
+            'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20ZM15 9l-6 6M9 9l6 6',
         ],
         'info' => [
-            'bg-[color-mix(in_srgb,var(--amber-500)_18%,transparent)] text-(--amber-500)',
-            'M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0',
+            'bg-[color-mix(in_srgb,var(--amber-500)_16%,transparent)] text-(--amber-500)',
+            'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20ZM12 16v-4M12 8h.01',
         ],
     ];
 
-    // Sidebar sections. "show" decides if the current user can see the link.
+    // Sidebar sections. Solid icons: class "cut" = cut-out shape, "cutl" = cut-out line.
     $nav = [
         'Overview' => [
             [
                 'href' => '/admin/dashboard',
                 'match' => 'admin/dashboard',
                 'label' => 'Dashboard',
-                'icon' =>
-                    '<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>',
+                'icon' => '<path d="M12 2a10 10 0 1 0 10 10H12z"/><path d="M14 2.2V10h7.8A10 10 0 0 0 14 2.2z"/>',
                 'show' => true,
             ],
         ],
@@ -40,7 +39,7 @@
                 'match' => 'admin/users*',
                 'label' => 'Users & Roles',
                 'icon' =>
-                    '<path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+                    '<circle cx="9" cy="8" r="4"/><path d="M2 20a7 7 0 0 1 14 0z"/><circle cx="17" cy="9" r="3"/><path d="M17.5 14a4.5 4.5 0 0 1 4.5 4.5V20h-4.2a8.6 8.6 0 0 0-2-5 4.6 4.6 0 0 1 1.7-1z"/>',
                 'show' => $admin,
             ],
             [
@@ -48,7 +47,7 @@
                 'match' => 'admin/identity-verification*',
                 'label' => 'Identity Verification',
                 'icon' =>
-                    '<rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M6.17 15a3 3 0 0 1 5.66 0"/><path d="M15 10h3M15 14h3"/>',
+                    '<rect x="2" y="5" width="20" height="14" rx="3"/><circle class="cut" cx="8.5" cy="11" r="2"/><path class="cut" d="M5.5 16.5a3 3 0 0 1 6 0z"/><path class="cutl" d="M14.5 10h4M14.5 14h4"/>',
                 'show' => $can('identity.review'),
             ],
             [
@@ -56,7 +55,7 @@
                 'match' => 'admin/permits*',
                 'label' => 'Permit Management',
                 'icon' =>
-                    '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v6h6"/><path d="m9 15 2 2 4-4"/>',
+                    '<rect x="4" y="4" width="16" height="18" rx="3"/><rect x="8" y="2" width="8" height="4" rx="1.5"/><path class="cutl" d="m9 14 2 2 4-4"/>',
                 'show' => $can('permits.review'),
             ],
         ],
@@ -66,7 +65,7 @@
                 'match' => 'admin/document-authentication*',
                 'label' => 'Document Authentication',
                 'icon' =>
-                    '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',
+                    '<path d="M12 2 4 5v6c0 5 3.4 9.3 8 11 4.6-1.7 8-6 8-11V5z"/><path class="cutl" d="m8.5 12 2.5 2.5 4.5-4.5"/>',
                 'show' => $can('documents.authenticate'),
             ],
         ],
@@ -75,8 +74,7 @@
                 'href' => '/admin/blockchain-ledger',
                 'match' => 'admin/blockchain-ledger*',
                 'label' => 'Blockchain Ledger',
-                'icon' =>
-                    '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+                'icon' => '<path d="M12 2 3 7v10l9 5 9-5V7z"/><path class="cutl" d="m3 7 9 5 9-5M12 12v10"/>',
                 'show' => $can('blockchain.view'),
             ],
             [
@@ -84,7 +82,7 @@
                 'match' => 'admin/smart-contracts*',
                 'label' => 'Smart Contract Management',
                 'icon' =>
-                    '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v6h6"/><path d="m10 13-2 2 2 2"/><path d="m14 13 2 2-2 2"/>',
+                    '<path d="M6 2h8l6 6v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path class="cutl" d="m10 12-2 2.5 2 2.5M14 12l2 2.5-2 2.5"/>',
                 'show' => $can('contracts.view'),
             ],
         ],
@@ -93,7 +91,8 @@
                 'href' => '/admin/tickets',
                 'match' => 'admin/tickets*',
                 'label' => 'Ticket Messages',
-                'icon' => '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+                'icon' =>
+                    '<path d="M5 3h14a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3H10l-5 4v-4a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3z"/><circle class="cut" cx="8" cy="10.5" r="1.2"/><circle class="cut" cx="12" cy="10.5" r="1.2"/><circle class="cut" cx="16" cy="10.5" r="1.2"/>',
                 'show' => $can('tickets.reply'),
             ],
         ],
@@ -102,15 +101,15 @@
                 'href' => '/admin/reports',
                 'match' => 'admin/reports*',
                 'label' => 'Reports & Analytics',
-                'icon' => '<path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/>',
+                'icon' =>
+                    '<rect x="3" y="3" width="18" height="18" rx="3"/><path class="cutl" d="M8 17v-4M12 17V8M16 17v-6"/>',
                 'show' => $can('reports.view'),
             ],
             [
                 'href' => '/admin/audit-logs',
                 'match' => 'admin/audit-logs*',
                 'label' => 'Audit Logs',
-                'icon' =>
-                    '<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M8 11h8M8 15h8M8 19h4"/>',
+                'icon' => '<circle cx="12" cy="12" r="10"/><path class="cutl" d="M12 7v5l3.5 2"/>',
                 'show' => $can('audit.view'),
             ],
         ],
@@ -122,18 +121,18 @@
     $line = 'border-(--gray-200) dark:border-white/10';
     $link = 'text-xs font-semibold text-(--blue-700) hover:underline dark:text-(--blue-300)';
 
-    // One hover style for every header button and menu item:
-    // light = soft gray, dark = soft white. Text stays readable in both.
     $hoverSoft = 'hover:bg-(--gray-100) hover:text-(--gray-900) dark:hover:bg-white/10 dark:hover:text-(--white)';
 
-    // Header buttons (bell, profile, theme)
     $menuButton =
-        'list-none cursor-pointer rounded-xl transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--blue-500)/40 [&::-webkit-details-marker]:hidden ' .
+        'list-none cursor-pointer rounded-lg outline-none transition-colors duration-200 focus-visible:bg-(--gray-100) dark:focus-visible:bg-white/10 [&::-webkit-details-marker]:hidden ' .
         $hoverSoft;
 
-    // Dropdown panel
     $menuPanel =
-        'absolute right-0 z-50 mt-3 max-w-[calc(100vw-2rem)] rounded-2xl border border-(--gray-200) bg-(--white) shadow-xl shadow-black/10 dark:border-white/10 dark:bg-(--gray-800)';
+        'absolute right-0 z-50 mt-3 max-w-[calc(100vw-2rem)] rounded-xl border border-(--gray-200) bg-(--white) shadow-xl shadow-black/10 dark:border-white/10 dark:bg-(--gray-800)';
+
+    // Outline icon attributes for header and menu icons
+    $svg =
+        'fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
 @endphp
 <!DOCTYPE html>
 <html lang="en">
@@ -145,7 +144,6 @@
     <title>@yield('title', 'Dashboard') - BarangayChain PH</title>
     <link rel="icon" type="image/png" href="{{ asset('img/branding/barangaychain-lg2.png') }}">
 
-    {{-- Fonts: Inter for the interface, Barlow for the logo --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -168,6 +166,7 @@
     <style>
         :root {
             --sb-width: 19rem;
+            --sb-bg: #070b24;
         }
 
         html[data-sidebar="collapsed"] {
@@ -176,7 +175,9 @@
 
         .admin-sidebar {
             width: var(--sb-width);
+            background: var(--sb-bg);
             transition: width .25s ease;
+            scrollbar-width: none;
         }
 
         .admin-sidebar::-webkit-scrollbar {
@@ -193,7 +194,29 @@
             }
         }
 
-        /* Collapsed: logo only, toggle underneath */
+        /* Solid sidebar icons: cut-outs use the sidebar color */
+        .sb-icon .cut {
+            fill: var(--sb-bg);
+        }
+
+        .sb-icon .cutl {
+            fill: none;
+            stroke: var(--sb-bg);
+            stroke-width: 1.9;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        /* Logo icon: hidden when expanded, shown when collapsed */
+        .sb-logo {
+            display: none;
+        }
+
+        html[data-sidebar="collapsed"] .sb-logo {
+            display: block;
+        }
+
+        /* Collapsed icon rail */
         html[data-sidebar="collapsed"] .sb-label {
             display: none;
         }
@@ -216,20 +239,12 @@
             line-height: 0;
             height: 1px;
             padding: 0;
-            margin: 0 .75rem .875rem;
-            background: rgba(255, 255, 255, .1);
+            margin: 0 .75rem 1rem;
+            background: rgba(255, 255, 255, .08);
         }
 
         html[data-sidebar="collapsed"] .sb-toggle-icon {
             transform: scaleX(-1);
-        }
-
-        .sb-logo {
-            display: none;
-        }
-
-        html[data-sidebar="collapsed"] .sb-logo {
-            display: block;
         }
     </style>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -241,47 +256,43 @@
 
         {{-- ========== Sidebar ========== --}}
         <aside
-            class="admin-sidebar bg-(--blue-900) text-(--white) fixed inset-y-0 left-0 z-50 hidden overflow-y-auto overflow-x-hidden border-r border-white/5 md:block">
+            class="admin-sidebar text-(--white) fixed inset-y-0 left-0 z-50 hidden overflow-y-auto overflow-x-hidden border-r border-white/5 md:block">
 
             {{-- Brand + toggle --}}
-            <div class="sb-head flex min-h-20 items-center justify-between gap-2 border-b border-white/10 px-5 py-4">
+            <div class="sb-head flex min-h-20 items-center justify-between gap-2 border-b border-white/5 px-5 py-4">
 
-                <a href="/admin/dashboard" class="flex min-w-0 items-center">
-                    {{-- Logo: only visible when the sidebar is collapsed --}}
-                    <img src="{{ asset('img/branding/barangaychain-lg2.png') }}" alt="BarangayChain PH"
+                <a href="/admin/dashboard" class="flex min-w-0 items-center outline-none">
+                    {{-- Icon only: visible when collapsed --}}
+                    <img src="{{ asset('img/branding/barangaychain-lg1.png') }}" alt="BarangayChain PH"
                         class="sb-logo h-10 w-10 shrink-0 object-contain">
 
-                    {{-- Name: only visible when the sidebar is expanded --}}
-                    <p class="sb-label font-brand truncate text-[22px] font-bold uppercase leading-none tracking-wide">
-                        <span class="text-(--white)">BarangayChain</span>
-                        <span class="text-(--green-400)">PH</span>
-                    </p>
+                    {{-- Full logo: visible when expanded --}}
+                    <img src="{{ asset('img/branding/brgychainlogo.png') }}" alt="BarangayChain PH"
+                        class="sb-label h-10 w-auto shrink-0 object-contain brightness-0 invert">
                 </a>
 
-                {{-- Toggle --}}
                 <button type="button" id="admin-sidebar-toggle" aria-label="Toggle sidebar" aria-expanded="true"
                     title="Toggle sidebar"
-                    class="text-(--gray-300) hover:text-(--white) flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 transition-colors duration-200 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30">
-                    <svg class="sb-toggle-icon h-5 w-5 transition-transform" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"
-                        aria-hidden="true">
-                        <rect x="3" y="4" width="18" height="16" rx="2" />
-                        <path d="M9 4v16" />
+                    class="hover:text-(--white) focus-visible:text-(--white) flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[#8b93b8] outline-none transition-colors duration-200 hover:bg-white/5 focus-visible:bg-white/5">
+                    <svg class="sb-toggle-icon h-5 w-5 transition-transform" viewBox="0 0 24 24"
+                        {!! $svg !!}>
+                        <rect x="3" y="3" width="18" height="18" rx="2" />
+                        <path d="M9 3v18" />
                     </svg>
                 </button>
             </div>
 
             {{-- Links --}}
-            <nav class="space-y-7 px-4 py-7">
+            <nav class="space-y-5 px-3 py-5">
                 @foreach ($nav as $section => $links)
                     @php $links = collect($links)->where('show', true); @endphp
                     @continue($links->isEmpty())
 
                     <div>
                         <p
-                            class="sb-section-label text-(--gray-400) mb-2.5 px-3 text-[10.5px] font-semibold uppercase tracking-[0.14em]">
+                            class="sb-section-label mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-[#8b93b8]">
                             {{ $section }}</p>
-                        <div class="space-y-1">
+                        <div class="space-y-0.5">
                             @foreach ($links as $item)
                                 <x-admin.nav-link :href="$item['href']" :match="$item['match']">
                                     <x-slot:icon>{!! $item['icon'] !!}</x-slot:icon>
@@ -299,7 +310,7 @@
 
             {{-- Header --}}
             <header
-                class="{{ $line }} bg-(--white) dark:bg-(--gray-900) relative z-40 flex h-20 shrink-0 items-center justify-between border-b px-3 sm:px-6">
+                class="{{ $line }} bg-(--white) dark:bg-(--blue-850) relative z-40 flex h-20 shrink-0 items-center justify-between border-b px-3 sm:px-6">
 
                 <div class="min-w-0">
                     <x-partials.live-date class="hidden lg:flex" timezone="Asia/Manila" />
@@ -313,10 +324,10 @@
                     <details id="admin-notification-menu" class="relative">
                         <summary aria-label="Notifications"
                             class="{{ $menuButton }} {{ $muted }} relative flex p-2.5">
-                            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
-                                <path d="M10 21h4" />
+                            <svg class="h-5 w-5" viewBox="0 0 24 24" {!! $svg !!}>
+                                <path d="M10.268 21a2 2 0 0 0 3.464 0" />
+                                <path
+                                    d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" />
                             </svg>
                             @if ($unread)
                                 <span id="admin-notification-count"
@@ -328,7 +339,7 @@
 
                         <div class="{{ $menuPanel }} w-96 overflow-hidden">
                             <div class="{{ $line }} border-b px-5 py-4">
-                                <p class="{{ $ink }} text-sm font-bold">Notifications</p>
+                                <p class="{{ $ink }} text-sm font-semibold">Notifications</p>
                                 <p id="admin-notification-subtitle" class="{{ $muted }} mt-0.5 text-xs">
                                     {{ $unread ? "You have {$unread} new " . \Illuminate\Support\Str::plural('notification', $unread) . '.' : "You're all caught up." }}
                                 </p>
@@ -350,11 +361,9 @@
                                         @endunless
 
                                         <span
-                                            class="{{ $iconBox }} relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl">
-                                            <svg class="h-4.5 w-4.5" fill="none" stroke="currentColor"
-                                                stroke-width="1.6" viewBox="0 0 24 24" aria-hidden="true">
-                                                <path stroke-linecap="round" stroke-linejoin="round"
-                                                    d="{{ $iconPath }}" />
+                                            class="{{ $iconBox }} relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
+                                            <svg class="h-4.5 w-4.5" viewBox="0 0 24 24" {!! $svg !!}>
+                                                <path d="{{ $iconPath }}" />
                                             </svg>
                                         </span>
 
@@ -411,10 +420,10 @@
                             @if ($user->employeeProfile?->photo_path)
                                 <img src="{{ route('admin.profile.photo.show') }}?v={{ $user->updated_at?->timestamp }}"
                                     alt=""
-                                    class="ring-(--green-400) h-9 w-9 rounded-full object-cover ring-2">
+                                    class="ring-(--gray-200) h-9 w-9 rounded-full object-cover ring-2 dark:ring-white/10">
                             @else
                                 <span
-                                    class="bg-(--blue-900) text-(--white) ring-(--green-400) flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold ring-2">
+                                    class="text-(--white) bg-(--gray-800) flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold">
                                     {{ strtoupper(substr($user->name, 0, 1)) }}
                                 </span>
                             @endif
@@ -423,12 +432,11 @@
                                 <span
                                     class="{{ $ink }} block max-w-40 truncate text-sm font-semibold leading-tight">{{ $user->name }}</span>
                                 <span
-                                    class="text-(--green-600) dark:text-(--green-400) block font-mono text-[10px] font-semibold uppercase tracking-wide">{{ $admin ? 'Admin' : 'Staff' }}</span>
+                                    class="{{ $muted }} block font-mono text-[10px] font-semibold uppercase tracking-wide">{{ $admin ? 'Admin' : 'Staff' }}</span>
                             </span>
 
                             <svg class="{{ $muted }} hidden h-4 w-4 transition-transform group-open/user:rotate-180 sm:block"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                viewBox="0 0 24 24" {!! $svg !!}>
                                 <path d="m6 9 6 6 6-6" />
                             </svg>
                         </summary>
@@ -440,12 +448,10 @@
                             </div>
 
                             <a href="{{ route('admin.profile') }}"
-                                class="{{ $hoverSoft }} text-(--gray-700) dark:text-(--gray-200) flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-200">
-                                <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none"
-                                    stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
-                                    stroke-linejoin="round" aria-hidden="true">
-                                    <circle cx="12" cy="8" r="4" />
-                                    <path d="M5 21v-2a7 7 0 0 1 14 0v2" />
+                                class="{{ $hoverSoft }} text-(--gray-700) dark:text-(--gray-200) flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-200">
+                                <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" {!! $svg !!}>
+                                    <circle cx="12" cy="8" r="5" />
+                                    <path d="M20 21a8 8 0 0 0-16 0" />
                                 </svg>
                                 <span>My profile</span>
                             </a>
@@ -454,13 +460,11 @@
                                 class="{{ $line }} mt-2 border-t pt-2">
                                 @csrf
                                 <button type="submit"
-                                    class="text-(--red-600) hover:bg-(--red-500)/10 dark:text-(--red-500) flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition-colors duration-200">
-                                    <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none"
-                                        stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
-                                        stroke-linejoin="round" aria-hidden="true">
-                                        <path d="M10 17l5-5-5-5" />
-                                        <path d="M15 12H3" />
-                                        <path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6" />
+                                    class="text-(--red-600) hover:bg-(--red-500)/10 dark:text-(--red-500) flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold transition-colors duration-200">
+                                    <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" {!! $svg !!}>
+                                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                                        <path d="m16 17 5-5-5-5" />
+                                        <path d="M21 12H9" />
                                     </svg>
                                     <span>Sign out</span>
                                 </button>
@@ -544,16 +548,27 @@
             }
         });
 
-        // ---------- Auto refresh every 5 seconds ----------
-        // Replace an element's content only if it changed and it is not an open menu.
+        function signature(element) {
+            const clone = element.cloneNode(true);
+            clone.querySelectorAll('canvas').forEach((canvas) => {
+                canvas.removeAttribute('style');
+                canvas.removeAttribute('width');
+                canvas.removeAttribute('height');
+            });
+            return clone.innerHTML;
+        }
+
         function swap(fresh, current) {
             if (!fresh || !current || current.open) return;
-            if (fresh.innerHTML !== current.innerHTML) {
+            if (signature(fresh) !== signature(current)) {
                 current.innerHTML = fresh.innerHTML;
+
+                if (current.id === 'admin-page-content') {
+                    document.dispatchEvent(new CustomEvent('admin:content-swapped'));
+                }
             }
         }
 
-        // True when the user typed something that is not saved yet
         function hasUnsavedInput() {
             const fields = document.querySelectorAll(
                 '#admin-page-content input:not([type=hidden]), #admin-page-content textarea');

@@ -53,7 +53,7 @@
         }
     </style>
 
-    <link rel="icon" type="image/png" href="{{ asset('img/branding/barangaychain-lg2.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('img/branding/barangaychain-lg1.png') }}">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>

@@ -1,5 +1,4 @@
 @php
-    // Same color design as govern-footer.blade.php (theme tokens, light and dark)
     $ring = 'focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--blue-700) dark:focus-visible:outline-(--blue-300)';
     $focus = 'rounded-sm ' . $ring;
     $line = 'border-(--gray-200) dark:border-(--gray-700)';
@@ -32,12 +31,7 @@
             {{-- Brand --}}
             <div>
                 <a href="{{ route('citizen.dashboard') }}" class="{{ $focus }} inline-block">
-                    <span class="block whitespace-nowrap font-['Barlow_Condensed'] text-4xl font-bold uppercase tracking-wide text-(--blue-900) dark:text-(--blue-300)">
-                        BarangayChain PH
-                    </span>
-                    <span class="mt-1 block text-[9px] font-semibold uppercase tracking-[0.14em] text-(--gray-600) dark:text-(--gray-400)">
-                        Barangay San Luis | Antipolo City
-                    </span>
+                    <x-partials.logo />
                 </a>
 
                 <p class="{{ $body }} mt-5 max-w-xs text-sm leading-6">
@@ -117,7 +111,7 @@
             <iframe title="Map of Barangay San Luis, Antipolo City" loading="lazy"
                 referrerpolicy="no-referrer-when-downgrade"
                 src="https://www.google.com/maps?q=Barangay+San+Luis+Antipolo+City&output=embed"
-                class="{{ $line }} h-64 w-full border-t bg-(--gray-100) dark:bg-(--gray-800) md:h-full md:min-h-72 md:border-l md:border-t-0"></iframe>
+                class="{{ $line }} h-64 w-full border-t bg-(--gray-100) md:h-full md:min-h-72 md:border-l md:border-t-0 dark:bg-(--gray-800)"></iframe>
         </div>
 
         {{-- Legal links and copyright --}}

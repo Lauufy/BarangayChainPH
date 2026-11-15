@@ -7,7 +7,7 @@
 
     <title>@yield('title', 'Authentication') | BarangayChain PH</title>
 
-    <link rel="icon" type="image/png" href="{{ asset('img/branding/barangaychain-lg2.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('img/branding/barangaychain-lg1.png') }}">
 
     {{-- Follow the saved theme (set by the toggle on other pages) before first paint --}}
     <script>

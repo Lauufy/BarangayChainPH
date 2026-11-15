@@ -82,6 +82,9 @@ class DashboardController extends Controller
             'verifiedLatest' => (clone $verified)->max('created_at'), // swap to your verified date column if you have one
             'verifiedTrend' => $this->monthTrend($verified),
 
+            'participation' => $this->participation(),
+            'requestStatus' => $this->requestStatus(),
+
             'recentPermits' => ServiceRequest::with('user')->latest()->limit(5)->get(),
             // Issued permits that the blockchain has not confirmed yet
             'unrecordedPermits' => IssuedDocument::query()
@@ -90,6 +93,48 @@ class DashboardController extends Controller
                 ->count(),
             'workload' => $workload,
         ]);
+    }
+
+    /**
+     * Permit requests per month for the last 12 months (bar chart).
+     *
+     * @return array{labels: array<int, string>, values: array<int, int>}
+     */
+    private function participation(): array
+    {
+        $start = now()->subMonths(11)->startOfMonth();
+
+        $byMonth = ServiceRequest::query()
+            ->where('created_at', '>=', $start)
+            ->get(['created_at'])
+            ->groupBy(fn ($request) => $request->created_at->format('Y-m'));
+
+        $months = collect(range(0, 11))->map(fn ($i) => $start->copy()->addMonths($i));
+
+        return [
+            'labels' => $months->map(fn ($month) => $month->format('M'))->all(),
+            'values' => $months->map(fn ($month) => $byMonth->get($month->format('Y-m'), collect())->count())->all(),
+        ];
+    }
+
+    /**
+     * All permit requests grouped for the donut (pending + processing = in progress).
+     *
+     * @return array{approved: int, in_progress: int, rejected: int, cancelled: int}
+     */
+    private function requestStatus(): array
+    {
+        $counts = ServiceRequest::query()
+            ->selectRaw('status, COUNT(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
+        return [
+            'approved' => (int) ($counts['approved'] ?? 0),
+            'in_progress' => (int) (($counts[ServiceRequest::PENDING] ?? 0) + ($counts[ServiceRequest::PROCESSING] ?? 0)),
+            'rejected' => (int) ($counts['rejected'] ?? 0),
+            'cancelled' => (int) ($counts['cancelled'] ?? 0),
+        ];
     }
 
     /**

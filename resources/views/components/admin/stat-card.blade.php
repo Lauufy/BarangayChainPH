@@ -6,7 +6,7 @@
     'latest' => null,            // Carbon/DateTime or date string
     'latestLabel' => 'Latest',
     'emptyText' => 'No records yet',
-    'dateFormat' => 'M d, Y g:i A',
+    'dateFormat' => 'M d, Y',
     'note' => null,              // footer fallback when there's no date
     'href' => null,              // makes the whole card a link
     'invert' => false,           // true when "down" is good (e.g. pending counts)

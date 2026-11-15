@@ -9,7 +9,7 @@
 
     <title>@yield('title', 'Legal') | BarangayChain PH</title>
 
-    <link rel="icon" type="image/png" href="{{ asset('img/branding/barangaychain-lg2.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('img/branding/brgychainlogo.png') }}">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>

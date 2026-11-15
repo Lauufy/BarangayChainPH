@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Citizen Portal') | Barangay San Luis</title>
-    <link rel="icon" type="image/png" href="{{ asset('img/branding/barangaychain-lg2.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('img/branding/barangaychain-lg1.png') }}">
 
     {{-- Apply the saved theme before first paint --}}
     <script>
@@ -90,8 +90,8 @@
     {{-- Government bar --}}
     <div class="bg-(--blue-900) text-(--white) text-xs">
         <div class="mx-auto flex h-9 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
-            <span class="text-(--blue-100) truncate">Official Barangay Website</span>
-            <span class="text-(--blue-200) hidden sm:block">Republic of the Philippines | Antipolo City, Rizal</span>
+            <span class="text-(--blue-100) truncate">Republic of the Philippines</span>
+            <span class="text-(--blue-200) hidden sm:block">Barangay San Luis | Antipolo City, Rizal</span>
         </div>
     </div>
 
@@ -282,7 +282,11 @@
         @yield('content')
     </main>
 
-    <x-partials.c-footer />
+    @hasSection('footer')
+        @yield('footer')
+    @else
+        @include('components.partials.section-footer')
+    @endif
 
 
     <script>

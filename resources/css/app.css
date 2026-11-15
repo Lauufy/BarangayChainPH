@@ -48,6 +48,23 @@
 
 /* ---------- Base ---------- */
 @layer base {
+    /* Light theme (default) */
+    :root {
+        color-scheme: light;
+        --scroll-track: transparent;
+        --scroll-thumb: #cbd5e1;
+        --scroll-thumb-hover: #94a3b8;
+    }
+
+    /* Dark theme */
+    :root.dark,
+    :root[data-theme='dark'] {
+        color-scheme: dark;
+        --scroll-track: transparent;
+        --scroll-thumb: rgb(255 255 255 / 0.18);
+        --scroll-thumb-hover: rgb(255 255 255 / 0.32);
+    }
+
     body {
         @apply antialiased;
     }
@@ -59,27 +76,35 @@
 }
 
 /* ---------- Scrollbar ---------- */
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: var(--bg-app);
-}
-
-::-webkit-scrollbar-thumb {
-    background: var(--border-strong);
-    border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: var(--btn-secondary-bg);
-}
-
+/* Chrome, Edge, Firefox, Safari 18.2+ */
 * {
     scrollbar-width: thin;
-    scrollbar-color: var(--border-strong) var(--bg-app);
+    scrollbar-color: var(--scroll-thumb) var(--scroll-track);
+}
+
+/* Older Safari: rounded thumb with a small gap around it */
+@supports not (scrollbar-color: auto) {
+    ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+    }
+
+    ::-webkit-scrollbar-track,
+    ::-webkit-scrollbar-corner {
+        background: var(--scroll-track);
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: var(--scroll-thumb);
+        border: 2px solid transparent;
+        border-radius: 999px;
+        background-clip: content-box;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: var(--scroll-thumb-hover);
+        background-clip: content-box;
+    }
 }
 
 /* ---------- Components ---------- */
