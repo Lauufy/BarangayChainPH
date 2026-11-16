@@ -252,6 +252,9 @@
 
 <body
     class="bg-(--gray-100) text-(--gray-800) dark:bg-(--black-700) dark:text-(--gray-200) h-screen overflow-hidden font-sans antialiased transition-colors duration-300">
+
+    <x-feedbacks.t-confirmation />
+
     <div class="flex h-screen overflow-hidden">
 
         {{-- ========== Sidebar ========== --}}

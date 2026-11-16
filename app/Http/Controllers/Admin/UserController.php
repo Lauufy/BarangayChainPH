@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class UserController extends Controller
 {
@@ -23,26 +24,44 @@ class UserController extends Controller
 
     public function __construct(private SupabaseStorage $avatars) {}
 
-    /**
-     * Display user accounts.
-     */
     public function index(): View
     {
-        $users = User::with(['citizenProfile', 'employeeProfile'])
-            ->latest()
-            ->paginate(10);
+        $with = ['employeeProfile', 'citizenProfile'];
+
+        // All tab: everyone, newest first
+        $all = User::with($with)->latest()
+            ->paginate(10, ['*'], 'all_page')->withQueryString();
+
+        // Employees tab: staff + administrators
+        $users = User::with($with)->whereIn('role', ['staff', 'admin'])->latest()
+            ->paginate(10, ['*'], 'staff_page')->withQueryString();
+
+        // Citizens tab
+        $citizens = User::with($with)->where('role', 'citizen')->latest()
+            ->paginate(10, ['*'], 'citizen_page')->withQueryString();
+
+        // One grouped query for the stat cards
+        $roleStats = User::query()
+            ->selectRaw('role, count(*) as total, max(created_at) as last_created')
+            ->groupBy('role')
+            ->get()
+            ->keyBy('role');
+
         $accountCounts = [
-            'total' => User::count(),
-            'staff' => User::where('role', 'staff')->count(),
-            'admin' => User::where('role', 'admin')->count(),
+            'total' => $roleStats->sum('total'),
+            'staff' => $roleStats['staff']->total ?? 0,
+            'admin' => $roleStats['admin']->total ?? 0,
         ];
 
-        return view('admin.users.index', compact('users', 'accountCounts'));
+        $accountLatest = [
+            'total' => $roleStats->max('last_created'),
+            'staff' => $roleStats['staff']->last_created ?? null,
+            'admin' => $roleStats['admin']->last_created ?? null,
+        ];
+
+        return view('admin.users.index', compact('all', 'users', 'citizens', 'accountCounts', 'accountLatest'));
     }
 
-    /**
-     * Create a staff, admin or citizen account.
-     */
     public function store(Request $request): RedirectResponse
     {
 
@@ -96,7 +115,7 @@ class UserController extends Controller
 
                 if ($validated['role'] !== 'citizen') {
                     $user->employeeProfile()->create([
-                        'employee_id' => 'BSLCNPH-'.str_pad((string) $user->id, 6, '0', STR_PAD_LEFT),
+                        'employee_id' => 'BSLCNPH-' . str_pad((string) $user->id, 6, '0', STR_PAD_LEFT),
                         'department' => $validated['department'],
                         'position' => $validated['position'],
                         'office' => $validated['office'] ?? null,
@@ -345,5 +364,91 @@ class UserController extends Controller
     private function adminCount(): int
     {
         return User::where('role', 'admin')->count();
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        $tab = in_array($request->query('users_tab'), ['employees', 'citizens'], true)
+            ? $request->query('users_tab')
+            : 'all';
+
+        $query = User::with(['employeeProfile', 'citizenProfile']);
+
+        if ($tab === 'employees') {
+            $query->whereIn('role', ['staff', 'admin']);
+        } elseif ($tab === 'citizens') {
+            $query->where('role', 'citizen');
+        }
+
+        // Stops Excel from running cells that start with = + - @ as formulas
+        $safe = fn($v) => is_string($v) && preg_match('/^[=+\-@\t\r]/', $v) ? "'" . $v : $v;
+
+        return response()->streamDownload(function () use ($query, $safe) {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF"); // so Excel reads accents correctly
+
+            fputcsv($out, [
+                'ID',
+                'Name',
+                'Email',
+                'Phone',
+                'Role',
+                'Date Created',
+                'Employee ID',
+                'Department',
+                'Position',
+                'Office',
+                'Date Hired',
+                'Gender',
+                'Date of Birth',
+                'Civil Status',
+                'Nationality',
+                'Place of Birth',
+                'Religion',
+                'Occupation',
+                'House Number',
+                'Barangay',
+                'City/Municipality',
+                'Province',
+                'ZIP Code',
+                'Full Address',
+            ]);
+
+            $query->chunkById(200, function ($users) use ($out, $safe) {
+                foreach ($users as $u) {
+                    $p = $u->employeeProfile;
+                    $c = $u->citizenProfile;
+
+                    fputcsv($out, array_map($safe, [
+                        $u->id,
+                        $u->name,
+                        $u->email,
+                        $u->phone,
+                        $u->role,
+                        $u->created_at->format('Y-m-d'),
+                        $p?->employee_id,
+                        $p?->department,
+                        $p?->position,
+                        $p?->office,
+                        $p?->date_hired?->format('Y-m-d'),
+                        $c?->gender,
+                        $c?->date_of_birth?->format('Y-m-d'),
+                        $c?->civil_status,
+                        $c?->nationality,
+                        $c?->place_of_birth,
+                        $c?->religion,
+                        $c?->occupation,
+                        $c?->house_number,
+                        $c?->barangay,
+                        $c?->city_municipality,
+                        $c?->province,
+                        $c?->zip_code,
+                        $c?->full_address,
+                    ]));
+                }
+            });
+
+            fclose($out);
+        }, "users-{$tab}-" . now()->format('Ymd') . '.csv', ['Content-Type' => 'text/csv']);
     }
 }

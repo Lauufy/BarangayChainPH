@@ -15,12 +15,25 @@ class IdentityReviewController extends Controller
 {
     public function __construct(private SupabaseStorage $supabaseStorage) {}
 
-    // List all applications with counts
+    // List all applications with counts and latest dates
     public function index(Request $request)
     {
+        $stats = IdentityVerification::query()
+            ->selectRaw('status, count(*) as total, max(submitted_at) as last_submitted, max(reviewed_at) as last_reviewed')
+            ->groupBy('status')
+            ->get()
+            ->keyBy('status');
+
         return view('admin.identity-verifications.index', [
-            'counts' => IdentityVerification::selectRaw('status, count(*) as total')
-                ->groupBy('status')->pluck('total', 'status'),
+            'counts' => $stats->pluck('total', 'status'),
+
+            // Date each count last changed: pending = newest submission, others = newest review
+            'latest' => [
+                'pending' => $stats[IdentityVerification::PENDING]->last_submitted ?? null,
+                'verified' => $stats[IdentityVerification::VERIFIED]->last_reviewed ?? null,
+                'rejected' => $stats[IdentityVerification::REJECTED]->last_reviewed ?? null,
+            ],
+
             'verifications' => IdentityVerification::with('user')->latest('submitted_at')->paginate(10),
         ]);
     }

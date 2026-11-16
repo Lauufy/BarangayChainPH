@@ -258,6 +258,8 @@ Route::middleware(['auth', 'role:admin,staff'])
 
             Route::put('/users/{user}/permissions', [UserController::class, 'updatePermissions'])
                 ->name('users.permissions.update');
+
+            Route::get('/users/export', [UserController::class, 'export'])->name('users.export');
         });
 
         // Permit management
