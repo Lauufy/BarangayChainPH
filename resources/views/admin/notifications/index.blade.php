@@ -1,74 +1,13 @@
-@php
-    // Demo data only. Not connected to a database.
-    $citizenMessages = [
-        [
-            'id' => 1,
-            'name' => 'Maria Santos',
-            'initials' => 'MS',
-            'subject' => 'Barangay Clearance',
-            'preview' => 'Thank you for your assistance!',
-            'time' => '9:42 AM',
-            'unread' => true,
-            'pending' => true,
-            'phone' => '09XX XXX 1234',
-            'email' => 'maria@example.com',
-            'messages' => [
-                ['from' => 'citizen', 'text' => 'Good morning! May I ask about the requirements for a barangay clearance?', 'time' => '9:30 AM'],
-                ['from' => 'staff', 'text' => 'Good morning! Please prepare a valid ID and the required supporting documents.', 'time' => '9:35 AM'],
-                ['from' => 'citizen', 'text' => 'Thank you for your assistance!', 'time' => '9:42 AM'],
-            ],
-        ],
-        [
-            'id' => 2,
-            'name' => 'Juan Dela Cruz',
-            'initials' => 'JD',
-            'subject' => 'Permit Application',
-            'preview' => 'May I follow up on my application?',
-            'time' => 'Yesterday',
-            'unread' => false,
-            'pending' => true,
-            'phone' => '09XX XXX 5678',
-            'email' => 'juan@example.com',
-            'messages' => [
-                ['from' => 'citizen', 'text' => 'Hello, I would like to follow up on my permit application.', 'time' => 'Yesterday, 2:15 PM'],
-                ['from' => 'staff', 'text' => 'Thank you for contacting us. Your inquiry is being reviewed.', 'time' => 'Yesterday, 2:30 PM'],
-            ],
-        ],
-        [
-            'id' => 3,
-            'name' => 'Ana Reyes',
-            'initials' => 'AR',
-            'subject' => 'Certificate Request',
-            'preview' => 'Thank you! I received the information.',
-            'time' => 'Oct 8',
-            'unread' => false,
-            'pending' => false,
-            'phone' => '09XX XXX 9012',
-            'email' => 'ana@example.com',
-            'messages' => [
-                ['from' => 'citizen', 'text' => 'Good afternoon. I would like to inquire about requesting a certificate.', 'time' => 'Oct 8, 10:10 AM'],
-                ['from' => 'staff', 'text' => 'Good afternoon! Kindly prepare your valid ID and supporting documents.', 'time' => 'Oct 8, 10:20 AM'],
-                ['from' => 'citizen', 'text' => 'Thank you! I received the information.', 'time' => 'Oct 8, 10:25 AM'],
-            ],
-        ],
-    ];
-@endphp
-
 @extends('layouts.admin')
 
 @section('title', 'Notifications & Messaging')
 
 @section('content')
-    <div class="mb-5">
-        <h2 class="text-2xl font-bold text-slate-900">
-            Notifications & Messaging
-        </h2>
-        <p class="mt-1 text-sm text-slate-500">
-            Manage announcements and communicate with citizens.
-        </p>
-    </div>
+    {{-- Introduce the notification and messaging workspace. --}}
+    <x-admin.page-header label="Communication" title="Notifications & Messaging"
+        text="Manage announcements and communicate with citizens." />
 
-    {{-- Compact notifications banner --}}
+    {{-- Show announcement status and open the existing notification preview modal. --}}
     <div
         class="mb-5 flex flex-col gap-3 rounded-xl border border-blue-100 bg-blue-50 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div class="flex items-center gap-3">
@@ -84,13 +23,12 @@
             </div>
         </div>
 
-        <button type="button" id="new-notification"
-            class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+        <x-form.button type="button" id="new-notification" color="blue" class="px-4 py-2">
             + New Notification
-        </button>
+        </x-form.button>
     </div>
 
-    {{-- Messaging dashboard --}}
+    {{-- The inbox and conversation preview remain frontend-only demo interactions. --}}
     <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 p-5">
@@ -110,7 +48,7 @@
 
         <div class="grid min-h-150 grid-cols-1 md:grid-cols-3">
 
-            {{-- Inbox sidebar --}}
+            {{-- Search, filter, and select a citizen conversation. --}}
             <aside class="border-b border-slate-200 md:col-span-1 md:border-b-0 md:border-r">
 
                 <div class="p-4">
@@ -194,7 +132,7 @@
                 </p>
             </aside>
 
-            {{-- Chat panel --}}
+            {{-- Display the selected conversation and its reply preview. --}}
             <section class="flex min-w-0 flex-col md:col-span-2">
 
                 {{-- Chat header --}}
@@ -318,7 +256,7 @@
         </div>
     </div>
 
-    {{-- Citizen details modal --}}
+    {{-- Show contact details for the selected citizen. --}}
     <div id="details-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/40 p-4">
         <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
             <div class="flex items-center justify-between">
@@ -361,7 +299,7 @@
         </div>
     </div>
 
-    {{-- New Notification modal --}}
+    {{-- Preview a new announcement without saving or sending it. --}}
     <div id="notification-modal" class="fixed inset-0 z-60 hidden overflow-y-auto bg-slate-900/50 p-4" role="dialog"
         aria-modal="true" aria-labelledby="notification-modal-title">
         <div class="flex min-h-full items-center justify-center">
@@ -386,18 +324,18 @@
                         <label for="notification-title" class="mb-2 block text-sm font-semibold text-slate-700">
                             Notification Title
                         </label>
-                        <input id="notification-title" name="notification_title" type="text" maxlength="120" required
-                            placeholder="e.g. Barangay Hall Schedule Update"
-                            class="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
+                        <x-form.input light id="notification-title" name="notification_title"
+                            label="Notification Title" maxlength="120" required
+                            placeholder="e.g. Barangay Hall Schedule Update" />
                     </div>
 
                     <div>
                         <label for="notification-message" class="mb-2 block text-sm font-semibold text-slate-700">
                             Announcement Message
                         </label>
-                        <textarea id="notification-message" name="notification_message" rows="5" required
-                            placeholder="Write the details of your announcement here..."
-                            class="w-full resize-y rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"></textarea>
+                        <x-form.input light id="notification-message" name="notification_message" type="textarea"
+                            label="Announcement Message" rows="5" required
+                            placeholder="Write the details of your announcement here..." />
                     </div>
 
                     <div>

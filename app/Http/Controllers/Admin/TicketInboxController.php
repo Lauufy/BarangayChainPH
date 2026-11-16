@@ -2,20 +2,21 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\TicketsExport;
 use App\Http\Controllers\Controller;
 use App\Models\Ticket;
-use Illuminate\Http\RedirectResponse;
 use App\Notifications\TicketReplied;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class TicketInboxController extends Controller
 {
-    public function index(): View
+    public function index(Request $request, TicketsExport $export): View
     {
-        $tickets = Ticket::with(['serviceRequest.user', 'latestMessage'])
-            ->latest('updated_at')
-            ->paginate(15);
+        $perPage = $request->integer('per_page', 15);
+        $perPage = in_array($perPage, [10, 15, 25, 50], true) ? $perPage : 15;
+        $tickets = $export->query($request)->paginate($perPage)->appends($request->except('search'));
 
         return view('admin.tickets.index', compact('tickets'));
     }

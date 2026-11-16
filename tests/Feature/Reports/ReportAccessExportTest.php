@@ -3,6 +3,8 @@
 namespace Tests\Feature\Reports;
 
 use App\Models\AuditLog;
+use App\Models\BlockchainRecord;
+use App\Models\IssuedDocument;
 use App\Models\ServiceRequest;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -56,8 +58,12 @@ class ReportAccessExportTest extends TestCase
             ->assertDontSee('Staff Performance')
             ->assertDontSee('Blockchain Transactions')
             ->assertDontSee('Export');
-        $this->actingAs($staff)->get(route('admin.reports.export.csv'))->assertForbidden();
-        $this->actingAs($staff)->get(route('admin.reports.export.pdf'))->assertForbidden();
+        $this->actingAs($staff)
+            ->get(route('admin.exports.show', ['module' => 'reports', 'format' => 'csv']))
+            ->assertForbidden();
+        $this->actingAs($staff)
+            ->get(route('admin.exports.show', ['module' => 'reports', 'format' => 'pdf']))
+            ->assertForbidden();
         $this->actingAs($admin)->get(route('admin.reports.index'))->assertOk();
     }
 
@@ -98,7 +104,18 @@ class ReportAccessExportTest extends TestCase
 
     public function test_report_page_uses_default_daily_filters_and_displays_all_six_report_areas(): void
     {
-        ServiceRequest::factory()->create(['created_at' => Carbon::parse('2026-11-12 08:00:00')]);
+        $serviceRequest = ServiceRequest::factory()->create([
+            'reference_number' => 'REPORT-TABLE-0001',
+            'created_at' => Carbon::parse('2026-11-12 08:00:00'),
+        ]);
+        $issuedDocument = IssuedDocument::factory()->for($serviceRequest)->create([
+            'issued_at' => Carbon::parse('2026-11-12 08:00:00'),
+        ]);
+        BlockchainRecord::factory()->for($issuedDocument, 'issuedDocument')->create([
+            'recorded_at' => Carbon::parse('2026-11-12 08:00:00'),
+            'created_at' => Carbon::parse('2026-11-12 08:00:00'),
+            'tx_hash' => '0x'.str_repeat('a', 64),
+        ]);
         $admin = User::factory()->create(['role' => 'admin']);
 
         $response = $this->actingAs($admin)->get(route('admin.reports.index'));
@@ -118,6 +135,8 @@ class ReportAccessExportTest extends TestCase
             ->assertSee('Open ledger')
             ->assertSee('CSV (opens in Excel)')
             ->assertSee('PDF')
+            ->assertSee('REPORT-TABLE-0001')
+            ->assertSee('Successful')
             ->assertDontSee('data-report-preset="today"', false)
             ->assertDontSee('data-report-preset="week"', false)
             ->assertDontSee('name="status"', false)
@@ -130,6 +149,27 @@ class ReportAccessExportTest extends TestCase
             ->assertSee('Verification attempts are counted from the date logging began.');
 
         $this->assertGreaterThanOrEqual(7, substr_count($response->getContent(), 'data-report-chart='));
+    }
+
+    public function test_report_tables_show_shared_empty_states_when_the_period_has_no_rows(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)
+            ->get(route('admin.reports.index'))
+            ->assertOk()
+            ->assertSee('No transactions in this period.')
+            ->assertSee('No staff data in this period.')
+            ->assertSee('No data in this period.')
+            ->assertSee('data-table-search', false)
+            ->assertSee('data-table-key="report-trends"', false)
+            ->assertSee('data-table-key="report-permit-types"', false)
+            ->assertSee('data-table-key="report-blockchain"', false)
+            ->assertSee('data-table-key="report-staff-performance"', false)
+            ->assertSee('placeholder="Search periods..."', false)
+            ->assertSee('placeholder="Search permit types..."', false)
+            ->assertSee('placeholder="Search transactions..."', false)
+            ->assertSee('placeholder="Search staff..."', false);
     }
 
     public function test_dashboard_comparison_badges_use_the_equal_length_previous_period(): void
@@ -183,7 +223,9 @@ class ReportAccessExportTest extends TestCase
             'created_at' => Carbon::parse('2026-10-12 08:00:00'),
         ]);
 
-        $response = $this->actingAs($admin)->get(route('admin.reports.export.csv', [
+        $response = $this->actingAs($admin)->get(route('admin.exports.show', [
+            'module' => 'reports',
+            'format' => 'csv',
             'from' => '2026-11-01',
             'to' => '2026-11-13',
         ]));
@@ -205,13 +247,14 @@ class ReportAccessExportTest extends TestCase
         $audit = AuditLog::query()->where('action', 'report_csv_exported')->sole();
         $this->assertSame($admin->id, $audit->user_id);
         $this->assertSame([
+            'module' => 'reports',
+            'format' => 'csv',
             'filters' => [
                 'from' => '2026-11-01',
                 'to' => '2026-11-13',
                 'permit_type' => null,
                 'grouping' => 'daily',
             ],
-            'format' => 'csv',
         ], $audit->new_values);
         $this->assertNotNull($audit->created_at);
     }
@@ -220,7 +263,9 @@ class ReportAccessExportTest extends TestCase
     {
         $admin = User::factory()->create(['role' => 'admin', 'name' => 'Report Generator']);
 
-        $response = $this->actingAs($admin)->get(route('admin.reports.export.pdf', [
+        $response = $this->actingAs($admin)->get(route('admin.exports.show', [
+            'module' => 'reports',
+            'format' => 'pdf',
             'from' => '2026-11-01',
             'to' => '2026-11-13',
         ]));
@@ -251,7 +296,9 @@ class ReportAccessExportTest extends TestCase
         ]);
 
         $response = $this->actingAs(User::factory()->create(['role' => 'admin']))
-            ->get(route('admin.reports.export.csv', [
+            ->get(route('admin.exports.show', [
+                'module' => 'reports',
+                'format' => 'csv',
                 'from' => '2026-11-01',
                 'to' => '2026-11-13',
             ]));
@@ -275,7 +322,9 @@ class ReportAccessExportTest extends TestCase
     public function test_csv_export_route_is_throttled(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        $url = route('admin.reports.export.csv', [
+        $url = route('admin.exports.show', [
+            'module' => 'reports',
+            'format' => 'csv',
             'from' => '2026-11-01',
             'to' => '2026-11-13',
         ]);

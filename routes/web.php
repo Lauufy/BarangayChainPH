@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\BlockchainLedgerController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DocumentAuthenticationController;
+use App\Http\Controllers\Admin\ExportController;
 use App\Http\Controllers\Admin\IdentityReviewController;
 use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
 use App\Http\Controllers\Admin\PermitController;
@@ -27,6 +28,7 @@ use App\Http\Controllers\Citizen\ServiceRequestController;
 use App\Http\Controllers\Citizen\TicketController;
 use App\Http\Controllers\PermitVerificationController;
 use App\Http\Controllers\TicketParticipantPhotoController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -241,7 +243,7 @@ Route::middleware(['auth', 'role:admin,staff'])
             ->name('profile.two-factor');
 
         // Notifications
-        Route::view('/notifications', 'admin.notifications.index')->name('notifications.index');
+        Route::get('/notifications', [AdminNotificationController::class, 'index'])->name('notifications.index');
 
         Route::post('/notifications/read-all', [AdminNotificationController::class, 'readAll'])
             ->name('notifications.read-all');
@@ -259,8 +261,15 @@ Route::middleware(['auth', 'role:admin,staff'])
             Route::put('/users/{user}/permissions', [UserController::class, 'updatePermissions'])
                 ->name('users.permissions.update');
 
-            Route::get('/users/export', [UserController::class, 'export'])->name('users.export');
+            Route::get('/users/export', fn (Request $request) => redirect()->route(
+                'admin.exports.show',
+                ['module' => 'users', 'format' => 'csv'] + $request->query()
+            ))->name('users.export');
         });
+
+        Route::get('/exports/{module}', [ExportController::class, 'show'])
+            ->middleware('throttle:10,1')
+            ->name('exports.show');
 
         // Permit management
         Route::middleware('permission:permits.review')
@@ -320,12 +329,14 @@ Route::middleware(['auth', 'role:admin,staff'])
                 Route::get('/reports', 'index')->name('reports.index');
 
                 Route::middleware('role:admin')->group(function () {
-                    Route::get('/reports/export.csv', 'csv')
-                        ->middleware('throttle:10,1')
-                        ->name('reports.export.csv');
-                    Route::get('/reports/export.pdf', 'pdf')
-                        ->middleware('throttle:10,1')
-                        ->name('reports.export.pdf');
+                    Route::get('/reports/export.csv', fn (Request $request) => redirect()->route(
+                        'admin.exports.show',
+                        ['module' => 'reports', 'format' => 'csv'] + $request->query()
+                    ))->name('reports.export.csv');
+                    Route::get('/reports/export.pdf', fn (Request $request) => redirect()->route(
+                        'admin.exports.show',
+                        ['module' => 'reports', 'format' => 'pdf'] + $request->query()
+                    ))->name('reports.export.pdf');
                 });
             });
 

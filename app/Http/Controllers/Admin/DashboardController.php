@@ -16,6 +16,12 @@ class DashboardController extends Controller
     public function index(): View
     {
         $user = auth()->user();
+        $isAdmin = $user->isAdmin();
+        $can = fn (string $permission): bool => $user->hasPermission($permission);
+        $firstName = str($user->name)->before(' ');
+        $hour = now()->hour;
+        $greeting = $hour < 12 ? 'Good morning' : ($hour < 18 ? 'Good afternoon' : 'Good evening');
+
         $canReviewPermits = $user->hasPermission('permits.review');
         $canReviewIdentity = $user->hasPermission('identity.review');
         $workload = null;
@@ -63,7 +69,31 @@ class DashboardController extends Controller
         $pendingVerifications = IdentityVerification::query()->where('status', IdentityVerification::PENDING);
         $verified = IdentityVerification::query()->where('status', IdentityVerification::VERIFIED);
 
+        $participation = $this->participation();
+        $requestStatus = $this->requestStatus();
+        $recentPermits = ServiceRequest::with('user')->latest()->limit(5)->get();
+        $shortcuts = collect([
+            ['admin.users.index', 'User & Role Management', $isAdmin],
+            ['admin.identity-verification.index', 'Identity Verification', $can('identity.review')],
+            ['admin.permits.index', 'Permit Management', $can('permits.review')],
+            ['admin.reports.index', 'Reports & Analytics', $can('reports.view')],
+        ])->filter(fn (array $shortcut): bool => $shortcut[2]);
+
         return view('admin.dashboard.index', [
+            'user' => $user,
+            'isAdmin' => $isAdmin,
+            'can' => $can,
+            'firstName' => $firstName,
+            'greeting' => $greeting,
+            'shortcuts' => $shortcuts,
+            'panel' => 'rounded-2xl border border-(--gray-200) bg-(--white) shadow-sm dark:border-white/10 dark:bg-(--gray-800)',
+            'panelHead' => 'border-b border-(--gray-200) px-5 py-4 dark:border-white/10',
+            'panelTitle' => 'text-base font-semibold text-(--gray-900) dark:text-(--gray-50)',
+            'muted' => 'text-(--gray-500) dark:text-(--gray-400)',
+            'ink' => 'text-(--gray-900) dark:text-(--gray-50)',
+            'miniCard' => 'rounded-xl bg-(--gray-50) p-4 dark:bg-(--gray-900)',
+            'miniTitle' => 'text-sm text-(--gray-600) dark:text-(--gray-300)',
+            'miniNumber' => 'mt-1 text-2xl font-bold tabular-nums text-(--gray-900) dark:text-(--gray-50)',
             'totalCitizens' => (clone $citizens)->count(),
             'citizensLatest' => (clone $citizens)->max('created_at'), // last registered citizen
             'citizensTrend' => $this->monthTrend($citizens),
@@ -82,10 +112,12 @@ class DashboardController extends Controller
             'verifiedLatest' => (clone $verified)->max('created_at'), // swap to your verified date column if you have one
             'verifiedTrend' => $this->monthTrend($verified),
 
-            'participation' => $this->participation(),
-            'requestStatus' => $this->requestStatus(),
+            'participation' => $participation,
+            'participationTotal' => array_sum($participation['values']),
+            'requestStatus' => $requestStatus,
+            'requestStatusTotal' => array_sum($requestStatus),
 
-            'recentPermits' => ServiceRequest::with('user')->latest()->limit(5)->get(),
+            'recentPermits' => $recentPermits,
             // Issued permits that the blockchain has not confirmed yet
             'unrecordedPermits' => IssuedDocument::query()
                 ->whereNull('revoked_at')

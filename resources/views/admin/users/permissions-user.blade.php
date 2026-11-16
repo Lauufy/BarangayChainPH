@@ -1,11 +1,4 @@
 {{-- Staff permissions popup. Filled by JS from window.userRecords (set in index.blade.php). --}}
-@php
-    $permissionList = config('permissions.list');
-
-    // Which staff member to reopen after a failed save (errors live in the "updatePermissions" bag).
-    $reopenId = $errors->updatePermissions->any() ? (int) old('permissions_user_id') : null;
-    $oldPermissions = (array) old('permissions', []);
-@endphp
 
 <div id="permissionsModal"
     class="hidden fixed inset-0 z-50 items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
@@ -39,7 +32,7 @@
             @csrf
             @method('PUT')
             <input type="hidden" name="permissions_user_id" id="permissionsUserId"
-                value="{{ old('permissions_user_id') }}">
+                value="{{ $permissionsUserId }}">
 
             {{-- Staff member --}}
             <div class="flex items-center gap-3 border-b border-slate-200 px-5 py-4">
@@ -55,16 +48,7 @@
             </div>
 
             <div class="space-y-5 p-5">
-                @if ($errors->updatePermissions->any())
-                    <div id="permissionsErrors"
-                        class="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
-                        <ul class="list-disc space-y-0.5 pl-5">
-                            @foreach ($errors->updatePermissions->all() as $message)
-                                <li>{{ $message }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
+                <x-feedbacks.form-errors id="permissionsErrors" bag="updatePermissions" />
 
                 {{-- Always-available note --}}
                 <div class="flex gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
@@ -199,8 +183,8 @@
             updateCount();
         });
 
-        @if ($reopenId)
-            openPermissionsModal({{ $reopenId }}, true);
+        @if ($permissionsReopenId)
+            openPermissionsModal({{ $permissionsReopenId }}, true);
         @endif
     })();
 </script>

@@ -60,7 +60,10 @@
 <div class="group relative inline-flex">
     @if ($action)
         <form action="{{ $action }}" method="POST"
-            @if ($confirm) onsubmit="return confirm('{{ e($confirm) }}')" @endif>
+            @if ($confirm)
+                data-confirm-text="{{ $confirm }}"
+                onsubmit="event.preventDefault(); var form = this; tConfirmation({ title: 'Confirm action', text: form.dataset.confirmText, confirmLabel: 'Confirm' }).then(function (ok) { if (ok) form.submit(); }); return false;"
+            @endif>
             @csrf
             @if (strtoupper($method) !== 'POST')
                 @method($method)

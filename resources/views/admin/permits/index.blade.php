@@ -3,41 +3,31 @@
 @section('title', 'Permit & Clearance Processing')
 
 @section('content')
-    @php
-        // Badge colour per status
-        $statuses = [
-            'pending' => 'warning',
-            'processing' => 'info',
-            'approved' => 'success',
-            'rejected' => 'danger',
-            'cancelled' => 'neutral',
-        ];
-
-        // Stat card label => key in $requestCounts
-        $counts = [
-            'Total Requests' => 'total',
-            'Pending' => 'pending',
-            'Processing' => 'processing',
-            'Completed' => 'completed',
-        ];
-    @endphp
-
     <div class="space-y-6">
+        {{-- Explain the permit queue and summarize request totals. --}}
         <x-admin.page-header
             label="Citizen Services"
             title="Permit & Clearance Processing"
             text="Monitor applications and manage permit processing workflows."
+            :export-url="route('admin.exports.show', ['module' => 'permits'])"
         />
 
+        {{-- Key request counts use the existing stat-card component. --}}
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            @foreach ($counts as $label => $key)
+            @foreach (['Total Requests' => 'total', 'Pending' => 'pending', 'Processing' => 'processing', 'Completed' => 'completed'] as $label => $key)
                 <x-admin.stat-card :label="$label" :value="$requestCounts[$key]" />
             @endforeach
         </div>
 
+        {{-- Review submitted applications and their current status. --}}
         <x-tables.card title="Permit Applications"
             description="Review submitted requests and their current status."
-            :paginator="$requests->hasPages() ? $requests : null" :searchable="false" :per-page-options="[]">
+            :paginator="$requests" :searchable="false" item-label="requests" :per-page-options="[10, 15, 25, 50]">
+            <x-slot:toolbar>
+                <x-tables.toolbar key="permits" :search="true" search-placeholder="Search applicant, reference, type, or status"
+                    class="gap-0! pb-0! sm:pb-0! justify-end" />
+            </x-slot:toolbar>
+
             <x-tables.table
                 :heads="['Reference', 'Applicant', 'Document Type', 'Date Submitted', 'Status', ['label' => 'Actions', 'align' => 'center']]"
                 :empty="$requests->isEmpty()"
@@ -54,7 +44,13 @@
                             {{ $request->created_at->timezone(config('app.timezone'))->format('M j, Y g:i A') }}
                         </td>
                         <td>
-                            <x-tables.badge :variant="$statuses[$request->status] ?? 'neutral'" class="capitalize">
+                            <x-tables.badge :variant="match ($request->status) {
+                                'pending' => 'warning',
+                                'processing' => 'info',
+                                'approved' => 'success',
+                                'rejected' => 'danger',
+                                default => 'neutral',
+                            }">
                                 {{ $request->status }}
                             </x-tables.badge>
                         </td>

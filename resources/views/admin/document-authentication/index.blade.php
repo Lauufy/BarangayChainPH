@@ -4,20 +4,28 @@
 
 @section('content')
     <div class="space-y-6">
+        {{-- Explain the review queue and summarize the number of authentication records. --}}
         <x-admin.page-header label="Document Security" title="Document Authentication"
-            text="Review document verification records and authentication results." />
+            text="Review document verification records and authentication results."
+            :export-url="route('admin.exports.show', ['module' => 'document-authentication'])" />
 
-        {{-- Numbers --}}
+        {{-- Totals for submitted, pending, and authenticated documents. --}}
         <div class="grid gap-4 sm:grid-cols-3">
             <x-admin.stat-card label="Documents Submitted" :value="$submitted" />
             <x-admin.stat-card label="Pending Review" :value="$pending" />
             <x-admin.stat-card label="Authenticated" :value="$authenticated" />
         </div>
 
+        {{-- Search and paginate issued document records. --}}
         <x-tables.card title="Authentication Records"
             description="Track issued documents and their authentication status."
-            :paginator="$documents" item-label="documents"
-            search-placeholder="Search by permit number or name">
+            :paginator="$documents" :searchable="false" item-label="documents">
+            <x-slot:toolbar>
+                <x-tables.toolbar key="document-authentication" :search="true"
+                    search-placeholder="Search by permit number or name"
+                    class="gap-0! pb-0! sm:pb-0! justify-end" />
+            </x-slot:toolbar>
+
             <x-tables.table :heads="['Document Reference', 'Document Type', 'Submitted By', 'Authentication Status', 'Date']"
                 :empty="$documents->isEmpty()" message="No authenticated documents yet.">
                 @foreach ($documents as $document)
@@ -33,9 +41,9 @@
 
                         <td>
                             @if ($document->revoked_at)
-                                <span class="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-semibold text-slate-700">Replaced</span>
+                                <x-tables.badge variant="neutral">Replaced</x-tables.badge>
                             @else
-                                <span class="rounded-full border border-green-200 bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-green-800">Active</span>
+                                <x-tables.badge variant="success">Active</x-tables.badge>
                             @endif
                         </td>
 
@@ -47,14 +55,5 @@
             </x-tables.table>
         </x-tables.card>
 
-        {{-- Note --}}
-        <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
-            <h2 class="font-semibold text-emerald-900">Authentication Integrity</h2>
-            <p class="mt-2 text-sm leading-6 text-emerald-800">
-                Each document is listed with its version. A newer version replaces the older one.
-                A hash comparison can help detect changes to a document, but does not by itself establish
-                the identity of its issuer or prove that the original document was legitimate.
-            </p>
-        </div>
     </div>
 @endsection

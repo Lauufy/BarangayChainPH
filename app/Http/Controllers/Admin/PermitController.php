@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\PermitsExport;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\UpdatesTwoFactor;
 use App\Jobs\RecordPermitOnBlockchain;
@@ -31,9 +32,11 @@ class PermitController extends Controller
 {
     use UpdatesTwoFactor;
 
-    public function index(): View
+    public function index(Request $request, PermitsExport $export): View
     {
-        $requests = ServiceRequest::with('user')->latest()->paginate(10);
+        $perPage = $request->integer('per_page', 10);
+        $perPage = in_array($perPage, [10, 15, 25, 50], true) ? $perPage : 10;
+        $requests = $export->query($request)->paginate($perPage)->appends($request->except('search'));
 
         // One query for all status counts
         $byStatus = ServiceRequest::selectRaw('status, COUNT(*) AS total')
@@ -54,9 +57,54 @@ class PermitController extends Controller
     {
         // The first time staff open a pending request, it becomes "processing"
         $serviceRequest = $this->markProcessing($serviceRequest);
+        $application = $serviceRequest->load(['user', 'issuedDocuments.blockchainRecord', 'documents']);
+        $status = $application->status;
+        $isApproved = $status === ServiceRequest::APPROVED;
+        $isOpen = in_array($status, [ServiceRequest::PENDING, ServiceRequest::PROCESSING], true);
+        $activeDocuments = $application->issuedDocuments->whereNull('revoked_at');
+        $currentRecord = $activeDocuments->sortByDesc('version')->first()?->blockchainRecord;
+        [$statusLabel, $statusVariant] = [
+            'pending' => ['Pending review', 'warning'],
+            'processing' => ['Processing', 'info'],
+            'approved' => ['Approved', 'success'],
+            'rejected' => ['Rejected', 'danger'],
+            'cancelled' => ['Cancelled', 'neutral'],
+        ][$status] ?? [ucfirst($status), 'neutral'];
+
+        $details = array_filter([
+            'Full name' => $application->applicant_name,
+            'Age' => $application->age,
+            'Civil status' => $application->civil_status,
+            'Contact number' => $application->contact_number,
+            'Email' => $application->user->email,
+            'Date submitted' => $application->created_at->timezone(config('app.timezone'))->format('M j, Y g:i A'),
+            'Permit number' => $application->permit_number,
+            'Prints remaining' => $isApproved
+                ? $application->printsRemaining().' of '.$application->effectivePrintLimit()
+                : null,
+        ], fn ($value) => filled($value));
+
+        $fieldLabels = collect($application->serviceConfig()['fields'] ?? [])->pluck('label', 'key');
+        $requestDetails = ['Purpose' => $application->purpose];
+
+        foreach ($application->details ?? [] as $key => $value) {
+            $requestDetails[$fieldLabels[$key] ?? ucfirst(str_replace('_', ' ', $key))] = $value;
+        }
+
+        $requestDetails['Cancellation reason'] = $application->cancellation_reason;
+        $requestDetails = array_filter($requestDetails, fn ($value) => filled($value));
 
         return view('admin.permits.review', [
-            'application' => $serviceRequest->load(['user', 'issuedDocuments.blockchainRecord', 'documents']),
+            'application' => $application,
+            'status' => $status,
+            'isApproved' => $isApproved,
+            'isOpen' => $isOpen,
+            'activeDocuments' => $activeDocuments,
+            'currentRecord' => $currentRecord,
+            'statusLabel' => $statusLabel,
+            'statusVariant' => $statusVariant,
+            'details' => $details,
+            'requestDetails' => $requestDetails,
         ]);
     }
 

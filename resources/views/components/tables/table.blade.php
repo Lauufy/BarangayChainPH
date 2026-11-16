@@ -165,19 +165,18 @@
         </thead>
 
         <tbody class="divide-y divide-slate-100 text-slate-700 dark:divide-slate-800 dark:text-slate-200 [&>tr]:transition-colors [&>tr:hover]:bg-slate-50/70 dark:[&>tr:hover]:bg-white/5 [&_td]:px-3 [&_td]:py-2 [&_td]:align-middle sm:[&_td]:px-4 sm:[&_td]:py-4">
-            @if ($empty)
-                <tr>
-                    <td colspan="{{ count($heads) + ($selectable ? 1 : 0) }}" data-side="full" data-empty class="py-12! text-center">
-                        <span class="mx-auto grid size-12 place-items-center rounded-full bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500">
-                            <svg class="size-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
-                        </span>
-                        <p class="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">{{ $message }}</p>
-                        <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ $hint }}</p>
-                    </td>
-                </tr>
-            @else
+            @unless ($empty)
                 {{ $slot }}
-            @endif
+            @endunless
+            <tr data-search-empty @if (!$empty) style="display: none" @endif>
+                <td colspan="{{ count($heads) + ($selectable ? 1 : 0) }}" data-side="full" data-empty class="py-12! text-center">
+                    <span class="mx-auto grid size-12 place-items-center rounded-full bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500">
+                        <svg class="size-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+                    </span>
+                    <p data-empty-message data-default-message="{{ $message }}" class="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">{{ $message }}</p>
+                    <p data-empty-hint data-default-hint="{{ $hint }}" class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ $hint }}</p>
+                </td>
+            </tr>
         </tbody>
     </table>
 </div>

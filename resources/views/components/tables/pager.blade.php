@@ -21,7 +21,7 @@
             @if (count($perPageOptions))
                 <form method="GET" class="flex items-center gap-2" @if ($perPageModel) onsubmit="return false" @endif>
                     @unless ($perPageModel)
-                        @foreach (request()->except(['per_page', 'page']) as $k => $v)
+                        @foreach (request()->except(['per_page', 'page', 'search']) as $k => $v)
                             @if (is_scalar($v))
                                 <input type="hidden" name="{{ $k }}" value="{{ $v }}">
                             @endif

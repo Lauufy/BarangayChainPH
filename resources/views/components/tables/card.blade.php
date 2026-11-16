@@ -25,7 +25,8 @@
         ->filter(fn($f) => filled($f['value'] ?? (isset($f['name']) ? request($f['name']) : null)))
         ->count();
     $hasAdd = $addUrl || $addOnclick || $addWire;
-    $hasHeader = $title || $description || $searchable || count($filters) || $hasAdd;
+    $hasToolbar = isset($toolbar) && !$toolbar->isEmpty();
+    $hasHeader = $title || $description || $searchable || count($filters) || $hasAdd || $hasToolbar;
 
     $icon = fn($inner, $c = 'size-4') => '<svg class="' . $c . '" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . $inner . '</svg>';
     $iSearch = '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>';
@@ -33,7 +34,7 @@
     $iPlus = '<path d="M5 12h14"/><path d="M12 5v14"/>';
 
     $field = 'h-10 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-slate-100 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20';
-    $accent = 'bg-violet-600 hover:bg-violet-700 dark:bg-violet-500 dark:hover:bg-violet-400';
+    $accent = 'bg-(--blue-600) hover:bg-(--blue-700) dark:bg-(--blue-500) dark:hover:bg-(--blue-400)';
 @endphp
 
 <section class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
@@ -53,6 +54,13 @@
             @endif
 
             <div class="flex flex-col gap-2 sm:flex-row sm:items-center lg:ml-auto">
+                {{-- Toolbar slot: sits on the same row as the title --}}
+                @if ($hasToolbar)
+                    <div class="w-full lg:w-auto">
+                        {{ $toolbar }}
+                    </div>
+                @endif
+
                 @if ($searchable || count($filters))
                     <form method="GET" class="flex flex-1 items-center gap-2"
                         @if ($wire) onsubmit="return false" @endif>

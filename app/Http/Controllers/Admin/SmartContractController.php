@@ -33,15 +33,49 @@ class SmartContractController extends Controller
             ->filter(fn (User $user) => $user->hasPermission('permits.review'))
             ->values();
 
+        $info = $registry->contractInfo();
+        $active = $deployments->firstWhere('is_active', true);
+        $recent = BlockchainRecord::with('issuedDocument')->latest('id')->take(8)->get()
+            ->map(function (BlockchainRecord $record): array {
+                $isRevoked = (bool) $record->revoked_at;
+                $isRecorded = (bool) $record->recorded_at;
+
+                return [
+                    $record,
+                    $isRevoked,
+                    $isRecorded,
+                    $record->revoked_at ?? $record->recorded_at ?? $record->created_at,
+                    $isRevoked ? $record->revoke_tx_hash : $record->tx_hash,
+                ];
+            });
+        $explorer = config('blockchain.explorer_url');
+
         return view('admin.smart-contracts.index', [
-            'info' => $registry->contractInfo(),
+            'info' => $info,
             'deployments' => $deployments,
-            'active' => $deployments->firstWhere('is_active', true),
+            'active' => $active,
             'officials' => $officials,
-            'recent' => BlockchainRecord::with('issuedDocument')->latest('id')->take(8)->get(),
-            'explorer' => config('blockchain.explorer_url'),   // check this key in config/blockchain.php
-            'networkName' => config('blockchain.network'),      // and this one
+            'recent' => $recent,
+            'explorerBase' => $explorer ? rtrim($explorer, '/') : null,
+            'networkName' => config('blockchain.network'),
+            'isAdmin' => $request->user()->role === 'admin',
+            'reachable' => (bool) $info,
+            'hasCode' => $info['hasCode'] ?? false,
+            'chainOk' => $info['chainMatches'] ?? false,
+            'balance' => isset($info['balance']) ? (float) $info['balance'] : null,
+            'supportsPause' => $info['supportsPause'] ?? false,
+            'isPaused' => ($info['supportsPause'] ?? false) && ($info['paused'] ?? false) === true,
+            'isOwner' => ($info['isOwner'] ?? false) === true,
+            'mismatch' => $active && $info && ! empty($info['contract'])
+                && strcasecmp($active->contract_address, $info['contract']) !== 0,
+            'short' => fn (?string $value): string => $this->shortAddress($value),
+            'card' => 'rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900',
         ]);
+    }
+
+    private function shortAddress(?string $value): string
+    {
+        return $value ? substr($value, 0, 6).'…'.substr($value, -4) : 'N/A';
     }
 
     // Pause or resume recording of NEW permits on the blockchain (admin only, owner wallet only).

@@ -7,14 +7,12 @@
 
         {{-- Header --}}
         <div class="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-200 bg-white p-5">
-            <div>
-                <h2 class="text-lg font-semibold leading-tight text-slate-900">Account details</h2>
-                <p class="mt-1 text-sm text-slate-500">Account information, role, and profile details.</p>
-            </div>
-
-            <button type="button" onclick="closeViewUserModal()"
-                class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-                aria-label="Close modal">&times;</button>
+            <x-admin.page-header label="Account" title="Account details"
+                text="Account information, role, and profile details.">
+                <button type="button" onclick="closeViewUserModal()"
+                    class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                    aria-label="Close modal">&times;</button>
+            </x-admin.page-header>
         </div>
 
         {{-- Identity --}}
@@ -28,31 +26,13 @@
             <div class="min-w-0">
                 <h3 id="viewUserName" class="truncate text-lg font-semibold text-slate-900"></h3>
                 <p id="viewUserEmail" class="truncate text-sm text-slate-500"></p>
-                <span id="viewUserRole"
-                    class="mt-2 inline-block rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold capitalize text-slate-700"></span>
+                <x-tables.badge id="viewUserRole" variant="neutral" class="mt-2"></x-tables.badge>
             </div>
         </div>
 
-        {{-- Details: field => [label, who sees it (staff = staff/admin, citizen, null = everyone)] --}}
+        {{-- Show account fields for staff, citizens, or everyone according to their group. --}}
         <dl class="grid gap-x-6 gap-y-4 border-t border-slate-100 p-5 sm:grid-cols-2">
-            @foreach ([
-                'employee_id' => ['Employee ID', 'staff'],
-                'department' => ['Department', 'staff'],
-                'position' => ['Position', 'staff'],
-                'office' => ['Office', 'staff'],
-                'phone' => ['Phone', null],
-                'date_hired_label' => ['Date Hired', 'staff'],
-                'gender' => ['Gender', 'citizen'],
-                'birth_label' => ['Date of Birth', 'citizen'],
-                'civil_status' => ['Civil Status', 'citizen'],
-                'nationality' => ['Nationality', 'citizen'],
-                'place_of_birth' => ['Place of Birth', 'citizen'],
-                'religion' => ['Religion', 'citizen'],
-                'occupation' => ['Occupation', 'citizen'],
-                'address' => ['Address', 'citizen'],
-                'created' => ['Account Created', null],
-                'updated' => ['Last Updated', null],
-            ] as $field => $info)
+            @foreach ($detailFields as $field => $info)
                 <div>
                     <dt class="text-xs font-bold uppercase tracking-wide text-[#17325c]">{{ $info[0] }}</dt>
                     <dd class="mt-1 text-sm text-slate-900" data-field="{{ $field }}" data-group="{{ $info[1] }}"></dd>
@@ -80,14 +60,13 @@
                 </button>
 
                 <div class="grid grid-cols-2 gap-3 sm:ml-auto sm:w-80">
-                    <button type="button" onclick="closeViewUserModal()"
-                        class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
+                    <x-form.button type="button" color="slate" onclick="closeViewUserModal()" class="w-full">
                         Close
-                    </button>
-                    <button type="button" id="viewUserEditBtn"
-                        class="w-full rounded-lg bg-[#010048] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#090088]">
+                    </x-form.button>
+                    <x-form.button type="button" id="viewUserEditBtn" color="#010048" hoverColor="#090088"
+                        class="w-full">
                         Edit
-                    </button>
+                    </x-form.button>
                 </div>
             </div>
         </div>

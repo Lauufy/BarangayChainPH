@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\UsersExport;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\SupabaseStorage;
@@ -13,7 +14,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class UserController extends Controller
 {
@@ -22,23 +22,27 @@ class UserController extends Controller
     // Same folder the admin profile page uses.
     private const PHOTO_FOLDER = 'admin-profile-photos';
 
-    public function __construct(private SupabaseStorage $avatars) {}
+    public function __construct(
+        private SupabaseStorage $avatars,
+        private UsersExport $usersExport,
+    ) {}
 
-    public function index(): View
+    public function index(Request $request): View
     {
-        $with = ['employeeProfile', 'citizenProfile'];
-
+        $view = in_array($request->input('users_tab'), ['employees', 'citizens'], true)
+            ? $request->input('users_tab')
+            : 'all';
         // All tab: everyone, newest first
-        $all = User::with($with)->latest()
-            ->paginate(10, ['*'], 'all_page')->withQueryString();
+        $all = $this->usersExport->queryForTab('all')
+            ->paginate(10, ['*'], 'all_page')->appends($request->except('search'));
 
         // Employees tab: staff + administrators
-        $users = User::with($with)->whereIn('role', ['staff', 'admin'])->latest()
-            ->paginate(10, ['*'], 'staff_page')->withQueryString();
+        $users = $this->usersExport->queryForTab('employees')
+            ->paginate(10, ['*'], 'staff_page')->appends($request->except('search'));
 
         // Citizens tab
-        $citizens = User::with($with)->where('role', 'citizen')->latest()
-            ->paginate(10, ['*'], 'citizen_page')->withQueryString();
+        $citizens = $this->usersExport->queryForTab('citizens')
+            ->paginate(10, ['*'], 'citizen_page')->appends($request->except('search'));
 
         // One grouped query for the stat cards
         $roleStats = User::query()
@@ -59,7 +63,130 @@ class UserController extends Controller
             'admin' => $roleStats['admin']->last_created ?? null,
         ];
 
-        return view('admin.users.index', compact('all', 'users', 'citizens', 'accountCounts', 'accountLatest'));
+        $paginator = match ($view) {
+            'employees' => $users,
+            'citizens' => $citizens,
+            default => $all,
+        };
+        $everyone = $users->getCollection()->concat($citizens->getCollection())->sortByDesc('created_at')->values();
+        $employeeTotal = $accountCounts['staff'] + $accountCounts['admin'];
+        $employeeLatest = collect([$accountLatest['staff'] ?? null, $accountLatest['admin'] ?? null])
+            ->filter()
+            ->max();
+        $identityVariants = [
+            'verified' => 'success',
+            'rejected' => 'danger',
+            'pending' => 'warning',
+        ];
+        $identityStatuses = $citizens->getCollection()->mapWithKeys(function (User $user) use ($identityVariants): array {
+            $status = $user->identityStatus();
+
+            return [
+                $user->id => [
+                    'status' => $status,
+                    'variant' => $identityVariants[$status] ?? 'neutral',
+                ],
+            ];
+        });
+        $detailFields = [
+            'employee_id' => ['Employee ID', 'staff'],
+            'department' => ['Department', 'staff'],
+            'position' => ['Position', 'staff'],
+            'office' => ['Office', 'staff'],
+            'phone' => ['Phone', null],
+            'date_hired_label' => ['Date Hired', 'staff'],
+            'gender' => ['Gender', 'citizen'],
+            'birth_label' => ['Date of Birth', 'citizen'],
+            'civil_status' => ['Civil Status', 'citizen'],
+            'nationality' => ['Nationality', 'citizen'],
+            'place_of_birth' => ['Place of Birth', 'citizen'],
+            'religion' => ['Religion', 'citizen'],
+            'occupation' => ['Occupation', 'citizen'],
+            'address' => ['Address', 'citizen'],
+            'created' => ['Account Created', null],
+            'updated' => ['Last Updated', null],
+        ];
+        $userRecords = $everyone->mapWithKeys(function (User $user) use ($request): array {
+            $employee = $user->employeeProfile;
+            $citizen = $user->citizenProfile;
+
+            return [
+                $user->id => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $user->role,
+                    'is_self' => $request->user()->is($user),
+                    'is_staff' => $user->isStaff(),
+                    'permission_count' => count($user->permissions ?? []),
+                    'permissions' => array_values($user->permissions ?? []),
+                    'permissions_url' => route('admin.users.permissions.update', $user),
+                    'avatar_url' => $user->avatar_url,
+                    'phone' => $user->phone,
+                    'employee_id' => $employee?->employee_id,
+                    'department' => $employee?->department,
+                    'position' => $employee?->position,
+                    'office' => $employee?->office,
+                    'date_hired' => $employee?->date_hired?->toDateString(),
+                    'date_hired_label' => $employee?->date_hired?->format('M j, Y'),
+                    'has_citizen' => (bool) $citizen,
+                    'gender' => $citizen?->gender,
+                    'birth_label' => $citizen?->date_of_birth?->format('M j, Y'),
+                    'civil_status' => $citizen?->civil_status,
+                    'nationality' => $citizen?->nationality,
+                    'place_of_birth' => $citizen?->place_of_birth,
+                    'religion' => $citizen?->religion,
+                    'occupation' => $citizen?->occupation,
+                    'house_number' => $citizen?->house_number,
+                    'barangay' => $citizen?->barangay,
+                    'city_municipality' => $citizen?->city_municipality,
+                    'province' => $citizen?->province,
+                    'zip_code' => $citizen?->zip_code,
+                    'address' => $citizen?->full_address,
+                    'created' => $user->created_at->format('M j, Y'),
+                    'updated' => $user->updated_at->format('M j, Y g:i A'),
+                    'update_url' => route('admin.users.update', $user),
+                ],
+            ];
+        });
+
+        $errors = $request->session()->get('errors');
+        $createFailed = $errors !== null && $errors->getBag('default')->hasAny([
+            'name', 'email', 'role', 'department', 'position', 'phone', 'office', 'date_hired', 'password', 'avatar',
+        ]);
+        $updateErrors = $errors?->getBag('updateUser');
+        $reopenId = $updateErrors?->any() ? (int) $request->session()->getOldInput('edit_user_id') : null;
+        $editOld = $reopenId ? $request->session()->getOldInput() : [];
+        $permissionErrors = $errors?->getBag('updatePermissions');
+        $permissionsReopenId = $permissionErrors?->any()
+            ? (int) $request->session()->getOldInput('permissions_user_id')
+            : null;
+        $permissionList = config('permissions.list');
+        $oldPermissions = (array) $request->session()->getOldInput('permissions', []);
+        $permissionsUserId = $request->session()->getOldInput('permissions_user_id');
+
+        return view('admin.users.index', compact(
+            'all',
+            'users',
+            'citizens',
+            'accountCounts',
+            'accountLatest',
+            'createFailed',
+            'reopenId',
+            'editOld',
+            'permissionsReopenId',
+            'permissionList',
+            'oldPermissions',
+            'permissionsUserId',
+            'view',
+            'paginator',
+            'everyone',
+            'employeeTotal',
+            'employeeLatest',
+            'identityStatuses',
+            'detailFields',
+            'userRecords',
+        ));
     }
 
     public function store(Request $request): RedirectResponse
@@ -115,7 +242,7 @@ class UserController extends Controller
 
                 if ($validated['role'] !== 'citizen') {
                     $user->employeeProfile()->create([
-                        'employee_id' => 'BSLCNPH-' . str_pad((string) $user->id, 6, '0', STR_PAD_LEFT),
+                        'employee_id' => 'BSLCNPH-'.str_pad((string) $user->id, 6, '0', STR_PAD_LEFT),
                         'department' => $validated['department'],
                         'position' => $validated['position'],
                         'office' => $validated['office'] ?? null,
@@ -364,91 +491,5 @@ class UserController extends Controller
     private function adminCount(): int
     {
         return User::where('role', 'admin')->count();
-    }
-
-    public function export(Request $request): StreamedResponse
-    {
-        $tab = in_array($request->query('users_tab'), ['employees', 'citizens'], true)
-            ? $request->query('users_tab')
-            : 'all';
-
-        $query = User::with(['employeeProfile', 'citizenProfile']);
-
-        if ($tab === 'employees') {
-            $query->whereIn('role', ['staff', 'admin']);
-        } elseif ($tab === 'citizens') {
-            $query->where('role', 'citizen');
-        }
-
-        // Stops Excel from running cells that start with = + - @ as formulas
-        $safe = fn($v) => is_string($v) && preg_match('/^[=+\-@\t\r]/', $v) ? "'" . $v : $v;
-
-        return response()->streamDownload(function () use ($query, $safe) {
-            $out = fopen('php://output', 'w');
-            fwrite($out, "\xEF\xBB\xBF"); // so Excel reads accents correctly
-
-            fputcsv($out, [
-                'ID',
-                'Name',
-                'Email',
-                'Phone',
-                'Role',
-                'Date Created',
-                'Employee ID',
-                'Department',
-                'Position',
-                'Office',
-                'Date Hired',
-                'Gender',
-                'Date of Birth',
-                'Civil Status',
-                'Nationality',
-                'Place of Birth',
-                'Religion',
-                'Occupation',
-                'House Number',
-                'Barangay',
-                'City/Municipality',
-                'Province',
-                'ZIP Code',
-                'Full Address',
-            ]);
-
-            $query->chunkById(200, function ($users) use ($out, $safe) {
-                foreach ($users as $u) {
-                    $p = $u->employeeProfile;
-                    $c = $u->citizenProfile;
-
-                    fputcsv($out, array_map($safe, [
-                        $u->id,
-                        $u->name,
-                        $u->email,
-                        $u->phone,
-                        $u->role,
-                        $u->created_at->format('Y-m-d'),
-                        $p?->employee_id,
-                        $p?->department,
-                        $p?->position,
-                        $p?->office,
-                        $p?->date_hired?->format('Y-m-d'),
-                        $c?->gender,
-                        $c?->date_of_birth?->format('Y-m-d'),
-                        $c?->civil_status,
-                        $c?->nationality,
-                        $c?->place_of_birth,
-                        $c?->religion,
-                        $c?->occupation,
-                        $c?->house_number,
-                        $c?->barangay,
-                        $c?->city_municipality,
-                        $c?->province,
-                        $c?->zip_code,
-                        $c?->full_address,
-                    ]));
-                }
-            });
-
-            fclose($out);
-        }, "users-{$tab}-" . now()->format('Ymd') . '.csv', ['Content-Type' => 'text/csv']);
     }
 }

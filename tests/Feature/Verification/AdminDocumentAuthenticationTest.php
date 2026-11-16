@@ -62,15 +62,18 @@ class AdminDocumentAuthenticationTest extends TestCase
             ->assertSee('Active');
     }
 
-    public function test_search_filters_by_applicant_name(): void
+    public function test_search_query_is_ignored_and_client_search_toolbar_is_rendered(): void
     {
         $this->issuePermit('PERMIT-AUTH-1', 'Maria Santos');
         $this->issuePermit('PERMIT-AUTH-2', 'Pedro Reyes');
 
         $this->actingAs($this->staff())
-            ->get(route('admin.document-authentication.index', ['search' => 'Santos']))
+            ->get(route('admin.document-authentication.index', ['search' => 'not-in-record']))
             ->assertOk()
             ->assertSee('PERMIT-AUTH-1')
-            ->assertDontSee('PERMIT-AUTH-2');
+            ->assertSee('PERMIT-AUTH-2')
+            ->assertSee('data-table-key="document-authentication"', false)
+            ->assertSee('placeholder="Search by permit number or name"', false)
+            ->assertSee('Searching this page only.');
     }
 }

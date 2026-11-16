@@ -4,10 +4,11 @@
 
 @section('content')
     <div class="space-y-6">
+        {{-- Explain the review queue and summarize current identity-verification activity. --}}
         <x-admin.page-header label="Citizen Services" title="Digital Identity Verification"
-            text="Review citizen identity information and verification submissions." />
+            text="Review citizen identity information and verification submissions." :export-url="route('admin.exports.show', ['module' => 'identity-verifications'])" />
 
-        {{-- Summary --}}
+        {{-- Pending, verified, and rejected submission totals. --}}
         <div class="grid gap-4 sm:grid-cols-3">
             <x-admin.stat-card label="Pending Reviews" subtitle="Awaiting a decision" :value="$counts['pending'] ?? 0" :latest="$latest['pending'] ?? null"
                 latest-label="Last submitted" empty-text="Nothing waiting for review" :invert="true">
@@ -43,31 +44,34 @@
             </x-admin.stat-card>
         </div>
 
-        {{-- Requests table --}}
+        {{-- Paginated submissions with status-specific badges and review actions. --}}
         <x-tables.card title="Identity Verification Requests"
-            description="Review submissions before making a verification decision." :paginator="$verifications->hasPages() ? $verifications : null" :searchable="false"
-            :per-page-options="[]">
+            description="Review submissions before making a verification decision." :paginator="$verifications" :searchable="false"
+            item-label="requests" :per-page-options="[10, 15, 25, 50]">
+
+            <x-slot:toolbar>
+                <x-tables.toolbar key="identity-verifications" :search="true"
+                    search-placeholder="Search citizen, email, or status"
+                    class="gap-0! pb-0! sm:pb-0! justify-end" />
+            </x-slot:toolbar>
+
             <x-tables.table :heads="['Citizen', 'Submitted', 'Status', ['label' => 'Action', 'align' => 'center']]" :empty="$verifications->isEmpty()" message="No identity verification requests yet.">
                 @foreach ($verifications as $verification)
-                    @php
-                        $badgeVariant = match (true) {
-                            $verification->isVerified() => 'success',
-                            $verification->isRejected() => 'danger',
-                            default => 'warning',
-                        };
-                    @endphp
-
                     <tr>
                         <td>
                             <x-tables.user-cell :name="$verification->user->name" :sub="$verification->user->email" :avatar="$verification->user->avatar_url" />
                         </td>
 
-                        <td class="text-slate-600">
+                        <td class="text-slate-600 dark:text-slate-300">
                             {{ $verification->submitted_at->format('M j, Y g:i A') }}
                         </td>
 
                         <td>
-                            <x-tables.badge :variant="$badgeVariant">
+                            <x-tables.badge :variant="match (true) {
+                                $verification->isVerified() => 'success',
+                                $verification->isRejected() => 'danger',
+                                default => 'warning',
+                            }">
                                 {{ $verification->status }}
                             </x-tables.badge>
                         </td>

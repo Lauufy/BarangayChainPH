@@ -1,7 +1,3 @@
-@php
-    // Only treat old input as the Create form's when the Create form itself failed.
-    $createFailed = $errors->hasAny(['name', 'email', 'role', 'department', 'position', 'phone', 'office', 'date_hired', 'password', 'avatar']);
-@endphp
 <div id="createUserModal"
     class="{{ $createFailed ? 'flex' : 'hidden' }} fixed inset-0 z-50 items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
     onclick="if (event.target === this) this.classList.add('hidden')">

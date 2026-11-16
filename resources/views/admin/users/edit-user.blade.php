@@ -1,11 +1,4 @@
 {{-- Edit account popup. Filled by JS from window.userRecords (set in index.blade.php). --}}
-@php
-    // Which user to reopen after a failed update (errors live in the "updateUser" bag).
-    $reopenId = $errors->updateUser->any() ? (int) old('edit_user_id') : null;
-
-    // Old input is only used when reopening after a failed update; otherwise JS fills the fields.
-    $o = fn($key) => $reopenId ? old($key) : null;
-@endphp
 
 <div id="editUserModal"
     class="hidden fixed inset-0 z-50 items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
@@ -40,15 +33,7 @@
             <input type="hidden" name="edit_user_id" id="editUser_id" value="{{ old('edit_user_id') }}">
 
             <div class="space-y-6 p-5">
-                @if ($errors->updateUser->any())
-                    <div id="editUserErrors" class="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
-                        <ul class="list-disc space-y-0.5 pl-5">
-                            @foreach ($errors->updateUser->all() as $message)
-                                <li>{{ $message }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
+                <x-feedbacks.form-errors id="editUserErrors" bag="updateUser" />
 
                 {{-- Profile Photo (staff / admin only) --}}
                 <fieldset id="editUserPhoto">
@@ -83,14 +68,15 @@
 
                     <div class="mt-3 grid gap-4 sm:grid-cols-2">
                         <x-form.input light id="editUser_name" name="name" data-validate label="Full Name" required
-                            autocomplete="off" placeholder="Enter full name" :use-old="false" :value="$o('name')" />
+                            autocomplete="off" placeholder="Enter full name" :use-old="false"
+                            :value="$editOld['name'] ?? null" />
 
                         <x-form.input light id="editUser_email" name="email" data-validate label="Email Address"
                             type="email" required autocomplete="off" placeholder="Enter email address" :use-old="false"
-                            :value="$o('email')" />
+                            :value="$editOld['email'] ?? null" />
 
                         <x-form.input light id="editUser_role" name="role" label="Role" type="select" required
-                            :options="['staff' => 'Staff / Employee', 'admin' => 'Administrator', 'citizen' => 'Citizen']" :use-old="false" :value="$o('role')">
+                            :options="['staff' => 'Staff / Employee', 'admin' => 'Administrator', 'citizen' => 'Citizen']" :use-old="false" :value="$editOld['role'] ?? null">
                             {{-- A disabled select isn't submitted, so locked roles are sent from here. --}}
                             <input type="hidden" name="role" id="editUser_roleHidden" disabled>
                             <p id="editUserRoleNote" class="mt-1 hidden text-xs text-slate-500"></p>
@@ -98,7 +84,7 @@
 
                         <x-form.input light id="editUser_phone" name="phone" label="Phone Number" type="tel"
                             autocomplete="off" placeholder="Enter phone number" :use-old="false"
-                            :value="$o('phone')" />
+                            :value="$editOld['phone'] ?? null" />
                     </div>
                 </fieldset>
 
@@ -108,17 +94,17 @@
 
                     <div class="mt-3 grid gap-4 sm:grid-cols-2">
                         <x-form.input light id="editUser_department" name="department" label="Department" required
-                            placeholder="Enter department" :use-old="false" :value="$o('department')" />
+                            placeholder="Enter department" :use-old="false" :value="$editOld['department'] ?? null" />
 
                         <x-form.input light id="editUser_position" name="position" label="Position" required
-                            placeholder="Enter job position" :use-old="false" :value="$o('position')" />
+                            placeholder="Enter job position" :use-old="false" :value="$editOld['position'] ?? null" />
 
                         <x-form.input light id="editUser_office" name="office" label="Office (Optional)"
-                            placeholder="Enter office" :use-old="false" :value="$o('office')" />
+                            placeholder="Enter office" :use-old="false" :value="$editOld['office'] ?? null" />
 
                         <x-form.input light id="editUser_date_hired" name="date_hired" label="Date Hired (Optional)"
                             type="date" max="{{ now()->toDateString() }}" placeholder="Select date" :use-old="false"
-                            :value="$o('date_hired')" />
+                            :value="$editOld['date_hired'] ?? null" />
                     </div>
                 </fieldset>
 
@@ -128,31 +114,31 @@
 
                     <div class="mt-3 grid gap-4 sm:grid-cols-2">
                         <x-form.input light id="editUser_civil_status" name="civil_status" label="Civil Status"
-                            type="select" required :use-old="false" :value="$o('civil_status')"
+                            type="select" required :use-old="false" :value="$editOld['civil_status'] ?? null"
                             :options="['Single' => 'Single', 'Married' => 'Married', 'Widowed' => 'Widowed', 'Separated' => 'Separated', 'Divorced' => 'Divorced']" />
 
                         <x-form.input light id="editUser_religion" name="religion" label="Religion (Optional)"
-                            placeholder="Enter religion" :use-old="false" :value="$o('religion')" />
+                            placeholder="Enter religion" :use-old="false" :value="$editOld['religion'] ?? null" />
 
                         <x-form.input light id="editUser_occupation" name="occupation" label="Occupation (Optional)"
-                            placeholder="Enter occupation" :use-old="false" :value="$o('occupation')" />
+                            placeholder="Enter occupation" :use-old="false" :value="$editOld['occupation'] ?? null" />
 
                         <x-form.input light id="editUser_house_number" name="house_number"
                             label="House Number (Optional)" placeholder="Enter house number" :use-old="false"
-                            :value="$o('house_number')" />
+                            :value="$editOld['house_number'] ?? null" />
 
                         <x-form.input light id="editUser_barangay" name="barangay" label="Barangay" required
-                            placeholder="Enter barangay" :use-old="false" :value="$o('barangay')" />
+                            placeholder="Enter barangay" :use-old="false" :value="$editOld['barangay'] ?? null" />
 
                         <x-form.input light id="editUser_city_municipality" name="city_municipality"
                             label="City / Municipality" required placeholder="Enter city or municipality"
-                            :use-old="false" :value="$o('city_municipality')" />
+                            :use-old="false" :value="$editOld['city_municipality'] ?? null" />
 
                         <x-form.input light id="editUser_province" name="province" label="Province" required
-                            placeholder="Enter province" :use-old="false" :value="$o('province')" />
+                            placeholder="Enter province" :use-old="false" :value="$editOld['province'] ?? null" />
 
                         <x-form.input light id="editUser_zip_code" name="zip_code" label="Zip Code" required
-                            placeholder="Enter zip code" :use-old="false" :value="$o('zip_code')" />
+                            placeholder="Enter zip code" :use-old="false" :value="$editOld['zip_code'] ?? null" />
                     </div>
                 </fieldset>
 

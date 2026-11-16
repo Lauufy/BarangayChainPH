@@ -33,8 +33,48 @@ class AdminAuditLogTest extends TestCase
         ]))
             ->assertOk()
             ->assertSee('Status Changed')
-            ->assertSee('Status: pending -> processing')
-            ->assertDontSee('No audit records match these filters.');
+            ->assertSee('Status: pending -> processing');
+    }
+
+    public function test_audit_search_query_is_ignored_and_client_search_keeps_the_pager(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        foreach (range(0, 10) as $index) {
+            AuditLog::create([
+                'user_id' => $admin->id,
+                'user_role' => 'admin',
+                'action' => 'needle.audit_event',
+                'subject_type' => ServiceRequest::class,
+                'subject_id' => (string) (100 + $index),
+                'created_at' => now()->subMinutes($index),
+            ]);
+        }
+
+        AuditLog::create([
+            'user_id' => $admin->id,
+            'user_role' => 'admin',
+            'action' => 'unrelated.event',
+            'subject_type' => ServiceRequest::class,
+            'subject_id' => '999',
+            'created_at' => now()->addMinute(),
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('admin.audit-logs.index', [
+            'search' => 'needle',
+            'per_page' => 10,
+        ]));
+
+        $response->assertOk()
+            ->assertSee('Needle Audit Event')
+            ->assertSee('Unrelated Event')
+            ->assertSee('data-table-key="audit-logs"', false)
+            ->assertSee('placeholder="Search user, action, or record"', false)
+            ->assertSee('Searching this page only.')
+            ->assertSee('aria-label="Pagination"', false)
+            ->assertDontSee('name="search"', false)
+            ->assertDontSee('search=')
+            ->assertSee('Next page', false);
     }
 
     /** Check issued document records use the same audit observer. */

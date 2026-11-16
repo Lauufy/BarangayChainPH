@@ -54,9 +54,12 @@ class AdminBlockchainLedgerTest extends TestCase
         ]);
 
         $this->actingAs($staff)
-            ->get(route('admin.blockchain-ledger.index'))
+            ->get(route('admin.blockchain-ledger.index', ['search' => 'not-in-record']))
             ->assertOk()
             ->assertSee('PERMIT-LEDGER-1')
-            ->assertSee('/tx/'.$txHash, false);
+            ->assertSee('/tx/'.$txHash, false)
+            ->assertSee('data-table-key="blockchain-ledger"', false)
+            ->assertSee('placeholder="Search by transaction or permit number"', false)
+            ->assertSee('Searching this page only.');
     }
 }

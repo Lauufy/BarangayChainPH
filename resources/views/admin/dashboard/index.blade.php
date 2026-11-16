@@ -3,67 +3,11 @@
 @section('title', 'Dashboard')
 
 @section('content')
-    @php
-        $user = auth()->user();
-        $isAdmin = $user->isAdmin();
-        $can = fn($permission) => $user->hasPermission($permission);
-        $firstName = str($user->name)->before(' ');
-        $hour = now()->hour;
-        $greeting = $hour < 12 ? 'Good morning' : ($hour < 18 ? 'Good afternoon' : 'Good evening');
-
-        $workload = $workload ?? null;
-        $recentPermits = $recentPermits ?? collect();
-
-        $participation = $participation ?? ['labels' => [], 'values' => []];
-        $participationTotal = array_sum($participation['values']);
-
-        $requestStatus = $requestStatus ?? ['approved' => 0, 'in_progress' => 0, 'rejected' => 0, 'cancelled' => 0];
-        $requestStatusTotal = array_sum($requestStatus);
-
-        // Only show shortcuts this person can open: [route, label, allowed]
-        $shortcuts = collect([
-            ['admin.users.index', 'User & Role Management', $isAdmin],
-            ['admin.identity-verification.index', 'Identity Verification', $can('identity.review')],
-            ['admin.permits.index', 'Permit Management', $can('permits.review')],
-            ['admin.reports.index', 'Reports & Analytics', $can('reports.view')],
-        ])->filter(fn($shortcut) => $shortcut[2]);
-
-        // Status => badge style
-        $statusStyle = [
-            'approved' => 'bg-(--green-500)/15 text-(--green-700) dark:text-(--green-300)',
-            'completed' => 'bg-(--green-500)/15 text-(--green-700) dark:text-(--green-300)',
-            'authenticated' => 'bg-(--green-500)/15 text-(--green-700) dark:text-(--green-300)',
-            'rejected' => 'bg-(--red-500)/15 text-(--red-600) dark:text-(--red-500)',
-            'denied' => 'bg-(--red-500)/15 text-(--red-600) dark:text-(--red-500)',
-            'pending' => 'bg-(--amber-500)/15 text-(--amber-500)',
-            'processing' => 'bg-(--blue-600)/15 text-(--blue-700) dark:text-(--blue-300)',
-            'under_review' => 'bg-(--blue-600)/15 text-(--blue-700) dark:text-(--blue-300)',
-        ];
-
-        // Shared classes, so every panel on the page looks the same
-        $panel =
-            'rounded-2xl border border-(--gray-200) bg-(--white) shadow-sm dark:border-white/10 dark:bg-(--gray-800)';
-        $panelHead = 'border-b border-(--gray-200) px-5 py-4 dark:border-white/10';
-        $panelTitle = 'text-base font-semibold text-(--gray-900) dark:text-(--gray-50)';
-        $muted = 'text-(--gray-500) dark:text-(--gray-400)';
-        $ink = 'text-(--gray-900) dark:text-(--gray-50)';
-
-        $miniCard = 'rounded-xl bg-(--gray-50) p-4 dark:bg-(--gray-900)';
-        $miniTitle = 'text-sm text-(--gray-600) dark:text-(--gray-300)';
-        $miniNumber = 'mt-1 text-2xl font-bold tabular-nums text-(--gray-900) dark:text-(--gray-50)';
-    @endphp
-
     <div class="space-y-6" data-reports-page>
 
-        {{-- Page heading --}}
-        <div>
-            <p class="text-(--green-600) dark:text-(--green-400) text-xs font-bold uppercase tracking-widest">DASHBOARD</p>
-            <h1 class="text-(--gray-900) dark:text-(--white) mt-1 text-2xl font-bold">
-                {{ $greeting }}, <span
-                    class="text-(--green-600) dark:text-(--green-300)">{{ $firstName }}.</span>
-            </h1>
-            <p class="{{ $muted }} mt-1 text-sm">Monitor citizen services and barangay transactions.</p>
-        </div>
+        {{-- Welcome the signed-in user and describe the dashboard. --}}
+        <x-admin.page-header label="Dashboard" :title="$greeting . ', ' . $firstName . '.'"
+            text="Monitor citizen services and barangay transactions." />
 
         {{-- Warning: approved permits not yet on the blockchain --}}
         @if (($unrecordedPermits ?? 0) > 0 && $can('permits.review'))
@@ -263,50 +207,33 @@
                     @endif
                 </div>
 
-                @if ($recentPermits->isEmpty())
-                    <p class="{{ $muted }} px-5 py-12 text-center text-sm">No recent permit requests to display.
-                    </p>
-                @else
-                    <div class="overflow-x-auto px-5 pb-2">
-                        <table class="min-w-xl w-full text-left text-sm">
-                            <thead class="{{ $muted }} text-[11px] uppercase tracking-wide">
-                                <tr>
-                                    <th class="py-3 pr-4 font-medium">Reference</th>
-                                    <th class="py-3 pr-4 font-medium">Citizen</th>
-                                    <th class="py-3 pr-4 font-medium">Permit Type</th>
-                                    <th class="py-3 pr-4 font-medium">Date</th>
-                                    <th class="py-3 font-medium">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-(--gray-200) divide-y dark:divide-white/10">
-                                @foreach ($recentPermits as $permit)
-                                    @php $status = strtolower($permit->status ?? 'pending'); @endphp
-                                    <tr class="hover:bg-(--gray-50) transition-colors duration-150 dark:hover:bg-white/5">
-                                        <td
-                                            class="{{ $ink }} whitespace-nowrap py-3 pr-4 font-mono text-xs font-medium">
-                                            {{ $permit->reference_number ?? 'REQ-' . $permit->id }}
-                                        </td>
-                                        <td class="text-(--gray-600) dark:text-(--gray-300) py-3 pr-4">
-                                            <x-tables.user-cell :name="$permit->user->name ?? ($permit->citizen_name ?? '—')" :avatar="$permit->user->avatar_url ?? null" />
-                                        </td>
-                                        <td class="text-(--gray-600) dark:text-(--gray-300) py-3 pr-4">
-                                            {{ $permit->serviceTitle() }}
-                                        </td>
-                                        <td class="text-(--gray-600) dark:text-(--gray-300) whitespace-nowrap py-3 pr-4">
-                                            {{ $permit->created_at?->format('j M Y') }}
-                                        </td>
-                                        <td class="whitespace-nowrap py-3">
-                                            <span
-                                                class="{{ $statusStyle[$status] ?? 'bg-(--gray-500)/15 text-(--gray-600) dark:text-(--gray-300)' }} rounded-md px-2.5 py-1 text-xs font-semibold capitalize">
-                                                {{ str_replace('_', ' ', $status) }}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                @endif
+                <x-tables.table :heads="['Reference', 'Citizen', 'Permit Type', 'Date', 'Status']"
+                    :empty="$recentPermits->isEmpty()" message="No recent permit requests to display." hint="">
+                    @foreach ($recentPermits as $permit)
+                        <tr>
+                            <td class="whitespace-nowrap font-mono text-xs font-medium text-(--gray-900) dark:text-(--gray-50)">
+                                {{ $permit->reference_number ?? 'REQ-' . $permit->id }}
+                            </td>
+                            <td>
+                                <x-tables.user-cell :name="$permit->user->name ?? ($permit->citizen_name ?? '—')"
+                                    :avatar="$permit->user->avatar_url ?? null" />
+                            </td>
+                            <td>{{ $permit->serviceTitle() }}</td>
+                            <td class="whitespace-nowrap">{{ $permit->created_at?->format('j M Y') }}</td>
+                            <td>
+                                <x-tables.badge :variant="match (strtolower($permit->status ?? 'pending')) {
+                                    'approved', 'completed', 'authenticated' => 'success',
+                                    'rejected', 'denied' => 'danger',
+                                    'pending' => 'warning',
+                                    'processing', 'under_review' => 'info',
+                                    default => 'neutral',
+                                }">
+                                    {{ str_replace('_', ' ', strtolower($permit->status ?? 'pending')) }}
+                                </x-tables.badge>
+                            </td>
+                        </tr>
+                    @endforeach
+                </x-tables.table>
             </section>
         </div>
     </div>

@@ -2,33 +2,6 @@
 
 @section('title', 'Review Identity Application')
 
-@php
-    $user = $verification->user;
-    $documentUrl = route('admin.identity-verification.document', $verification);
-    $selfieUrl = route('admin.identity-verification.selfie', $verification);
-
-    $fields = [
-        'Name' => $user->name,
-        'Date of birth' => $profile?->date_of_birth?->format('M j, Y'),
-        'Gender' => $profile?->gender,
-        'Civil status' => $profile?->civil_status,
-        'Nationality' => $profile?->nationality,
-        'Place of birth' => $profile?->place_of_birth,
-        'Religion' => $profile?->religion,
-        'Occupation' => $profile?->occupation,
-        'Phone' => $user->phone,
-    ];
-
-    $wideFields = [
-        'Email' => $user->email,
-        'Address' => $profile?->address,
-    ];
-
-    $selfieCaption = ! $verification->selfie_path
-        ? 'Not provided'
-        : ($verification->selfie_source === 'camera' ? 'Taken with the camera' : 'Uploaded photo');
-@endphp
-
 @section('content')
     <div class="space-y-4">
         {{-- Header --}}
@@ -42,9 +15,7 @@
         >
             <x-slot:actions>
                 @if ($verification->isPending())
-                    <span class="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800">
-                        <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span> Pending review
-                    </span>
+                    <x-tables.badge variant="warning">Pending review</x-tables.badge>
                 @else
                     <x-tables.badge :variant="$verification->isVerified() ? 'success' : 'danger'">
                         {{ $verification->status }}
@@ -58,10 +29,11 @@
             </x-slot:actions>
         </x-admin.detail-header>
 
+        {{-- Show validation feedback before the reviewer makes a decision. --}}
         <x-feedbacks.form-errors />
 
         <div class="flex flex-col gap-4 lg:flex-row">
-            {{-- Left: citizen details + decision --}}
+            {{-- Citizen profile details and the review decision form. --}}
             <section class="admin-card min-w-0 flex-1">
                 <h2 class="border-b border-slate-200 px-4 py-3 text-sm font-semibold text-slate-900">Citizen details</h2>
 
@@ -160,7 +132,7 @@
                 </div>
             </section>
 
-            {{-- Right: uploaded ID and selfie --}}
+            {{-- Uploaded ID and selfie previews, opened through permission-checked routes. --}}
             <aside class="lg:w-100 xl:w-150 space-y-4 lg:shrink-0">
                 {{-- Uploaded ID --}}
                 <section class="admin-card">

@@ -49,6 +49,48 @@ class AdminTicketInboxTest extends TestCase
             ->assertSee('Former account');
     }
 
+    public function test_ticket_search_query_is_ignored_and_client_search_keeps_the_pager(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        foreach (range('A', 'K') as $index => $letter) {
+            $serviceRequest = ServiceRequest::factory()->create([
+                'applicant_name' => 'Ticket Citizen '.$letter,
+            ]);
+            $ticket = $serviceRequest->ticket()->create(['user_id' => $serviceRequest->user_id]);
+            $ticket->messages()->create([
+                'user_id' => $serviceRequest->user_id,
+                'body' => 'Needle support message',
+            ]);
+            $ticket->forceFill(['updated_at' => now()->subMinutes($index)])->save();
+        }
+
+        $otherRequest = ServiceRequest::factory()->create(['applicant_name' => 'Unrelated Citizen']);
+        $otherTicket = $otherRequest->ticket()->create(['user_id' => $otherRequest->user_id]);
+        $otherTicket->messages()->create([
+            'user_id' => $otherRequest->user_id,
+            'body' => 'An unrelated support message',
+        ]);
+        $otherTicket->forceFill(['updated_at' => now()->addMinute()])->save();
+
+        $response = $this->actingAs($admin)->get(route('admin.tickets.index', [
+            'search' => 'Needle',
+            'per_page' => 10,
+        ]));
+
+        $response->assertOk()
+            ->assertSee('Ticket Citizen A')
+            ->assertSee('Unrelated Citizen')
+            ->assertViewHas('tickets', fn ($tickets): bool => $tickets->total() === 12)
+            ->assertSee('data-table-key="ticket-messages"', false)
+            ->assertSee('placeholder="Search citizen, reference, or message"', false)
+            ->assertSee('')
+            ->assertSee('aria-label="Pagination"', false)
+            ->assertDontSee('name="search"', false)
+            ->assertDontSee('search=')
+            ->assertSee('Next page', false);
+    }
+
     public function test_ticket_participant_photo_redirects_to_a_temporary_supabase_url(): void
     {
         $citizen = User::factory()->create([

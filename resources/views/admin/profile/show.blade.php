@@ -3,23 +3,12 @@
 @section('title', 'My Profile')
 
 @section('content')
-    @php
-        // The modal and the main form post to the same route, so tag which one failed.
-        $emailFailed = old('_form') === 'email' && $errors->has('email');
-
-        // Email errors are shown inside the modal, so keep them out of the page summary.
-        // Two-factor errors are shown inside their own card.
-        $pageErrors = collect($errors->getMessages())
-            ->except($emailFailed ? ['email', 'photo', 'two_factor_enabled'] : ['photo', 'two_factor_enabled'])
-            ->flatten();
-    @endphp
-
     <div class="mx-auto max-w-3xl space-y-5">
-        <div>
-            <h2 class="text-2xl font-bold text-slate-900">My Profile</h2>
-            <p class="mt-1 text-sm text-slate-500">Update the details shown in your administrator account.</p>
-        </div>
+        {{-- Explain which profile details can be changed on this page. --}}
+        <x-admin.page-header label="Administration" title="My Profile"
+            text="Update the details shown in your administrator account." />
 
+        {{-- Show successful profile updates. --}}
         @if (session('success'))
             <div role="status"
                 class="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-700">
@@ -27,6 +16,7 @@
             </div>
         @endif
 
+        {{-- Show only errors that belong on the profile page, excluding modal and separate-form errors. --}}
         @if ($pageErrors->isNotEmpty())
             <div role="alert" class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
                 <ul class="list-disc space-y-1 pl-5">
@@ -38,7 +28,7 @@
         @endif
 
         <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-            {{-- Identity --}}
+            {{-- Current administrator identity and profile photo controls. --}}
             <div class="mb-6 flex items-center gap-4 border-b border-slate-100 pb-5">
                 @if ($user->employeeProfile?->photo_path)
                     <img src="{{ route('admin.profile.photo.show') }}?v={{ $user->updated_at?->timestamp }}"
@@ -75,7 +65,7 @@
                 </p>
             </form>
 
-            {{-- Details and password --}}
+            {{-- Update personal details and optionally change the account password. --}}
             <form method="POST" action="{{ route('admin.profile.update') }}" class="space-y-6" data-validate>
                 @csrf
                 @method('PUT')
@@ -134,15 +124,14 @@
                 </div>
 
                 <div class="flex justify-end border-t border-slate-100 pt-5">
-                    <button data-loading data-loading-text="Saving..."
-                        class="inline-flex items-center gap-2 rounded-md bg-[#17325c] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#10244a]">
+                    <x-form.button type="submit" color="blue" loading-text="Saving..." class="py-2.5">
                         Save changes
-                    </button>
+                    </x-form.button>
                 </div>
             </form>
         </section>
 
-        {{-- Login security: its own form, so it never submits with the profile form --}}
+        {{-- Keep two-factor settings in their own independent form. --}}
         <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm text-slate-900 sm:p-6">
             <h3 class="font-semibold text-slate-900">Two-factor login</h3>
             <p class="mt-1 text-sm text-slate-500">
@@ -150,12 +139,12 @@
             </p>
 
             <div class="mt-4">
-                @include('components.partials.two-factor-form', ['action' => route('admin.profile.two-factor')])
+                <x-partials.two-factor-form :action="route('admin.profile.two-factor')" />
             </div>
         </section>
     </div>
 
-    {{-- Email dialog: native <dialog> gives focus trapping and Escape handling --}}
+    {{-- Use a native dialog for email edits and validation feedback. --}}
     <dialog id="email-dialog" aria-labelledby="email-dialog-title"
         class="m-auto w-full max-w-md rounded-xl p-0 shadow-xl backdrop:bg-slate-900/50">
         <div class="p-5 sm:p-6">
@@ -192,10 +181,9 @@
                         class="rounded-md border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">
                         Cancel
                     </button>
-                    <button data-loading data-loading-text="Saving..."
-                        class="inline-flex items-center gap-2 rounded-md bg-[#17325c] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#10244a]">
+                    <x-form.button type="submit" color="blue" loading-text="Saving..." class="py-2.5">
                         Save email
-                    </button>
+                    </x-form.button>
                 </div>
             </form>
         </div>

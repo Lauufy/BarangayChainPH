@@ -6,20 +6,28 @@
 
 @section('content')
     <div class="space-y-6">
+        {{-- Explain the ledger and show its key transaction totals. --}}
         <x-admin.page-header label="System Integrity" title="Blockchain Transaction Ledger"
-            text="Inspect blockchain transaction references and recorded document hashes." />
+            text="Inspect blockchain transaction references and recorded document hashes."
+            :export-url="route('admin.exports.show', ['module' => 'blockchain-ledger'])" />
 
-        {{-- Numbers --}}
+        {{-- Summary of confirmed, failed, and total records. --}}
         <div class="grid gap-4 sm:grid-cols-3">
             <x-admin.stat-card label="Total Transactions" :value="$total" />
             <x-admin.stat-card label="Confirmed Transactions" :value="$confirmed" />
             <x-admin.stat-card label="Failed Transactions" :value="$failed" />
         </div>
 
+        {{-- Search and paginate blockchain records with transaction references. --}}
         <x-tables.card title="Transaction History"
             description="Every permit recorded on the blockchain, with its transaction references."
-            :paginator="$records" item-label="records"
-            search-placeholder="Search by transaction or permit number">
+            :paginator="$records" :searchable="false" item-label="records">
+            <x-slot:toolbar>
+                <x-tables.toolbar key="blockchain-ledger" :search="true"
+                    search-placeholder="Search by transaction or permit number"
+                    class="gap-0! pb-0! sm:pb-0! justify-end" />
+            </x-slot:toolbar>
+
             <x-tables.table
                 :heads="['Permit', 'Issue Transaction', 'Revoke Transaction', 'Document Hash', 'Recorded', 'Status']"
                 :empty="$records->isEmpty()" message="No blockchain records yet.">
@@ -60,15 +68,15 @@
 
                         <td>
                             @if ($record->recorded_at && ! $record->tx_hash)
-                                <span class="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-800">Hash recovery needed</span>
+                                <x-tables.badge variant="warning">Hash recovery needed</x-tables.badge>
                             @elseif ($record->revoked_at)
-                                <span class="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-semibold text-slate-700">Revoked</span>
+                                <x-tables.badge variant="neutral">Revoked</x-tables.badge>
                             @elseif ($record->recorded_at)
-                                <span class="rounded-full border border-green-200 bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-green-800">Confirmed</span>
+                                <x-tables.badge variant="success">Confirmed</x-tables.badge>
                             @elseif ($record->error)
-                                <span class="rounded-full border border-red-200 bg-red-50 px-2.5 py-0.5 text-xs font-semibold text-red-800">Failed</span>
+                                <x-tables.badge variant="danger">Failed</x-tables.badge>
                             @else
-                                <span class="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-800">Pending</span>
+                                <x-tables.badge variant="warning">Pending</x-tables.badge>
                             @endif
                         </td>
                     </tr>
@@ -76,6 +84,7 @@
             </x-tables.table>
         </x-tables.card>
 
+        {{-- Explain the source of the ledger entries. --}}
         <p class="text-xs leading-5 text-slate-500">
             Transaction details come from the records saved when each permit was written to the blockchain.
             Open a transaction link to check it on the public explorer.

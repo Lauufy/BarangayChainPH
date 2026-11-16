@@ -1,3 +1,4 @@
+@props(['action'])
 @php($authUser = auth()->user())
 
 <form method="POST" action="{{ $action }}" class="space-y-4">

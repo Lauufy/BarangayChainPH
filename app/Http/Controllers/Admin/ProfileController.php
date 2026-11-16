@@ -21,8 +21,17 @@ class ProfileController extends Controller
 
     public function show(Request $request): View
     {
+        $errors = $request->session()->get('errors');
+        $emailFailed = $request->session()->getOldInput('_form') === 'email'
+            && $errors?->getBag('default')->has('email');
+        $pageErrors = collect($errors?->getBag('default')->getMessages() ?? [])
+            ->except($emailFailed ? ['email', 'photo', 'two_factor_enabled'] : ['photo', 'two_factor_enabled'])
+            ->flatten();
+
         return view('admin.profile.show', [
             'user' => $request->user()->load('employeeProfile'),
+            'emailFailed' => $emailFailed,
+            'pageErrors' => $pageErrors,
         ]);
     }
 
