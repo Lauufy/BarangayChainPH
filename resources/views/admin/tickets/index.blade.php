@@ -43,7 +43,7 @@
 
                         <td class="text-center">
                             <div class="flex justify-center">
-                                <x-tables.action label="Open" icon="eye"
+                                <x-tables.action label="Open" icon="file-search"
                                     :href="route('admin.tickets.show', $ticket)" />
                             </div>
                         </td>

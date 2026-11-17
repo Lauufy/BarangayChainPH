@@ -1,6 +1,6 @@
 {{-- View / Edit / Delete buttons for one account row. Expects $account. --}}
 <div class="flex justify-center gap-1">
-    <x-tables.action label="View" icon="eye" icon-only onclick="openViewUserModal({{ $account->id }})" />
+    <x-tables.action label="View" icon="file-search" icon-only onclick="openViewUserModal({{ $account->id }})" />
     <x-tables.action label="Edit" icon="pencil" icon-only onclick="openEditUserModal({{ $account->id }})" />
 
     @if (auth()->user()->is($account))

@@ -61,7 +61,7 @@ class UserControllerTest extends TestCase
                 && $records->has($citizen->id))
             ->assertSee('data-table-key="users"', false)
             ->assertSee('placeholder="Start searching..."', false)
-            ->assertSee('Searching this page only.')
+            
             ->assertDontSee('search=')
             ->assertDontSee('search=no-match');
     }

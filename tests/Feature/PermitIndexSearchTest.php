@@ -36,7 +36,6 @@ class PermitIndexSearchTest extends TestCase
             ->assertViewHas('requests', fn ($requests): bool => $requests->total() === 12)
             ->assertSee('data-table-key="permits"', false)
             ->assertSee('placeholder="Search applicant, reference, type, or status"', false)
-            ->assertSee('Searching this page only.')
             ->assertSee('aria-label="Pagination"', false)
             ->assertDontSee('name="search"', false)
             ->assertDontSee('search=')

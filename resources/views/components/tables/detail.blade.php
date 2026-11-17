@@ -8,7 +8,7 @@
 
     Actions cell (buttons row at the bottom of the expanded card):
     <x-tables.detail actions>
-        <x-tables.action label="View" icon="eye" :href="route('courses.show', $course)" />
+        <x-tables.action label="View" icon="file-search" :href="route('courses.show', $course)" />
         <x-tables.action label="Edit" icon="pencil" :href="route('courses.edit', $course)" />
         <x-tables.action label="Delete" icon="trash" variant="danger" :action="route('courses.destroy', $course)" method="DELETE" confirm="Delete this course?" />
     </x-tables.detail>

@@ -59,7 +59,7 @@
 
                         <x-tables.detail side="full" class="text-center">
                             <div class="flex flex-wrap items-start justify-center gap-2">
-                                <x-tables.action label="Review" icon="eye" :href="route('citizen.applications.show', $application)" />
+                                <x-tables.action label="Review" icon="file-search" :href="route('citizen.applications.show', $application)" />
 
                                 @if ($application->ticket)
                                     <x-tables.action label="Messages" icon="message" :href="route('citizen.tickets.show', $application)" />

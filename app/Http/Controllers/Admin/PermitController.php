@@ -38,19 +38,35 @@ class PermitController extends Controller
         $perPage = in_array($perPage, [10, 15, 25, 50], true) ? $perPage : 10;
         $requests = $export->query($request)->paginate($perPage)->appends($request->except('search'));
 
-        // One query for all status counts
-        $byStatus = ServiceRequest::selectRaw('status, COUNT(*) AS total')
+        // One query for all status counts and dates
+        $byStatus = ServiceRequest::selectRaw('
+            status,
+            COUNT(*) AS total,
+            MIN(created_at) AS oldest_submitted,
+            MAX(created_at) AS latest_submitted,
+            MAX(COALESCE(processed_at, updated_at)) AS latest_activity
+        ')
             ->groupBy('status')
-            ->pluck('total', 'status');
+            ->get()
+            ->keyBy('status');
 
         $requestCounts = [
-            'total' => $byStatus->sum(),
-            'pending' => $byStatus[ServiceRequest::PENDING] ?? 0,
-            'processing' => $byStatus[ServiceRequest::PROCESSING] ?? 0,
-            'completed' => $byStatus[ServiceRequest::APPROVED] ?? 0,
+            'total' => $byStatus->sum('total'),
+            'pending' => $byStatus[ServiceRequest::PENDING]->total ?? 0,
+            'processing' => $byStatus[ServiceRequest::PROCESSING]->total ?? 0,
+            'completed' => $byStatus[ServiceRequest::APPROVED]->total ?? 0,
         ];
 
-        return view('admin.permits.index', compact('requests', 'requestCounts'));
+        $toDate = fn($value) => $value ? Carbon::parse($value) : null;
+
+        $requestLatest = [
+            'total' => $toDate($byStatus->max('latest_submitted')),
+            'pending' => $toDate($byStatus[ServiceRequest::PENDING]->oldest_submitted ?? null),
+            'processing' => $toDate($byStatus[ServiceRequest::PROCESSING]->latest_activity ?? null),
+            'completed' => $toDate($byStatus[ServiceRequest::APPROVED]->latest_activity ?? null),
+        ];
+
+        return view('admin.permits.index', compact('requests', 'requestCounts', 'requestLatest'));
     }
 
     public function show(ServiceRequest $serviceRequest): View
@@ -80,9 +96,9 @@ class PermitController extends Controller
             'Date submitted' => $application->created_at->timezone(config('app.timezone'))->format('M j, Y g:i A'),
             'Permit number' => $application->permit_number,
             'Prints remaining' => $isApproved
-                ? $application->printsRemaining().' of '.$application->effectivePrintLimit()
+                ? $application->printsRemaining() . ' of ' . $application->effectivePrintLimit()
                 : null,
-        ], fn ($value) => filled($value));
+        ], fn($value) => filled($value));
 
         $fieldLabels = collect($application->serviceConfig()['fields'] ?? [])->pluck('label', 'key');
         $requestDetails = ['Purpose' => $application->purpose];
@@ -92,7 +108,7 @@ class PermitController extends Controller
         }
 
         $requestDetails['Cancellation reason'] = $application->cancellation_reason;
-        $requestDetails = array_filter($requestDetails, fn ($value) => filled($value));
+        $requestDetails = array_filter($requestDetails, fn($value) => filled($value));
 
         return view('admin.permits.review', [
             'application' => $application,
@@ -211,8 +227,8 @@ class PermitController extends Controller
             ->whereNull('revoked_at')
             ->where(function (Builder $query) {
                 $query
-                    ->whereDoesntHave('blockchainRecord', fn (Builder $record) => $record->whereNotNull('recorded_at'))
-                    ->orWhereHas('blockchainRecord', fn (Builder $record) => $record
+                    ->whereDoesntHave('blockchainRecord', fn(Builder $record) => $record->whereNotNull('recorded_at'))
+                    ->orWhereHas('blockchainRecord', fn(Builder $record) => $record
                         ->whereNotNull('recorded_at')
                         ->whereNull('tx_hash'));
             })
@@ -264,7 +280,7 @@ class PermitController extends Controller
 
         $this->notify($rejected, new ServiceRequestRejected($rejected));
 
-        $rejected->ticket?->postSystemMessage('Your request was rejected. Reason: '.$data['rejection_reason'], close: true);
+        $rejected->ticket?->postSystemMessage('Your request was rejected. Reason: ' . $data['rejection_reason'], close: true);
 
         return $this->back($serviceRequest, 'success', 'The application was rejected.');
     }
@@ -337,7 +353,7 @@ class PermitController extends Controller
                 'required',
                 'date',
                 'after:today',
-                'before_or_equal:'.now()->addYears(5)->toDateString(),
+                'before_or_equal:' . now()->addYears(5)->toDateString(),
             ],
         ]);
 

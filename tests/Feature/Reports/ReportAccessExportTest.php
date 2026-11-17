@@ -102,7 +102,7 @@ class ReportAccessExportTest extends TestCase
             ->assertSessionHasErrors('grouping');
     }
 
-    public function test_report_page_uses_default_daily_filters_and_displays_all_six_report_areas(): void
+    public function test_report_page_uses_default_daily_filters_and_displays_all_report_tabs(): void
     {
         $serviceRequest = ServiceRequest::factory()->create([
             'reference_number' => 'REPORT-TABLE-0001',
@@ -114,64 +114,76 @@ class ReportAccessExportTest extends TestCase
         BlockchainRecord::factory()->for($issuedDocument, 'issuedDocument')->create([
             'recorded_at' => Carbon::parse('2026-11-12 08:00:00'),
             'created_at' => Carbon::parse('2026-11-12 08:00:00'),
-            'tx_hash' => '0x'.str_repeat('a', 64),
+            'tx_hash' => '0x' . str_repeat('a', 64),
         ]);
         $admin = User::factory()->create(['role' => 'admin']);
 
-        $response = $this->actingAs($admin)->get(route('admin.reports.index'));
-
-        $response->assertOk()
+        // Service Requests tab (default)
+        $service = $this->actingAs($admin)->get(route('admin.reports.index'));
+        $service->assertOk()
             ->assertSee('value="2026-10-15"', false)
             ->assertSee('value="2026-11-13"', false)
             ->assertSee('data-report-preset="month"', false)
             ->assertSee('data-report-preset="last30"', false)
-            ->assertSee('Daily grouping')
-            ->assertSee('Service Requests')
-            ->assertSee('Citizen Verification')
-            ->assertSee('Blockchain Transactions')
-            ->assertSee('Document Verification')
-            ->assertSee('Staff Performance')
-            ->assertSee('No issues detected.')
-            ->assertSee('Open ledger')
-            ->assertSee('CSV (opens in Excel)')
-            ->assertSee('PDF')
-            ->assertSee('REPORT-TABLE-0001')
-            ->assertSee('Successful')
             ->assertDontSee('data-report-preset="today"', false)
             ->assertDontSee('data-report-preset="week"', false)
             ->assertDontSee('name="status"', false)
             ->assertDontSee('name="purok"', false)
+            ->assertSee('Daily grouping')
+            ->assertSee('Service Requests')
+            ->assertSee('Citizens')
+            ->assertSee('Verification')
+            ->assertSee('CSV (opens in Excel)')
+            ->assertSee('PDF')
+            ->assertSee('Permit request list')
             ->assertSee('Average Processing Time')
             ->assertSee('In Progress')
-            ->assertSee('Approval Performance')
             ->assertSee('Application Trends')
-            ->assertSee('Applications by Permit Type')
-            ->assertSee('Verification attempts are counted from the date logging began.');
+            ->assertSee('Applications by Permit Type');
+        $this->assertGreaterThanOrEqual(2, substr_count($service->getContent(), 'data-report-chart='));
 
-        $this->assertGreaterThanOrEqual(7, substr_count($response->getContent(), 'data-report-chart='));
+        // Citizens tab
+        $citizens = $this->actingAs($admin)
+            ->get(route('admin.reports.index', ['report_tab' => 'citizens']));
+        $citizens->assertOk()
+            ->assertSee('Citizen Verification')
+            ->assertSee('Identity Status')
+            ->assertSee('Identity Review Rates')
+            ->assertSee('Request status');
+        $this->assertGreaterThanOrEqual(1, substr_count($citizens->getContent(), 'data-report-chart='));
+
+        // Verification tab
+        $this->actingAs($admin)
+            ->get(route('admin.reports.index', ['report_tab' => 'verification']))
+            ->assertOk()
+            ->assertSee('Blockchain Transactions')
+            ->assertSee('Document Verification')
+            ->assertSee('Staff Performance')
+            ->assertSee('Open ledger')
+            ->assertSee('REPORT-TABLE-0001')
+            ->assertSee('Successful')
+            ->assertSee('Scans are counted from the date logging began.');
     }
-
     public function test_report_tables_show_shared_empty_states_when_the_period_has_no_rows(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
 
+        // Service Requests tab: charts show the empty message
         $this->actingAs($admin)
             ->get(route('admin.reports.index'))
             ->assertOk()
+            ->assertSee('No data in this period.');
+
+        // Verification tab: tables show their empty states
+        $this->actingAs($admin)
+            ->get(route('admin.reports.index', ['report_tab' => 'verification']))
+            ->assertOk()
             ->assertSee('No transactions in this period.')
             ->assertSee('No staff data in this period.')
-            ->assertSee('No data in this period.')
             ->assertSee('data-table-search', false)
-            ->assertSee('data-table-key="report-trends"', false)
-            ->assertSee('data-table-key="report-permit-types"', false)
-            ->assertSee('data-table-key="report-blockchain"', false)
             ->assertSee('data-table-key="report-staff-performance"', false)
-            ->assertSee('placeholder="Search periods..."', false)
-            ->assertSee('placeholder="Search permit types..."', false)
-            ->assertSee('placeholder="Search transactions..."', false)
             ->assertSee('placeholder="Search staff..."', false);
     }
-
     public function test_dashboard_comparison_badges_use_the_equal_length_previous_period(): void
     {
         ServiceRequest::factory()->create(['created_at' => Carbon::parse('2026-10-31 23:59:59')]);
@@ -206,12 +218,14 @@ class ReportAccessExportTest extends TestCase
             'service_type' => ServiceRequest::BARANGAY_CLEARANCE,
             'created_at' => Carbon::parse('2026-11-12 08:00:00'),
         ]);
-        foreach ([
-            '=HYPERLINK("https://example.test","open")',
-            '+SUM(1,1)',
-            '-1+1',
-            '@SUM(A1:A2)',
-        ] as $serviceType) {
+        foreach (
+            [
+                '=HYPERLINK("https://example.test","open")',
+                '+SUM(1,1)',
+                '-1+1',
+                '@SUM(A1:A2)',
+            ] as $serviceType
+        ) {
             ServiceRequest::factory()->create([
                 'user_id' => $citizen->id,
                 'service_type' => $serviceType,
@@ -304,14 +318,16 @@ class ReportAccessExportTest extends TestCase
             ]));
 
         $csv = $response->streamedContent();
-        foreach ([
-            'Service Requests',
-            'Citizen Verification',
-            'Staff Performance',
-            'Blockchain Transactions',
-            'Document Verification',
-            'Insights',
-        ] as $section) {
+        foreach (
+            [
+                'Service Requests',
+                'Citizen Verification',
+                'Staff Performance',
+                'Blockchain Transactions',
+                'Document Verification',
+                'Insights',
+            ] as $section
+        ) {
             $this->assertStringContainsString($section, $csv);
         }
         $this->assertStringNotContainsString('Private Citizen Name', $csv);

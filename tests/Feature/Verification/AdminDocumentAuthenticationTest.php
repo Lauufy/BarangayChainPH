@@ -74,6 +74,6 @@ class AdminDocumentAuthenticationTest extends TestCase
             ->assertSee('PERMIT-AUTH-2')
             ->assertSee('data-table-key="document-authentication"', false)
             ->assertSee('placeholder="Search by permit number or name"', false)
-            ->assertSee('Searching this page only.');
+            ;
     }
 }

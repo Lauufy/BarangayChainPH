@@ -78,7 +78,7 @@
 
                         <td class="text-center">
                             <div class="flex justify-center">
-                                <x-tables.action label="Review" icon="eye" :href="route('admin.identity-verification.show', $verification)" />
+                                <x-tables.action label="Review" icon="file-search" :href="route('admin.identity-verification.show', $verification)" />
                             </div>
                         </td>
                     </tr>

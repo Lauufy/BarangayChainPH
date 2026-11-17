@@ -1,13 +1,3 @@
-{{--
-    Use `icon-only` for each action in a row that has multiple actions.
-    Link:      <x-tables.action label="Review" icon="eye" :href="route('x.show', $x)" />
-    Icon link: <x-tables.action label="View" icon="eye" :href="route('x.show', $x)" icon-only />
-    Form:      <x-tables.action label="Delete" icon="trash" variant="danger" :action="route('x.destroy', $x)" method="DELETE" confirm="Delete this record?" icon-only />
-    Livewire:  <x-tables.action label="Delete" icon="trash" variant="danger" wire:click="delete({{ $x->id }})" wire:confirm="Delete this record?" />
-    Modal/JS:  <x-tables.action label="Edit" icon="pencil" onclick="openEditModal({{ $x->id }})" />
-
-    icons: eye, pencil, trash, shield, power      variants: default, success, danger
---}}
 @props([
     'label',
     'icon',
@@ -22,8 +12,8 @@
 @php
     $inner =
         [
-            'eye' =>
-                '<path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/>',
+            'file-search' =>
+                '<path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M4.268 21a2 2 0 0 0 1.727 1H18a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v3"/><path d="m9 18-1.5-1.5"/><circle cx="5" cy="14" r="3"/>',
             'pencil' =>
                 '<path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"/>',
             'trash' =>
@@ -42,12 +32,34 @@
         $inner .
         '</svg>';
 
-    $color =
-        [
-            'default' => 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-[#17325c] dark:hover:text-sky-300',
-            'success' => 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-500/20',
-            'danger' => 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-500/20',
-        ][$variant] ?? '';
+    $colors = [
+        'file-search' =>
+            'bg-sky-50 text-sky-700 hover:bg-sky-100 dark:bg-sky-500/10 dark:text-sky-300 dark:hover:bg-sky-500/20',
+        'pencil' =>
+            'bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-amber-500/20',
+        'trash' =>
+            'bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-500/10 dark:text-rose-300 dark:hover:bg-rose-500/20',
+        'shield' =>
+            'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/20',
+        'power' =>
+            'bg-orange-50 text-orange-700 hover:bg-orange-100 dark:bg-orange-500/10 dark:text-orange-300 dark:hover:bg-orange-500/20',
+        'message' =>
+            'bg-violet-50 text-violet-700 hover:bg-violet-100 dark:bg-violet-500/10 dark:text-violet-300 dark:hover:bg-violet-500/20',
+        'printer' =>
+            'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-300 dark:hover:bg-indigo-500/20',
+
+        // Explicit variants still win over the icon color
+        'success' =>
+            'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/20',
+        'danger' =>
+            'bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-500/10 dark:text-rose-300 dark:hover:bg-rose-500/20',
+
+        // Fallback
+        'default' =>
+            'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-[#17325c] dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-sky-300',
+    ];
+
+    $color = $colors[$variant !== 'default' ? $variant : $icon] ?? $colors['default'];
 
     $btn =
         ($iconOnly
@@ -60,10 +72,8 @@
 <div class="group relative inline-flex">
     @if ($action)
         <form action="{{ $action }}" method="POST"
-            @if ($confirm)
-                data-confirm-text="{{ $confirm }}"
-                onsubmit="event.preventDefault(); var form = this; tConfirmation({ title: 'Confirm action', text: form.dataset.confirmText, confirmLabel: 'Confirm' }).then(function (ok) { if (ok) form.submit(); }); return false;"
-            @endif>
+            @if ($confirm) data-confirm-text="{{ $confirm }}"
+                onsubmit="event.preventDefault(); var form = this; tConfirmation({ title: 'Confirm action', text: form.dataset.confirmText, confirmLabel: 'Confirm' }).then(function (ok) { if (ok) form.submit(); }); return false;" @endif>
             @csrf
             @if (strtoupper($method) !== 'POST')
                 @method($method)
@@ -96,6 +106,6 @@
 
     @if ($iconOnly)
         <span role="tooltip"
-            class="pointer-events-none absolute -top-8 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded bg-slate-900 px-2 py-1 text-xs font-medium text-white dark:bg-slate-100 dark:text-slate-900 opacity-0 transition group-focus-within:opacity-100 group-hover:opacity-100">{{ $label }}</span>
+            class="pointer-events-none absolute -top-8 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded bg-slate-900 px-2 py-1 text-xs font-medium text-white opacity-0 transition group-focus-within:opacity-100 group-hover:opacity-100 dark:bg-slate-100 dark:text-slate-900">{{ $label }}</span>
     @endif
 </div>

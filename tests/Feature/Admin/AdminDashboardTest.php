@@ -71,7 +71,7 @@ class AdminDashboardTest extends TestCase
             'permissions' => ['permits.review', 'identity.review'],
         ]);
         $citizen = User::factory()->create(['role' => 'citizen']);
-        $request = ServiceRequest::factory()->create([
+        ServiceRequest::factory()->create([
             'user_id' => $citizen->id,
             'reference_number' => 'BRGY-WORKLOAD-0001',
             'status' => ServiceRequest::PENDING,
@@ -82,13 +82,15 @@ class AdminDashboardTest extends TestCase
             'status' => IdentityVerification::PENDING,
         ]);
 
-        $this->actingAs($staff)
-            ->get(route('admin.dashboard'))
-            ->assertOk()
+        $response = $this->actingAs($staff)->get(route('admin.dashboard'));
+
+        $response->assertOk()
             ->assertSee('My workload')
             ->assertSee('Requests awaiting action')
             ->assertSee('Identity reviews in queue')
-            ->assertSee('BRGY-WORKLOAD-0001')
-            ->assertSee('4 days');
+            ->assertSee('BRGY-WORKLOAD-0001');
+
+        // Whitespace-tolerant: matches "4 days" even if the markup wraps across lines.
+        $this->assertMatchesRegularExpression('/\b4\s+days\s+old\b/', $response->getContent());
     }
 }

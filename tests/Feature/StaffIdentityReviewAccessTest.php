@@ -74,7 +74,6 @@ class StaffIdentityReviewAccessTest extends TestCase
             ->assertViewHas('verifications', fn ($verifications): bool => $verifications->total() === 12)
             ->assertSee('data-table-key="identity-verifications"', false)
             ->assertSee('placeholder="Search citizen, email, or status"', false)
-            ->assertSee('Searching this page only.')
             ->assertSee('aria-label="Pagination"', false)
             ->assertDontSee('name="search"', false)
             ->assertDontSee('search=')

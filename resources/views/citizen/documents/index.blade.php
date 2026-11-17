@@ -42,7 +42,7 @@
                         <x-tables.detail side="full" class="text-center">
                             {{-- Desktop: compact icon buttons --}}
                             <div class="hidden flex-wrap items-center justify-center gap-2 sm:flex">
-                                <x-tables.action label="View" icon="eye" icon-only :href="route('citizen.applications.show', $document)" />
+                                <x-tables.action label="View" icon="file-search" icon-only :href="route('citizen.applications.show', $document)" />
 
                                 @if ($document->ticket)
                                     <x-tables.action label="Messages" icon="message" icon-only :href="route('citizen.tickets.show', $document)" />
@@ -55,7 +55,7 @@
 
                             {{-- Mobile: labeled buttons, easier to tap --}}
                             <div class="flex flex-wrap items-center justify-center gap-2 sm:hidden">
-                                <x-tables.action label="View" icon="eye" :href="route('citizen.applications.show', $document)" />
+                                <x-tables.action label="View" icon="file-search" :href="route('citizen.applications.show', $document)" />
 
                                 @if ($document->ticket)
                                     <x-tables.action label="Messages" icon="message" :href="route('citizen.tickets.show', $document)" />

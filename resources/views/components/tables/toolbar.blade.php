@@ -10,7 +10,6 @@
     'filters' => [],
     'search' => false,
     'searchPlaceholder' => 'Start searching...',
-    'searchHint' => 'Searching this page only.',
     'exportUrl' => null,
     'addLabel' => null,
     'addUrl' => null,
@@ -141,9 +140,6 @@
                         <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                     </button>
                 </div>
-                @if ($searchHint)
-                    <p class="mt-1 px-1 text-xs text-slate-500 dark:text-slate-400">{{ $searchHint }}</p>
-                @endif
             </div>
         @endif
 

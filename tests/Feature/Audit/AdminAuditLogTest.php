@@ -70,7 +70,7 @@ class AdminAuditLogTest extends TestCase
             ->assertSee('Unrelated Event')
             ->assertSee('data-table-key="audit-logs"', false)
             ->assertSee('placeholder="Search user, action, or record"', false)
-            ->assertSee('Searching this page only.')
+            
             ->assertSee('aria-label="Pagination"', false)
             ->assertDontSee('name="search"', false)
             ->assertDontSee('search=')

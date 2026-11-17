@@ -60,6 +60,6 @@ class AdminBlockchainLedgerTest extends TestCase
             ->assertSee('/tx/'.$txHash, false)
             ->assertSee('data-table-key="blockchain-ledger"', false)
             ->assertSee('placeholder="Search by transaction or permit number"', false)
-            ->assertSee('Searching this page only.');
+            ;
     }
 }
