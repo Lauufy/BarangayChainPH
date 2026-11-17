@@ -22,17 +22,21 @@
 <body
     class="bg-(--gray-50) text-(--gray-700) dark:bg-(--black-700) dark:text-(--gray-200) flex min-h-screen flex-col font-sans antialiased transition-colors duration-300">
     @php
+        // Null for guests (e.g. the public permit verification page)
         $user = auth()->user();
-        $photo = $user->citizenProfile?->photo_path;
+        $photo = $user?->citizenProfile?->photo_path;
 
-        $hideBell = request()->routeIs(
-            'permits.verify',
-            'citizen.applications.show',
-            'citizen.applications.print',
-            'citizen.certificate-of-indigency.preview',
-            'citizen.barangay-clearance.preview',
-            'citizen.certificate-of-residency.preview',
-        );
+        // Pages and guests that do not show the notification bell
+        $hideBell =
+            !$user ||
+            request()->routeIs(
+                'permits.verify',
+                'citizen.applications.show',
+                'citizen.applications.print',
+                'citizen.certificate-of-indigency.preview',
+                'citizen.barangay-clearance.preview',
+                'citizen.certificate-of-residency.preview',
+            );
         $notifications = $hideBell ? collect() : $user->notifications()->latest()->limit(10)->get();
         $unread = $hideBell ? 0 : $user->unreadNotifications()->count();
 
@@ -44,12 +48,13 @@
             ['citizen.documents', 'Documents', 'citizen.documents*'],
         ])->map(fn($l) => ['route' => $l[0], 'text' => $l[1], 'active' => request()->routeIs($l[2])]);
 
+        // Identity verification badge: text and colors
         [$badgeText, $badgeClass] = match (true) {
-            $user->isIdentityVerified() => [
+            (bool) $user?->isIdentityVerified() => [
                 'Verified',
                 'bg-[color-mix(in_srgb,var(--green-500)_18%,transparent)] text-(--green-700) dark:text-(--green-300)',
             ],
-            $user->identityStatus() === 'pending' => [
+            $user?->identityStatus() === 'pending' => [
                 'Pending',
                 'bg-[color-mix(in_srgb,var(--amber-500)_20%,transparent)] text-(--amber-500)',
             ],
@@ -86,14 +91,6 @@
         $navLink =
             'relative inline-flex items-center whitespace-nowrap py-3 text-sm font-medium text-(--gray-600) transition-colors after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:origin-left after:scale-x-0 after:bg-(--green-600) after:transition-transform hover:text-(--blue-700) hover:after:scale-x-100 focus-visible:text-(--blue-700) focus-visible:after:scale-x-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--blue-600) aria-[current=page]:font-semibold aria-[current=page]:text-(--blue-700) aria-[current=page]:after:scale-x-100 dark:text-(--gray-300) dark:hover:text-(--blue-300) dark:focus-visible:text-(--blue-300) dark:aria-[current=page]:text-(--blue-300)';
     @endphp
-
-    {{-- Government bar --}}
-    <div class="bg-(--blue-900) text-(--white) text-xs">
-        <div class="mx-auto flex h-9 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
-            <span class="text-(--blue-100) truncate">Republic of the Philippines</span>
-            <span class="text-(--blue-200) hidden sm:block">Barangay San Luis | Antipolo City, Rizal</span>
-        </div>
-    </div>
 
     {{-- Header --}}
     <header class="{{ $line }} bg-(--white) dark:bg-(--gray-900) sticky top-0 z-30 border-b">
@@ -197,77 +194,81 @@
                     </details>
                 @endunless
 
-                {{-- User menu --}}
-                <details id="user-menu" class="group relative shrink-0">
-                    <summary aria-label="Open user menu"
-                        class="{{ $hover }} flex cursor-pointer list-none items-center gap-3 rounded-lg p-1.5 [&::-webkit-details-marker]:hidden">
-                        <span class="hidden text-right lg:block">
+                {{-- User menu (logged-in users) or login link (guests) --}}
+                @if ($user)
+                    <details id="user-menu" class="group relative shrink-0">
+                        <summary aria-label="Open user menu"
+                            class="{{ $hover }} flex cursor-pointer list-none items-center gap-3 rounded-lg p-1.5 [&::-webkit-details-marker]:hidden">
+                            <span class="hidden text-right lg:block">
+                                <span
+                                    class="{{ $ink }} block max-w-40 truncate text-sm font-bold">{{ $user->name }}</span>
+                                <span class="{{ $muted }} block text-xs">Citizen</span>
+                            </span>
+
+                            @if ($photo)
+                                <img src="{{ route('citizen.profile.photo.show') }}" alt=""
+                                    class="hidden h-10 w-10 rounded-full object-cover lg:block">
+                            @else
+                                <span
+                                    class="bg-(--blue-600) text-(--white) hidden h-10 w-10 items-center justify-center rounded-full font-bold lg:flex">{{ strtoupper(substr($user->name, 0, 1)) }}</span>
+                            @endif
+
+                            {{-- Mobile menu icon --}}
                             <span
-                                class="{{ $ink }} block max-w-40 truncate text-sm font-bold">{{ $user->name }}</span>
-                            <span class="{{ $muted }} block text-xs">Citizen</span>
-                        </span>
+                                class="text-(--blue-700) dark:text-(--blue-300) bg-(--blue-50) dark:bg-(--gray-800) flex h-10 w-10 items-center justify-center rounded-md lg:hidden">
+                                <svg class="h-6 w-6 group-open:hidden" fill="none" stroke="currentColor"
+                                    stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16" />
+                                </svg>
+                                <svg class="hidden h-6 w-6 group-open:block" fill="none" stroke="currentColor"
+                                    stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" d="M6 6l12 12M18 6L6 18" />
+                                </svg>
+                            </span>
+                        </summary>
 
-                        @if ($photo)
-                            <img src="{{ route('citizen.profile.photo.show') }}" alt=""
-                                class="hidden h-10 w-10 rounded-full object-cover lg:block">
-                        @else
-                            <span
-                                class="bg-(--blue-600) text-(--white) hidden h-10 w-10 items-center justify-center rounded-full font-bold lg:flex">{{ strtoupper(substr($user->name, 0, 1)) }}</span>
-                        @endif
+                        <div class="{{ $panel }} absolute right-0 z-40 mt-2 w-72 max-w-[calc(100vw-2rem)] p-2">
+                            <div class="{{ $line }} mb-2 border-b px-3 pb-3 pt-2">
+                                <p class="{{ $ink }} truncate font-bold">{{ $user->name }}</p>
+                                <p class="{{ $muted }} truncate text-xs">{{ $user->email }}</p>
+                            </div>
 
-                        {{-- Mobile menu icon --}}
-                        <span
-                            class="text-(--blue-700) dark:text-(--blue-300) bg-(--blue-50) dark:bg-(--gray-800) flex h-10 w-10 items-center justify-center rounded-md lg:hidden">
-                            <svg class="h-6 w-6 group-open:hidden" fill="none" stroke="currentColor" stroke-width="2"
-                                viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16" />
-                            </svg>
-                            <svg class="hidden h-6 w-6 group-open:block" fill="none" stroke="currentColor"
-                                stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" d="M6 6l12 12M18 6L6 18" />
-                            </svg>
-                        </span>
-                    </summary>
+                            {{-- Mobile navigation --}}
+                            <nav aria-label="Mobile navigation"
+                                class="{{ $line }} mb-2 flex flex-col gap-1 border-b pb-2 lg:hidden">
+                                @foreach ($navLinks as $item)
+                                    <a href="{{ route($item['route']) }}" class="{{ $navLink }} w-full px-3 py-2.5"
+                                        @if ($item['active']) aria-current="page" @endif>{{ $item['text'] }}</a>
+                                @endforeach
+                            </nav>
 
-                    <div class="{{ $panel }} absolute right-0 z-40 mt-2 w-72 max-w-[calc(100vw-2rem)] p-2">
-                        <div class="{{ $line }} mb-2 border-b px-3 pb-3 pt-2">
-                            <p class="{{ $ink }} truncate font-bold">{{ $user->name }}</p>
-                            <p class="{{ $muted }} truncate text-xs">{{ $user->email }}</p>
+                            {{-- Theme toggle (phone only; on desktop it sits in the header) --}}
+                            <div class="flex items-center justify-between gap-2 px-3 py-1 text-sm lg:hidden">
+                                <span>Theme</span>
+                                <x-partials.theme-toggle />
+                            </div>
+
+                            <a href="{{ route('citizen.identity-verification') }}"
+                                class="{{ $hover }} flex items-center justify-between gap-2 rounded-md px-3 py-2.5 text-sm">
+                                <span>Identity verification</span>
+                                <span id="identity-status-badge" data-identity-status="{{ $user->identityStatus() }}"
+                                    class="{{ $badgeClass }} rounded-full px-2 py-0.5 text-xs font-bold">{{ $badgeText }}</span>
+                            </a>
+                            <a href="{{ route('citizen.profile') }}"
+                                class="{{ $hover }} block rounded-md px-3 py-2.5 text-sm">Account</a>
+
+                            <form method="POST" action="{{ route('logout') }}"
+                                class="{{ $line }} mt-2 border-t pt-2">
+                                @csrf
+                                <button
+                                    class="text-(--red-600) dark:text-(--red-500) w-full rounded-md px-3 py-2.5 text-left text-sm font-semibold hover:bg-[color-mix(in_srgb,var(--red-500)_12%,transparent)]">Sign
+                                    out</button>
+                            </form>
                         </div>
-
-                        {{-- Mobile navigation --}}
-                        <nav aria-label="Mobile navigation"
-                            class="{{ $line }} mb-2 flex flex-col gap-1 border-b pb-2 lg:hidden">
-                            @foreach ($navLinks as $item)
-                                <a href="{{ route($item['route']) }}" class="{{ $navLink }} w-full px-3 py-2.5"
-                                    @if ($item['active']) aria-current="page" @endif>{{ $item['text'] }}</a>
-                            @endforeach
-                        </nav>
-
-                        {{-- Theme toggle (phone only; on desktop it sits in the header) --}}
-                        <div class="flex items-center justify-between gap-2 px-3 py-1 text-sm lg:hidden">
-                            <span>Theme</span>
-                            <x-partials.theme-toggle />
-                        </div>
-
-                        <a href="{{ route('citizen.identity-verification') }}"
-                            class="{{ $hover }} flex items-center justify-between gap-2 rounded-md px-3 py-2.5 text-sm">
-                            <span>Identity verification</span>
-                            <span id="identity-status-badge" data-identity-status="{{ $user->identityStatus() }}"
-                                class="{{ $badgeClass }} rounded-full px-2 py-0.5 text-xs font-bold">{{ $badgeText }}</span>
-                        </a>
-                        <a href="{{ route('citizen.profile') }}"
-                            class="{{ $hover }} block rounded-md px-3 py-2.5 text-sm">My profile</a>
-
-                        <form method="POST" action="{{ route('logout') }}"
-                            class="{{ $line }} mt-2 border-t pt-2">
-                            @csrf
-                            <button
-                                class="text-(--red-600) dark:text-(--red-500) w-full rounded-md px-3 py-2.5 text-left text-sm font-semibold hover:bg-[color-mix(in_srgb,var(--red-500)_12%,transparent)]">Sign
-                                out</button>
-                        </form>
-                    </div>
-                </details>
+                    </details>
+                @else
+                    <a href="{{ route('login') }}" class="{{ $link }}">Sign in</a>
+                @endif
             </div>
         </div>
     </header>
@@ -277,7 +278,7 @@
         'mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8' => !View::hasSection(
             'flush'),
     ])>
-        <x:feedbacks.toast />
+        <x-feedbacks.toast />
 
         @yield('content')
     </main>
@@ -288,16 +289,25 @@
         @include('components.partials.section-footer')
     @endif
 
+    {{-- Reload when the browser restores this page from the back/forward cache --}}
+    <script>
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                window.location.reload();
+            }
+        });
+    </script>
 
     <script>
         const $ = (id) => document.getElementById(id);
         const bell = $('notification-menu');
         const menus = [$('user-menu'), bell].filter(Boolean);
 
-        // Opening the bell marks everything as read
+        // ---------- Opening the bell marks everything as read ----------
         bell?.addEventListener('toggle', async () => {
             const form = $('mark-all-form');
             if (!bell.open || !form) return;
+
             try {
                 const res = await fetch(form.action, {
                     method: 'POST',
@@ -309,6 +319,7 @@
                     credentials: 'same-origin',
                 });
                 if (!res.ok) throw new Error('Unable to mark notifications as read.');
+
                 $('notification-count')?.remove();
                 $('notification-subtitle').textContent = "You're all caught up.";
                 document.querySelectorAll('[data-unread-dot]').forEach((d) => d.remove());
@@ -318,13 +329,30 @@
             }
         });
 
-        // Refresh page content every 5s without a full reload
+        // ---------- Refresh page content every 5s without a full reload ----------
+        function swap(fresh, current) {
+            if (!fresh || !current) return;
+            // Do not replace the bell panel while the user is reading it
+            if (current.tagName === 'DETAILS' && current.open) return;
+
+            if (fresh.innerHTML !== current.innerHTML) {
+                current.innerHTML = fresh.innerHTML;
+
+                if (current.id === 'citizen-page-content') {
+                    document.dispatchEvent(new CustomEvent('citizen:content-swapped'));
+                }
+            }
+        }
+
+        function hasUnsavedInput() {
+            return [...document.querySelectorAll('form input, form textarea, form select')]
+                .some((f) => f.type === 'file' ? f.files.length : f.value !== f.defaultValue);
+        }
+
         setInterval(async () => {
             const editing = document.activeElement?.matches(
                 'input, textarea, select, [contenteditable="true"]');
-            const dirty = [...document.querySelectorAll('form input, form textarea, form select')]
-                .some((f) => f.type === 'file' ? f.files.length : f.value !== f.defaultValue);
-            if (document.hidden || editing || dirty) return;
+            if (document.hidden || editing || hasUnsavedInput()) return;
 
             try {
                 const res = await fetch(location.href, {
@@ -334,14 +362,17 @@
                     },
                     credentials: 'same-origin'
                 });
+
+                // Session ended (e.g. signed out in another tab): go to the login page
+                if (res.redirected) {
+                    location.reload();
+                    return;
+                }
                 if (!res.ok) throw new Error('Unable to synchronize the citizen page.');
+
                 const fresh = new DOMParser().parseFromString(await res.text(), 'text/html');
 
-                ['citizen-page-content', 'notification-menu'].forEach((id) => {
-                    const next = fresh.getElementById(id),
-                        cur = $(id);
-                    if (next && cur && next.innerHTML !== cur.innerHTML) cur.innerHTML = next.innerHTML;
-                });
+                ['citizen-page-content', 'notification-menu'].forEach((id) => swap(fresh.getElementById(id), $(id)));
 
                 const next = fresh.getElementById('identity-status-badge'),
                     badge = $('identity-status-badge');
@@ -355,12 +386,12 @@
             }
         }, 5000);
 
-        // Outside click closes menus; opening one closes the other
+        // ---------- Outside click closes menus; opening one closes the other ----------
         document.addEventListener('click', (e) => menus.forEach((m) => m.contains(e.target) || m.removeAttribute('open')));
         menus.forEach((m) => m.addEventListener('toggle', () => m.open && menus.forEach((o) => o !== m && o.removeAttribute(
             'open'))));
 
-        // Escape closes menus
+        // ---------- Escape closes menus ----------
         document.addEventListener('keydown', (e) => {
             if (e.key !== 'Escape') return;
             menus.filter((m) => m.open).forEach((m) => {

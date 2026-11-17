@@ -487,6 +487,15 @@
 
     <x-feedbacks.toast />
 
+    {{-- Reload when the browser restores this page from the back/forward cache --}}
+    <script>
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                window.location.reload();
+            }
+        });
+    </script>
+
     <script>
         const root = document.documentElement;
         const $ = (id) => document.getElementById(id);
@@ -551,6 +560,8 @@
             }
         });
 
+        // ---------- Refresh page content every 5s without a full reload ----------
+        // Comparable HTML of an element (chart canvases ignore their runtime size attributes)
         function signature(element) {
             const clone = element.cloneNode(true);
             clone.querySelectorAll('canvas').forEach((canvas) => {
@@ -561,6 +572,7 @@
             return clone.innerHTML;
         }
 
+        // Replace the current element's content when the fresh copy differs
         function swap(fresh, current) {
             if (!fresh || !current || current.open) return;
             if (signature(fresh) !== signature(current)) {
@@ -592,6 +604,12 @@
                     },
                     credentials: 'same-origin',
                 });
+
+                // Session ended (e.g. signed out in another tab): go to the login page
+                if (response.redirected) {
+                    location.reload();
+                    return;
+                }
                 if (!response.ok) throw new Error('Could not refresh the page.');
 
                 const fresh = new DOMParser().parseFromString(await response.text(), 'text/html');

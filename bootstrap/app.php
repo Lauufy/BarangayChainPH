@@ -1,16 +1,16 @@
 <?php
 
+use Illuminate\Foundation\Configuration\Exceptions;
 use App\Http\Middleware\EnsureIdentityVerified;
 use App\Http\Middleware\PermissionMiddleware;
 use App\Http\Middleware\RoleMiddleware;
 use Illuminate\Foundation\Application;
-use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
-        web: __DIR__.'/../routes/web.php',
-        commands: __DIR__.'/../routes/console.php',
+        web: __DIR__ . '/../routes/web.php',
+        commands: __DIR__ . '/../routes/console.php',
         health: '/up',
     )
     ->withMiddleware(function ($middleware): void {
@@ -22,7 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 : array_values(array_filter(array_map('trim', explode(',', $proxies)))),
         );
 
-        $middleware->redirectUsersTo(fn (Request $request) => match ($request->user()?->role) {
+        $middleware->redirectUsersTo(fn(Request $request) => match ($request->user()?->role) {
             'admin', 'staff' => route('admin.dashboard'),
             'citizen' => route('citizen.dashboard'),
             default => route('home'),
@@ -32,11 +32,12 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
             'identity.verified' => EnsureIdentityVerified::class,
+            'nocache' => \App\Http\Middleware\PreventBackHistory::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
+            fn(Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
     })
     ->create();
