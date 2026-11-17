@@ -52,6 +52,11 @@
         .dark #tConfirmation .tc-cancel:hover, [data-theme="dark"] #tConfirmation .tc-cancel:hover { background: var(--gray-600); }
         .dark #tConfirmation .tc-ok, [data-theme="dark"] #tConfirmation .tc-ok { background: var(--blue-500); }
         .dark #tConfirmation .tc-ok:hover, [data-theme="dark"] #tConfirmation .tc-ok:hover { background: var(--blue-400); }
+        #tConfirmation .tc-ok[data-variant="danger"] { background: var(--red-600); }
+        #tConfirmation .tc-ok[data-variant="danger"]:hover { filter: brightness(.9); }
+        #tConfirmation .tc-ok[data-variant="danger"]:focus-visible { outline-color: var(--red-500); }
+        .dark #tConfirmation .tc-ok[data-variant="danger"],
+        [data-theme="dark"] #tConfirmation .tc-ok[data-variant="danger"] { background: var(--red-500); }
     </style>
 
     <script>
@@ -65,6 +70,7 @@
             document.getElementById('tConfirmationText').textContent = o.text || '';
             ok.textContent = o.confirmLabel || 'Yes, delete';
             no.textContent = o.cancelLabel || 'Cancel';
+            ok.dataset.variant = o.confirmVariant || 'default';
 
             box.classList.remove('hidden');
             box.classList.add('flex');

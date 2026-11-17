@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Exports\UsersExport;
 use App\Http\Controllers\Controller;
+use App\Models\ServiceRequest;
 use App\Models\User;
 use App\Services\SupabaseStorage;
 use App\Support\Phone;
@@ -155,15 +156,15 @@ class UserController extends Controller
             'name', 'email', 'role', 'department', 'position', 'phone', 'office', 'date_hired', 'password', 'avatar',
         ]);
         $updateErrors = $errors?->getBag('updateUser');
-        $reopenId = $updateErrors?->any() ? (int) $request->session()->getOldInput('edit_user_id') : null;
-        $editOld = $reopenId ? $request->session()->getOldInput() : [];
+        $reopenId = $updateErrors?->any() ? (int) $request->old('edit_user_id') : null;
+        $editOld = $reopenId ? $request->old() : [];
         $permissionErrors = $errors?->getBag('updatePermissions');
         $permissionsReopenId = $permissionErrors?->any()
-            ? (int) $request->session()->getOldInput('permissions_user_id')
+            ? (int) $request->old('permissions_user_id')
             : null;
         $permissionList = config('permissions.list');
-        $oldPermissions = (array) $request->session()->getOldInput('permissions', []);
-        $permissionsUserId = $request->session()->getOldInput('permissions_user_id');
+        $oldPermissions = (array) $request->old('permissions', []);
+        $permissionsUserId = $request->old('permissions_user_id');
 
         return view('admin.users.index', compact(
             'all',
@@ -191,7 +192,6 @@ class UserController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-
         $request->merge(['phone' => Phone::normalize($request->input('phone')) ?? $request->input('phone')]);
 
         $validated = $request->validate([
@@ -265,12 +265,8 @@ class UserController extends Controller
     /**
      * Update an account (staff, admin or citizen).
      */
-    /**
-     * Update an account (staff, admin or citizen).
-     */
     public function update(Request $request, User $user): RedirectResponse
     {
-
         $request->merge(['phone' => Phone::normalize($request->input('phone')) ?? $request->input('phone')]);
 
         // Named error bag so the Edit popup (not the Create popup) reopens on errors.
@@ -425,43 +421,52 @@ class UserController extends Controller
     public function destroy(Request $request, User $user): RedirectResponse
     {
         if ($request->user()->is($user)) {
-            return redirect()
-                ->route('admin.users.index')
-                ->withErrors(['account' => 'You cannot delete your own account.']);
+            return back(fallback: route('admin.users.index'))
+                ->with('error', 'You cannot delete your own account.');
         }
 
         if ($user->role === 'admin' && $this->adminCount() <= 1) {
-            return redirect()
-                ->route('admin.users.index')
-                ->withErrors(['account' => 'The last administrator cannot be deleted.']);
+            return back(fallback: route('admin.users.index'))
+                ->with('error', 'The last administrator cannot be deleted.');
         }
 
         // Remember the photos before the profiles are deleted.
         $photos = [$user->employeeProfile?->photo_path, $user->citizenProfile?->photo_path];
 
         try {
-            DB::transaction(function () use ($user) {
+            $deleted = DB::transaction(function () use ($user): bool {
+                // Issued permits must stay available for QR verification and blockchain records.
+                if (ServiceRequest::query()
+                    ->where('user_id', $user->id)
+                    ->whereHas('issuedDocuments')
+                    ->exists()) {
+                    return false;
+                }
+
                 $user->employeeProfile()->delete();
                 $user->citizenProfile()->delete();
                 $user->delete();
+
+                return true;
             });
         } catch (QueryException $e) {
             report($e);
 
-            return redirect()
-                ->route('admin.users.index')
-                ->withErrors([
-                    'account' => 'This account still has related records (requests, tickets, etc.), so it cannot be deleted yet.',
-                ]);
+            return back(fallback: route('admin.users.index'))
+                ->with('error', 'This account still has related records (requests, tickets, etc.), so it cannot be deleted yet.');
+        }
+
+        if (! $deleted) {
+            return back(fallback: route('admin.users.index'))
+                ->with('error', 'This user has issued permits and cannot be deleted. Issued permits must be preserved for QR verification and blockchain records.');
         }
 
         foreach ($photos as $photo) {
             $this->avatars->delete($photo);
         }
 
-        return redirect()
-            ->route('admin.users.index')
-            ->with('success', 'The account was deleted successfully.');
+        return back(fallback: route('admin.users.index'))
+            ->with('success', 'User deleted successfully.');
     }
 
     public function permissions(User $user): RedirectResponse

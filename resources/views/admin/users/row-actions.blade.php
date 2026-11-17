@@ -9,6 +9,10 @@
         <x-tables.action label="Delete" icon="trash" variant="danger" icon-only
             :action="route('admin.users.destroy', $account)"
             method="DELETE"
-            confirm="Delete {{ $account->name }}? This cannot be undone." />
+            :confirm="'This will permanently delete '.$account->name.'. This cannot be undone.'"
+            confirm-title="Delete user?"
+            confirm-label="Delete"
+            cancel-label="Cancel"
+            confirm-variant="danger" />
     @endif
 </div>

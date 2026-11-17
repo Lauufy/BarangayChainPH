@@ -104,6 +104,11 @@
             showToast('error', @json(session('error')));
         @endif
 
+        {{-- Account errors (delete blocked, own account, last admin, etc.) are sent as validation errors --}}
+        @if ($errors->has('account') && $errors->first('account') !== session('error'))
+            showToast('error', @json($errors->first('account')));
+        @endif
+
         @if (session('warning'))
             showToast('warning', @json(session('warning')));
         @endif

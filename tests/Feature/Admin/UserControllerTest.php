@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Models\IssuedDocument;
+use App\Models\ServiceRequest;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
@@ -10,6 +12,102 @@ use Tests\TestCase;
 class UserControllerTest extends TestCase
 {
     use RefreshDatabase;
+
+    private const BLOCKED_DELETE_MESSAGE = 'This user has issued permits and cannot be deleted. Issued permits must be preserved for QR verification and blockchain records.';
+
+    public function test_user_with_issued_permits_cannot_be_deleted(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $citizen = User::factory()->create(['role' => 'citizen']);
+        $serviceRequest = ServiceRequest::factory()
+            ->for($citizen)
+            ->create(['status' => ServiceRequest::APPROVED]);
+        $issuedDocument = IssuedDocument::factory()->for($serviceRequest)->create();
+
+        $this->actingAs($admin)
+            ->followingRedirects()
+            ->delete(route('admin.users.destroy', $citizen))
+            ->assertOk()
+            ->assertSee("showToast('error',", false)
+            ->assertSee(self::BLOCKED_DELETE_MESSAGE, false)
+            ->assertDontSee('User deleted successfully.', false);
+
+        $this->assertDatabaseHas('users', ['id' => $citizen->id]);
+        $this->assertDatabaseHas('service_requests', ['id' => $serviceRequest->id]);
+        $this->assertDatabaseHas('issued_documents', ['id' => $issuedDocument->id]);
+    }
+
+    public function test_user_with_requests_without_issued_permits_can_be_deleted(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $citizen = User::factory()->create(['role' => 'citizen']);
+        $serviceRequest = ServiceRequest::factory()->for($citizen)->create();
+
+        $this->actingAs($admin)
+            ->delete(route('admin.users.destroy', $citizen))
+            ->assertRedirect(route('admin.users.index'))
+            ->assertSessionHas('success', 'User deleted successfully.');
+
+        $this->assertDatabaseMissing('users', ['id' => $citizen->id]);
+        $this->assertDatabaseMissing('service_requests', ['id' => $serviceRequest->id]);
+    }
+
+    public function test_successful_delete_shows_the_success_toast(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $citizen = User::factory()->create(['role' => 'citizen']);
+
+        $this->actingAs($admin)
+            ->followingRedirects()
+            ->delete(route('admin.users.destroy', $citizen))
+            ->assertOk()
+            ->assertSee("showToast('success',", false)
+            ->assertSee('User deleted successfully.', false);
+
+        $this->assertDatabaseMissing('users', ['id' => $citizen->id]);
+    }
+
+    public function test_admin_cannot_delete_their_own_account(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)
+            ->followingRedirects()
+            ->delete(route('admin.users.destroy', $admin))
+            ->assertOk()
+            ->assertSee("showToast('error',", false)
+            ->assertSee('You cannot delete your own account.', false);
+
+        $this->assertDatabaseHas('users', ['id' => $admin->id]);
+    }
+
+    public function test_staff_cannot_delete_users(): void
+    {
+        $staff = User::factory()->create(['role' => 'staff']);
+        $citizen = User::factory()->create(['role' => 'citizen']);
+
+        $this->actingAs($staff)
+            ->delete(route('admin.users.destroy', $citizen));
+
+        $this->assertDatabaseHas('users', ['id' => $citizen->id]);
+    }
+
+    public function test_user_delete_uses_confirmation_and_delete_form(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        User::factory()->create(['role' => 'citizen', 'name' => 'Alex Rivera']);
+
+        $this->actingAs($admin)
+            ->get(route('admin.users.index'))
+            ->assertOk()
+            ->assertSee('data-confirm-title="Delete user?"', false)
+            ->assertSee('data-confirm-text="This will permanently delete Alex Rivera. This cannot be undone."', false)
+            ->assertSee('data-confirm-label="Delete"', false)
+            ->assertSee('data-cancel-label="Cancel"', false)
+            ->assertSee('data-confirm-variant="danger"', false)
+            ->assertSee('name="_token"', false)
+            ->assertSee('name="_method" value="DELETE"', false);
+    }
 
     public function test_users_index_renders_each_tab_and_supplies_records_for_the_modals(): void
     {
@@ -61,7 +159,6 @@ class UserControllerTest extends TestCase
                 && $records->has($citizen->id))
             ->assertSee('data-table-key="users"', false)
             ->assertSee('placeholder="Start searching..."', false)
-            
             ->assertDontSee('search=')
             ->assertDontSee('search=no-match');
     }

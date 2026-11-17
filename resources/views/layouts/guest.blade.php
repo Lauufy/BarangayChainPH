@@ -22,6 +22,7 @@
 
 <body class="min-h-dvh bg-(--white) text-(--gray-900) antialiased transition-colors duration-300 dark:bg-(--black-700) dark:text-(--gray-50)">
 
+
     <div class="relative grid min-h-dvh grid-cols-1 items-stretch lg:grid-cols-2">
 
         {{-- Back navigation --}}

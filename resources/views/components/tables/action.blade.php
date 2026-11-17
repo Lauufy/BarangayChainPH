@@ -6,6 +6,10 @@
     'method' => 'POST',
     'variant' => 'default',
     'confirm' => null,
+    'confirmTitle' => 'Confirm action',
+    'confirmLabel' => 'Confirm',
+    'cancelLabel' => 'Cancel',
+    'confirmVariant' => 'default',
     'iconOnly' => false,
 ])
 
@@ -72,8 +76,14 @@
 <div class="group relative inline-flex">
     @if ($action)
         <form action="{{ $action }}" method="POST"
-            @if ($confirm) data-confirm-text="{{ $confirm }}"
-                onsubmit="event.preventDefault(); var form = this; tConfirmation({ title: 'Confirm action', text: form.dataset.confirmText, confirmLabel: 'Confirm' }).then(function (ok) { if (ok) form.submit(); }); return false;" @endif>
+            @if ($confirm)
+                data-confirm-title="{{ $confirmTitle }}"
+                data-confirm-text="{{ $confirm }}"
+                data-confirm-label="{{ $confirmLabel }}"
+                data-cancel-label="{{ $cancelLabel }}"
+                data-confirm-variant="{{ $confirmVariant }}"
+                onsubmit="event.preventDefault(); var form = this; tConfirmation({ title: form.dataset.confirmTitle, text: form.dataset.confirmText, confirmLabel: form.dataset.confirmLabel, cancelLabel: form.dataset.cancelLabel, confirmVariant: form.dataset.confirmVariant }).then(function (ok) { if (ok) form.submit(); }); return false;"
+            @endif>
             @csrf
             @if (strtoupper($method) !== 'POST')
                 @method($method)
