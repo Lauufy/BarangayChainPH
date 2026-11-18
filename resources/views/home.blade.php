@@ -18,6 +18,9 @@
     <title>BarangayChain PH — Barangay San Luis, Antipolo City</title>
     <link rel="icon" type="image/png" href="{{ asset('img/branding/barangaychain-lg1.png') }}">
 
+    <script>
+        document.documentElement.classList.add('js')
+    </script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
@@ -119,7 +122,7 @@
                 class="mx-auto grid max-w-7xl items-center gap-10 px-5 py-14 sm:px-8 sm:py-20 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12 lg:py-28">
 
                 {{-- Value proposition & primary actions --}}
-                <div class="relative z-10">
+                <div class="relative z-10" data-reveal-group="up">
 
                     <h1
                         class="mt-4 text-balance text-4xl font-bold leading-[1.06] tracking-tight sm:text-6xl xl:text-[4rem]">
@@ -149,7 +152,7 @@
                 </div>
 
                 {{-- Floating quick-action cards --}}
-                <div class="relative z-10 flex flex-col gap-3 lg:items-end">
+                <div class="relative z-10 flex flex-col gap-3 lg:items-end" data-reveal-group="right">
 
                     {{-- Card 1 --}}
                     <a href="{{ $dashboard ?? route('register') }}"
@@ -215,7 +218,7 @@
         <section
             class="bg-(--off-white) text-(--blue-700)/70 dark:bg-(--blue-850) dark:text-(--off-white)/70 border-(--blue-700)/10 border-b text-center dark:border-t dark:border-white/10">
             <div class="mx-auto max-w-7xl px-5 sm:px-8">
-                <dl class="grid grid-cols-2 sm:grid-cols-4 sm:py-6">
+                <dl class="grid grid-cols-2 sm:grid-cols-4 sm:py-6" data-reveal-group="up">
                     <div class="px-3 py-6 sm:px-6 sm:py-2">
                         <dt class="sm:text-1xl text-xl font-bold tracking-tight lg:text-2xl">SHA-256</dt>
                         <dd class="text-current/75 mt-1 text-balance text-xs font-medium">Cryptographic ledger proof
@@ -249,7 +252,7 @@
             <div class="mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-24">
                 <div class="grid gap-12 lg:grid-cols-2 lg:gap-16">
 
-                    <div>
+                    <div data-reveal="left">
                         <p
                             class="text-(--blue-700) dark:text-(--celadon-500) text-xs font-bold uppercase tracking-wider">
                             About BarangayChain PH</p>
@@ -264,7 +267,7 @@
                         </p>
                     </div>
 
-                    <div class="border-current/15 self-center border-b">
+                    <div class="border-current/15 self-center border-b" data-reveal-group="right">
                         <div class="border-current/15 grid gap-2 border-t py-6 sm:grid-cols-[12rem_1fr] sm:gap-8">
                             <h3 class="font-bold">Online requests</h3>
                             <p class="text-current/75 text-sm leading-6">
@@ -290,7 +293,7 @@
                 </div>
 
                 {{-- Mission & Vision --}}
-                <div class="mt-12 grid gap-4 md:grid-cols-2">
+                <div class="mt-12 grid gap-4 md:grid-cols-2" data-reveal-group="up">
                     <article
                         class="border-(--blue-700)/20 dark:border-(--celadon-500)/25 dark:bg-(--blue-870) dark:hover:border-(--celadon-500)/60 rounded-sm border bg-white p-6">
                         <p
@@ -323,7 +326,7 @@
         <section id="services"
             class="bg-(--blue-860) text-(--off-white) dark:bg-(--blue-870) dark:border-t dark:border-white/10">
             <div class="mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-24">
-                <div class="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+                <div class="flex flex-col justify-between gap-4 md:flex-row md:items-end" data-reveal="up">
                     <div class="max-w-2xl">
                         <p class="text-(--celadon-500) text-xs font-bold uppercase tracking-wider">e-Services
                         </p>
@@ -342,7 +345,7 @@
                     </div>
                 </div>
 
-                <div class="mt-10 grid gap-6 md:grid-cols-3">
+                <div class="mt-10 grid gap-6 md:grid-cols-3" data-reveal-group="up">
                     @foreach ([['Barangay Clearance', 'Official clearance for local employment, business permits, police/NBI clearance, and government transactions.', 'QR-verifiable', 'Valid Gov ID + Proof of San Luis Address'], ['Certificate of Residency', 'Official certification confirming your current residential address within Barangay San Luis, Antipolo City.', 'QR-verifiable', 'Valid Gov ID + Utility Bill or Lease'], ['Certificate of Indigency', 'Issued to qualified residents applying for medical, educational, burial, legal, or DSWD social assistance.', 'Free of charge', 'Valid Gov ID + Purpose Details']] as [$name, $text, $meta, $req])
                         <a href="{{ $dashboard ?? route('register') }}"
                             class="hover:border-(--celadon-500)/60 focus-visible:outline-(--celadon-500) group flex flex-col justify-between rounded-sm border border-white/15 bg-white/5 p-7 transition duration-300 hover:-translate-y-1 focus-visible:outline-2 focus-visible:outline-offset-2 motion-reduce:hover:translate-y-0">
@@ -377,15 +380,15 @@
         <section id="process"
             class="bg-(--off-white) text-(--blue-700) dark:bg-(--blue-850) dark:text-(--off-white) dark:border-t dark:border-white/10">
             <div class="mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-24">
-                <div class="mx-auto max-w-2xl text-center">
+                <div class="mx-auto max-w-2xl text-center" data-reveal="up">
                     <p class="text-(--blue-700) dark:text-(--celadon-500) text-xs font-bold uppercase tracking-wider">
                         Step-by-Step Guide</p>
                     <h2 class="mt-3 text-balance text-3xl font-bold leading-[1.1] tracking-tight sm:text-5xl">From
                         application to verified document.</h2>
                 </div>
 
-                <ol class="relative mx-auto mt-14 max-w-3xl">
-                    <span aria-hidden="true"
+                <ol class="relative mx-auto mt-14 max-w-3xl" data-reveal-group="up">
+                    <span aria-hidden="true" data-reveal="fade"
                         class="border-(--celadon-500)/60 absolute inset-y-0 left-2 border-l border-dashed md:left-1/2"></span>
 
                     @foreach ([['Create an account', 'Sign up with your email and basic Barangay San Luis resident profile.'], ['Verify your identity', 'Upload a clear photo of a valid government ID for one-time staff verification.'], ['Submit a request', 'Select your certificate, state your purpose, and track review progress in real time.'], ['Claim & verify anytime', 'Receive your approved certificate stamped with a unique QR code and SHA-256 ledger hash.']] as [$name, $text])
@@ -403,7 +406,7 @@
                     @endforeach
                 </ol>
 
-                <div class="mt-12 text-center">
+                <div class="mt-12 text-center" data-reveal="up">
                     <a href="{{ $dashboard ?? route('register') }}"
                         class="bg-(--blue-700) text-(--off-white) hover:bg-(--celadon-500) hover:text-(--blue-850) dark:bg-(--celadon-500) dark:text-(--blue-850) focus-visible:outline-(--blue-700) dark:focus-visible:outline-(--celadon-500) inline-flex items-center rounded-sm px-5 py-3 text-sm font-semibold transition hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 motion-reduce:hover:translate-y-0 dark:hover:bg-white">
                         {{ $dashboard ?? null ? 'Go to your dashboard' : 'Create free resident account' }}
@@ -417,7 +420,7 @@
             class="bg-(--blue-860) text-(--off-white) dark:bg-(--blue-870) dark:border-t dark:border-white/10">
             <div class="mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-24">
                 <div class="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-                    <div>
+                    <div data-reveal="left">
                         <p class="text-(--celadon-500) text-xs font-bold uppercase tracking-wider">Public Verification
                             Portal</p>
 
@@ -458,7 +461,8 @@
                         </p>
                     </div>
 
-                    <figure class="bg-(--blue-900) rounded-xl p-3 shadow-2xl ring-1 ring-white/15">
+                    <figure class="bg-(--blue-900) rounded-xl p-3 shadow-2xl ring-1 ring-white/15"
+                        data-reveal="right">
                         <div
                             class="mb-2.5 flex items-center justify-between border-b border-white/10 px-2 pb-2 text-xs">
                             <span class="font-semibold">Sample Verification Output</span>
@@ -479,7 +483,8 @@
                 </div>
 
                 {{-- Trust points --}}
-                <dl class="mt-12 grid gap-y-8 border-t border-white/15 pt-8 text-center sm:grid-cols-3">
+                <dl class="mt-12 grid gap-y-8 border-t border-white/15 pt-8 text-center sm:grid-cols-3"
+                    data-reveal-group="up">
                     <div class="sm:px-8">
                         <dt class="text-xl font-bold tracking-tight sm:text-2xl">Anti-Counterfeit QR Seal</dt>
                         <dd class="text-(--off-white)/75 mt-2 text-xs font-medium leading-5">
@@ -510,7 +515,7 @@
         @if (filled($announcements ?? []))
             <section id="announcements" class="bg-(--blue-850) text-(--off-white) dark:border-t dark:border-white/10">
                 <div class="mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-24">
-                    <div class="flex flex-wrap items-end justify-between gap-4">
+                    <div class="flex flex-wrap items-end justify-between gap-4" data-reveal="up">
                         <div class="max-w-xl">
                             <p class="text-(--celadon-500) text-xs font-bold uppercase tracking-wider">Community
                                 Advisories
@@ -525,7 +530,7 @@
                         </a>
                     </div>
 
-                    <div class="mt-10 grid gap-6 md:grid-cols-3">
+                    <div class="mt-10 grid gap-6 md:grid-cols-3" data-reveal-group="up">
                         @foreach (collect($announcements)->take(3) as $item)
                             <article
                                 class="hover:border-(--celadon-500)/60 flex flex-col rounded-sm border border-white/15 bg-white/5 p-7">
@@ -558,7 +563,7 @@
             class="bg-(--off-white) text-(--blue-700) dark:bg-(--blue-850) dark:text-(--off-white) border-(--blue-700)/10 border-t dark:border-t dark:border-white/10">
             <div
                 class="mx-auto grid max-w-7xl gap-10 px-5 py-12 sm:px-8 sm:py-24 lg:grid-cols-[0.85fr_1.15fr] lg:gap-20">
-                <div class="lg:sticky lg:top-28 lg:self-start">
+                <div class="lg:sticky lg:top-28 lg:self-start" data-reveal="left">
                     <p class="text-(--blue-700) dark:text-(--celadon-500) text-xs font-bold uppercase tracking-wider">
                         Citizen Help Desk</p>
                     <h2 class="mt-3 text-balance text-3xl font-bold leading-[1.1] tracking-tight sm:text-5xl">
@@ -573,7 +578,7 @@
                     </p>
                 </div>
 
-                <div class="divide-current/15 border-current/15 divide-y border-y">
+                <div class="divide-current/15 border-current/15 divide-y border-y" data-reveal-group="up">
                     @foreach ([
         ['How does blockchain make my barangay permit more secure?', 'When Barangay San Luis approves your certificate, the system generates a unique cryptographic hash (digital fingerprint) linked to your document. If anyone alters the text or date on the document, scanning its QR code will immediately flag it as invalid.'],
         ['What do I need before applying online?', 'You need an active email address, accurate personal details, and a clear photo of a valid government-issued ID showing your Barangay San Luis, Antipolo City address.'],
@@ -581,7 +586,7 @@
         ['Do I need an account to verify a QR code?', 'No. Anyone receiving a BarangayChain PH certificate can scan the QR code or enter its reference number on this page to verify its authenticity instantly without signing in.'],
         ['How are fees and processing times handled?', 'Certificate fees (if applicable) and processing schedules follow official Barangay San Luis ordinances. Certificates of Indigency for qualified residents are issued free of charge.'],
     ] as [$question, $answer])
-                        <details class="group" @open($loop->first)>
+                        <details class="group" {{ $loop->first ? 'open' : '' }}>
                             <summary
                                 class="hover:text-(--blue-500) dark:hover:text-(--celadon-500) focus-visible:outline-(--blue-700) dark:focus-visible:outline-(--celadon-500) flex cursor-pointer list-none items-center justify-between gap-4 py-6 text-lg font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
                                 {{ $question }}
@@ -603,7 +608,7 @@
         <section id="contact"
             class="bg-(--blue-860) text-(--off-white) dark:bg-(--blue-870) dark:border-t dark:border-white/10">
             <div class="mx-auto grid max-w-7xl gap-12 px-5 py-12 sm:px-8 sm:py-24 lg:grid-cols-2 lg:gap-16">
-                <div class="min-w-0">
+                <div class="min-w-0" data-reveal="left">
                     <p class="text-(--celadon-500) text-xs font-bold uppercase tracking-wider">Barangay Hall Directory
                     </p>
                     <h2 class="mt-3 text-balance text-3xl font-bold leading-[1.1] tracking-tight sm:text-5xl">
@@ -649,7 +654,7 @@
                 </div>
 
                 {{-- Contact form (stretches to match the left column) --}}
-                <form method="POST" action="{{ url('/contact') }}"
+                <form method="POST" action="{{ url('/contact') }}" data-reveal="right"
                     class="bg-(--blue-860) flex h-full min-w-0 flex-col rounded-sm border border-white/10 p-6 sm:p-8">
                     @csrf
                     <h3 class="text-xl font-semibold">Send us a message</h3>
@@ -729,7 +734,7 @@
 
             {{-- Map card --}}
             <div class="mx-auto max-w-7xl px-5 pb-16 sm:px-8 sm:pb-24">
-                <div class="relative rounded-xl border border-white/10 bg-white/5 p-2">
+                <div class="relative rounded-xl border border-white/10 bg-white/5 p-2" data-reveal="zoom">
                     <iframe title="Map of Barangay San Luis, Antipolo City" loading="lazy"
                         class="h-80 w-full rounded-lg sm:h-96"
                         src="https://www.google.com/maps?q=Barangay+San+Luis+Antipolo+City+Rizal&output=embed"></iframe>
@@ -793,6 +798,40 @@
                 if (target) spy.observe(target);
             });
         }
+
+        // Scroll-reveal animations
+        (() => {
+            const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            // Groups: children inherit the animation type and get a staggered delay
+            document.querySelectorAll('[data-reveal-group]').forEach((group) => {
+                const type = group.dataset.revealGroup || 'up';
+                [...group.children].forEach((child, i) => {
+                    child.dataset.reveal ||= type;
+                    child.style.setProperty('--reveal-delay', `${i * 90}ms`);
+                });
+            });
+
+            const targets = document.querySelectorAll('[data-reveal]');
+
+            if (reduce || !('IntersectionObserver' in window)) {
+                targets.forEach((el) => el.classList.add('is-visible'));
+                return;
+            }
+
+            const io = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (!entry.isIntersecting) return;
+                    entry.target.classList.add('is-visible');
+                    io.unobserve(entry.target);
+                });
+            }, {
+                threshold: 0.12,
+                rootMargin: '0px 0px -8% 0px'
+            });
+
+            targets.forEach((el) => io.observe(el));
+        })();
     </script>
 
     <script src="https://www.tuqlas.com/chatbot.js" data-key="tq_live_b008f3e486ad59592451ce7d324b4c54c94ccd3a"

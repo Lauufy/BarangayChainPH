@@ -107,3 +107,30 @@
         filter: brightness(1.15);
     }
 }
+
+
+@keyframes reveal-up    { from { opacity: 0; transform: translateY(2rem); } }
+@keyframes reveal-left  { from { opacity: 0; transform: translateX(-2rem); } }
+@keyframes reveal-right { from { opacity: 0; transform: translateX(2rem); } }
+@keyframes reveal-zoom  { from { opacity: 0; transform: scale(.96); } }
+@keyframes reveal-fade  { from { opacity: 0; } }
+
+@media (prefers-reduced-motion: no-preference) {
+    /* Hidden only when JS is running, so no-JS users still see everything */
+    .js [data-reveal]:not(.is-visible) {
+        opacity: 0;
+    }
+
+    .js [data-reveal].is-visible {
+        animation-duration: .8s;
+        animation-timing-function: cubic-bezier(.22, 1, .36, 1);
+        animation-delay: var(--reveal-delay, 0ms);
+        animation-fill-mode: backwards;
+    }
+
+    .js [data-reveal="up"].is-visible    { animation-name: reveal-up; }
+    .js [data-reveal="left"].is-visible  { animation-name: reveal-left; }
+    .js [data-reveal="right"].is-visible { animation-name: reveal-right; }
+    .js [data-reveal="zoom"].is-visible  { animation-name: reveal-zoom; }
+    .js [data-reveal="fade"].is-visible  { animation-name: reveal-fade; }
+}
