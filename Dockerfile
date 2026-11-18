@@ -1,3 +1,4 @@
+
 # Stage 1: Build frontend assets
 FROM node:24-alpine AS frontend
 
@@ -12,7 +13,8 @@ COPY public ./public
 
 RUN npm run build
 
-# Stage: packages for the blockchain script (production packages only)
+
+# Stage 2: Install blockchain production dependencies
 FROM node:22-slim AS blockchain
 
 WORKDIR /blockchain
@@ -20,22 +22,30 @@ WORKDIR /blockchain
 COPY blockchain/package.json blockchain/package-lock.json ./
 RUN npm ci --omit=dev
 
-# Stage 2: Build Laravel application
+
+# Stage 3: Build Laravel application
 FROM php:8.4.27-apache
 
-RUN apt-get update && apt-get install -y \
+ENV APACHE_DOCUMENT_ROOT=/var/www/html/public \
+    COMPOSER_ALLOW_SUPERUSER=1 \
+    TESSERACT_PATH=/usr/bin/tesseract
+
+# Install system dependencies, OCR engine and PHP extensions
+RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     unzip \
+    curl \
+    ca-certificates \
     tesseract-ocr \
+    tesseract-ocr-eng \
     libpq-dev \
     libzip-dev \
     libpng-dev \
     libjpeg62-turbo-dev \
     libfreetype6-dev \
     libonig-dev \
-    curl \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install \
+    && docker-php-ext-install -j"$(nproc)" \
         pdo_pgsql \
         mbstring \
         bcmath \
@@ -43,16 +53,16 @@ RUN apt-get update && apt-get install -y \
         zip \
         opcache \
     && a2enmod rewrite headers \
+    && tesseract --version \
+    && tesseract --list-langs \
+    && test -x /usr/bin/tesseract \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
 
 # PHP security hardening
 RUN printf '%s\n' \
     'session.upload_progress.enabled = Off' \
-    > /usr/local/etc/php/conf.d/zz-security.ini
-
-# Production PHP configuration
-RUN printf '%s\n' \
     'expose_php = Off' \
     'display_errors = Off' \
     'log_errors = On' \
@@ -61,7 +71,8 @@ RUN printf '%s\n' \
     'session.cookie_samesite = Lax' \
     > /usr/local/etc/php/conf.d/zz-production.ini
 
-# OPcache tuning for production
+
+# OPcache production settings
 RUN printf '%s\n' \
     'opcache.enable = 1' \
     'opcache.memory_consumption = 128' \
@@ -69,19 +80,25 @@ RUN printf '%s\n' \
     'opcache.validate_timestamps = 0' \
     > /usr/local/etc/php/conf.d/zz-opcache.ini
 
+
+# Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# Copy application source
+
+# Copy Laravel application
 COPY . .
 
-# Node and packages for the blockchain script
+
+# Copy blockchain runtime and dependencies
 COPY --from=blockchain /usr/local/bin/node /usr/local/bin/node
 COPY --from=blockchain /blockchain/node_modules ./blockchain/node_modules
 
+
 # Copy compiled frontend assets
 COPY --from=frontend /app/public/build ./public/build
+
 
 # Install production dependencies and prepare Laravel directories
 RUN composer install \
@@ -91,16 +108,20 @@ RUN composer install \
     --no-interaction \
     --no-progress \
     && mkdir -p \
-        storage/framework/cache \
+        storage/framework/cache/data \
         storage/framework/sessions \
         storage/framework/views \
         storage/logs \
         bootstrap/cache \
-    && chown -R www-data:www-data storage bootstrap/cache
+    && chown -R www-data:www-data \
+        storage \
+        bootstrap/cache \
+    && chmod -R ug+rwX \
+        storage \
+        bootstrap/cache
 
-# Configure Apache to serve Laravel's public directory
-ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 
+# Configure Apache document root
 RUN sed -ri 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
         /etc/apache2/sites-available/*.conf \
         /etc/apache2/apache2.conf \
@@ -119,8 +140,8 @@ RUN sed -ri 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
         > /etc/apache2/conf-available/server-basics.conf \
     && a2enconf laravel server-basics
 
+
 # Render startup script
-# Uploads are stored in Supabase Storage, so no local disk handling is needed.
 RUN printf '%s\n' \
     '#!/bin/sh' \
     'set -eu' \
@@ -132,6 +153,7 @@ RUN printf '%s\n' \
     'exec apache2-foreground' \
     > /usr/local/bin/start-render.sh \
     && chmod +x /usr/local/bin/start-render.sh
+
 
 EXPOSE 10000
 

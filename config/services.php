@@ -51,4 +51,8 @@ return [
         'device' => env('TEXTBEE_DEVICE_ID'),
     ],
 
+    'tesseract' => [
+        'path' => env('TESSERACT_PATH', '/usr/bin/tesseract'),
+    ],
+
 ];
