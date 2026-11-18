@@ -20,7 +20,7 @@
 
             <x-feedbacks.form-errors />
 
-            <div class="rounded-md border border-(--gray-200) bg-(--white) p-4 shadow-sm dark:border-(--gray-700) dark:bg-(--gray-800) sm:p-5">
+            <div class="rounded-md border border-(--gray-200) bg-(--white) p-4 shadow-sm dark:border-(--gray-700) dark:bg-(--blue-850)/80 sm:p-5">
                 <form method="POST"
                     action="{{ route($isSmsReset ? 'password.sms.update' : 'password.update') }}"
                     class="space-y-4">

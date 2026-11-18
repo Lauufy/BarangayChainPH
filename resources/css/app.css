@@ -1,11 +1,5 @@
 /* ---------- Fonts (installed with npm) ---------- */
-/* Inter: body, forms, labels */
-@import '@fontsource-variable/inter';
-
-/* Barlow: logo and headings */
-@import '@fontsource/barlow/600.css';
-@import '@fontsource/barlow/700.css';
-@import '@fontsource/barlow/800.css';
+@import './font.css';
 
 @import 'tailwindcss';
 @import './theme.css';
@@ -40,15 +34,8 @@
     --color-line-strong: var(--border-strong);
 }
 
-@theme {
-    --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-    --font-brand: "Barlow", "Inter", sans-serif;
-    --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
-}
-
 /* ---------- Base ---------- */
 @layer base {
-    /* Light theme (default) */
     :root {
         color-scheme: light;
         --scroll-track: transparent;
@@ -56,7 +43,6 @@
         --scroll-thumb-hover: #94a3b8;
     }
 
-    /* Dark theme */
     :root.dark,
     :root[data-theme='dark'] {
         color-scheme: dark;

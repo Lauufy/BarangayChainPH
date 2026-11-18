@@ -1,10 +1,12 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="scroll-pt-24 scroll-smooth motion-reduce:scroll-auto">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="theme-color" content="#173266" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#070b24" media="(prefers-color-scheme: dark)">
     <title>@yield('title', 'Citizen Portal') | Barangay San Luis</title>
     <link rel="icon" type="image/png" href="{{ asset('img/branding/barangaychain-lg1.png') }}">
 
@@ -20,7 +22,7 @@
 </head>
 
 <body
-    class="bg-(--gray-50) text-(--gray-700) dark:bg-(--black-700) dark:text-(--gray-200) flex min-h-screen flex-col font-sans antialiased transition-colors duration-300">
+    class="text-(--blue-700) dark:bg-(--blue-850) bg-(--off-white) dark:text-(--off-white) flex min-h-screen flex-col overflow-x-clip font-sans antialiased transition-colors duration-300">
     @php
         // Null for guests (e.g. the public permit verification page)
         $user = auth()->user();
@@ -80,46 +82,58 @@
             ],
         ];
 
-        // Shared class strings
-        $ink = 'text-(--gray-900) dark:text-(--gray-50)';
-        $muted = 'text-(--gray-500) dark:text-(--gray-400)';
-        $line = 'border-(--gray-200) dark:border-(--gray-700)';
-        $hover = 'hover:bg-(--gray-100) dark:hover:bg-(--gray-700)';
-        $link = 'text-sm font-semibold text-(--blue-700) underline dark:text-(--blue-300)';
+        // Shared class strings (same tokens as the landing page)
+        $ink = 'text-(--blue-700) dark:text-(--off-white)';
+        $muted = 'text-(--blue-700)/70 dark:text-(--off-white)/70';
+        $line = 'border-(--blue-700)/10 dark:border-white/10';
+        $hover = 'hover:bg-(--blue-700)/10 dark:hover:bg-white/10';
+        $focus =
+            'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--blue-700) dark:focus-visible:outline-(--celadon-500)';
+        $link = "{$focus} rounded-sm text-sm font-semibold text-(--blue-700) underline underline-offset-4 dark:text-(--celadon-500)";
         $panel =
-            'rounded-xl border border-(--gray-200) bg-(--white) shadow-xl dark:border-(--gray-700) dark:bg-(--gray-800)';
-        $navLink =
-            'relative inline-flex items-center whitespace-nowrap py-3 text-sm font-medium text-(--gray-600) transition-colors after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:origin-left after:scale-x-0 after:bg-(--green-600) after:transition-transform hover:text-(--blue-700) hover:after:scale-x-100 focus-visible:text-(--blue-700) focus-visible:after:scale-x-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--blue-600) aria-[current=page]:font-semibold aria-[current=page]:text-(--blue-700) aria-[current=page]:after:scale-x-100 dark:text-(--gray-300) dark:hover:text-(--blue-300) dark:focus-visible:text-(--blue-300) dark:aria-[current=page]:text-(--blue-300)';
+            'rounded-xl border border-(--blue-700)/95 bg-white shadow-xl dark:border-white/15 dark:bg-(--blue-850)/97';
+
+        // Desktop nav link: underline grows from the left on hover and for the current page
+        $navLink = "{$focus} relative whitespace-nowrap rounded-sm py-1 text-sm font-medium transition-colors after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:origin-left after:scale-x-0 after:bg-current after:transition-transform hover:after:scale-x-100 aria-[current=page]:font-semibold aria-[current=page]:after:scale-x-100 dark:after:bg-(--celadon-500)";
+
+        // Mobile nav link: tinted row instead of an underline
+        $mobileLink = "{$focus} {$hover} block w-full rounded-sm px-3 py-2.5 text-sm font-medium aria-[current=page]:bg-(--blue-700)/10 aria-[current=page]:font-semibold dark:aria-[current=page]:bg-white/10";
     @endphp
 
+    <a href="#citizen-page-content"
+        class="text-(--blue-700) focus:z-60 sr-only rounded-sm bg-white px-4 py-2 text-sm font-semibold focus:not-sr-only focus:fixed focus:left-4 focus:top-4">
+        Skip to main content
+    </a>
+
     {{-- Header --}}
-    <header class="{{ $line }} bg-(--white) dark:bg-(--gray-900) sticky top-0 z-30 border-b">
-        <div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+    <header
+        class="border-(--blue-700)/10 text-(--blue-700) dark:bg-(--blue-850)/96 bg-white/96 dark:text-(--off-white) sticky top-0 z-50 border-b backdrop-blur-md dark:border-white/10">
+        <div class="mx-auto flex max-w-7xl items-center justify-between gap-6 px-5 py-3.5 sm:px-8">
             <x-partials.logo />
 
             {{-- Desktop navigation --}}
-            <nav aria-label="Main navigation" class="hidden items-center gap-5 lg:flex">
+            <nav aria-label="Main navigation" class="hidden items-center gap-6 lg:flex">
                 @foreach ($navLinks as $item)
                     <a href="{{ route($item['route']) }}" class="{{ $navLink }}"
                         @if ($item['active']) aria-current="page" @endif>{{ $item['text'] }}</a>
                 @endforeach
             </nav>
 
-            <div class="flex shrink-0 items-center gap-1 sm:gap-2">
+            <div class="flex shrink-0 items-center gap-1 sm:gap-3">
                 <div class="hidden lg:block"><x-partials.theme-toggle /></div>
 
                 {{-- Notification bell --}}
                 @unless ($hideBell)
                     <details id="notification-menu" class="sm:relative">
                         <summary aria-label="Open notifications"
-                            class="{{ $hover }} text-(--gray-600) dark:text-(--gray-300) relative flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-full [&::-webkit-details-marker]:hidden">
+                            class="{{ $hover }} {{ $focus }} relative flex size-11 cursor-pointer list-none items-center justify-center rounded-sm [&::-webkit-details-marker]:hidden">
                             <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"
                                 aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="{{ $notifStyles['info'][1] }}" />
                             </svg>
                             @if ($unread > 0)
                                 <span id="notification-count"
-                                    class="bg-(--red-600) text-(--white) absolute right-0 top-0 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-bold leading-none">{{ $unread > 9 ? '9+' : $unread }}</span>
+                                    class="bg-(--red-600) text-(--white) absolute right-0.5 top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-bold leading-none">{{ $unread > 9 ? '9+' : $unread }}</span>
                             @endif
                         </summary>
 
@@ -138,14 +152,14 @@
                                     <div class="relative pb-5 last:pb-0">
                                         @unless ($loop->last)
                                             <span
-                                                class="bg-(--gray-200) dark:bg-(--gray-700) left-4.5 absolute bottom-1 top-10 w-px -translate-x-1/2"
+                                                class="bg-(--blue-700)/15 left-4.5 absolute bottom-1 top-10 w-px -translate-x-1/2 dark:bg-white/15"
                                                 aria-hidden="true"></span>
                                         @endunless
 
                                         <form method="POST" action="{{ route('citizen.notifications.read', $n->id) }}">
                                             @csrf
                                             <button type="submit"
-                                                class="group/item flex w-full items-start gap-3 text-left">
+                                                class="{{ $focus }} group/item flex w-full items-start gap-3 rounded-sm text-left">
                                                 <span
                                                     class="{{ $color }} flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
                                                     <svg class="h-4.5 w-4.5" fill="none" stroke="currentColor"
@@ -161,7 +175,7 @@
                                                             {{ $n->data['title'] ?? 'Notification' }}
                                                             @if ($n->read_at === null)
                                                                 <span data-unread-dot
-                                                                    class="bg-(--blue-600) dark:bg-(--blue-300) ml-1 inline-block h-2 w-2 rounded-full align-middle"><span
+                                                                    class="bg-(--blue-700) dark:bg-(--celadon-500) ml-1 inline-block h-2 w-2 rounded-full align-middle"><span
                                                                         class="sr-only">Unread</span></span>
                                                             @endif
                                                         </span>
@@ -198,7 +212,7 @@
                 @if ($user)
                     <details id="user-menu" class="group relative shrink-0">
                         <summary aria-label="Open user menu"
-                            class="{{ $hover }} flex cursor-pointer list-none items-center gap-3 rounded-lg p-1.5 [&::-webkit-details-marker]:hidden">
+                            class="{{ $hover }} {{ $focus }} flex cursor-pointer list-none items-center gap-3 rounded-sm p-1.5 [&::-webkit-details-marker]:hidden">
                             <span class="hidden text-right lg:block">
                                 <span
                                     class="{{ $ink }} block max-w-40 truncate text-sm font-bold">{{ $user->name }}</span>
@@ -210,12 +224,11 @@
                                     class="hidden h-10 w-10 rounded-full object-cover lg:block">
                             @else
                                 <span
-                                    class="bg-(--blue-600) text-(--white) hidden h-10 w-10 items-center justify-center rounded-full font-bold lg:flex">{{ strtoupper(substr($user->name, 0, 1)) }}</span>
+                                    class="bg-(--blue-700) text-(--off-white) dark:bg-(--celadon-500) dark:text-(--blue-850) hidden h-10 w-10 items-center justify-center rounded-full font-bold lg:flex">{{ strtoupper(substr($user->name, 0, 1)) }}</span>
                             @endif
 
                             {{-- Mobile menu icon --}}
-                            <span
-                                class="text-(--blue-700) dark:text-(--blue-300) bg-(--blue-50) dark:bg-(--gray-800) flex h-10 w-10 items-center justify-center rounded-md lg:hidden">
+                            <span class="grid size-8 place-items-center lg:hidden">
                                 <svg class="h-6 w-6 group-open:hidden" fill="none" stroke="currentColor"
                                     stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
                                     <path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16" />
@@ -237,7 +250,7 @@
                             <nav aria-label="Mobile navigation"
                                 class="{{ $line }} mb-2 flex flex-col gap-1 border-b pb-2 lg:hidden">
                                 @foreach ($navLinks as $item)
-                                    <a href="{{ route($item['route']) }}" class="{{ $navLink }} w-full px-3 py-2.5"
+                                    <a href="{{ route($item['route']) }}" class="{{ $mobileLink }}"
                                         @if ($item['active']) aria-current="page" @endif>{{ $item['text'] }}</a>
                                 @endforeach
                             </nav>
@@ -249,25 +262,26 @@
                             </div>
 
                             <a href="{{ route('citizen.identity-verification') }}"
-                                class="{{ $hover }} flex items-center justify-between gap-2 rounded-md px-3 py-2.5 text-sm">
+                                class="{{ $hover }} {{ $focus }} flex items-center justify-between gap-2 rounded-sm px-3 py-2.5 text-sm">
                                 <span>Identity verification</span>
                                 <span id="identity-status-badge" data-identity-status="{{ $user->identityStatus() }}"
                                     class="{{ $badgeClass }} rounded-full px-2 py-0.5 text-xs font-bold">{{ $badgeText }}</span>
                             </a>
                             <a href="{{ route('citizen.profile') }}"
-                                class="{{ $hover }} block rounded-md px-3 py-2.5 text-sm">Account</a>
+                                class="{{ $hover }} {{ $focus }} block rounded-sm px-3 py-2.5 text-sm">Account</a>
 
                             <form method="POST" action="{{ route('logout') }}"
                                 class="{{ $line }} mt-2 border-t pt-2">
                                 @csrf
                                 <button
-                                    class="text-(--red-600) dark:text-(--red-500) w-full rounded-md px-3 py-2.5 text-left text-sm font-semibold hover:bg-[color-mix(in_srgb,var(--red-500)_12%,transparent)]">Sign
+                                    class="text-(--red-600) dark:text-(--red-500) {{ $focus }} w-full rounded-sm px-3 py-2.5 text-left text-sm font-semibold hover:bg-[color-mix(in_srgb,var(--red-500)_12%,transparent)]">Sign
                                     out</button>
                             </form>
                         </div>
                     </details>
                 @else
-                    <a href="{{ route('login') }}" class="{{ $link }}">Sign in</a>
+                    <a href="{{ route('login') }}"
+                        class="{{ $focus }} rounded-sm px-2 py-1.5 text-sm font-semibold hover:underline">Sign in</a>
                 @endif
             </div>
         </div>
@@ -275,8 +289,7 @@
 
     <main id="citizen-page-content" @class([
         'min-h-screen w-full flex-1',
-        'mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8' => !View::hasSection(
-            'flush'),
+        'mx-auto max-w-7xl px-5 py-8 sm:px-8 sm:py-12' => !View::hasSection('flush'),
     ])>
         <x-feedbacks.toast />
 

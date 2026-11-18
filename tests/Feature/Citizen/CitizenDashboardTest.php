@@ -42,7 +42,7 @@ class CitizenDashboardTest extends TestCase
         $this->actingAs($citizen)
             ->get(route('citizen.dashboard'))
             ->assertOk()
-            ->assertSee('You have not submitted')
-            ->assertSee('any applications yet.');
+            ->assertSee('No applications yet')
+            ->assertSee('Submit your first request online.');
     }
 }

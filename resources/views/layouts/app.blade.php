@@ -20,7 +20,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
-<body class="min-h-screen bg-(--white) text-(--gray-900) antialiased transition-colors duration-300 dark:bg-(--black-700) dark:text-(--gray-50)">
+<body class="min-h-screen bg-(--white) text-(--gray-900) antialiased transition-colors duration-300 dark:bg-(--blue-850) dark:text-(--gray-50)">
 
     <header class="m-2 px-6 pt-6">
         <x:navigation.back-nav />

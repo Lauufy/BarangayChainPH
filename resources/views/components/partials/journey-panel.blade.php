@@ -3,15 +3,20 @@
 @php
     $isRegister = $mode === 'register';
 
-    $steps = ['Register your account', 'Verify your email address', 'Access barangay services'];
+    // Title, caption
+    $steps = [
+        ['Step 1', 'Register your account'],
+        ['Step 2', 'Verify your email address'],
+        ['Step 3', 'Access barangay services'],
+    ];
 
-    // Label, description
     $perks = [
         ['Documents', 'Request barangay documents'],
         ['Applications', 'Track your applications'],
         ['Announcements', 'Receive official announcements'],
     ];
 
+    $items = $isRegister ? $steps : $perks;
 @endphp
 
 @once
@@ -37,75 +42,50 @@
 @endonce
 
 <aside
-    class="relative isolate flex min-h-96 w-full min-w-0 flex-col justify-end gap-12 overflow-hidden bg-blue-950 p-6 text-white sm:p-10 lg:sticky lg:top-0 lg:min-h-dvh lg:self-start lg:order-last lg:p-14">
+    class="bg-(--blue-850) text-(--off-white) relative isolate flex min-h-96 w-full min-w-0 flex-col justify-end overflow-hidden p-6 sm:p-10 lg:sticky lg:top-0 lg:order-last lg:min-h-dvh lg:self-start lg:p-12">
 
-    {{-- Photo with a navy and emerald color filter so the text stays easy to read --}}
-    <div aria-hidden="true" class="pointer-events-none absolute inset-0 -z-10">
-        <img src="{{ asset('img/photos/ynares-hall-front.jpg') }}" alt="" width="1214" height="724"
-            class="h-full w-full object-cover object-right saturate-50">
+    {{-- Background (same blueprint photo as the hero) --}}
+    <x-partials.blueprint base="bg-(--celadon-500)" src="{{ asset('img/photos/ynares-hall-front.jpg') }}"
+        pos="object-center" class="absolute inset-0 -z-20" />
 
-        {{-- Navy tint over the whole photo --}}
-        <div class="absolute inset-0 bg-blue-950/70 mix-blend-multiply"></div>
-
-        {{-- Soft emerald glow from the top corner --}}
-        <div class="bg-linear-to-br absolute inset-0 from-emerald-500/25 via-transparent to-transparent"></div>
-
-        {{-- Darker toward the bottom, where the text sits --}}
-        <div class="bg-linear-to-t absolute inset-0 from-blue-950 via-blue-950/75 to-blue-950/30"></div>
+    {{-- Overlay --}}
+    <div aria-hidden="true"
+        class="bg-linear-to-t from-(--blue-870) via-(--blue-870)/85 to-(--blue-870)/60 absolute inset-0 -z-10">
     </div>
 
     {{-- Heading and guidance --}}
-    <div class="journey-content mx-auto w-full max-w-xl text-center">
-        @if ($isRegister)
-            <h2 class="font-heading text-balance text-3xl font-bold leading-tight tracking-tight sm:text-4xl xl:text-5xl">
-                Get started with barangay services
-            </h2>
+    <div class="journey-content relative z-10 mx-auto w-full max-w-2xl text-center">
+        <h2 class="font-heading text-balance text-2xl font-bold leading-tight tracking-tight sm:text-3xl">
+            {{ $isRegister ? 'Get started with barangay services' : 'Resident Online Services' }}
+        </h2>
 
-            <p class="mx-auto mt-5 max-w-md text-sm leading-7 text-blue-100 sm:text-base">
+        <p class="text-(--off-white)/80 mx-auto mt-3 max-w-md text-sm leading-6">
+            @if ($isRegister)
                 Register to access barangay services online. Please provide information exactly as it appears on
                 your valid ID.
-            </p>
-
-            <ol class="mt-8 grid gap-5 text-left sm:grid-cols-3 sm:gap-4">
-                @foreach ($steps as $step)
-                    <li @if ($loop->iteration === $active) aria-current="step" @endif>
-                        <div
-                            class="{{ $loop->iteration <= $active ? 'bg-emerald-400' : 'bg-white/25' }} h-1 rounded-full">
-                        </div>
-
-                        <p
-                            class="{{ $loop->iteration === $active ? 'text-emerald-300' : 'text-white/60' }} mt-3 text-xs font-semibold">
-                            Step {{ $loop->iteration }}
-                        </p>
-
-                        <p
-                            class="{{ $loop->iteration === $active ? 'font-semibold text-white' : 'text-white/75' }} mt-1 text-sm leading-6">
-                            {{ $step }}
-                        </p>
-                    </li>
-                @endforeach
-            </ol>
-        @else
-            <h2 class="font-heading text-balance text-3xl font-bold leading-tight tracking-tight sm:text-4xl xl:text-5xl">
-                Resident Online Services
-            </h2>
-
-            <p class="mx-auto mt-5 max-w-md text-sm leading-7 text-blue-100 sm:text-base">
+            @else
                 Sign in to request documents, follow your applications, and read official announcements from the
                 barangay.
-            </p>
+            @endif
+        </p>
 
-            <ul class="mt-8 grid gap-5 text-left sm:grid-cols-3 sm:gap-4">
-                @foreach ($perks as [$label, $text])
-                    <li>
-                        <div class="h-1 rounded-full bg-emerald-400"></div>
+        {{-- Stat-style strip: big title, small caption, thin dividers --}}
+        <ul role="list"
+            class="mt-8 grid grid-cols-1 divide-y divide-white/15 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+            @foreach ($items as [$title, $caption])
+                @php $isActive = $isRegister && $loop->iteration === $active; @endphp
 
-                        <p class="mt-3 text-xs font-semibold text-emerald-300">{{ $label }}</p>
+                <li @if ($isActive) aria-current="step" @endif class="px-4 py-4 sm:py-2">
+                    <p
+                        class="{{ $isActive ? 'text-(--celadon-500)' : 'text-white' }} text-xl font-bold leading-tight tracking-tight sm:text-2xl">
+                        {{ $title }}
+                    </p>
 
-                        <p class="mt-1 text-sm font-semibold leading-6 text-white">{{ $text }}</p>
-                    </li>
-                @endforeach
-            </ul>
-        @endif
+                    <p class="text-(--off-white)/70 mt-1.5 text-xs leading-5">
+                        {{ $caption }}
+                    </p>
+                </li>
+            @endforeach
+        </ul>
     </div>
 </aside>

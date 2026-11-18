@@ -9,7 +9,7 @@
 
     {{-- Fallback text: hidden by default, shown only if the image fails --}}
     <span hidden class="min-w-0 border-l-2 border-(--blue-700) pl-2.5 leading-none sm:pl-2 dark:border-white/60">
-        <span class="block whitespace-nowrap font-['Barlow_Condensed'] text-[1.4rem] font-bold uppercase tracking-[0.04em] text-(--blue-800) sm:text-2xl dark:text-white">
+        <span class="block whitespace-nowrap font-sans text-xl font-bold uppercase tracking-[0.02em] text-(--blue-800) sm:text-2xl dark:text-white">
             BarangayChain PH
         </span>
         <span class="hidden truncate text-[9px] font-semibold uppercase tracking-[0.14em] text-(--gray-600) sm:block dark:text-(--gray-200)">

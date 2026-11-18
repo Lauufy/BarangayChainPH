@@ -11,8 +11,11 @@
     --blue-600: #1F3F7A;
     --blue-700: #173266;
     --blue-800: #112652;
-    --blue-900: #0B1A3A;
     --blue-850: #070b24;
+    --blue-860: #070b24fd;
+    --blue-870: #090f31c4;
+    --blue-900: #0B1A3A;
+    
 
     /* Olive Green — Secondary Brand */
     --green-50: #F6F8EC;
@@ -25,10 +28,13 @@
     --green-700: #52631F;
     --green-800: #414F1A;
     --green-900: #333F16;
-    --celadon-500: #ACE1AF;
+    --celadon-500: #9de4a0;
+    --celadon-600: #77a07a;
+    --gold-500: #ffd900;    
 
     /* Neutral Colors */
     --white: #FFFFFF;
+    --off-white: #FAF9F6;
     --gray-50: #F8FAFC;
     --gray-100: #F1F5F9;
     --gray-200: #E2E8F0;

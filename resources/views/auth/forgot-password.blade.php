@@ -22,7 +22,7 @@
             <x-feedbacks.form-errors />
 
             {{-- Request reset link or code --}}
-            <div class="rounded-md border border-(--gray-200) bg-(--white) p-3 shadow-sm dark:border-(--gray-700) dark:bg-(--gray-800) sm:p-4">
+            <div class="rounded-md border border-(--gray-200) bg-(--white) p-3 shadow-sm dark:border-(--gray-700) dark:bg-(--blue-850)/80 sm:p-4">
                 <form method="POST" action="{{ route('password.email') }}" class="space-y-4">
                     @csrf
 

@@ -9,7 +9,7 @@
     </a>
 
     <span
-        class="whitespace-nowrap font-['Barlow_Condensed'] text-lg font-bold uppercase tracking-[0.06em] text-[#17325c] sm:hidden">
+        class="whitespace-nowrap font-sans text-base font-bold uppercase tracking-[0.02em] text-[#17325c] sm:hidden">
         BarangayChain <span class="text-[#06640d]">PH</span>
     </span>
 </div>
