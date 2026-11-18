@@ -26,6 +26,7 @@ FROM php:8.4.27-apache
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
+    tesseract-ocr \
     libpq-dev \
     libzip-dev \
     libpng-dev \
