@@ -10,8 +10,8 @@
   "keywords": [],
   "type": "commonjs",
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
-    "hardhat": "^2.29.1"
+    "@nomicfoundation/hardhat-toolbox": "^7.0.0",
+    "hardhat": "^3.22.0"
   },
   "directories": {
     "test": "test"
