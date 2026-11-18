@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Citizen;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\ProcessIdentityOcr;
 use App\Models\IdentityVerification;
 use App\Models\User;
 use App\Notifications\CitizenSubmissionReceived;
@@ -14,7 +15,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\Rule;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /** Manages citizen identity verification submissions and private uploads. */
 class IdentityVerificationController extends Controller
@@ -178,7 +178,7 @@ class IdentityVerificationController extends Controller
 
         $document = $request->file('document');
 
-        $user->identityVerifications()->create([
+        $verification = $user->identityVerifications()->create([
             'status' => IdentityVerification::PENDING,
             'document_type' => $data['document_type'],
             'document_path' => $document->store("identity-documents/{$user->id}", 'supabase'),
@@ -189,6 +189,8 @@ class IdentityVerificationController extends Controller
             'consented_at' => now(),
             'submitted_at' => now(),
         ]);
+
+        ProcessIdentityOcr::dispatch($verification->id);
 
         $this->notifyAdmins($user);
 

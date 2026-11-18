@@ -44,6 +44,20 @@ class StaffIdentityReviewAccessTest extends TestCase
             ->assertOk();
     }
 
+    public function test_identity_review_shows_the_ocr_flags_panel(): void
+    {
+        $admin = User::factory()->create([
+            'role' => 'admin',
+        ]);
+        $verification = IdentityVerification::factory()->create();
+
+        $this->actingAs($admin)
+            ->get(route('admin.identity-verification.show', $verification))
+            ->assertOk()
+            ->assertSee('Automated Document', false)
+            ->assertSeeText('Not processed yet');
+    }
+
     public function test_identity_search_query_is_ignored_and_client_search_keeps_the_pager(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);

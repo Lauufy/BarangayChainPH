@@ -24,6 +24,9 @@ use Illuminate\Support\Facades\Storage;
     'reviewed_by',
     'reviewed_at',
     'rejection_reason',
+    'ocr_status',
+    'ocr_flags',
+    'ocr_processed_at',
 ])]
 
 // Never expose the private file path in JSON or arrays.
@@ -57,6 +60,8 @@ class IdentityVerification extends Model
             'consented_at' => 'datetime',
             'submitted_at' => 'datetime',
             'reviewed_at' => 'datetime',
+            'ocr_flags' => 'array',
+            'ocr_processed_at' => 'datetime',
         ];
     }
 

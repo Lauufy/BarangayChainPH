@@ -14,11 +14,11 @@
                     @endif
 
                     @if (! $loop->last && isset($crumb['href']))
-                        <a href="{{ $crumb['href'] }}" class="hover:text-slate-900 hover:underline">
+                        <a href="{{ $crumb['href'] }}" class="hover:text-slate-900 hover:underline dark:hover:text-(--celadon-300)">
                             {{ $crumb['label'] }}
                         </a>
                     @else
-                        <span class="font-semibold text-slate-900" @if ($loop->last) aria-current="page" @endif>
+                        <span class="font-semibold text-slate-900 dark:text-(--celadon-500)/70" @if ($loop->last) aria-current="page" @endif>
                             {{ $crumb['label'] }}
                         </span>
                     @endif
@@ -26,7 +26,7 @@
             </nav>
         @endif
 
-        <h1 class="mt-1 truncate text-2xl font-extrabold leading-tight text-slate-900 sm:text-3xl">
+        <h1 class="mt-1 truncate text-2xl font-extrabold leading-tight text-slate-900 sm:text-3xl dark:text-(--celadon-500)">
             {{ $title }}
         </h1>
 
