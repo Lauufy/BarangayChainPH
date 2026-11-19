@@ -1,5 +1,5 @@
 {{-- Edit account popup. Filled by JS from window.userRecords (set in index.blade.php). --}}
-<form id="editUserForm" action="#" method="POST" enctype="multipart/form-data" class="contents">
+<form id="editUserForm" action="#" method="POST" class="contents">
     @csrf
     @method('PUT')
 
@@ -190,12 +190,6 @@
         const form = document.getElementById('editUserForm');
         const $ = (id) => document.getElementById(id);
 
-        const preview = $('editUserAvatarPreview');
-        const initialsEl = $('editUserAvatarInitials');
-        const fileInput = $('editUserAvatar');
-        let savedAvatar = null;
-        let savedName = '';
-
         // Fields filled from the user record
         const fields = ['name', 'email', 'role', 'status', 'phone', 'employment_type', 'date_hired',
             'civil_status', 'religion', 'occupation', 'house_number', 'barangay', 'city_municipality',
@@ -229,14 +223,6 @@
             $('editUser_' + name + '_other').value = known ? '' : (value || '');
         }
 
-        // Show a photo, or the initials when there is none
-        function showAvatar(url, name) {
-            if (url) preview.src = url;
-            preview.classList.toggle('hidden', !url);
-            initialsEl.classList.toggle('hidden', !!url);
-            initialsEl.textContent = window.userInitials(name);
-        }
-
         // keepOld = true when reopening after a failed save: keep the values the user typed.
         window.openEditUserModal = function(id, keepOld = false) {
             const u = window.userRecords[id];
@@ -246,15 +232,11 @@
 
             form.action = u.update_url;
             $('editUser_id').value = id;
-            savedAvatar = u.avatar_url;
-            savedName = u.name;
 
             if (!keepOld) {
                 $('editUserErrors')?.remove();
                 fields.forEach((f) => $('editUser_' + f).value = u[f] ?? '');
                 picks.forEach((f) => fillPick(f, u[f]));
-                fileInput.value = '';
-                $('editUserRemove').checked = false;
             }
 
             // Role: citizens stay citizens, staff/admin switch between each other,
@@ -280,20 +262,15 @@
             [...$('editUser_status').options].forEach((opt) => opt.disabled = u.is_self && opt.value !==
                 'active');
 
-            // Employment and photo: staff / admin only. Citizen details: citizens with a profile only.
+            // Employment: staff / admin only. Citizen details: citizens with a profile only.
             const showCitizen = isCitizen && u.has_citizen;
             $('editUserEmployment').classList.toggle('hidden', isCitizen);
-            $('editUserPhoto').classList.toggle('hidden', isCitizen);
             $('editUserCitizen').classList.toggle('hidden', !showCitizen);
             requiredStaff.forEach((f) => $('editUser_' + f).required = !isCitizen);
             requiredCitizen.forEach((f) => $('editUser_' + f).required = showCitizen);
 
             // Refresh the "Specify ..." boxes (after the Employment section is shown or hidden)
             picks.forEach((f) => $('editUser_' + f).dispatchEvent(new Event('change')));
-
-            showAvatar(savedAvatar, savedName);
-            $('editUserRemoveWrap').classList.toggle('hidden', !u.avatar_url);
-            $('editUserRemoveWrap').classList.toggle('flex', !!u.avatar_url);
 
             // Permissions button: staff only, and nobody manages their own.
             const showPerms = u.is_staff && !u.is_self;
@@ -308,23 +285,6 @@
             modal.classList.add('hidden');
             modal.classList.remove('flex');
         };
-
-        fileInput.addEventListener('change', function() {
-            const file = fileInput.files[0];
-
-            if (!file) return showAvatar(savedAvatar, savedName);
-
-            if (file.size > 2 * 1024 * 1024) {
-                alert('The photo must be 2 MB or smaller.');
-                fileInput.value = '';
-                return;
-            }
-
-            if (preview.dataset.url) URL.revokeObjectURL(preview.dataset.url);
-            preview.dataset.url = URL.createObjectURL(file);
-            showAvatar(preview.dataset.url, savedName);
-            $('editUserRemove').checked = false;
-        });
 
         $('editUserPermissionsBtn').addEventListener('click', function() {
             const id = $('editUser_id').value;

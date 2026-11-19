@@ -569,8 +569,8 @@
         // Replace the current element's content when the fresh copy differs
         function swap(fresh, current) {
             if (!fresh || !current || current.open) return;
-            // Replacing page content discards modal event handlers and resets its open state.
-            if (current.id === 'admin-page-content' && current.querySelector('[data-modal]')) return;
+            if (current.id === 'admin-page-content' &&
+                current.querySelector('dialog[open], [role="dialog"]:not(.hidden), [data-modal]:not(.hidden)')) return;
             if (signature(fresh) !== signature(current)) {
                 current.innerHTML = fresh.innerHTML;
 

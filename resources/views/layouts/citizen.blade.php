@@ -347,6 +347,8 @@
             if (!fresh || !current) return;
             // Do not replace the bell panel while the user is reading it
             if (current.tagName === 'DETAILS' && current.open) return;
+            if (current.id === 'citizen-page-content' &&
+                current.querySelector('dialog[open], [role="dialog"]:not(.hidden), [data-modal]:not(.hidden)')) return;
 
             if (fresh.innerHTML !== current.innerHTML) {
                 current.innerHTML = fresh.innerHTML;
