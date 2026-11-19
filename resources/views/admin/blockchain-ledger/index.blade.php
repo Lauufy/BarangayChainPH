@@ -63,15 +63,16 @@
             <x-tables.table :heads="['Permit', 'Issue Transaction', 'Revoke Transaction', 'Document Hash', 'Recorded', 'Status']" :empty="$records->isEmpty()" message="No blockchain records yet.">
                 @foreach ($records as $record)
                     <tr>
-                        <td class="font-medium text-slate-900">
+                        <td class="font-medium text-slate-700 dark:text-slate-300">
                             {{ $record->issuedDocument->document_number }}
-                            <span class="text-xs font-normal text-slate-500">v{{ $record->issuedDocument->version }}</span>
+                            <span
+                                class="text-xs font-normal text-slate-700 dark:text-slate-300">v{{ $record->issuedDocument->version }}</span>
                         </td>
 
-                        <td>
+                        <td class="text-slate-700 dark:text-slate-300">
                             @if ($record->tx_hash)
                                 <a href="{{ config('blockchain.explorer_url') }}/tx/{{ $record->tx_hash }}" target="_blank"
-                                    rel="noopener" class="font-mono text-xs text-[#17325c] hover:underline">
+                                    rel="noopener" class="font-mono text-xs text-[#17325c] dark:text-slate-300 hover:underline">
                                     {{ Str::limit($record->tx_hash, 16) }}
                                 </a>
                             @else
@@ -79,10 +80,10 @@
                             @endif
                         </td>
 
-                        <td>
+                        <td class="text-slate-700 dark:text-slate-300">
                             @if ($record->revoke_tx_hash)
                                 <a href="{{ config('blockchain.explorer_url') }}/tx/{{ $record->revoke_tx_hash }}"
-                                    target="_blank" rel="noopener" class="font-mono text-xs text-[#17325c] hover:underline">
+                                    target="_blank" rel="noopener" class="font-mono text-xs text-[#17325c] dark:text-slate-300 hover:underline">
                                     {{ Str::limit($record->revoke_tx_hash, 16) }}
                                 </a>
                             @else
@@ -90,10 +91,8 @@
                             @endif
                         </td>
 
-                        <td class="font-mono text-xs">{{ Str::limit($record->issuedDocument->file_hash, 16) }}</td>
-
-                        <td class="whitespace-nowrap">
-                            {{ $record->recorded_at?->timezone(config('app.timezone'))->format('M j, Y g:i A') ?? '—' }}
+                        <td class="font-mono text-xs text-slate-700 dark:text-slate-300">
+                            {{ Str::limit($record->issuedDocument->file_hash, 16) }}
                         </td>
 
                         <td>
@@ -109,6 +108,11 @@
                                 <x-tables.badge variant="warning">Pending</x-tables.badge>
                             @endif
                         </td>
+
+                        <td class="whitespace-nowrap text-slate-700 dark:text-slate-300">
+                            {{ $record->recorded_at?->timezone(config('app.timezone'))->format('M j, Y g:i A') ?? '—' }}
+                        </td>
+
                     </tr>
                 @endforeach
             </x-tables.table>

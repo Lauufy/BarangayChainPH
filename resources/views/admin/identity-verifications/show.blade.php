@@ -16,23 +16,12 @@
             ['label' => 'Review Application'],
         ]">
             <x-slot:actions>
-                @if ($isPending)
-                    <span
-                        class="px-15 inline-flex items-center justify-center rounded-md bg-amber-50 py-3 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-600/20 dark:bg-amber-400/10 dark:text-amber-400 dark:ring-amber-400/20">
-                        Pending Review
-                    </span>
-                @else
-                    <span @class([
-                        'inline-flex items-center justify-center rounded-md px-15 py-3 text-xs font-semibold ring-1 ring-inset',
-                        'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-400/10 dark:text-emerald-400 dark:ring-emerald-400/20' => $verification->isVerified(),
-                        'bg-red-50 text-red-700 ring-red-600/20 dark:bg-red-400/10 dark:text-red-400 dark:ring-red-400/20' => !$verification->isVerified(),
-                    ])>
-                        {{ ucfirst($verification->status) }}
-                    </span>
-                @endif
+                <x-partials.stat-badge :variant="$isPending ? 'warning' : ($verification->isVerified() ? 'success' : 'danger')">
+                    {{ $isPending ? 'Pending Review' : ucfirst($verification->status) }}
+                </x-partials.stat-badge>
 
                 <a href="{{ route('admin.identity-verification.index') }}"
-                    class="px-15 dark:border-(--blue-900) dark:bg-(--blue-900) dark:text-(--celadon-500) dark:hover:bg-(--celadon-500) dark:hover:text-(--blue-850) inline-flex items-center justify-center rounded-md border border-slate-200 bg-white py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+                    class="px-15 dark:border-(--blue-900) dark:bg-(--blue-900) dark:text-(--celadon-500) dark:hover:bg-(--celadon-500) dark:hover:text-(--blue-850) inline-flex items-center justify-center rounded-md border border-slate-200 bg-white py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
                     Back
                 </a>
             </x-slot:actions>
@@ -50,7 +39,8 @@
                     <div class="mb-4">
                         <h2 class="dark:text-(--celadon-500) text-lg font-semibold text-slate-900">Applicant Information
                         </h2>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">Read-only details the citizen entered. Verify
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Read-only details the citizen entered.
+                            Verify
                             them against the document.</p>
                     </div>
 
@@ -77,11 +67,14 @@
                     <div class="mb-3 border-b border-slate-100 pb-3 dark:border-slate-800">
                         <h2 class="dark:text-(--celadon-500) text-base font-semibold text-slate-900">Automated Document
                             Assessment (OCR)</h2>
-                        <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Automated text extraction results and
+                        <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Automated text extraction results
+                            and
                             potential discrepancies.</p>
                     </div>
 
-                    @include('admin.identity-verifications.ocr-flags', ['verification' => $verification])
+                    @include('admin.identity-verifications.ocr-flags', [
+                        'verification' => $verification,
+                    ])
                 </section>
             </div>
 
@@ -90,7 +83,8 @@
                 class="shadow-xs flex flex-col rounded-lg border border-slate-200/80 bg-white p-4 sm:p-5 lg:col-span-5 dark:border-slate-800 dark:bg-slate-900">
                 <div class="mb-4 flex items-start justify-between gap-3">
                     <div>
-                        <h2 class="dark:text-(--celadon-500) text-lg font-semibold text-slate-900">Submitted Evidence</h2>
+                        <h2 class="dark:text-(--celadon-500) text-lg font-semibold text-slate-900">Submitted Evidence
+                        </h2>
                         <p class="text-xs text-slate-500 dark:text-slate-400">Compare the face on the document with the
                             selfie. Click an image to enlarge.</p>
                     </div>
@@ -129,7 +123,8 @@
                                 <div class="p-6 text-center">
                                     <p class="text-sm font-semibold text-slate-300">Preview unavailable</p>
                                     <a href="{{ $documentUrl }}" target="_blank"
-                                        class="mt-2 inline-block text-xs font-semibold text-sky-300 underline">Open uploaded
+                                        class="mt-2 inline-block text-xs font-semibold text-sky-300 underline">Open
+                                        uploaded
                                         file</a>
                                 </div>
                             @endif
@@ -141,7 +136,7 @@
                         class="group relative min-h-44 flex-1 overflow-hidden rounded-md bg-slate-900 dark:bg-slate-950 dark:ring-1 dark:ring-slate-800">
                         <figcaption
                             class="absolute left-3 top-3 z-10 rounded-md border border-white/30 bg-black/50 px-3 py-1 text-xs font-medium text-white backdrop-blur-md">
-                            Selfie
+                            {{ $hasSelfie ? 'Selfie · ' . $selfieCaption : 'Selfie' }}
                         </figcaption>
 
                         <div class="bg-(--gray-50) dark:bg-(--blue-870) absolute inset-0 flex items-center justify-center">
@@ -162,7 +157,8 @@
                             @else
                                 <div class="p-6 text-center">
                                     <p class="text-sm font-semibold text-slate-300">No selfie submitted</p>
-                                    <p class="mt-1 text-xs text-slate-400">Submitted before the selfie step was added.</p>
+                                    <p class="mt-1 text-xs text-slate-400">Submitted before the selfie step was added.
+                                    </p>
                                 </div>
                             @endif
                         </div>
@@ -195,7 +191,7 @@
                         </p>
                         <p class="mt-1 text-xs text-slate-600 dark:text-slate-400">
                             by {{ $verification->reviewer?->name ?? 'a removed account' }}
-                            · {{ $verification->reviewed_at->format('M j, Y g:i A') }}
+                            · {{ $verification->reviewed_at?->format('M j, Y g:i A') }}
                         </p>
                         @if ($verification->isRejected())
                             <div class="mt-3 border-t border-red-100 pt-3 dark:border-red-500/20">
@@ -295,82 +291,83 @@
 
     <script>
         (function() {
-            // Click on the dark backdrop (the dialog element itself) closes it
-            function closeOnBackdrop(dialog) {
-                var downOnBackdrop = false;
-                dialog.addEventListener('mousedown', function(e) {
-                    downOnBackdrop = (e.target === dialog);
-                });
-                dialog.addEventListener('click', function(e) {
-                    if (downOnBackdrop && e.target === dialog) dialog.close();
-                    downOnBackdrop = false;
-                });
-            }
+            // Everything is attached to `document`, not to the buttons and dialogs themselves.
+            // The admin layout refreshes the page content every 5 seconds and replaces every
+            // element inside it, so handlers attached to those elements would stop working.
+            var backdropPress = null;
 
-            // ---- Lightbox ----
-            var lb = document.getElementById('lightbox-dialog');
-            closeOnBackdrop(lb);
-            document.getElementById('lightbox-close').addEventListener('click', function() {
-                lb.close();
+            // A press that starts on the dark backdrop (the dialog element itself) can close the dialog
+            document.addEventListener('mousedown', function(e) {
+                backdropPress = e.target instanceof HTMLDialogElement ? e.target : null;
             });
 
-            document.querySelectorAll('[data-lightbox]').forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    document.getElementById('lightbox-img').src = btn.dataset.src;
-                    document.getElementById('lightbox-open').href = btn.dataset.src;
-                    document.getElementById('lightbox-title').textContent = btn.dataset.title || '';
-                    lb.showModal();
-                });
-            });
+            document.addEventListener('click', function(e) {
+                var target = e.target;
 
-            // ---- Approve ----
-            var approveBtn = document.getElementById('approve-btn');
-            if (approveBtn) {
-                approveBtn.addEventListener('click', function() {
-                    approveBtn.disabled = true; // prevent double submit
+                if (backdropPress && target === backdropPress) {
+                    backdropPress.close();
+                }
+                backdropPress = null;
+
+                // ---- Lightbox ----
+                var lightboxButton = target.closest('[data-lightbox]');
+                if (lightboxButton) {
+                    document.getElementById('lightbox-img').src = lightboxButton.dataset.src;
+                    document.getElementById('lightbox-open').href = lightboxButton.dataset.src;
+                    document.getElementById('lightbox-title').textContent = lightboxButton.dataset.title || '';
+                    document.getElementById('lightbox-dialog').showModal();
+                    return;
+                }
+
+                if (target.closest('#lightbox-close')) {
+                    document.getElementById('lightbox-dialog').close();
+                    return;
+                }
+
+                // ---- Approve ----
+                var approveButton = target.closest('#approve-btn');
+                if (approveButton) {
+                    approveButton.disabled = true; // prevent double submit
                     document.getElementById('approve-form').submit();
-                });
-            }
+                    return;
+                }
 
-            // ---- Reject modal ----
-            var dialog = document.getElementById('reject-dialog');
-            if (dialog) {
-                var form = document.getElementById('reject-form');
-                var reason = document.getElementById('rejection_reason');
-                var error = document.getElementById('reason-error');
-                var confirmBtn = document.getElementById('confirm-reject');
+                // ---- Reject modal ----
+                var rejectDialog = document.getElementById('reject-dialog');
+                if (!rejectDialog) return;
 
-                closeOnBackdrop(dialog);
-
-                document.getElementById('open-reject').addEventListener('click', function(e) {
+                if (target.closest('#open-reject')) {
                     e.preventDefault();
-                    e.stopPropagation();
-                    if (!dialog.open) dialog.showModal();
-                    reason.focus();
-                });
-                document.getElementById('cancel-reject').addEventListener('click', function() {
-                    dialog.close();
-                });
+                    if (!rejectDialog.open) rejectDialog.showModal();
+                    document.getElementById('rejection_reason').focus();
+                } else if (target.closest('#cancel-reject')) {
+                    rejectDialog.close();
+                } else if (target.closest('#confirm-reject')) {
+                    var reason = document.getElementById('rejection_reason');
+                    var error = document.getElementById('reason-error');
 
-                reason.addEventListener('input', function() {
-                    error.classList.add('hidden');
-                });
-
-                confirmBtn.addEventListener('click', function() {
                     if (!reason.value.trim()) {
                         error.textContent = 'Please enter a reason for rejection.';
                         error.classList.remove('hidden');
                         reason.focus();
                         return;
                     }
-                    confirmBtn.disabled = true;
-                    form.submit();
-                });
 
-                @if ($errors->has('rejection_reason'))
-                    dialog.showModal();
-                @endif
-            }
+                    target.closest('#confirm-reject').disabled = true;
+                    document.getElementById('reject-form').submit();
+                }
+            });
+
+            document.addEventListener('input', function(e) {
+                if (e.target.id === 'rejection_reason') {
+                    document.getElementById('reason-error').classList.add('hidden');
+                }
+            });
+
+            // Open the reject modal again when the server refused the reason
+            @if ($errors->has('rejection_reason'))
+                document.getElementById('reject-dialog')?.showModal();
+            @endif
         })();
     </script>
 @endsection

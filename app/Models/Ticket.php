@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class Ticket extends Model
 {
     public const OPEN = 'open';
+
     public const CLOSED = 'closed';
 
     public function user(): BelongsTo

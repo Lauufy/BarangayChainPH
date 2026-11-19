@@ -33,7 +33,7 @@
     $iFilter = '<path d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"/>';
     $iPlus = '<path d="M5 12h14"/><path d="M12 5v14"/>';
 
-    $field = 'h-10 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-slate-100 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20';
+    $field = 'h-10 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-slate-100 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-(--blue-850)';
     $accent = 'bg-(--blue-600) hover:bg-(--blue-700) dark:bg-(--blue-500) dark:hover:bg-(--blue-400)';
 @endphp
 

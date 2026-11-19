@@ -40,12 +40,24 @@
                 message="No applications yet. Submit a barangay service request to start tracking its progress here."
             >
                 @foreach ($applications as $application)
+                    @php
+                        $hasTicket = (bool) $application->ticket;
+                        $canPrint = $application->canPrint();
+                        $canCancel = $application->isCancellable();
+
+                        // Review is always shown. With 3 or more buttons, desktop switches to icons only
+                        // (mobile always keeps labels because they are easier to tap).
+                        $actionCount = 1 + (int) $hasTicket + (int) $canPrint + (int) $canCancel;
+                        $iconOnly = $actionCount >= 3;
+                    @endphp
+
                     <tr>
                         {{-- Summary: always visible on mobile --}}
                         <td data-title class="whitespace-nowrap font-semibold text-slate-900 dark:text-slate-100">
                             {{ $application->reference_number }}
                         </td>
                         <td class="text-slate-600 dark:text-slate-300">{{ $application->serviceTitle() }}</td>
+
                         {{-- Details: revealed when the card is tapped on mobile --}}
                         <x-tables.detail label="Date submitted" class="whitespace-nowrap text-slate-600 dark:text-slate-300">
                             {{ $application->created_at->timezone(config('app.timezone'))->format('M j, Y g:i A') }}
@@ -59,38 +71,64 @@
 
                         <x-tables.detail side="full" class="text-center">
                             <div class="flex flex-wrap items-start justify-center gap-2">
-                                <x-tables.action label="Review" icon="file-search" :href="route('citizen.applications.show', $application)" />
+                                @if ($iconOnly)
+                                    {{-- Desktop: compact icon buttons --}}
+                                    <span class="hidden sm:contents">
+                                        <x-tables.action label="Review" icon="file-search" icon-only :href="route('citizen.applications.show', $application)" />
 
-                                @if ($application->ticket)
-                                    <x-tables.action label="Messages" icon="message" :href="route('citizen.tickets.show', $application)" />
+                                        @if ($hasTicket)
+                                            <x-tables.action label="Messages" icon="message" icon-only :href="route('citizen.tickets.show', $application)" />
+                                        @endif
+
+                                        @if ($canPrint)
+                                            <x-tables.action label="Print" icon="printer" icon-only :href="route('citizen.applications.print', $application)" />
+                                        @endif
+                                    </span>
+
+                                    {{-- Mobile: labeled buttons, easier to tap --}}
+                                    <span class="contents sm:hidden">
+                                        <x-tables.action label="Review" icon="file-search" :href="route('citizen.applications.show', $application)" />
+
+                                        @if ($hasTicket)
+                                            <x-tables.action label="Messages" icon="message" :href="route('citizen.tickets.show', $application)" />
+                                        @endif
+
+                                        @if ($canPrint)
+                                            <x-tables.action label="Print" icon="printer" :href="route('citizen.applications.print', $application)" />
+                                        @endif
+                                    </span>
+                                @else
+                                    {{-- Fewer than 3 buttons: labels everywhere --}}
+                                    <x-tables.action label="Review" icon="file-search" :href="route('citizen.applications.show', $application)" />
+
+                                    @if ($hasTicket)
+                                        <x-tables.action label="Messages" icon="message" :href="route('citizen.tickets.show', $application)" />
+                                    @endif
+
+                                    @if ($canPrint)
+                                        <x-tables.action label="Print" icon="printer" :href="route('citizen.applications.print', $application)" />
+                                    @endif
                                 @endif
 
-                                @if ($application->canPrint())
-                                    <x-tables.action label="Print" icon="printer" :href="route('citizen.applications.print', $application)" />
-                                @endif
-
-                                @if ($application->isCancellable())
-                                    <details class="group text-left max-sm:w-full max-sm:text-center">
-                                        <summary
-                                            class="inline-flex cursor-pointer list-none rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-50 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 dark:border-red-500/40 dark:text-red-300 dark:hover:bg-red-500/10 [&::-webkit-details-marker]:hidden">
-                                            Cancel
-                                        </summary>
-                                        <form method="POST"
-                                            action="{{ route('citizen.applications.cancel', $application) }}"
-                                            class="mt-2 w-full space-y-2 text-left rounded-lg border border-slate-200 bg-white p-3 shadow-md sm:w-56 dark:border-slate-700 dark:bg-slate-900">
-                                            @csrf
-                                            <label for="cancellation_reason_{{ $application->id }}"
-                                                class="block text-xs font-semibold text-slate-800 dark:text-slate-100">
-                                                Reason for cancellation
-                                            </label>
-                                            <textarea id="cancellation_reason_{{ $application->id }}" name="cancellation_reason" required minlength="5"
-                                                maxlength="500" rows="3"
-                                                class="block w-full rounded-md border border-slate-300 bg-white p-2 text-xs text-slate-900 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"></textarea>
-                                            <button class="inline-flex rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-red-700">
-                                                Confirm cancellation
-                                            </button>
-                                        </form>
-                                    </details>
+                                {{-- Cancel: opens the shared cancellation modal below --}}
+                                @if ($canCancel)
+                                    <button type="button" data-cancel-open
+                                        data-id="{{ $application->id }}"
+                                        data-ref="{{ $application->reference_number }}"
+                                        data-action="{{ route('citizen.applications.cancel', $application) }}"
+                                        @if ($iconOnly) title="Cancel" aria-label="Cancel application {{ $application->reference_number }}" @endif
+                                        @class([
+                                            'inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-red-200 text-xs font-semibold text-red-700 transition hover:bg-red-50 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 dark:border-red-500/40 dark:text-red-300 dark:hover:bg-red-500/10',
+                                            'px-3 py-1.5' => !$iconOnly,
+                                            'px-3 py-1.5 sm:size-8 sm:p-0' => $iconOnly,
+                                        ])>
+                                        <svg @class(['size-3.5', 'hidden sm:block' => $iconOnly, 'hidden' => !$iconOnly]) viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
+                                            stroke-linejoin="round" aria-hidden="true">
+                                            <path d="M6 18 18 6M6 6l12 12" />
+                                        </svg>
+                                        <span @class(['sm:sr-only' => $iconOnly])>Cancel</span>
+                                    </button>
                                 @endif
                             </div>
                         </x-tables.detail>
@@ -99,4 +137,119 @@
             </x-tables.table>
         </x-tables.card>
     </div>
+
+    {{-- ============================================================ --}}
+    {{-- CANCEL MODAL (one shared native <dialog>)                    --}}
+    {{-- ============================================================ --}}
+    <dialog id="cancel-dialog"
+        class="m-auto w-[calc(100%-2rem)] max-w-md overflow-hidden rounded-lg bg-white p-0 text-slate-900 shadow-2xl backdrop:bg-slate-950/60 backdrop:backdrop-blur-sm dark:bg-slate-900 dark:text-slate-100 dark:ring-1 dark:ring-slate-800">
+        <form id="cancel-form" method="POST" action="" class="p-4 sm:p-5" novalidate>
+            @csrf
+            <input type="hidden" name="application_id" id="cancel-application-id" value="{{ old('application_id') }}">
+
+            <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100">Cancel application</h3>
+            <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                You are cancelling <span id="cancel-ref" class="font-semibold text-slate-700 dark:text-slate-200"></span>.
+                This cannot be undone.
+            </p>
+
+            <div class="mt-3 border-t border-slate-100 pt-3 dark:border-slate-800">
+                <label for="cancellation_reason"
+                    class="mb-1.5 block text-xs font-semibold text-slate-800 dark:text-slate-100">
+                    Reason for cancellation <span class="text-red-500">*</span>
+                </label>
+                <textarea id="cancellation_reason" name="cancellation_reason" rows="4" minlength="5" maxlength="500"
+                    placeholder="Tell us why you are cancelling this application..."
+                    class="block w-full rounded-md border border-slate-300 bg-white p-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:hover:border-slate-600">{{ old('cancellation_reason') }}</textarea>
+                <p id="cancel-error"
+                    class="{{ $errors->has('cancellation_reason') ? '' : 'hidden' }} mt-1 text-xs text-red-600 dark:text-red-400">
+                    {{ $errors->first('cancellation_reason') ?: 'Enter a reason of at least 5 characters.' }}
+                </p>
+            </div>
+
+            <div class="mt-4 flex items-center justify-end gap-3">
+                <button type="button" id="cancel-close"
+                    class="rounded-md bg-slate-200 px-5 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+                    Keep application
+                </button>
+                <button type="button" id="cancel-confirm"
+                    class="rounded-md bg-red-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-60">
+                    Confirm cancellation
+                </button>
+            </div>
+        </form>
+    </dialog>
+
+    <script>
+        (function() {
+            // Handlers live on `document` so they keep working if the page content is replaced.
+            var backdropPress = null;
+
+            function openCancel(button) {
+                var dialog = document.getElementById('cancel-dialog');
+                var reason = document.getElementById('cancellation_reason');
+
+                document.getElementById('cancel-form').action = button.dataset.action;
+                document.getElementById('cancel-application-id').value = button.dataset.id;
+                document.getElementById('cancel-ref').textContent = button.dataset.ref;
+                document.getElementById('cancel-confirm').disabled = false;
+
+                if (!dialog.open) dialog.showModal();
+                reason.focus();
+            }
+
+            document.addEventListener('mousedown', function(e) {
+                backdropPress = e.target instanceof HTMLDialogElement ? e.target : null;
+            });
+
+            document.addEventListener('click', function(e) {
+                var target = e.target;
+
+                // A press that starts and ends on the dark backdrop closes the dialog
+                if (backdropPress && target === backdropPress) backdropPress.close();
+                backdropPress = null;
+
+                var opener = target.closest('[data-cancel-open]');
+                if (opener) {
+                    document.getElementById('cancellation_reason').value = '';
+                    document.getElementById('cancel-error').classList.add('hidden');
+                    openCancel(opener);
+                    return;
+                }
+
+                if (target.closest('#cancel-close')) {
+                    document.getElementById('cancel-dialog').close();
+                    return;
+                }
+
+                var confirm = target.closest('#cancel-confirm');
+                if (confirm) {
+                    var reason = document.getElementById('cancellation_reason');
+                    var error = document.getElementById('cancel-error');
+
+                    if (reason.value.trim().length < 5) {
+                        error.textContent = 'Enter a reason of at least 5 characters.';
+                        error.classList.remove('hidden');
+                        reason.focus();
+                        return;
+                    }
+
+                    confirm.disabled = true; // prevent double submit
+                    document.getElementById('cancel-form').submit();
+                }
+            });
+
+            document.addEventListener('input', function(e) {
+                if (e.target.id === 'cancellation_reason') {
+                    document.getElementById('cancel-error').classList.add('hidden');
+                }
+            });
+
+            // Reopen the modal for the same application when the server refused the reason
+            @if ($errors->has('cancellation_reason') && old('application_id'))
+                var failed = document.querySelector('[data-cancel-open][data-id="{{ e(old('application_id')) }}"]');
+                if (failed) openCancel(failed);
+            @endif
+        })();
+    </script>
 @endsection

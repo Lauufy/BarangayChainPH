@@ -15,21 +15,21 @@
                     @csrf
                     <input type="hidden" name="paused" value="{{ $isPaused ? 0 : 1 }}">
                     <button type="submit"
-                        class="{{ $isPaused ? 'bg-amber-600 hover:bg-amber-700' : 'bg-red-700 hover:bg-red-800' }} inline-flex min-h-11 items-center rounded-lg px-4 text-sm font-semibold text-white">
+                        class="{{ $isPaused ? 'bg-amber-600/60 hover:bg-amber-700' : 'bg-red-700/60 hover:bg-red-800' }} inline-flex min-h-11 items-center rounded-lg px-4 text-sm font-semibold text-white">
                         {{ $isPaused ? 'Resume processing' : 'Pause processing' }}
                     </button>
                 </form>
             @endif
 
             <a href="{{ url('/admin/blockchain-ledger') }}"
-                class="inline-flex min-h-11 items-center rounded-lg bg-blue-700 px-4 text-sm font-semibold text-white hover:bg-blue-800">
+                class="inline-flex min-h-11 items-center rounded-lg bg-blue-700/70 px-4 text-sm font-semibold text-white hover:bg-blue-800">
                 View ledger
             </a>
 
             @if ($isAdmin)
                 <button type="button" data-open-deployment-modal aria-haspopup="dialog"
                     title="Register a new deployment"
-                    class="inline-flex min-h-11 items-center gap-2 rounded-lg bg-emerald-700 px-4 text-sm font-semibold text-white hover:bg-emerald-800">
+                    class="inline-flex min-h-11 items-center gap-2 rounded-lg bg-emerald-700/70 px-4 text-sm font-semibold text-white hover:bg-emerald-800">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M5 12h14" />
@@ -77,7 +77,7 @@
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <div class="{{ $card }}">
                 <p class="text-xs text-slate-500">Permit contract</p>
-                <p class="my-2 text-xl font-bold text-slate-900">
+                <p class="my-2 text-xl font-bold text-slate-900 dark:text-slate-300">
                     PermitRegistry{{ $active ? ' v' . $active->version : '' }}
                 </p>
                 @if (!$reachable)
@@ -93,7 +93,7 @@
 
             <div class="{{ $card }}">
                 <p class="text-xs text-slate-500">Network</p>
-                <p class="my-2 text-xl font-bold capitalize text-slate-900">
+                <p class="my-2 text-xl font-bold capitalize text-slate-900 dark:text-slate-300">
                     {{ $active?->network ?? ($networkName ?? ($info ? 'Chain ' . $info['chainId'] : 'Unknown')) }}
                 </p>
                 @if (!$reachable)
@@ -107,7 +107,7 @@
 
             <div class="{{ $card }}">
                 <p class="text-xs text-slate-500">Issuer wallet gas balance</p>
-                <p class="my-2 text-xl font-bold text-slate-900">
+                <p class="my-2 text-xl font-bold text-slate-900 dark:text-slate-300">
                     {{ $balance !== null ? number_format($balance, 4) : 'N/A' }}
                 </p>
                 @if ($balance === null)
@@ -121,7 +121,7 @@
 
             <div class="{{ $card }}">
                 <p class="text-xs text-slate-500">Processing control</p>
-                <p class="my-2 text-xl font-bold text-slate-900">
+                <p class="my-2 text-xl font-bold text-slate-900 dark:text-slate-300">
                     @if (!$reachable)
                         Unknown
                     @elseif (!$supportsPause)

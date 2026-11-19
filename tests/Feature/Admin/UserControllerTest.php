@@ -121,7 +121,11 @@ class UserControllerTest extends TestCase
             ->assertViewHas('view', 'all')
             ->assertViewHas('paginator', fn ($paginator): bool => $paginator->getPageName() === 'all_page')
             ->assertViewHas('userRecords', fn (Collection $records): bool => $records->has($staff->id)
-                && $records->has($citizen->id));
+                && $records->has($citizen->id))
+            ->assertSee('id="viewUserModal"', false)
+            ->assertSee('id="editUserModal"', false)
+            ->assertSee('onclick="openViewUserModal('.$staff->id.')"', false)
+            ->assertSee('onclick="openEditUserModal('.$staff->id.')"', false);
 
         $this->get(route('admin.users.index', ['users_tab' => 'employees']))
             ->assertOk()

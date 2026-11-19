@@ -1,54 +1,55 @@
-@props([
-    'id',
-    'title',
-    'subtitle' => null,
-    'size' => 'max-w-3xl',
-    'open' => false,
-    'closeOnBackdrop' => true,
-])
+@props(['id', 'title', 'subtitle' => null, 'size' => 'max-w-3xl', 'open' => false, 'closeOnBackdrop' => true])
 
-<div id="{{ $id }}" data-modal @if (!$closeOnBackdrop) data-static @endif role="dialog" aria-modal="true"
-    aria-labelledby="{{ $id }}-title"
-    class="{{ $open ? 'flex' : 'hidden' }} fixed inset-0 z-50 items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
+<div id="{{ $id }}" data-modal @if (!$closeOnBackdrop) data-static @endif role="dialog"
+    aria-modal="true" aria-labelledby="{{ $id }}-title"
+    class="{{ $open ? 'flex' : 'hidden' }} fixed inset-0 z-50 items-center justify-center bg-slate-950/55 p-3 backdrop-blur-[2px] sm:p-5">
     <section
-        class="flex max-h-[90vh] w-full {{ $size }} flex-col overflow-hidden rounded-none border border-slate-200 border-t-4 border-t-(--gold-400) bg-white text-slate-900 shadow-2xl">
+        class="{{ $size }} border-(--gray-200) bg-(--white) text-(--gray-900) dark:bg-(--blue-850) dark:text-(--off-white) flex max-h-[92vh] w-full flex-col overflow-hidden rounded-xl border shadow-2xl dark:border-white/10">
 
         {{-- Header --}}
-        <header class="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
-            <div class="flex min-w-0 items-start gap-4">
+        <header
+            class="border-(--gray-200) bg-(--white) dark:bg-(--blue-850) flex items-start justify-between gap-4 border-b px-5 py-4 sm:px-6 dark:border-white/10">
+            <div class="flex min-w-0 items-start gap-3">
                 @isset($icon)
-                    <span class="grid size-11 shrink-0 place-items-center bg-(--blue-700) text-white">
+                    <div
+                        class="border-(--celadon-600)/30 bg-(--celadon-500)/10 text-(--blue-700) dark:text-(--celadon-500) grid size-10 shrink-0 place-items-center border dark:border-white/10 dark:bg-white/5">
                         {{ $icon }}
-                    </span>
+                    </div>
                 @endisset
 
                 <div class="min-w-0">
-                    <h2 id="{{ $id }}-title" class="text-lg font-semibold leading-tight text-slate-900">
-                        {{ $title }}</h2>
+                    <h2 id="{{ $id }}-title"
+                        class="mt-2 text-(--gray-900) dark:text-(--off-white) text-xl font-semibold tracking-tight">
+                        {{ $title }}
+                    </h2>
+
                     @if ($subtitle)
-                        <p class="mt-1 text-sm text-slate-500">{{ $subtitle }}</p>
+                        <p class="text-(--gray-500) dark:text-(--gray-300) text-sm leading-relaxed">
+                            {{ $subtitle }}
+                        </p>
                     @endif
                 </div>
             </div>
 
-            <button type="button" data-modal-close aria-label="Close"
-                class="grid size-8 shrink-0 place-items-center text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-(--blue-500)">
-                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            <button type="button" data-modal-close aria-label="Close dialog"
+                class="text-(--gray-500) hover:bg-(--gray-100) hover:text-(--gray-900) focus-visible:ring-(--blue-500) dark:text-(--gray-300) dark:hover:text-(--celadon-500) dark:focus-visible:ring-(--celadon-500) grid size-9 shrink-0 place-items-center transition focus-visible:outline-none focus-visible:ring-2 dark:hover:bg-white/10">
+                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M18 6 6 18" />
-                    <path d="m6 6 12 12" />
+                    <path d="M18 6 6 18M6 6l12 12" />
                 </svg>
             </button>
         </header>
 
-        {{-- Body (the only part that scrolls) --}}
-        <div data-modal-body class="min-h-0 flex-1 overflow-y-auto">
+        {{-- Content --}}
+        <div data-modal-body
+            class="bg-(--white) text-(--gray-800) dark:bg-(--blue-850) dark:text-(--gray-200) min-h-0 flex-1 overflow-y-auto overscroll-contain">
             {{ $slot }}
         </div>
 
         {{-- Footer --}}
         @isset($footer)
-            <footer class="border-t border-slate-200 bg-slate-50 px-6 py-4">
+            <footer
+                class="border-(--gray-200) bg-(--white) dark:bg-(--blue-850) border-t px-5 py-4 sm:px-6 dark:border-white/10">
                 {{ $footer }}
             </footer>
         @endisset
@@ -57,101 +58,104 @@
 
 @once
     <script>
-        (function() {
-            var openers = new WeakMap();
-            var downTarget = null;
-
-            function all() {
-                return Array.prototype.slice.call(document.querySelectorAll('[data-modal]'));
-            }
-
-            function isOpen(modal) {
-                return !modal.classList.contains('hidden');
-            }
+        (() => {
+            const modals = () => [...document.querySelectorAll('[data-modal]')];
+            const openModals = () => modals().filter(modal => !modal.classList.contains('hidden'));
+            const focusReturn = new WeakMap();
+            let mouseDownTarget = null;
 
             function close(modal) {
+                if (!modal) return;
                 modal.classList.add('hidden');
                 modal.classList.remove('flex');
             }
 
-            function firstField(modal) {
-                var fields = modal.querySelectorAll(
-                    '[data-modal-body] input:not([type="hidden"]):not([type="file"]):not([type="checkbox"]):not([disabled]),' +
-                    '[data-modal-body] select:not([disabled]),' +
-                    '[data-modal-body] textarea:not([disabled])'
+            function focusable(modal) {
+                return modal.querySelector(
+                    '[data-modal-body] input:not([type="hidden"]):not([type="file"]):not([type="checkbox"]):not([disabled]), ' +
+                    '[data-modal-body] select:not([disabled]), ' +
+                    '[data-modal-body] textarea:not([disabled]), ' +
+                    '[data-modal-body] button:not([disabled])'
                 );
-
-                for (var i = 0; i < fields.length; i++) {
-                    if (fields[i].offsetParent !== null) return fields[i];
-                }
-
-                return null;
             }
 
-            // Runs whenever a modal's classes change (opened or closed by any script).
-            function onChange(modal) {
-                var open = isOpen(modal);
+            function sync(modal) {
+                const isOpen = !modal.classList.contains('hidden');
 
-                if (open && !openers.has(modal)) {
-                    openers.set(modal, document.activeElement);
-                    var field = firstField(modal);
-                    if (field) field.focus();
-                } else if (!open && openers.has(modal)) {
-                    var back = openers.get(modal);
-                    openers.delete(modal);
-                    if (back && back.focus && document.contains(back)) back.focus();
+                if (isOpen && !focusReturn.has(modal)) {
+                    focusReturn.set(modal, document.activeElement);
+
+                    const first = focusable(modal);
+                    if (first) first.focus();
                 }
 
-                document.body.classList.toggle('overflow-hidden', all().some(isOpen));
+                if (!isOpen && focusReturn.has(modal)) {
+                    const previous = focusReturn.get(modal);
+                    focusReturn.delete(modal);
+
+                    if (previous?.isConnected && typeof previous.focus === 'function') {
+                        previous.focus();
+                    }
+                }
+
+                document.body.classList.toggle('overflow-hidden', openModals().length > 0);
             }
 
             function init() {
-                var observer = new MutationObserver(function(records) {
-                    records.forEach(function(record) {
-                        onChange(record.target);
-                    });
+                const observer = new MutationObserver(records => {
+                    records.forEach(record => sync(record.target));
                 });
 
-                all().forEach(function(modal) {
+                modals().forEach(modal => {
                     observer.observe(modal, {
                         attributes: true,
                         attributeFilter: ['class']
                     });
-                    if (isOpen(modal)) onChange(modal);
+
+                    if (!modal.classList.contains('hidden')) {
+                        sync(modal);
+                    }
                 });
             }
 
             if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', init);
+                document.addEventListener('DOMContentLoaded', init, {
+                    once: true
+                });
             } else {
                 init();
             }
 
-            // Backdrop: close only when the press AND the release both happen on the backdrop,
-            // so drag-selecting text that ends outside the modal never closes it.
-            document.addEventListener('mousedown', function(e) {
-                downTarget = e.target;
+            document.addEventListener('mousedown', event => {
+                mouseDownTarget = event.target;
             });
 
-            document.addEventListener('click', function(e) {
-                var closeBtn = e.target.closest('[data-modal-close]');
+            document.addEventListener('click', event => {
+                const closeButton = event.target.closest('[data-modal-close]');
 
-                if (closeBtn) {
-                    close(closeBtn.closest('[data-modal]'));
+                if (closeButton) {
+                    close(closeButton.closest('[data-modal]'));
                     return;
                 }
 
-                if (e.target.matches('[data-modal]') && downTarget === e.target && !e.target.hasAttribute(
-                        'data-static')) {
-                    close(e.target);
+                const modal = event.target;
+
+                if (
+                    modal.matches('[data-modal]') &&
+                    mouseDownTarget === modal &&
+                    !modal.hasAttribute('data-static')
+                ) {
+                    close(modal);
                 }
             });
 
-            document.addEventListener('keydown', function(e) {
-                if (e.key !== 'Escape') return;
-                var open = all().filter(isOpen);
+            document.addEventListener('keydown', event => {
+                if (event.key !== 'Escape') return;
+
+                const open = openModals();
                 if (open.length) close(open[open.length - 1]);
             });
-        })();
+        })
+        ();
     </script>
 @endonce

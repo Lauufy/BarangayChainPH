@@ -3,16 +3,8 @@
     @csrf
     @method('PUT')
 
-    <x-.admin.modal id="editUserModal" title="Edit account"
-        subtitle="Update account information, role, and profile details." size="max-w-3xl"
-        :close-on-backdrop="false">
-        <x-slot:icon>
-            <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M12 20h9" />
-                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
-            </svg>
-        </x-slot:icon>
+    <x-admin.modal id="editUserModal" title="Edit account"
+        subtitle="Update account information, role, and profile details." size="max-w-3xl" :close-on-backdrop="false">
 
         <input type="hidden" name="edit_user_id" id="editUser_id" value="{{ old('edit_user_id') }}">
 
@@ -21,11 +13,11 @@
 
             {{-- Profile Photo (staff / admin only) --}}
             <fieldset id="editUserPhoto">
-                <legend class="text-xs font-bold uppercase tracking-wide text-(--blue-700)">Profile Photo</legend>
+                <legend class="text-(--blue-700) text-xs font-bold uppercase tracking-wide dark:text-(--celadon-500)">Profile Photo</legend>
 
                 <div class="mt-3 flex items-center gap-4">
                     <div
-                        class="grid size-16 shrink-0 place-items-center overflow-hidden rounded-full border border-slate-200 bg-(--blue-700)/10 text-lg font-semibold text-(--blue-700)">
+                        class="grid size-16 shrink-0 place-items-center overflow-hidden rounded-full border border-(--celadon-600)/30 bg-(--celadon-500)/10 text-lg font-semibold text-(--blue-700) dark:border-(--celadon-500)/30 dark:text-(--celadon-500)">
                         <img id="editUserAvatarPreview" class="hidden size-full object-cover" alt="Photo preview">
                         <span id="editUserAvatarInitials"></span>
                     </div>
@@ -33,13 +25,13 @@
                     <div class="min-w-0 space-y-2">
                         <input type="file" name="avatar" id="editUserAvatar"
                             accept="image/png,image/jpeg,image/webp"
-                            class="block w-full text-sm text-slate-600 file:mr-3 file:cursor-pointer file:rounded-none file:border-0 file:bg-(--blue-700) file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-(--blue-600)">
-                        <p class="text-xs text-slate-500">JPG, PNG or WebP, up to 2 MB. A new photo replaces the
+                            class="file:bg-(--blue-700) hover:file:bg-(--blue-600) block w-full text-sm text-slate-600 dark:text-(--gray-300) file:mr-3 file:cursor-pointer file:rounded-none file:border-0 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white">
+                        <p class="text-xs text-(--gray-500) dark:text-(--gray-300)">JPG, PNG or WebP, up to 2 MB. A new photo replaces the
                             current one.</p>
 
-                        <label id="editUserRemoveWrap" class="hidden items-center gap-2 text-sm text-slate-700">
+                        <label id="editUserRemoveWrap" class="hidden items-center gap-2 text-sm text-(--gray-700) dark:text-(--gray-200)">
                             <input type="checkbox" name="remove_avatar" value="1" id="editUserRemove"
-                                class="size-4 rounded-none border-slate-300 text-(--blue-700) focus:ring-(--blue-700)">
+                                class="text-(--blue-700) focus:ring-(--blue-700) size-4 rounded-none border-slate-300">
                             Remove current photo
                         </label>
                     </div>
@@ -47,13 +39,12 @@
             </fieldset>
 
             {{-- Account --}}
-            <fieldset class="border-t border-slate-100 pt-5">
-                <legend class="text-xs font-bold uppercase tracking-wide text-(--blue-700)">Account</legend>
+            <fieldset class="border-t border-(--gray-200) pt-5 dark:border-white/10">
+                <legend class="text-(--blue-700) text-xs font-bold uppercase tracking-wide dark:text-(--celadon-500)">Account</legend>
 
                 <div class="mt-3 grid gap-4 sm:grid-cols-2">
                     <x-form.input light id="editUser_name" name="name" data-validate label="Full Name" required
-                        autocomplete="off" placeholder="Enter full name" :use-old="false"
-                        :value="$editOld['name'] ?? null" />
+                        autocomplete="off" placeholder="Enter full name" :use-old="false" :value="$editOld['name'] ?? null" />
 
                     <x-form.input light id="editUser_email" name="email" data-validate label="Email Address"
                         type="email" required autocomplete="off" placeholder="Enter email address" :use-old="false"
@@ -63,18 +54,17 @@
                         :options="['staff' => 'Staff / Employee', 'admin' => 'Administrator', 'citizen' => 'Citizen']" :use-old="false" :value="$editOld['role'] ?? null">
                         {{-- A disabled select isn't submitted, so locked roles are sent from here. --}}
                         <input type="hidden" name="role" id="editUser_roleHidden" disabled>
-                        <p id="editUserRoleNote" class="mt-1 hidden text-xs text-slate-500"></p>
+                        <p id="editUserRoleNote" class="mt-1 hidden text-xs text-(--gray-500) dark:text-(--gray-300)"></p>
                     </x-form.input>
 
                     <x-form.input light id="editUser_phone" name="phone" label="Phone Number" type="tel"
-                        autocomplete="off" placeholder="Enter phone number" :use-old="false"
-                        :value="$editOld['phone'] ?? null" />
+                        autocomplete="off" placeholder="Enter phone number" :use-old="false" :value="$editOld['phone'] ?? null" />
                 </div>
             </fieldset>
 
             {{-- Employment (staff / admin only) --}}
-            <fieldset id="editUserEmployment" class="border-t border-slate-100 pt-5">
-                <legend class="text-xs font-bold uppercase tracking-wide text-(--blue-700)">Employment</legend>
+            <fieldset id="editUserEmployment" class="border-t border-(--gray-200) pt-5 dark:border-white/10">
+                <legend class="text-(--blue-700) text-xs font-bold uppercase tracking-wide dark:text-(--celadon-500)">Employment</legend>
 
                 <div class="mt-3 grid gap-4 sm:grid-cols-2">
                     <x-form.input light id="editUser_department" name="department" label="Department" required
@@ -93,13 +83,18 @@
             </fieldset>
 
             {{-- Citizen details (citizens with a profile only) --}}
-            <fieldset id="editUserCitizen" class="hidden border-t border-slate-100 pt-5">
-                <legend class="text-xs font-bold uppercase tracking-wide text-(--blue-700)">Citizen Details</legend>
+            <fieldset id="editUserCitizen" class="hidden border-t border-(--gray-200) pt-5 dark:border-white/10">
+                <legend class="text-(--blue-700) text-xs font-bold uppercase tracking-wide dark:text-(--celadon-500)">Citizen Details</legend>
 
                 <div class="mt-3 grid gap-4 sm:grid-cols-2">
                     <x-form.input light id="editUser_civil_status" name="civil_status" label="Civil Status"
-                        type="select" required :use-old="false" :value="$editOld['civil_status'] ?? null"
-                        :options="['Single' => 'Single', 'Married' => 'Married', 'Widowed' => 'Widowed', 'Separated' => 'Separated', 'Divorced' => 'Divorced']" />
+                        type="select" required :use-old="false" :value="$editOld['civil_status'] ?? null" :options="[
+                            'Single' => 'Single',
+                            'Married' => 'Married',
+                            'Widowed' => 'Widowed',
+                            'Separated' => 'Separated',
+                            'Divorced' => 'Divorced',
+                        ]" />
 
                     <x-form.input light id="editUser_religion" name="religion" label="Religion (Optional)"
                         placeholder="Enter religion" :use-old="false" :value="$editOld['religion'] ?? null" />
@@ -127,19 +122,18 @@
             </fieldset>
 
             {{-- Password --}}
-            <fieldset class="border-t border-slate-100 pt-5">
-                <legend class="text-xs font-bold uppercase tracking-wide text-(--blue-700)">Change Password</legend>
+            <fieldset class="border-t border-(--gray-200) pt-5 dark:border-white/10">
+                <legend class="text-(--blue-700) text-xs font-bold uppercase tracking-wide dark:text-(--celadon-500)">Change Password</legend>
 
                 <div class="mt-3 grid gap-4 sm:grid-cols-2">
                     <div class="grid">
                         <x-form.input light id="editUser_password" name="password" data-validate label="New Password"
-                            type="password" autocomplete="new-password" placeholder="Enter new password"
-                            hint="Leave blank to keep the current password." :use-old="false" />
+                            type="password" autocomplete="new-password" placeholder="Enter new password" :use-old="false" />
                         <x-feedbacks.password-requirement input-id="editUser_password" />
                     </div>
 
-                    <x-form.input light id="editUser_password_confirmation" name="password_confirmation"
-                        data-validate label="Confirm New Password" type="password" autocomplete="new-password"
+                    <x-form.input light id="editUser_password_confirmation" name="password_confirmation" data-validate
+                        label="Confirm New Password" type="password" autocomplete="new-password"
                         placeholder="Confirm new password" :use-old="false" />
                 </div>
             </fieldset>
@@ -148,10 +142,11 @@
         <x-slot:footer>
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <button type="button" id="editUserPermissionsBtn"
-                    class="hidden items-center justify-center gap-2 rounded-none border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
-                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+                    class="hidden items-center justify-center gap-2 rounded-md border border-(--blue-700)/30 bg-(--white) px-4 py-3 text-sm font-semibold text-(--blue-700) transition hover:bg-(--blue-50) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--blue-500) dark:border-(--celadon-500)/40 dark:bg-transparent dark:text-(--celadon-500) dark:hover:bg-(--celadon-500)/10 dark:focus-visible:ring-(--celadon-500)">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path
+                            d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
                         <path d="m9 12 2 2 4-4" />
                     </svg>
                     Permissions
@@ -159,18 +154,18 @@
 
                 <div class="grid grid-cols-2 gap-3 sm:ml-auto sm:w-80">
                     <button type="button" data-modal-close
-                        class="w-full rounded-none border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
+                        class="w-full rounded-md border border-(--gray-300) bg-(--white) px-4 py-2.5 text-sm font-semibold text-(--gray-700) transition hover:bg-(--gray-100) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--blue-500) dark:border-white/20 dark:bg-transparent dark:text-(--gray-200) dark:hover:bg-white/10 dark:focus-visible:ring-(--celadon-500)">
                         Cancel
                     </button>
 
-                    <x-form.button color="#010048" hoverColor="#090088" type="submit" loading-text="Saving..."
+                    <x-form.button color="#1F3F7A" hoverColor="#173266" type="submit" loading-text="Saving..."
                         class="w-full">
                         Save Changes
                     </x-form.button>
                 </div>
             </div>
         </x-slot:footer>
-    </x-modal>
+        </x-modal>
 </form>
 
 <script>
@@ -229,7 +224,8 @@
             const locked = u.is_self || isCitizen;
             const role = $('editUser_role');
             [...role.options].forEach((opt) => {
-                opt.hidden = opt.disabled = opt.value === '' || (isCitizen ? opt.value !== 'citizen' : opt.value === 'citizen');
+                opt.hidden = opt.disabled = opt.value === '' || (isCitizen ? opt.value !== 'citizen' :
+                    opt.value === 'citizen');
             });
             role.disabled = locked;
             $('editUser_roleHidden').disabled = !locked;
@@ -238,7 +234,7 @@
 
             const note = $('editUserRoleNote');
             note.textContent = u.is_self ? "You can't change your own role." :
-                (isCitizen ? 'Citizen accounts keep the citizen role.' : '');
+                (isCitizen ? '  Citizen accounts keep the citizen role.' : '');
             note.classList.toggle('hidden', !locked);
 
             // Employment and photo: staff / admin only. Citizen details: citizens with a profile only.

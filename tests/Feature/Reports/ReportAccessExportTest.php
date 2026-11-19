@@ -114,7 +114,7 @@ class ReportAccessExportTest extends TestCase
         BlockchainRecord::factory()->for($issuedDocument, 'issuedDocument')->create([
             'recorded_at' => Carbon::parse('2026-11-12 08:00:00'),
             'created_at' => Carbon::parse('2026-11-12 08:00:00'),
-            'tx_hash' => '0x' . str_repeat('a', 64),
+            'tx_hash' => '0x'.str_repeat('a', 64),
         ]);
         $admin = User::factory()->create(['role' => 'admin']);
 
@@ -129,7 +129,8 @@ class ReportAccessExportTest extends TestCase
             ->assertDontSee('data-report-preset="week"', false)
             ->assertDontSee('name="status"', false)
             ->assertDontSee('name="purok"', false)
-            ->assertSee('Daily grouping')
+            ->assertSee('Filters')
+            ->assertSee('<option value="daily" selected>', false)
             ->assertSee('Service Requests')
             ->assertSee('Citizens')
             ->assertSee('Verification')
@@ -164,6 +165,7 @@ class ReportAccessExportTest extends TestCase
             ->assertSee('Successful')
             ->assertSee('Scans are counted from the date logging began.');
     }
+
     public function test_report_tables_show_shared_empty_states_when_the_period_has_no_rows(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
@@ -184,6 +186,7 @@ class ReportAccessExportTest extends TestCase
             ->assertSee('data-table-key="report-staff-performance"', false)
             ->assertSee('placeholder="Search staff..."', false);
     }
+
     public function test_dashboard_comparison_badges_use_the_equal_length_previous_period(): void
     {
         ServiceRequest::factory()->create(['created_at' => Carbon::parse('2026-10-31 23:59:59')]);

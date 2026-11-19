@@ -91,7 +91,7 @@
             'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--blue-700) dark:focus-visible:outline-(--celadon-500)';
         $link = "{$focus} rounded-sm text-sm font-semibold text-(--blue-700) underline underline-offset-4 dark:text-(--celadon-500)";
         $panel =
-            'rounded-xl border border-(--blue-700)/95 bg-white shadow-xl dark:border-white/15 dark:bg-(--blue-850)/97';
+            'rounded-xl border border-(--blue-700)/10 bg-white shadow-xl dark:border-white/15 dark:bg-(--blue-850)/97';
 
         // Desktop nav link: underline grows from the left on hover and for the current page
         $navLink = "{$focus} relative whitespace-nowrap rounded-sm py-1 text-sm font-medium transition-colors after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:origin-left after:scale-x-0 after:bg-current after:transition-transform hover:after:scale-x-100 aria-[current=page]:font-semibold aria-[current=page]:after:scale-x-100 dark:after:bg-(--celadon-500)";

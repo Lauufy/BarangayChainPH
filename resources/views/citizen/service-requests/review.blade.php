@@ -1,12 +1,25 @@
+@php
+    // Account/security flags that should not appear in the profile cards
+    $hiddenProfileFields = ['two factor enabled', 'google password setup required'];
+@endphp
+
 {{-- 5: Review (the earlier steps, disabled) --}}
 <div data-panel="5" class="hidden space-y-3">
     {{ $head('Review and confirmation', 'Check your details and application information before submitting.') }}
 
     @foreach ($profile as $title => $items)
+        @php
+            $visibleItems = collect($items)->reject(
+                fn ($value, $label) => in_array(strtolower(trim($label)), $hiddenProfileFields, true),
+            );
+        @endphp
+
+        @continue($visibleItems->isEmpty())
+
         <section class="{{ $card }}">
             <h3 class="{{ $h3 }}">{{ $title }}</h3>
             <div class="{{ $grid }}">
-                @foreach ($items as $label => $value)
+                @foreach ($visibleItems as $label => $value)
                     <div @class([$span => str_contains(strtolower($label), 'address')])>
                         <x-form.input :label="$label" :name="'review_profile_' . Str::slug($label, '_')" :value="$value" :use-old="false" light raised disabled />
                     </div>

@@ -26,6 +26,12 @@ class TicketInboxController extends Controller
         return view('admin.tickets.show', [
             'ticket' => $ticket->load('serviceRequest.user'),
             'messages' => $ticket->messages()->with('user')->oldest()->get(),
+            'tickets' => Ticket::with(['serviceRequest', 'latestMessage'])
+                ->withMax('messages', 'created_at')
+                ->orderByDesc('messages_max_created_at')
+                ->orderByDesc('id')
+                ->limit(50)
+                ->get(),
         ]);
     }
 

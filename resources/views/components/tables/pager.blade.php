@@ -30,7 +30,7 @@
                     <label for="per-page-{{ $perPageModel ?? 'select' }}">Showing</label>
                     <span class="relative">
                         <select id="per-page-{{ $perPageModel ?? 'select' }}"
-                            class="h-8 appearance-none rounded-lg border border-slate-200 bg-white pl-3 pr-7 text-sm font-medium text-slate-900 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                            class="h-8 appearance-none rounded-lg border border-slate-200 bg-white pl-3 pr-7 text-sm font-medium text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-blue-500 dark:focus:ring-blue-500/30"
                             @if ($perPageModel) wire:model.live="{{ $perPageModel }}"
                             @else name="per_page" onchange="this.form.submit()" @endif>
                             @foreach ($perPageOptions as $n)
@@ -52,7 +52,7 @@
                 $show = collect([1, 2, 3, $last - 1, $last, $current - 1, $current, $current + 1])
                     ->filter(fn($n) => $n >= 1 && $n <= $last)->unique()->sort()->values();
 
-                $nav = 'grid size-9 place-items-center rounded-lg border transition focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500';
+                $nav = 'grid size-9 place-items-center rounded-lg border transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 dark:focus-visible:ring-blue-500';
                 $on = 'border-slate-200 bg-white text-slate-900 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800';
                 $off = 'cursor-not-allowed border-slate-200 bg-white text-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-600';
                 $num = 'grid size-8 place-items-center rounded-md text-sm transition';
@@ -71,7 +71,7 @@
                             <span class="px-1 text-slate-400 dark:text-slate-500" aria-hidden="true">...</span>
                         @endif
                         @if ($n === $current)
-                            <span aria-current="page" class="{{ $num }} bg-violet-100 font-semibold text-violet-700 dark:bg-violet-500/20 dark:text-violet-300">{{ $n }}</span>
+                            <span aria-current="page" class="{{ $num }} bg-blue-600 font-semibold text-white">{{ $n }}</span>
                         @else
                             <a href="{{ $paginator->url($n) }}" class="{{ $num }} text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">{{ $n }}</a>
                         @endif

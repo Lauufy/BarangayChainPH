@@ -62,14 +62,15 @@
             <x-tables.table :heads="['Document Reference', 'Document Type', 'Submitted By', 'Authentication Status', 'Date']" :empty="$documents->isEmpty()" message="No authenticated documents yet.">
                 @foreach ($documents as $document)
                     <tr>
-                        <td class="font-medium text-slate-900">
+                        <td class="font-medium text-slate-700 dark:text-slate-300">
                             {{ $document->document_number }}
-                            <span class="text-xs font-normal text-slate-500">v{{ $document->version }}</span>
+                            <span
+                                class="text-xs font-normal text-slate-500 dark:text-slate-400">v{{ $document->version }}</span>
                         </td>
 
-                        <td>{{ $document->serviceRequest->serviceTitle() }}</td>
+                        <td class="text-slate-700 dark:text-slate-300">{{ $document->serviceRequest->serviceTitle() }}</td>
 
-                        <td>{{ $document->serviceRequest->applicant_name }}</td>
+                        <td class="text-slate-700 dark:text-slate-300">{{ $document->serviceRequest->applicant_name }}</td>
 
                         <td>
                             @if ($document->revoked_at)
@@ -79,7 +80,7 @@
                             @endif
                         </td>
 
-                        <td class="whitespace-nowrap">
+                        <td class="whitespace-nowrap text-slate-700 dark:text-slate-300">
                             {{ $document->issued_at?->timezone(config('app.timezone'))->format('M j, Y g:i A') ?? '—' }}
                         </td>
                     </tr>

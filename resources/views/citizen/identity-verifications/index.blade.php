@@ -9,18 +9,26 @@
         $labels = [1 => 'Details', 2 => 'ID', 3 => 'Selfie', 4 => 'Review'];
 
         // Same design tokens as the service application page
-        $card = 'rounded-lg bg-(--white) p-4 shadow-sm ring-1 ring-(--gray-200) dark:bg-(--gray-800) dark:ring-(--gray-700)';
+        $card =
+            'rounded-lg bg-(--white) p-4 shadow-sm ring-1 ring-(--gray-200) dark:bg-(--gray-800) dark:ring-(--gray-700)';
         $h2 = 'text-lg font-bold text-(--blue-900) dark:text-(--blue-300)';
         $h3 = 'text-base font-bold text-(--blue-900) dark:text-(--blue-300)';
         $sub = 'text-sm text-(--gray-600) dark:text-(--gray-300)';
         $ink = 'text-(--gray-900) dark:text-(--gray-50)';
         $muted = 'text-(--gray-500) dark:text-(--gray-400)';
         $line = 'border-(--gray-200) dark:border-(--gray-700)';
-        $btn = 'inline-flex items-center justify-center rounded-md px-5 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 sm:py-2';
-        $btnGhost = $btn . ' flex-1 border border-(--gray-300) bg-(--white) text-(--gray-700) hover:bg-(--gray-50) focus-visible:ring-(--blue-300) dark:border-(--gray-600) dark:bg-(--gray-800) dark:text-(--gray-200) dark:hover:bg-(--gray-700) sm:flex-none';
-        $btnBlue = $btn . ' w-full bg-(--blue-600) text-(--white) hover:bg-(--blue-700) focus-visible:ring-(--blue-600) sm:w-auto';
-        $dropzone = 'group relative flex min-h-56 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-(--gray-300) bg-(--gray-50) p-4 text-center transition hover:border-(--blue-600) hover:bg-(--gray-100) focus-within:border-(--blue-600) focus-within:ring-2 focus-within:ring-[color-mix(in_srgb,var(--blue-600)_30%,transparent)] dark:border-(--gray-600) dark:bg-(--gray-900) dark:hover:bg-(--gray-700)';
-        $iconBox = 'flex h-12 w-12 items-center justify-center rounded-full bg-(--white) text-(--blue-600) shadow-sm ring-1 ring-(--gray-200) dark:bg-(--gray-800) dark:ring-(--gray-700)';
+        $btn =
+            'inline-flex items-center justify-center rounded-md px-5 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 sm:py-2';
+        $btnGhost =
+            $btn .
+            ' flex-1 border border-(--gray-300) bg-(--white) text-(--gray-700) hover:bg-(--gray-50) focus-visible:ring-(--blue-300) dark:border-(--gray-600) dark:bg-(--gray-800) dark:text-(--gray-200) dark:hover:bg-(--gray-700) sm:flex-none';
+        $btnBlue =
+            $btn .
+            ' w-full bg-(--blue-600) text-(--white) hover:bg-(--blue-700) focus-visible:ring-(--blue-600) sm:w-auto';
+        $dropzone =
+            'group relative flex min-h-56 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-(--gray-300) bg-(--gray-50) p-4 text-center transition hover:border-(--blue-600) hover:bg-(--gray-100) focus-within:border-(--blue-600) focus-within:ring-2 focus-within:ring-[color-mix(in_srgb,var(--blue-600)_30%,transparent)] dark:border-(--gray-600) dark:bg-(--gray-900) dark:hover:bg-(--gray-700)';
+        $iconBox =
+            'flex h-12 w-12 items-center justify-center rounded-full bg-(--white) text-(--blue-600) shadow-sm ring-1 ring-(--gray-200) dark:bg-(--gray-800) dark:ring-(--gray-700)';
         $thumb = 'rounded-md bg-(--white) ring-1 ring-(--gray-200) dark:bg-(--gray-800) dark:ring-(--gray-700)';
         $link = 'text-xs font-semibold text-(--blue-700) underline dark:text-(--blue-300)';
     @endphp
@@ -30,32 +38,40 @@
         {{-- Header + actions (mobile: fixed bottom bar) --}}
         <header class="{{ $line }} space-y-2 border-b pb-4">
             <nav class="{{ $muted }} flex items-center gap-2 text-xs" aria-label="Breadcrumb">
-                <a href="{{ route('citizen.dashboard') }}" class="hover:text-(--blue-700) dark:hover:text-(--blue-300)">Home</a>
+                <a href="{{ route('citizen.dashboard') }}"
+                    class="hover:text-(--blue-700) dark:hover:text-(--blue-300)">Home</a>
                 <span aria-hidden="true">›</span>
-                <span class="font-semibold text-(--blue-700) dark:text-(--blue-300)">Identity verification</span>
+                <span class="text-(--blue-700) dark:text-(--blue-300) font-semibold">Identity verification</span>
             </nav>
 
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <h1 class="text-2xl font-bold tracking-tight text-(--blue-900) dark:text-(--blue-300) sm:text-3xl">Identity verification</h1>
-                    <p class="{{ $sub }} mt-1">Verify your identity to request barangay services and edit your profile.</p>
+                    <h1 class="text-(--blue-900) dark:text-(--blue-300) text-2xl font-bold tracking-tight sm:text-3xl">
+                        Identity verification</h1>
+                    <p class="{{ $sub }} mt-1">Verify your identity to request barangay services and edit your
+                        profile.</p>
                 </div>
 
                 @if ($editing)
-                    <div class="{{ $line }} fixed inset-x-0 bottom-0 z-30 flex items-center gap-2 border-t bg-(--white) p-3 shadow-[0_-2px_8px_rgba(0,0,0,0.06)] dark:bg-(--gray-900) sm:static sm:z-auto sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none dark:sm:bg-transparent">
+                    <div
+                        class="{{ $line }} bg-(--white) dark:bg-(--gray-900) fixed inset-x-0 bottom-0 z-30 flex items-center gap-2 border-t p-3 shadow-[0_-2px_8px_rgba(0,0,0,0.06)] sm:static sm:z-auto sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none dark:sm:bg-transparent">
                         @if ($step === 1)
                             <a href="{{ url('/') }}" class="{{ $btnGhost }}">Cancel</a>
-                            <button type="submit" form="details-form" class="{{ $btnBlue }} flex-1 sm:flex-none">Save and continue <span class="ml-1.5" aria-hidden="true">›</span></button>
+                            <button type="submit" form="details-form"
+                                class="{{ $btnBlue }} flex-2 sm:min-w-44 sm:flex-none">Save and continue <span
+                                    class="ml-1.5" aria-hidden="true">›</span></button>
                         @else
                             <button type="button" id="back-button" class="{{ $btnGhost }}">Back</button>
 
-                            <div id="next-wrap" class="flex-1 sm:flex-none">
-                                <button type="button" id="next-button" class="{{ $btnBlue }}">Next <span class="ml-1.5" aria-hidden="true">›</span></button>
+                            <div id="next-wrap" class="flex-2 sm:flex-none">
+                                <button type="button" id="next-button" class="{{ $btnBlue }} sm:min-w-36">Next <span
+                                        class="ml-1.5" aria-hidden="true">›</span></button>
                             </div>
 
-                            <div id="submit-wrap" class="hidden flex-1 sm:flex-none">
+                            <div id="submit-wrap" class="hidden flex-2 sm:flex-none">
                                 <button type="submit" form="document-form" id="submit-button"
-                                    class="{{ $btn }} w-full bg-(--green-700) text-(--white) hover:bg-(--green-600) focus-visible:ring-(--green-500) disabled:opacity-60 sm:w-auto">Submit for verification</button>
+                                    class="{{ $btn }} bg-(--green-700) text-(--white) hover:bg-(--green-600) focus-visible:ring-(--green-500) w-full disabled:opacity-60 sm:w-auto sm:min-w-44">Submit
+                                    for verification</button>
                             </div>
                         @endif
                     </div>
@@ -65,7 +81,8 @@
 
         {{-- Status message --}}
         @if ($status === 'verified')
-            <x-partials.citizen-notice type="green" title="Verified">Your identity is verified. You can now request barangay
+            <x-partials.citizen-notice type="green" title="Verified">Your identity is verified. You can now request
+                barangay
                 services.</x-partials.citizen-notice>
         @elseif ($status === 'pending')
             <x-partials.citizen-notice type="amber" title="Pending review">Your application was submitted. Barangay staff
@@ -85,7 +102,8 @@
             <section class="{{ $card }}">
                 <div class="flex items-center justify-between gap-3">
                     <h2 class="{{ $h3 }}">Your submission</h2>
-                    <span class="{{ $status === 'verified' ? 'bg-[color-mix(in_srgb,var(--green-500)_18%,transparent)] text-(--green-700) dark:text-(--green-300)' : 'bg-[color-mix(in_srgb,var(--amber-500)_20%,transparent)] text-(--amber-500)' }} rounded-full px-3 py-1 text-xs font-semibold">
+                    <span
+                        class="{{ $status === 'verified' ? 'bg-[color-mix(in_srgb,var(--green-500)_18%,transparent)] text-(--green-700) dark:text-(--green-300)' : 'bg-[color-mix(in_srgb,var(--amber-500)_20%,transparent)] text-(--amber-500)' }} rounded-full px-3 py-1 text-xs font-semibold">
                         {{ $status === 'verified' ? 'Verified' : 'Pending review' }}
                     </span>
                 </div>
@@ -97,17 +115,20 @@
                     </div>
                     <div>
                         <dt class="{{ $muted }}">Submitted</dt>
-                        <dd class="{{ $ink }} mt-1 font-medium">{{ $verification->submitted_at->format('M j, Y g:i A') }}</dd>
+                        <dd class="{{ $ink }} mt-1 font-medium">
+                            {{ $verification->submitted_at->format('M j, Y g:i A') }}</dd>
                     </div>
                 </dl>
 
                 <a href="{{ route('citizen.identity-verification.file', $verification) }}" target="_blank" rel="noopener"
-                    class="{{ $link }} {{ $line }} mt-4 inline-block border-t pt-4 text-sm">View my uploaded ID</a>
+                    class="{{ $link }} {{ $line }} mt-4 inline-block border-t pt-4 text-sm">View my uploaded
+                    ID</a>
             </section>
         @else
             {{-- Validation errors --}}
             @if ($errors->any())
-                <div role="alert" class="rounded-md border border-(--red-600) bg-(--white) p-3 text-sm text-(--red-600) dark:bg-(--gray-800)">
+                <div role="alert"
+                    class="border-(--red-600) bg-(--white) text-(--red-600) dark:bg-(--gray-800) rounded-md border p-3 text-sm">
                     <p class="font-semibold">Please fix the following:</p>
                     <ul class="mt-2 list-disc space-y-1 pl-5">
                         @foreach ($errors->all() as $message)
@@ -122,7 +143,8 @@
 
             @if ($step === 1)
                 {{-- STEP 1: Personal information --}}
-                <form id="details-form" method="POST" action="{{ route('citizen.identity-verification.details') }}" class="space-y-3">
+                <form id="details-form" method="POST" action="{{ route('citizen.identity-verification.details') }}"
+                    class="space-y-3">
                     @csrf
 
                     <div>
@@ -142,8 +164,8 @@
                             {{-- Email can only be added when the account has none (SMS sign-up) --}}
                             <x-form.input light raised placeholder=" " name="email" label="Email" type="email"
                                 :value="old('email', auth()->user()->email)" :disabled="auth()->user()->email !== null" :required="auth()->user()->email === null" />
-                            <x-form.input light raised placeholder=" " name="date_of_birth" label="Date of birth"
-                                type="date" required :value="$profile?->date_of_birth?->format('Y-m-d')" />
+                            <x-form.input light raised placeholder=" " name="date_of_birth" label="Date of birth" type="date"
+                                required :value="$profile?->date_of_birth?->format('Y-m-d')" />
                             <x-form.input light raised name="gender" label="Gender" type="select" required
                                 placeholder="Select" :options="['Male' => 'Male', 'Female' => 'Female']" :value="$profile?->gender" />
                             <x-form.input light raised name="civil_status" label="Civil status" type="select" required
@@ -194,7 +216,8 @@
                     <div data-panel="2" class="space-y-3">
                         <div>
                             <h2 class="{{ $h2 }}">Upload your ID</h2>
-                            <p class="{{ $sub }}">Use a valid government ID. Your name and photo must be readable.</p>
+                            <p class="{{ $sub }}">Use a valid government ID. Your name and photo must be readable.
+                            </p>
                         </div>
 
                         <section class="{{ $card }}">
@@ -206,7 +229,8 @@
                             </div>
 
                             <div class="mt-4">
-                                <span class="text-sm font-medium text-(--gray-700) dark:text-(--gray-200)">ID photo or scan</span>
+                                <span class="text-(--gray-700) dark:text-(--gray-200) text-sm font-medium">ID photo or
+                                    scan</span>
 
                                 <label for="document" id="id-drop" class="{{ $dropzone }} mt-1.5">
                                     <input id="document" name="document" type="file" required
@@ -214,22 +238,30 @@
 
                                     <div data-empty class="flex flex-col items-center">
                                         <span class="{{ $iconBox }}">
-                                            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 16V5m0 0-4 4m4-4 4 4M5 19h14" />
+                                            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                stroke-width="1.6" aria-hidden="true">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                    d="M12 16V5m0 0-4 4m4-4 4 4M5 19h14" />
                                             </svg>
                                         </span>
-                                        <span class="{{ $ink }} mt-3 text-sm font-semibold">Choose a file or drop it here</span>
-                                        <span class="{{ $muted }} mt-1 text-xs">JPG, PNG, or PDF, up to 5 MB. Photos are shrunk automatically.</span>
+                                        <span class="{{ $ink }} mt-3 text-sm font-semibold">Choose a file or drop it
+                                            here</span>
+                                        <span class="{{ $muted }} mt-1 text-xs">JPG, PNG, or PDF, up to 5 MB. Photos
+                                            are shrunk automatically.</span>
                                     </div>
 
                                     <div data-filled class="hidden w-full flex-col items-center">
-                                        <img alt="ID preview" class="{{ $thumb }} hidden max-h-48 w-auto max-w-full object-contain">
-                                        <span data-pdf class="{{ $thumb }} {{ $ink }} hidden px-4 py-6 text-sm font-semibold">PDF file</span>
-                                        <span data-name class="{{ $ink }} mt-3 max-w-full truncate text-sm font-medium"></span>
+                                        <img alt="ID preview"
+                                            class="{{ $thumb }} hidden max-h-48 w-auto max-w-full object-contain">
+                                        <span data-pdf
+                                            class="{{ $thumb }} {{ $ink }} hidden px-4 py-6 text-sm font-semibold">PDF
+                                            file</span>
+                                        <span data-name
+                                            class="{{ $ink }} mt-3 max-w-full truncate text-sm font-medium"></span>
                                         <span class="{{ $link }} mt-0.5">Replace file</span>
                                     </div>
                                 </label>
-                                <p id="file-error" class="mt-1.5 text-sm text-(--red-600)" role="alert"></p>
+                                <p id="file-error" class="text-(--red-600) mt-1.5 text-sm" role="alert"></p>
                             </div>
                         </section>
                     </div>
@@ -238,11 +270,13 @@
                     <div data-panel="3" class="hidden space-y-3">
                         <div>
                             <h2 class="{{ $h2 }}">Take a selfie with your ID</h2>
-                            <p class="{{ $sub }}">Hold your ID next to your face. Use the camera or upload a photo.</p>
+                            <p class="{{ $sub }}">Hold your ID next to your face. Use the camera or upload a photo.
+                            </p>
                         </div>
 
                         <section class="{{ $card }}">
-                            <ul class="space-y-1.5 rounded-lg bg-(--gray-50) p-4 text-sm text-(--gray-700) dark:bg-(--gray-900) dark:text-(--gray-200)">
+                            <ul
+                                class="bg-(--gray-50) text-(--gray-700) dark:bg-(--gray-900) dark:text-(--gray-200) space-y-1.5 rounded-lg p-4 text-sm">
                                 <li>✓ Your face and your ID are both clearly visible.</li>
                                 <li>✓ The lighting is good. No hat or sunglasses.</li>
                                 <li>✓ The ID text is sharp and not covered.</li>
@@ -251,49 +285,66 @@
                             <input type="hidden" name="selfie_source" id="selfie-source" value="upload">
 
                             <div role="tablist" aria-label="Selfie method"
-                                class="mt-4 inline-flex rounded-lg bg-(--gray-100) p-1 text-sm font-semibold dark:bg-(--gray-900)">
+                                class="bg-(--gray-100) dark:bg-(--gray-900) mt-4 inline-flex rounded-lg p-1 text-sm font-semibold">
                                 <button type="button" role="tab" id="tab-upload" aria-selected="true"
-                                    class="rounded-md bg-(--white) px-4 py-2 text-(--gray-900) shadow-sm transition dark:bg-(--gray-700) dark:text-(--gray-50)">Upload photo</button>
+                                    class="bg-(--white) text-(--gray-900) dark:bg-(--gray-700) dark:text-(--gray-50) rounded-md px-4 py-2 shadow-sm transition">Upload
+                                    photo</button>
                                 <button type="button" role="tab" id="open-camera" aria-selected="false"
-                                    class="rounded-md px-4 py-2 text-(--gray-600) transition hover:text-(--gray-900) dark:text-(--gray-300) dark:hover:text-(--gray-50)">Use camera</button>
+                                    class="text-(--gray-600) hover:text-(--gray-900) dark:text-(--gray-300) dark:hover:text-(--gray-50) rounded-md px-4 py-2 transition">Use
+                                    camera</button>
                             </div>
 
                             <div class="mt-4">
                                 <label for="selfie" id="selfie-drop" class="{{ $dropzone }}">
-                                    <input id="selfie" name="selfie" type="file" required accept="image/jpeg,image/png" class="sr-only">
+                                    <input id="selfie" name="selfie" type="file" required
+                                        accept="image/jpeg,image/png" class="sr-only">
 
                                     <div data-empty class="flex flex-col items-center">
                                         <span class="{{ $iconBox }}">
-                                            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                                            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                stroke-width="1.6" aria-hidden="true">
                                                 <circle cx="12" cy="9" r="3.5" />
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 20a7 7 0 0 1 14 0" />
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                    d="M5 20a7 7 0 0 1 14 0" />
                                             </svg>
                                         </span>
-                                        <span class="{{ $ink }} mt-3 text-sm font-semibold">Choose a selfie or drop it here</span>
-                                        <span class="{{ $muted }} mt-1 text-xs">JPG or PNG. Photos are shrunk automatically.</span>
+                                        <span class="{{ $ink }} mt-3 text-sm font-semibold">Choose a selfie or drop
+                                            it here</span>
+                                        <span class="{{ $muted }} mt-1 text-xs">JPG or PNG. Photos are shrunk
+                                            automatically.</span>
                                     </div>
 
                                     <div data-filled class="hidden w-full flex-col items-center">
-                                        <img alt="Selfie preview" class="{{ $thumb }} max-h-56 w-auto max-w-full object-contain">
-                                        <span data-name class="{{ $ink }} mt-3 max-w-full truncate text-sm font-medium"></span>
+                                        <img alt="Selfie preview"
+                                            class="{{ $thumb }} max-h-56 w-auto max-w-full object-contain">
+                                        <span data-name
+                                            class="{{ $ink }} mt-3 max-w-full truncate text-sm font-medium"></span>
                                         <span class="{{ $link }} mt-0.5">Replace photo</span>
                                     </div>
                                 </label>
 
                                 <div id="camera-box" class="hidden">
-                                    <div class="relative mx-auto w-full max-w-md overflow-hidden rounded-lg bg-(--gray-900)">
-                                        <video id="camera-video" autoplay playsinline muted class="aspect-4/3 w-full -scale-x-100 object-cover"></video>
-                                        <div class="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden="true">
-                                            <div id="face-guide" class="h-3/4 w-2/5 rounded-[50%] border-2 border-dashed border-white/70 transition-colors"></div>
+                                    <div class="bg-(--gray-900) relative mx-auto w-full max-w-md overflow-hidden rounded-lg">
+                                        <video id="camera-video" autoplay playsinline muted
+                                            class="aspect-4/3 w-full -scale-x-100 object-cover"></video>
+                                        <div class="pointer-events-none absolute inset-0 flex items-center justify-center"
+                                            aria-hidden="true">
+                                            <div id="face-guide"
+                                                class="h-3/4 w-2/5 rounded-[50%] border-2 border-dashed border-white/70 transition-colors">
+                                            </div>
                                         </div>
                                     </div>
-                                    <p id="face-status" class="mt-3 text-center text-sm font-medium text-(--gray-600) dark:text-(--gray-300)" role="status" aria-live="polite"></p>
+                                    <p id="face-status"
+                                        class="text-(--gray-600) dark:text-(--gray-300) mt-3 text-center text-sm font-medium"
+                                        role="status" aria-live="polite"></p>
                                     <div class="mt-3 flex justify-center">
-                                        <button type="button" id="take-photo" class="{{ $btn }} bg-(--blue-600) text-(--white) hover:bg-(--blue-700) focus-visible:ring-(--blue-600)">Take photo</button>
+                                        <button type="button" id="take-photo"
+                                            class="{{ $btn }} bg-(--blue-600) text-(--white) hover:bg-(--blue-700) focus-visible:ring-(--blue-600)">Take
+                                            photo</button>
                                     </div>
                                 </div>
 
-                                <p id="selfie-error" class="mt-1.5 text-sm text-(--red-600)" role="alert"></p>
+                                <p id="selfie-error" class="text-(--red-600) mt-1.5 text-sm" role="alert"></p>
                             </div>
                         </section>
                     </div>
@@ -314,12 +365,13 @@
                                 </div>
                                 <div>
                                     <dt class="{{ $muted }}">Date of birth</dt>
-                                    <dd class="{{ $ink }} mt-1 font-medium">{{ $profile?->date_of_birth?->format('M j, Y') ?? '—' }}</dd>
+                                    <dd class="{{ $ink }} mt-1 font-medium">
+                                        {{ $profile?->date_of_birth?->format('M j, Y') ?? '—' }}</dd>
                                 </div>
                                 <div class="sm:col-span-2 lg:col-span-3">
                                     <dt class="{{ $muted }}">Address</dt>
                                     <dd class="{{ $ink }} mt-1 font-medium">
-                                        {{ collect([$profile?->house_number, $profile?->barangay, $profile?->city_municipality, $profile?->province, $profile?->zip_code])->filter()->implode(', ') ?: '—' }}
+                                        {{ collect([$profile?->house_number, $profile?->barangay, $profile?->city_municipality, $profile?->province, $profile?->zip_code])->filter()->implode(', ') ?:'—' }}
                                     </dd>
                                 </div>
                                 <div>
@@ -337,15 +389,19 @@
                             <h3 class="{{ $h3 }}">Photos</h3>
                             <div class="mt-3 grid grid-cols-2 gap-4">
                                 <figure>
-                                    <div class="flex h-32 items-center justify-center overflow-hidden rounded-md bg-(--gray-50) ring-1 ring-(--gray-200) dark:bg-(--gray-900) dark:ring-(--gray-700)">
+                                    <div
+                                        class="bg-(--gray-50) ring-(--gray-200) dark:bg-(--gray-900) dark:ring-(--gray-700) flex h-32 items-center justify-center overflow-hidden rounded-md ring-1">
                                         <img id="review-id" alt="Your ID" class="hidden h-full w-full object-contain">
-                                        <span id="review-id-empty" class="{{ $muted }} px-2 text-center text-xs"></span>
+                                        <span id="review-id-empty"
+                                            class="{{ $muted }} px-2 text-center text-xs"></span>
                                     </div>
                                     <figcaption class="{{ $muted }} mt-2 text-xs">ID</figcaption>
                                 </figure>
                                 <figure>
-                                    <div class="flex h-32 items-center justify-center overflow-hidden rounded-md bg-(--gray-50) ring-1 ring-(--gray-200) dark:bg-(--gray-900) dark:ring-(--gray-700)">
-                                        <img id="review-selfie" alt="Your selfie" class="hidden h-full w-full object-contain">
+                                    <div
+                                        class="bg-(--gray-50) ring-(--gray-200) dark:bg-(--gray-900) dark:ring-(--gray-700) flex h-32 items-center justify-center overflow-hidden rounded-md ring-1">
+                                        <img id="review-selfie" alt="Your selfie"
+                                            class="hidden h-full w-full object-contain">
                                     </div>
                                     <figcaption class="{{ $muted }} mt-2 text-xs">Selfie with ID</figcaption>
                                 </figure>
@@ -355,7 +411,7 @@
                         {{-- Change this text to match your barangay's official privacy notice --}}
                         <section class="{{ $card }}">
                             <h3 class="{{ $h3 }}">Data privacy notice</h3>
-                            <p class="mt-2 text-sm leading-6 text-(--gray-600) dark:text-(--gray-300)">
+                            <p class="text-(--gray-600) dark:text-(--gray-300) mt-2 text-sm leading-6">
                                 We collect your personal details, ID, and selfie only to verify your identity for
                                 barangay online services.
                                 They are stored privately and can only be viewed by authorized barangay staff.
@@ -368,7 +424,7 @@
 
                         <section class="{{ $card }}">
                             <h3 class="{{ $h3 }}">Confirmation</h3>
-                            <div class="mt-3 space-y-3 text-sm text-(--gray-700) dark:text-(--gray-200)">
+                            <div class="text-(--gray-700) dark:text-(--gray-200) mt-3 space-y-3 text-sm">
                                 <x-form.checkbox name="agree_truth" required>
                                     I confirm that the information, ID, and photo I submitted are true and belong to me.
                                 </x-form.checkbox>

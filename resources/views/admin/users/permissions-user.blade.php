@@ -3,28 +3,21 @@
     @csrf
     @method('PUT')
 
-    <x-.admin.modal id="permissionsModal" title="Staff permissions"
+    <x-admin.modal id="permissionsModal" title="Staff permissions"
         subtitle="Choose which modules this staff member can use." size="max-w-2xl" :close-on-backdrop="false">
-        <x-slot:icon>
-            <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
-                <path d="m9 12 2 2 4-4" />
-            </svg>
-        </x-slot:icon>
 
         <input type="hidden" name="permissions_user_id" id="permissionsUserId" value="{{ $permissionsUserId }}">
 
         {{-- Staff member --}}
-        <div class="flex items-center gap-3 border-b border-slate-200 bg-slate-50 px-6 py-4">
+        <div class="flex items-center gap-3 border-b border-(--gray-200) bg-(--gray-50) px-6 py-4 dark:border-white/10 dark:bg-white/5">
             <div
-                class="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-(--blue-700)/10 text-sm font-semibold text-(--blue-700)">
+                class="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full border border-(--celadon-600)/30 bg-(--celadon-500)/10 text-sm font-semibold text-(--blue-700) dark:border-(--celadon-500)/30 dark:text-(--celadon-500)">
                 <img id="permissionsAvatar" class="hidden size-full object-cover" alt="">
                 <span id="permissionsInitials"></span>
             </div>
             <div class="min-w-0">
-                <p id="permissionsName" class="truncate text-sm font-semibold text-slate-900"></p>
-                <p id="permissionsEmail" class="truncate text-xs text-slate-500"></p>
+                <p id="permissionsName" class="truncate text-sm font-semibold text-(--gray-900) dark:text-(--off-white)"></p>
+                <p id="permissionsEmail" class="truncate text-xs text-(--gray-500) dark:text-(--gray-300)"></p>
             </div>
         </div>
 
@@ -32,14 +25,14 @@
             <x-feedbacks.form-errors id="permissionsErrors" bag="updatePermissions" />
 
             {{-- Always-available note --}}
-            <div class="flex gap-3 border-l-4 border-(--celadon-300) bg-(--celadon-50) px-4 py-3">
-                <svg class="mt-0.5 h-4 w-4 shrink-0 text-(--celadon-700)" viewBox="0 0 24 24" fill="none"
+            <div class="flex gap-3 border-l-4 border-(--celadon-600) bg-(--celadon-500)/10 px-4 py-3 dark:border-(--celadon-500)">
+                <svg class="mt-0.5 h-4 w-4 shrink-0 text-(--celadon-600) dark:text-(--celadon-500)" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
                     aria-hidden="true">
                     <circle cx="12" cy="12" r="9" />
                     <path d="M12 11v5M12 8h.01" />
                 </svg>
-                <p class="text-sm leading-relaxed text-slate-600">
+                <p class="text-sm leading-relaxed text-(--gray-700) dark:text-(--gray-200)">
                     Dashboard, My Profile and Notifications are always available. Users &amp; Roles is for
                     administrators only.
                 </p>
@@ -47,27 +40,27 @@
 
             {{-- Module list --}}
             <div class="flex items-center justify-between gap-3">
-                <p class="text-sm font-semibold text-slate-900">Modules</p>
+                <p class="text-sm font-semibold text-(--gray-900) dark:text-(--off-white)">Modules</p>
 
                 <div class="flex items-center gap-3 text-xs">
-                    <span id="permissionsCount" class="text-slate-500"></span>
-                    <span class="h-3 border-l border-slate-200" aria-hidden="true"></span>
+                    <span id="permissionsCount" class="text-(--gray-500) dark:text-(--gray-300)"></span>
+                    <span class="h-3 border-l border-(--gray-200) dark:border-white/15" aria-hidden="true"></span>
                     <button type="button" id="permissionsAll"
-                        class="font-semibold text-(--blue-700) hover:underline">Select all</button>
+                        class="font-semibold text-(--blue-700) hover:underline dark:text-(--celadon-500)">Select all</button>
                     <button type="button" id="permissionsNone"
-                        class="font-semibold text-slate-500 hover:text-slate-800 hover:underline">Clear</button>
+                        class="font-semibold text-(--gray-500) hover:text-(--gray-800) hover:underline dark:text-(--gray-300) dark:hover:text-(--off-white)">Clear</button>
                 </div>
             </div>
 
             <div class="grid gap-3 sm:grid-cols-2">
                 @foreach ($permissionList as $key => $label)
                     <label
-                        class="group flex cursor-pointer items-center gap-3 rounded-none border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 has-checked:border-(--celadon-600) has-checked:bg-(--celadon-50) has-checked:text-slate-900">
+                        class="group flex cursor-pointer items-center gap-3 rounded-md border border-(--gray-200) bg-(--white) px-4 py-3 text-sm font-medium text-(--gray-700) transition hover:border-(--gray-300) has-checked:border-(--celadon-600) has-checked:bg-(--celadon-500)/10 has-checked:text-(--gray-900) dark:border-white/15 dark:bg-white/5 dark:text-(--gray-200) dark:hover:border-white/30 dark:has-checked:border-(--celadon-500) dark:has-checked:bg-(--celadon-500)/10 dark:has-checked:text-(--off-white)">
                         <input type="checkbox" name="permissions[]" value="{{ $key }}" data-pm-box
                             @checked(in_array($key, $oldPermissions, true)) class="peer sr-only">
 
                         <span
-                            class="flex h-5 w-5 shrink-0 items-center justify-center rounded-none border border-slate-300 bg-white text-transparent transition peer-checked:border-(--celadon-600) peer-checked:bg-(--celadon-600) peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-(--celadon-600) peer-focus-visible:ring-offset-2">
+                            class="flex h-5 w-5 shrink-0 items-center justify-center rounded border border-(--gray-300) bg-(--white) text-transparent transition peer-checked:border-(--celadon-600) peer-checked:bg-(--celadon-600) peer-focus-visible:ring-2 peer-focus-visible:ring-(--celadon-600) peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-white peer-checked:text-white dark:border-white/25 dark:bg-(--blue-850) dark:peer-checked:border-(--celadon-500) dark:peer-checked:bg-(--celadon-500) dark:peer-focus-visible:ring-(--celadon-500) dark:peer-focus-visible:ring-offset-(--blue-850) dark:peer-checked:text-(--blue-850)">
                             <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path d="m5 12 5 5L20 7" />
@@ -83,17 +76,17 @@
         <x-slot:footer>
             <div class="grid grid-cols-2 gap-3 sm:ml-auto sm:w-96">
                 <button type="button" data-modal-close
-                    class="w-full rounded-none border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
+                    class="w-full rounded-md border border-(--gray-300) bg-(--white) px-4 py-2.5 text-sm font-semibold text-(--gray-700) transition hover:bg-(--gray-100) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--blue-500) dark:border-white/20 dark:bg-transparent dark:text-(--gray-200) dark:hover:bg-white/10 dark:focus-visible:ring-(--celadon-500)">
                     Cancel
                 </button>
 
-                <x-form.button color="#010048" hoverColor="#090088" type="submit" loading-text="Saving..."
+                <x-form.button color="#1F3F7A" hoverColor="#173266" type="submit" loading-text="Saving..."
                     class="w-full">
                     Save Permissions
                 </x-form.button>
             </div>
         </x-slot:footer>
-    </x-modal>
+        </x-modal>
 </form>
 
 <script>

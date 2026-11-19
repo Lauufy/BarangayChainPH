@@ -53,7 +53,11 @@
                 'bg-(--red-600)',
                 'Rejected',
             ],
-            'processing' => ['bg-(--amber-500)/20 text-(--gray-900) dark:bg-(--amber-500)', 'bg-(--amber-500)', 'Processing'],
+            'processing' => [
+                'bg-(--amber-500)/20 text-(--gray-900) dark:bg-(--amber-500)',
+                'bg-(--amber-500)',
+                'Processing',
+            ],
             'cancelled' => [
                 'bg-(--gray-600)/15 text-(--gray-600) dark:bg-(--gray-600) dark:text-(--white)',
                 'bg-(--gray-600)',
@@ -207,11 +211,13 @@
         $card = 'rounded-sm border border-(--blue-700)/15 bg-white shadow-xs dark:border-white/10 dark:bg-(--blue-870)';
         $cardDark = 'rounded-sm border border-white/15 bg-white/[0.04] backdrop-blur-xs';
         $panelDark = 'rounded-sm border bg-(--blue-870)/85 p-6 shadow-xl backdrop-blur-md sm:p-7';
-        $notice = 'rounded-sm border border-(--amber-500)/50 bg-[color-mix(in_srgb,var(--amber-500)_14%,transparent)] p-4';
+        $notice =
+            'rounded-sm border border-(--amber-500)/50 bg-[color-mix(in_srgb,var(--amber-500)_14%,transparent)] p-4';
         $rowHover = 'transition-colors hover:bg-(--blue-700)/[0.04] dark:hover:bg-white/[0.04]';
 
         // Section backgrounds
-        $light = 'bg-(--off-white) text-(--blue-700) dark:border-t dark:border-white/10 dark:bg-(--blue-850) dark:text-(--off-white)';
+        $light =
+            'bg-(--off-white) text-(--blue-700) dark:border-t dark:border-white/10 dark:bg-(--blue-850) dark:text-(--off-white)';
         $deep = 'bg-(--blue-860) text-(--off-white) dark:border-t dark:border-white/10 dark:bg-(--blue-870)';
 
         // Layout
@@ -222,11 +228,11 @@
     <div class="min-w-0 overflow-x-clip">
 
         {{-- ========== Hero ========== --}}
-        <section class="relative isolate overflow-hidden bg-(--blue-850) text-(--off-white)">
+        <section class="bg-(--blue-850) text-(--off-white) relative isolate overflow-hidden">
             <x-partials.blueprint base="bg-(--celadon-500)" src="{{ asset('img/photos/ynares-hall-front.jpg') }}"
                 pos="object-center lg:object-right" class="absolute inset-0 -z-20" />
             <div aria-hidden="true"
-                class="bg-linear-to-b from-(--blue-850) via-(--blue-850)/90 to-(--blue-850)/75 lg:bg-linear-to-r lg:from-(--blue-850) lg:via-(--blue-850)/85 absolute inset-0 -z-10 lg:from-35% lg:via-60% lg:to-(--blue-850)/40">
+                class="bg-linear-to-b from-(--blue-850) via-(--blue-850)/90 to-(--blue-850)/75 lg:bg-linear-to-r lg:from-(--blue-850) lg:via-(--blue-850)/85 lg:to-(--blue-850)/40 absolute inset-0 -z-10 lg:from-35% lg:via-60%">
             </div>
 
             <div class="mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-16 lg:py-20">
@@ -236,7 +242,7 @@
                     <div class="relative z-10 min-w-0">
                         <div
                             class="inline-flex items-center gap-2.5 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs backdrop-blur-sm">
-                            <span class="font-medium text-(--off-white)/80">Citizen Portal</span>
+                            <span class="text-(--off-white)/80 font-medium">Citizen Portal</span>
                             <span aria-hidden="true" class="text-white/30">•</span>
                             <span
                                 class="{{ $statusBadge }} rounded-full px-2 py-0.5 text-[11px] font-bold tracking-wide">{{ $statusText }}</span>
@@ -247,7 +253,7 @@
                             {{ $greeting }}, <span class="text-(--celadon-500)">{{ $firstName }}.</span>
                         </h1>
 
-                        <p class="mt-4 max-w-xl text-base leading-7 text-(--off-white)/80">
+                        <p class="text-(--off-white)/80 mt-4 max-w-xl text-base leading-7">
                             Request official Barangay San Luis certificates, monitor your application progress, and
                             manage your digital citizen records.
                         </p>
@@ -272,7 +278,7 @@
                                         <h2 class="mt-1 text-lg font-bold">Complete before you apply</h2>
                                     </div>
                                     <span
-                                        class="rounded-full bg-white/10 px-3 py-1 text-xs font-bold tabular-nums text-(--celadon-500)">{{ $doneCount }}/2
+                                        class="text-(--celadon-500) rounded-full bg-white/10 px-3 py-1 text-xs font-bold tabular-nums">{{ $doneCount }}/2
                                         Done</span>
                                 </div>
 
@@ -281,7 +287,7 @@
                                         <li class="flex items-start gap-3.5">
                                             @if ($done)
                                                 <span
-                                                    class="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-(--green-600) text-white">
+                                                    class="bg-(--green-600) mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full text-white">
                                                     <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor"
                                                         stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
                                                         <path stroke-linecap="round" stroke-linejoin="round"
@@ -290,7 +296,7 @@
                                                 </span>
                                             @else
                                                 <span
-                                                    class="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full border border-(--celadon-500)/60 bg-(--celadon-500)/10 text-xs font-bold text-(--celadon-500)">{{ $loop->iteration }}</span>
+                                                    class="border-(--celadon-500)/60 bg-(--celadon-500)/10 text-(--celadon-500) mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full border text-xs font-bold">{{ $loop->iteration }}</span>
                                             @endif
 
                                             <div class="min-w-0 flex-1">
@@ -303,7 +309,7 @@
                                                             {!! $arrow('h-3.5 w-3.5') !!}</a>
                                                     @endunless
                                                 </div>
-                                                <p class="mt-0.5 text-xs leading-5 text-(--off-white)/70">{{ $text }}
+                                                <p class="text-(--off-white)/70 mt-0.5 text-xs leading-5">{{ $text }}
                                                 </p>
                                             </div>
                                         </li>
@@ -314,7 +320,7 @@
                             <div class="{{ $panelDark }} border-(--celadon-500)/30">
                                 <div class="flex items-start gap-3.5">
                                     <span
-                                        class="flex size-10 shrink-0 items-center justify-center rounded-full bg-(--green-600)/20 text-(--celadon-500) ring-1 ring-(--celadon-500)/40">
+                                        class="bg-(--green-600)/20 text-(--celadon-500) ring-(--celadon-500)/40 flex size-10 shrink-0 items-center justify-center rounded-full ring-1">
                                         <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"
                                             viewBox="0 0 24 24" aria-hidden="true">
                                             <path stroke-linecap="round" stroke-linejoin="round"
@@ -324,7 +330,7 @@
                                     <div>
                                         <p class="{{ $eyebrowDark }}">Account Ready</p>
                                         <h2 class="mt-1 text-lg font-bold">Verified &amp; Eligible</h2>
-                                        <p class="mt-1.5 text-xs leading-5 text-(--off-white)/75">{{ $statusMessage }}</p>
+                                        <p class="text-(--off-white)/75 mt-1.5 text-xs leading-5">{{ $statusMessage }}</p>
                                         <a href="{{ route('citizen.documents') }}" class="{{ $textLinkDark }} mt-3 text-xs">
                                             View issued documents {!! $arrow('h-3.5 w-3.5') !!}
                                         </a>
@@ -340,13 +346,13 @@
 
         {{-- ========== Status strip ========== --}}
         <section
-            class="border-b border-(--blue-700)/10 bg-white text-(--blue-700) dark:border-white/10 dark:bg-(--blue-860) dark:text-(--off-white)">
+            class="border-(--blue-700)/10 text-(--blue-700) dark:bg-(--blue-860) dark:text-(--off-white) border-b bg-white dark:border-white/10">
             <div class="mx-auto max-w-7xl px-5 sm:px-8">
                 <dl class="grid grid-cols-2 md:grid-cols-[repeat(auto-fit,minmax(10rem,1fr))]">
                     @foreach ($cells as [$label, $value])
                         <div
                             class="{{ $loop->index % 2 ? 'border-l' : '' }} {{ $loop->index >= 2 ? 'border-t' : '' }} {{ $loop->index > 0 ? 'md:border-l' : '' }} border-current/10 px-4 py-5 text-center sm:px-6 sm:py-6 md:border-t-0">
-                            <dt class="text-xs font-semibold uppercase tracking-wider text-current/65">{{ $label }}
+                            <dt class="text-current/65 text-xs font-semibold uppercase tracking-wider">{{ $label }}
                             </dt>
                             <dd class="mt-1.5 text-xl font-bold tabular-nums tracking-tight lg:text-2xl">
                                 {{ $value }}</dd>
@@ -372,7 +378,7 @@
 
                     @if ($recentRequests->isNotEmpty())
                         <div
-                            class="{{ $card }} mt-6 divide-y divide-(--blue-700)/10 overflow-hidden dark:divide-white/10">
+                            class="{{ $card }} divide-(--blue-700)/10 mt-6 divide-y overflow-hidden dark:divide-white/10">
                             @foreach ($recentRequests as $application)
                                 @php [$badgeClass, $dotClass, $statusLabel] = $applicationStatus($application->status); @endphp
                                 <a href="{{ route('citizen.applications.show', $application) }}"
@@ -400,7 +406,7 @@
                     @else
                         <div class="{{ $card }} mt-6 flex flex-col items-center p-10 text-center">
                             <span
-                                class="flex size-12 items-center justify-center rounded-full bg-(--blue-700)/10 text-(--blue-700) dark:bg-(--celadon-500)/15 dark:text-(--celadon-500)">
+                                class="bg-(--blue-700)/10 text-(--blue-700) dark:bg-(--celadon-500)/15 dark:text-(--celadon-500) flex size-12 items-center justify-center rounded-full">
                                 <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.5"
                                     viewBox="0 0 24 24" aria-hidden="true">
                                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -408,8 +414,10 @@
                                 </svg>
                             </span>
                             <p class="mt-4 text-base font-bold">No applications yet</p>
-                            <p class="{{ $muted }} mt-1 max-w-sm text-sm">Need a Barangay Clearance or Certificate of Residency? Submit your first request online.</p>
-                            <a href="{{ route('citizen.services') }}" class="{{ $btn }} mt-6">Request a service</a>
+                            <p class="{{ $muted }} mt-1 max-w-sm text-sm">Need a Barangay Clearance or Certificate
+                                of Residency? Submit your first request online.</p>
+                            <a href="{{ route('citizen.services') }}" class="{{ $btn }} mt-6">Request a
+                                service</a>
                         </div>
                     @endif
                 </div>
@@ -422,9 +430,9 @@
                     <div class="mt-6 space-y-3">
                         @foreach ($actions as [$name, $text, $href, $icon])
                             <a href="{{ $href }}"
-                                class="{{ $card }} {{ $rowHover }} {{ $focus }} group flex items-center gap-4 p-4 transition-all hover:border-(--blue-700)/40 dark:hover:border-(--celadon-500)/50">
+                                class="{{ $card }} {{ $rowHover }} {{ $focus }} hover:border-(--blue-700)/40 dark:hover:border-(--celadon-500)/50 group flex items-center gap-4 p-4 transition-all">
                                 <span
-                                    class="grid size-11 shrink-0 place-items-center rounded-sm bg-(--blue-700)/10 text-(--blue-700) transition-colors group-hover:bg-(--blue-700) group-hover:text-white dark:bg-(--celadon-500)/15 dark:text-(--celadon-500) dark:group-hover:bg-(--celadon-500) dark:group-hover:text-(--blue-850)">
+                                    class="bg-(--blue-700)/10 text-(--blue-700) group-hover:bg-(--blue-700) dark:bg-(--celadon-500)/15 dark:text-(--celadon-500) dark:group-hover:bg-(--celadon-500) dark:group-hover:text-(--blue-850) grid size-11 shrink-0 place-items-center rounded-sm transition-colors group-hover:text-white">
                                     <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.75"
                                         viewBox="0 0 24 24" aria-hidden="true">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="{{ $icon }}" />
@@ -434,7 +442,9 @@
                                     <span class="block text-sm font-bold">{{ $name }}</span>
                                     <span class="{{ $muted }} mt-0.5 block text-xs">{{ $text }}</span>
                                 </span>
-                                {!! $arrow('h-4 w-4 shrink-0 opacity-50 transition-transform group-hover:translate-x-1 group-hover:opacity-100 motion-reduce:group-hover:translate-x-0') !!}
+                                {!! $arrow(
+                                    'h-4 w-4 shrink-0 opacity-50 transition-transform group-hover:translate-x-1 group-hover:opacity-100 motion-reduce:group-hover:translate-x-0',
+                                ) !!}
                             </a>
                         @endforeach
                     </div>
@@ -458,7 +468,7 @@
                 @unless ($verified)
                     <div class="{{ $notice }} mt-8 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                         <div class="flex items-center gap-3">
-                            <svg class="h-5 w-5 shrink-0 text-(--amber-500)" fill="none" stroke="currentColor"
+                            <svg class="text-(--amber-500) h-5 w-5 shrink-0" fill="none" stroke="currentColor"
                                 stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round"
                                     d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
@@ -466,8 +476,8 @@
                             <p class="text-sm font-medium">Identity verification is required before submitting a
                                 certificate request.</p>
                         </div>
-                        <a href="{{ route('citizen.identity-verification') }}"
-                            class="{{ $textLinkDark }} shrink-0">Verify now {!! $arrow('h-3.5 w-3.5') !!}</a>
+                        <a href="{{ route('citizen.identity-verification') }}" class="{{ $textLinkDark }} shrink-0">Verify
+                            now {!! $arrow('h-3.5 w-3.5') !!}</a>
                     </div>
                 @endunless
 
@@ -475,33 +485,33 @@
                     @foreach ($services as $service)
                         @php $requirements = data_get($service, 'requirements', []); @endphp
                         <a href="{{ route('citizen.services') }}"
-                            class="{{ $cardDark }} {{ $focusDark }} group relative flex flex-col justify-between overflow-hidden p-7 transition duration-300 hover:-translate-y-1 hover:border-(--celadon-500)/70 hover:bg-white/[0.07] motion-reduce:hover:translate-y-0">
+                            class="{{ $cardDark }} {{ $focusDark }} hover:border-(--celadon-500)/70 group relative flex flex-col justify-between overflow-hidden p-7 transition duration-300 hover:-translate-y-1 hover:bg-white/[0.07] motion-reduce:hover:translate-y-0">
                             <span aria-hidden="true"
-                                class="absolute inset-x-0 top-0 h-1 scale-x-0 bg-(--celadon-500) transition-transform duration-300 group-hover:scale-x-100"></span>
+                                class="bg-(--celadon-500) absolute inset-x-0 top-0 h-1 scale-x-0 transition-transform duration-300 group-hover:scale-x-100"></span>
 
                             <div>
                                 <div class="flex items-center justify-between">
-                                    <span class="font-mono text-xs font-bold tracking-wider text-(--celadon-500)">SERVICE
+                                    <span class="text-(--celadon-500) font-mono text-xs font-bold tracking-wider">SERVICE
                                         {{ sprintf('%02d', $loop->iteration) }}</span>
                                     <span
-                                        class="rounded-full border border-white/15 px-2.5 py-0.5 text-[11px] font-medium text-(--off-white)/70">Online</span>
+                                        class="text-(--off-white)/70 rounded-full border border-white/15 px-2.5 py-0.5 text-[11px] font-medium">Online</span>
                                 </div>
 
                                 <h3 class="mt-4 text-xl font-bold leading-snug sm:text-2xl">
                                     {{ data_get($service, 'name') }}</h3>
-                                <p class="mt-2.5 text-sm leading-6 text-(--off-white)/75">
+                                <p class="text-(--off-white)/75 mt-2.5 text-sm leading-6">
                                     {{ data_get($service, 'description') }}</p>
                             </div>
 
                             <div class="mt-6 border-t border-white/10 pt-4">
                                 @if (is_array($requirements) && $requirements)
-                                    <p class="mb-3 text-xs leading-5 text-(--off-white)/65">
-                                        <strong class="font-semibold text-(--off-white)/90">Requirements:</strong>
+                                    <p class="text-(--off-white)/65 mb-3 text-xs leading-5">
+                                        <strong class="text-(--off-white)/90 font-semibold">Requirements:</strong>
                                         {{ implode(', ', $requirements) }}
                                     </p>
                                 @endif
                                 <span
-                                    class="inline-flex items-center gap-2 text-sm font-bold text-(--celadon-500) transition-transform group-hover:translate-x-1 motion-reduce:group-hover:translate-x-0">
+                                    class="text-(--celadon-500) inline-flex items-center gap-2 text-sm font-bold transition-transform group-hover:translate-x-1 motion-reduce:group-hover:translate-x-0">
                                     Start request {!! $arrow() !!}
                                 </span>
                             </div>
@@ -509,7 +519,7 @@
                     @endforeach
                 </div>
 
-                <p class="mt-6 text-xs leading-5 text-(--off-white)/55">
+                <p class="text-(--off-white)/55 mt-6 text-xs leading-5">
                     * Requirements, applicable fees, and processing times are subject to verification by the Barangay
                     San Luis office.
                 </p>
@@ -526,12 +536,12 @@
                     </div>
 
                     @if ($hasImportant)
-                        <div class="inline-flex w-full overflow-hidden rounded-sm border border-(--blue-700)/25 bg-white text-sm font-semibold sm:w-auto dark:border-white/20 dark:bg-(--blue-870)"
+                        <div class="border-(--blue-700)/25 dark:bg-(--blue-870) inline-flex w-full overflow-hidden rounded-sm border bg-white text-sm font-semibold sm:w-auto dark:border-white/20"
                             role="group" aria-label="Filter announcements">
                             <button type="button" data-news-filter="all" aria-pressed="true"
-                                class="{{ $focus }} flex-1 bg-(--blue-700) px-4 py-2 text-(--off-white) transition-colors sm:flex-none dark:bg-(--celadon-500) dark:text-(--blue-850)">All</button>
+                                class="{{ $focus }} bg-(--blue-700) text-(--off-white) dark:bg-(--celadon-500) dark:text-(--blue-850) flex-1 px-4 py-2 transition-colors sm:flex-none">All</button>
                             <button type="button" data-news-filter="important" aria-pressed="false"
-                                class="{{ $focus }} flex-1 px-4 py-2 transition-colors hover:bg-(--blue-700)/10 sm:flex-none dark:hover:bg-white/10">Important</button>
+                                class="{{ $focus }} hover:bg-(--blue-700)/10 flex-1 px-4 py-2 transition-colors sm:flex-none dark:hover:bg-white/10">Important</button>
                         </div>
                     @endif
                 </div>
@@ -546,7 +556,7 @@
                                     <p class="{{ $eyebrow }}">{{ data_get($item, 'date') }}</p>
                                     @if ($important)
                                         <span
-                                            class="rounded-full bg-(--amber-500) px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-(--gray-900)">Important</span>
+                                            class="bg-(--amber-500) text-(--gray-900) rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide">Important</span>
                                     @endif
                                 </div>
                                 <h3 class="wrap-break-word mt-3 text-lg font-bold leading-snug sm:text-xl">
@@ -581,14 +591,14 @@
                                 <h2 class="{{ $h2s }}">Citizen profile</h2>
                             </div>
                             <span
-                                class="rounded-full bg-(--celadon-500)/15 px-3 py-1 text-xs font-bold tabular-nums text-(--celadon-500)">{{ $percent }}%
+                                class="bg-(--celadon-500)/15 text-(--celadon-500) rounded-full px-3 py-1 text-xs font-bold tabular-nums">{{ $percent }}%
                                 Complete</span>
                         </div>
 
                         <div class="mt-4 h-2 overflow-hidden rounded-full bg-white/15" role="progressbar"
                             aria-valuenow="{{ $percent }}" aria-valuemin="0" aria-valuemax="100"
                             aria-label="Profile completion">
-                            <div class="h-full rounded-full bg-(--celadon-500) transition-all duration-700"
+                            <div class="bg-(--celadon-500) h-full rounded-full transition-all duration-700"
                                 style="width: {{ $percent }}%"></div>
                         </div>
 
@@ -596,7 +606,7 @@
                             @foreach ($details as [$name, $value])
                                 <div class="grid gap-1 py-3.5 sm:grid-cols-[10rem_1fr] sm:gap-4">
                                     <dt
-                                        class="text-xs font-semibold uppercase tracking-wider text-(--off-white)/65 sm:pt-0.5">
+                                        class="text-(--off-white)/65 text-xs font-semibold uppercase tracking-wider sm:pt-0.5">
                                         {{ $name }}</dt>
                                     <dd class="wrap-break-word min-w-0 text-sm font-semibold">
                                         @if ($value)
@@ -615,10 +625,10 @@
                     <div class="mt-6 flex flex-wrap items-center justify-between gap-4">
                         <a href="{{ route('citizen.profile') }}" class="{{ $btnDark }}">Update profile</a>
                         @if ($missing)
-                            <p class="text-xs font-semibold text-(--amber-500)">{{ $missing }}
+                            <p class="text-(--amber-500) text-xs font-semibold">{{ $missing }}
                                 {{ str('detail')->plural($missing) }} missing</p>
                         @else
-                            <p class="text-xs text-(--off-white)/70">All profile fields complete.</p>
+                            <p class="text-(--off-white)/70 text-xs">All profile fields complete.</p>
                         @endif
                     </div>
                 </div>
@@ -632,7 +642,7 @@
                                 class="hidden rounded-full px-2.5 py-0.5 text-xs font-semibold"></span>
                         </div>
                         <h2 class="{{ $h2s }}">Need assistance?</h2>
-                        <p class="mt-2 text-sm leading-6 text-(--off-white)/75">
+                        <p class="text-(--off-white)/75 mt-2 text-sm leading-6">
                             Reach out or visit Ynares Hall for inquiries regarding certificates, fees, and account
                             verification.
                         </p>
@@ -641,7 +651,7 @@
                             @foreach ($contacts as [$icon, $name, $value, $link])
                                 <div class="flex items-start gap-3.5">
                                     <span
-                                        class="mt-0.5 inline-flex size-9 shrink-0 items-center justify-center rounded-sm bg-(--celadon-500)/15 text-(--celadon-500) ring-1 ring-(--celadon-500)/30">
+                                        class="bg-(--celadon-500)/15 text-(--celadon-500) ring-(--celadon-500)/30 mt-0.5 inline-flex size-9 shrink-0 items-center justify-center rounded-sm ring-1">
                                         <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.75"
                                             viewBox="0 0 24 24" aria-hidden="true">
                                             <path stroke-linecap="round" stroke-linejoin="round"
@@ -649,11 +659,11 @@
                                         </svg>
                                     </span>
                                     <div class="min-w-0">
-                                        <dt class="text-xs font-semibold text-(--off-white)/60">{{ $name }}</dt>
+                                        <dt class="text-(--off-white)/60 text-xs font-semibold">{{ $name }}</dt>
                                         <dd class="wrap-break-word mt-0.5 text-sm font-semibold">
                                             @if ($link)
                                                 <a href="{{ $link }}"
-                                                    class="{{ $focusDark }} break-all rounded-sm underline-offset-4 transition-colors hover:text-(--celadon-500) hover:underline">{{ $value }}</a>
+                                                    class="{{ $focusDark }} hover:text-(--celadon-500) break-all rounded-sm underline-offset-4 transition-colors hover:underline">{{ $value }}</a>
                                             @else
                                                 {{ $value }}
                                             @endif
@@ -675,15 +685,14 @@
         </section>
     </div>
 
-    {{-- Chatbot widget: key and URL come from config/services.php (TUQLAS_KEY, TUQLAS_URL) --}}
-    @if (config('services.tuqlas.key'))
-        <script src="{{ config('services.tuqlas.url') }}/chatbot.js" data-key="{{ config('services.tuqlas.key') }}"
-            data-api="{{ config('services.tuqlas.url') }}" defer></script>
-    @endif
+    <script src="https://www.tuqlas.com/chatbot.js" data-key="tq_live_b008f3e486ad59592451ce7d324b4c54c94ccd3a"
+        data-api="https://www.tuqlas.com" defer></script>
 
     <script>
         (function() {
-            const activeCls = ['bg-(--blue-700)', 'text-(--off-white)', 'dark:bg-(--celadon-500)', 'dark:text-(--blue-850)'];
+            const activeCls = ['bg-(--blue-700)', 'text-(--off-white)', 'dark:bg-(--celadon-500)',
+                'dark:text-(--blue-850)'
+            ];
             const idleCls = ['hover:bg-(--blue-700)/10', 'dark:hover:bg-white/10'];
 
             // Announcement filter. One delegated listener, so it survives the layout's 5-second content refresh.

@@ -15,7 +15,7 @@
         $grid = 'mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3';
         $span = 'sm:col-span-2 lg:col-span-3';
         $btn =
-            'inline-flex items-center justify-center rounded-md px-5 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 sm:py-2';
+            'inline-flex items-center justify-center rounded-md px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 sm:py-2';
         $head = fn($title, $text) => new \Illuminate\Support\HtmlString(
             '<div><h2 class="text-(--blue-900) dark:text-(--blue-300) text-lg font-bold">' .
                 e($title) .
@@ -70,15 +70,15 @@
                     <button type="button" id="back-button"
                         class="{{ $btn }} border-(--gray-300) bg-(--white) text-(--gray-700) hover:bg-(--gray-50) focus-visible:ring-(--blue-300) dark:border-(--gray-600) dark:bg-(--gray-800) dark:text-(--gray-200) dark:hover:bg-(--gray-700) flex-1 border sm:flex-none">Back</button>
 
-                    <div id="next-wrap" class="flex-1 sm:flex-none">
+                    <div id="next-wrap" class="flex-2 sm:flex-none">
                         <button type="button" id="next-button"
-                            class="{{ $btn }} bg-(--blue-600) text-(--white) hover:bg-(--blue-700) focus-visible:ring-(--blue-600) w-full sm:w-auto">Next
+                            class="{{ $btn }} bg-(--blue-600) text-(--white) hover:bg-(--blue-700) focus-visible:ring-(--blue-600) w-full sm:w-auto sm:min-w-36">Next
                             <span class="ml-1.5" aria-hidden="true">›</span></button>
                     </div>
 
-                    <div id="submit-wrap" class="hidden flex-1 sm:flex-none">
+                    <div id="submit-wrap" class="hidden flex-2 sm:flex-none">
                         <button type="submit" form="apply-form" id="submit-button"
-                            class="{{ $btn }} bg-(--green-700) text-(--white) hover:bg-(--green-600) focus-visible:ring-(--green-500) w-full disabled:opacity-60 sm:w-auto">Submit</button>
+                            class="{{ $btn }} bg-(--green-700) text-(--white) hover:bg-(--green-600) focus-visible:ring-(--green-500) w-full disabled:opacity-60 sm:w-auto sm:min-w-36">Submit</button>
                     </div>
                 </div>
             </div>
