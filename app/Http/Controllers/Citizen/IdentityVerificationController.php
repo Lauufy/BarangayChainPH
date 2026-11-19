@@ -190,7 +190,7 @@ class IdentityVerificationController extends Controller
             'submitted_at' => now(),
         ]);
 
-        ProcessIdentityOcr::dispatch($verification->id);
+        $this->queueOcrCheck($verification);
 
         $this->notifyAdmins($user);
 
@@ -270,6 +270,16 @@ class IdentityVerificationController extends Controller
                 IdentityVerification::VERIFIED,
             ])
             ->exists();
+    }
+
+    // The automatic ID check only helps staff, so a queue problem must not break the submission.
+    private function queueOcrCheck(IdentityVerification $verification): void
+    {
+        try {
+            ProcessIdentityOcr::dispatch($verification->id);
+        } catch (\Throwable $exception) {
+            report($exception);
+        }
     }
 
     // A failed notification must not break the submission.

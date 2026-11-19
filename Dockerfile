@@ -1,4 +1,3 @@
-
 # Stage 1: Build frontend assets
 FROM node:24-alpine AS frontend
 
@@ -150,6 +149,7 @@ RUN printf '%s\n' \
     'sed -ri "s/<VirtualHost \*:[0-9]+>/<VirtualHost *:${PORT}>/" /etc/apache2/sites-available/000-default.conf' \
     'php artisan config:clear' \
     'php artisan migrate --force' \
+    '(while true; do su -s /bin/sh www-data -c "php artisan queue:work --sleep=3 --tries=2 --max-time=3600"; sleep 2; done) &' \
     'exec apache2-foreground' \
     > /usr/local/bin/start-render.sh \
     && chmod +x /usr/local/bin/start-render.sh

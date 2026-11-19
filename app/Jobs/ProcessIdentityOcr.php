@@ -1,9 +1,5 @@
 <?php
 
-// Put this file at: app/Jobs/ProcessIdentityOcr.php
-//
-// Lines marked ADAPT are the only places that depend on your own schema.
-
 namespace App\Jobs;
 
 use App\Models\IdentityVerification;
@@ -48,20 +44,24 @@ class ProcessIdentityOcr implements ShouldQueue
             }
 
             $flags = $ocr->checkQuality($temporaryPath);
-            $text = $ocr->read($temporaryPath);
 
-            if (trim($text) === '') {
-                $flags[] = 'no_text_detected';
-            } else {
-                $user = $verification->user;
-                $profile = $user->citizenProfile;
+            // Tesseract cannot read PDFs or damaged files, so staff check those by eye.
+            if (! in_array('unreadable_image', $flags, true)) {
+                $text = $ocr->read($temporaryPath);
 
-                if (! $extractor->nameFound((string) $user->name, $text)) {
-                    $flags[] = 'name_not_found';
-                }
+                if (trim($text) === '') {
+                    $flags[] = 'no_text_detected';
+                } else {
+                    $user = $verification->user;
+                    $profile = $user->citizenProfile;
 
-                if (! $extractor->birthdateFound($profile?->date_of_birth?->toDateString(), $text)) {
-                    $flags[] = 'birthdate_not_found';
+                    if (! $extractor->nameFound((string) $user->name, $text)) {
+                        $flags[] = 'name_not_found';
+                    }
+
+                    if (! $extractor->birthdateFound($profile?->date_of_birth?->toDateString(), $text)) {
+                        $flags[] = 'birthdate_not_found';
+                    }
                 }
             }
 

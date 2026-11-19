@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\Ocr\IdFieldExtractor;
 use App\Services\Ocr\IdOcrService;
 use App\Services\SupabaseStorage;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Queue;
@@ -82,7 +83,8 @@ class IdentityVerificationPhotoTest extends TestCase
         $verification->refresh();
         $this->assertSame('done', $verification->ocr_status);
         $this->assertSame([], $verification->ocr_flags);
-        $this->assertFileDoesNotExist($temporaryPath);
+        $this->assertNotNull($temporaryPath);
+        $this->assertFileDoesNotExist((string) $temporaryPath);
     }
 
     public function test_identity_photos_are_saved_to_supabase_and_served_through_signed_urls(): void
@@ -105,8 +107,10 @@ class IdentityVerificationPhotoTest extends TestCase
             'zip_code' => '1234',
         ]);
 
-        Storage::fake('supabase');
-        Storage::fake('local');
+        /** @var FilesystemAdapter $supabase */
+        $supabase = Storage::fake('supabase');
+        /** @var FilesystemAdapter $local */
+        $local = Storage::fake('local');
         Queue::fake([ProcessIdentityOcr::class]);
 
         $response = $this->actingAs($citizen)
@@ -123,10 +127,10 @@ class IdentityVerificationPhotoTest extends TestCase
         $response->assertRedirect(route('citizen.identity-verification'));
 
         $verification = $citizen->identityVerifications()->latest()->firstOrFail();
-        Storage::disk('supabase')->assertExists($verification->document_path);
-        Storage::disk('supabase')->assertExists($verification->selfie_path);
-        Storage::disk('local')->assertMissing($verification->document_path);
-        Storage::disk('local')->assertMissing($verification->selfie_path);
+        $supabase->assertExists($verification->document_path);
+        $supabase->assertExists($verification->selfie_path);
+        $local->assertMissing($verification->document_path);
+        $local->assertMissing($verification->selfie_path);
         $this->assertStringNotContainsString('http', $verification->document_path);
         $this->assertStringNotContainsString('http', $verification->selfie_path);
         Queue::assertPushed(
@@ -173,8 +177,10 @@ class IdentityVerificationPhotoTest extends TestCase
             'zip_code' => '1234',
         ]);
 
-        Storage::fake('supabase');
-        Storage::fake('local');
+        /** @var FilesystemAdapter $supabase */
+        $supabase = Storage::fake('supabase');
+        /** @var FilesystemAdapter $local */
+        $local = Storage::fake('local');
         Queue::fake([ProcessIdentityOcr::class]);
 
         $response = $this->actingAs($citizen)
@@ -191,10 +197,10 @@ class IdentityVerificationPhotoTest extends TestCase
         $response->assertRedirect(route('citizen.identity-verification'));
 
         $verification = $citizen->identityVerifications()->latest()->firstOrFail();
-        Storage::disk('supabase')->assertExists($verification->document_path);
-        Storage::disk('supabase')->assertExists($verification->selfie_path);
-        Storage::disk('local')->assertMissing($verification->document_path);
-        Storage::disk('local')->assertMissing($verification->selfie_path);
+        $supabase->assertExists($verification->document_path);
+        $supabase->assertExists($verification->selfie_path);
+        $local->assertMissing($verification->document_path);
+        $local->assertMissing($verification->selfie_path);
         $this->assertStringNotContainsString('http', $verification->document_path);
         $this->assertStringNotContainsString('http', $verification->selfie_path);
 
