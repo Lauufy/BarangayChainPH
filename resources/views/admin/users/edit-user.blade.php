@@ -11,36 +11,10 @@
         <div class="space-y-6 p-6">
             <x-feedbacks.form-errors id="editUserErrors" bag="updateUser" />
 
-            {{-- Profile Photo (staff / admin only) --}}
-            <fieldset id="editUserPhoto">
-                <legend class="text-(--blue-700) text-xs font-bold uppercase tracking-wide dark:text-(--celadon-500)">Profile Photo</legend>
-
-                <div class="mt-3 flex items-center gap-4">
-                    <div
-                        class="grid size-16 shrink-0 place-items-center overflow-hidden rounded-full border border-(--celadon-600)/30 bg-(--celadon-500)/10 text-lg font-semibold text-(--blue-700) dark:border-(--celadon-500)/30 dark:text-(--celadon-500)">
-                        <img id="editUserAvatarPreview" class="hidden size-full object-cover" alt="Photo preview">
-                        <span id="editUserAvatarInitials"></span>
-                    </div>
-
-                    <div class="min-w-0 space-y-2">
-                        <input type="file" name="avatar" id="editUserAvatar"
-                            accept="image/png,image/jpeg,image/webp"
-                            class="file:bg-(--blue-700) hover:file:bg-(--blue-600) block w-full text-sm text-slate-600 dark:text-(--gray-300) file:mr-3 file:cursor-pointer file:rounded-none file:border-0 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white">
-                        <p class="text-xs text-(--gray-500) dark:text-(--gray-300)">JPG, PNG or WebP, up to 2 MB. A new photo replaces the
-                            current one.</p>
-
-                        <label id="editUserRemoveWrap" class="hidden items-center gap-2 text-sm text-(--gray-700) dark:text-(--gray-200)">
-                            <input type="checkbox" name="remove_avatar" value="1" id="editUserRemove"
-                                class="text-(--blue-700) focus:ring-(--blue-700) size-4 rounded-none border-slate-300">
-                            Remove current photo
-                        </label>
-                    </div>
-                </div>
-            </fieldset>
-
             {{-- Account --}}
-            <fieldset class="border-t border-(--gray-200) pt-5 dark:border-white/10">
-                <legend class="text-(--blue-700) text-xs font-bold uppercase tracking-wide dark:text-(--celadon-500)">Account</legend>
+            <fieldset class="border-(--gray-200) border-t pt-5 dark:border-white/10">
+                <legend class="text-(--blue-700) dark:text-(--celadon-500) text-xs font-bold uppercase tracking-wide">
+                    Account</legend>
 
                 <div class="mt-3 grid gap-4 sm:grid-cols-2">
                     <x-form.input light id="editUser_name" name="name" data-validate label="Full Name" required
@@ -54,11 +28,12 @@
                         :options="['staff' => 'Staff / Employee', 'admin' => 'Administrator', 'citizen' => 'Citizen']" :use-old="false" :value="$editOld['role'] ?? null">
                         {{-- A disabled select isn't submitted, so locked roles are sent from here. --}}
                         <input type="hidden" name="role" id="editUser_roleHidden" disabled>
-                        <p id="editUserRoleNote" class="mt-1 hidden text-xs text-(--gray-500) dark:text-(--gray-300)"></p>
+                        <p id="editUserRoleNote" class="text-(--gray-500) dark:text-(--gray-300) mt-1 hidden text-xs">
+                        </p>
                     </x-form.input>
 
-                    <x-form.input light id="editUser_status" name="status" label="Account Status" type="select" required
-                        :options="$statuses" :use-old="false" :value="$editOld['status'] ?? null" />
+                    <x-form.input light id="editUser_status" name="status" label="Account Status" type="select"
+                        required :options="$statuses" :use-old="false" :value="$editOld['status'] ?? null" />
 
                     <x-form.input light id="editUser_phone" name="phone" label="Phone Number" type="tel"
                         autocomplete="off" placeholder="Enter phone number" :use-old="false" :value="$editOld['phone'] ?? null" />
@@ -66,13 +41,13 @@
             </fieldset>
 
             {{-- Employment (staff / admin only) --}}
-            <fieldset id="editUserEmployment" class="border-t border-(--gray-200) pt-5 dark:border-white/10">
-                <legend class="text-(--blue-700) text-xs font-bold uppercase tracking-wide dark:text-(--celadon-500)">Employment</legend>
+            <fieldset id="editUserEmployment" class="border-(--gray-200) border-t pt-5 dark:border-white/10">
+                <legend class="text-(--blue-700) dark:text-(--celadon-500) text-xs font-bold uppercase tracking-wide">
+                    Employment</legend>
 
                 <div class="mt-3 grid gap-4 sm:grid-cols-2">
                     <x-form.input light id="editUser_employment_type" name="employment_type" label="Employment Type"
-                        type="select" required :options="$employmentTypes" :use-old="false"
-                        :value="$editOld['employment_type'] ?? null" />
+                        type="select" required :options="$employmentTypes" :use-old="false" :value="$editOld['employment_type'] ?? null" />
 
                     <x-form.input light id="editUser_department" name="department" label="Department" type="select"
                         required :use-old="false" :value="$editOld['department'] ?? null" :options="[
@@ -140,8 +115,9 @@
             </fieldset>
 
             {{-- Citizen details (citizens with a profile only) --}}
-            <fieldset id="editUserCitizen" class="hidden border-t border-(--gray-200) pt-5 dark:border-white/10">
-                <legend class="text-(--blue-700) text-xs font-bold uppercase tracking-wide dark:text-(--celadon-500)">Citizen Details</legend>
+            <fieldset id="editUserCitizen" class="border-(--gray-200) hidden border-t pt-5 dark:border-white/10">
+                <legend class="text-(--blue-700) dark:text-(--celadon-500) text-xs font-bold uppercase tracking-wide">
+                    Citizen Details</legend>
 
                 <div class="mt-3 grid gap-4 sm:grid-cols-2">
                     <x-form.input light id="editUser_civil_status" name="civil_status" label="Civil Status"
@@ -182,7 +158,7 @@
         <x-slot:footer>
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <button type="button" id="editUserPermissionsBtn"
-                    class="hidden items-center justify-center gap-2 rounded-md border border-(--blue-700)/30 bg-(--white) px-4 py-3 text-sm font-semibold text-(--blue-700) transition hover:bg-(--blue-50) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--blue-500) dark:border-(--celadon-500)/40 dark:bg-transparent dark:text-(--celadon-500) dark:hover:bg-(--celadon-500)/10 dark:focus-visible:ring-(--celadon-500)">
+                    class="border-(--blue-700)/30 bg-(--white) text-(--blue-700) hover:bg-(--blue-50) focus-visible:ring-(--blue-500) dark:border-(--celadon-500)/40 dark:text-(--celadon-500) dark:hover:bg-(--celadon-500)/10 dark:focus-visible:ring-(--celadon-500) hidden items-center justify-center gap-2 rounded-md border px-4 py-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 dark:bg-transparent">
                     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path
@@ -194,7 +170,7 @@
 
                 <div class="grid grid-cols-2 gap-3 sm:ml-auto sm:w-80">
                     <button type="button" data-modal-close
-                        class="w-full rounded-md border border-(--gray-300) bg-(--white) px-4 py-2.5 text-sm font-semibold text-(--gray-700) transition hover:bg-(--gray-100) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--blue-500) dark:border-white/20 dark:bg-transparent dark:text-(--gray-200) dark:hover:bg-white/10 dark:focus-visible:ring-(--celadon-500)">
+                        class="border-(--gray-300) bg-(--white) text-(--gray-700) hover:bg-(--gray-100) focus-visible:ring-(--blue-500) dark:text-(--gray-200) dark:focus-visible:ring-(--celadon-500) w-full rounded-md border px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 dark:border-white/20 dark:bg-transparent dark:hover:bg-white/10">
                         Cancel
                     </button>
 
@@ -301,7 +277,8 @@
             note.classList.toggle('hidden', !locked);
 
             // Nobody can suspend or deactivate their own account.
-            [...$('editUser_status').options].forEach((opt) => opt.disabled = u.is_self && opt.value !== 'active');
+            [...$('editUser_status').options].forEach((opt) => opt.disabled = u.is_self && opt.value !==
+                'active');
 
             // Employment and photo: staff / admin only. Citizen details: citizens with a profile only.
             const showCitizen = isCitizen && u.has_citizen;
