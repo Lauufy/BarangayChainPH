@@ -52,7 +52,7 @@
 
             {{-- ALL --}}
             @if ($view === 'all')
-                <x-tables.table :heads="['Account', 'Type', 'Details', 'Date Created', ['label' => 'Actions', 'align' => 'center']]" :empty="$everyone->isEmpty()" message="No accounts found.">
+                <x-tables.table :heads="['Account', 'Type', 'Details', 'Status', 'Date Created', ['label' => 'Actions', 'align' => 'center']]" :empty="$everyone->isEmpty()" message="No accounts found.">
                     @foreach ($everyone as $account)
                         <tr>
                             <td>
@@ -78,6 +78,12 @@
                                 @endif
                             </td>
 
+                            <td>
+                                <x-tables.badge :variant="$statusVariants[$account->status] ?? 'neutral'">
+                                    {{ $statuses[$account->status] ?? ucfirst($account->status) }}
+                                </x-tables.badge>
+                            </td>
+
                             <td class="text-slate-500 dark:text-slate-400">{{ $account->created_at->format('M j, Y') }}</td>
 
                             <td class="text-center">@include('admin.users.row-actions', ['account' => $account])</td>
@@ -91,6 +97,7 @@
                     'Employee',
                     'Employee ID',
                     'Position / Department',
+                    'Status',
                     'Date Created',
                     ['label' => 'Actions', 'align' => 'center'],
                 ]" :empty="$users->isEmpty()" message="No employee accounts found.">
@@ -106,6 +113,9 @@
                                 </p>
                                 <p class="text-xs text-slate-500 dark:text-slate-400">
                                     {{ $account->role === 'admin' ? 'Administrator' : 'Staff' }}
+                                    @if ($account->employeeProfile?->employment_type)
+                                        · {{ $employmentTypes[$account->employeeProfile->employment_type] ?? '' }}
+                                    @endif
                                 </p>
                             </td>
 
@@ -114,6 +124,12 @@
                                     {{ $account->employeeProfile?->position ?? '—' }}</p>
                                 <p class="text-xs text-slate-500 dark:text-slate-400">
                                     {{ $account->employeeProfile?->department ?? '—' }}</p>
+                            </td>
+
+                            <td>
+                                <x-tables.badge :variant="$statusVariants[$account->status] ?? 'neutral'">
+                                    {{ $statuses[$account->status] ?? ucfirst($account->status) }}
+                                </x-tables.badge>
                             </td>
 
                             <td class="text-slate-500 dark:text-slate-400">{{ $account->created_at->format('M j, Y') }}
@@ -131,6 +147,7 @@
                     'Phone',
                     'Barangay',
                     'Identity',
+                    'Status',
                     'Registered',
                     ['label' => 'Actions', 'align' => 'center'],
                 ]" :empty="$citizens->isEmpty()" message="No citizen accounts found.">
@@ -148,6 +165,12 @@
                             <td>
                                 <x-tables.badge :variant="$identityStatuses[$account->id]['variant']">
                                     {{ $identityStatuses[$account->id]['status'] ?: 'none' }}
+                                </x-tables.badge>
+                            </td>
+
+                            <td>
+                                <x-tables.badge :variant="$statusVariants[$account->status] ?? 'neutral'">
+                                    {{ $statuses[$account->status] ?? ucfirst($account->status) }}
                                 </x-tables.badge>
                             </td>
 

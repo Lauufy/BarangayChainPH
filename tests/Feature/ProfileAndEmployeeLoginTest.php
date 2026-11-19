@@ -178,6 +178,7 @@ class ProfileAndEmployeeLoginTest extends TestCase
         Http::fake([
             'https://api.pwnedpasswords.com/range/*' => Http::response('', 200),
         ]);
+        $employeeId = 'BSLCNPH-'.now()->year.'-0001';
 
         $admin = User::factory()->create([
             'role' => 'admin',
@@ -186,12 +187,15 @@ class ProfileAndEmployeeLoginTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.users.index'))
             ->assertOk()
-            ->assertSee('Staff / Employee');
+            ->assertSee('Staff / Employee')
+            ->assertSee('value="'.$employeeId.'"', false);
 
         $response = $this->post(route('admin.users.store'), [
             'name' => 'Morgan Employee',
             'email' => 'morgan@example.com',
             'role' => 'staff',
+            'employee_id' => $employeeId,
+            'employment_type' => 'full_time',
             'department' => 'Records',
             'position' => 'Clerk',
             'phone' => '09170000000',
@@ -204,7 +208,7 @@ class ProfileAndEmployeeLoginTest extends TestCase
         $response->assertRedirect(route('admin.users.index'));
         $employee = User::where('email', 'morgan@example.com')->firstOrFail();
         $this->assertSame('+639170000000', $employee->phone);
-        $this->assertSame('BSLCNPH-'.str_pad((string) $employee->id, 6, '0', STR_PAD_LEFT), $employee->employeeProfile->employee_id);
+        $this->assertSame($employeeId, $employee->employeeProfile->employee_id);
         $this->assertSame('Records', $employee->employeeProfile->department);
         $this->assertSame('Barangay Hall', $employee->employeeProfile->office);
         $this->assertSame('2024-01-15', $employee->employeeProfile->date_hired->toDateString());
@@ -216,6 +220,7 @@ class ProfileAndEmployeeLoginTest extends TestCase
         Http::fake([
             'https://api.pwnedpasswords.com/range/*' => Http::response('', 200),
         ]);
+        $employeeId = 'BSLCNPH-'.now()->year.'-0001';
 
         $signedInAdmin = User::factory()->create([
             'role' => 'admin',
@@ -223,12 +228,15 @@ class ProfileAndEmployeeLoginTest extends TestCase
 
         $this->actingAs($signedInAdmin)
             ->get(route('admin.users.index'))
-            ->assertOk();
+            ->assertOk()
+            ->assertSee('value="'.$employeeId.'"', false);
 
         $response = $this->post(route('admin.users.store'), [
             'name' => 'Carlo Admin',
             'email' => 'carlo.admin@example.com',
             'role' => 'admin',
+            'employee_id' => $employeeId,
+            'employment_type' => 'full_time',
             'department' => 'Administration',
             'position' => 'Administrator',
             'password' => 'StrongPass123!',
@@ -238,7 +246,7 @@ class ProfileAndEmployeeLoginTest extends TestCase
         $response->assertRedirect(route('admin.users.index'));
         $carloAdmin = User::where('email', 'carlo.admin@example.com')->firstOrFail();
         $this->assertSame('Carlo Admin', $carloAdmin->name);
-        $this->assertSame('BSLCNPH-000002', $carloAdmin->employeeProfile->employee_id);
+        $this->assertSame($employeeId, $carloAdmin->employeeProfile->employee_id);
         $this->assertSame('admin', $carloAdmin->role);
     }
 

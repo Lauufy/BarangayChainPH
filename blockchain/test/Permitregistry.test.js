@@ -1,5 +1,7 @@
-const { expect } = require('chai');
-const { ethers } = require('hardhat');
+import { expect } from "chai";
+import { network } from "hardhat";
+
+const { ethers } = await network.create();
 
 // Same numbering as the Status enum in PermitRegistry.sol
 const Status = { NotFound: 0n, Valid: 1n, Revoked: 2n, Mismatch: 3n };

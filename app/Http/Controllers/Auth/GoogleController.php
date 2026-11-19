@@ -62,6 +62,12 @@ class GoogleController extends Controller
             ]);
         }
 
+        if ($user->status !== 'active') {
+            return redirect()->route('login')->withErrors([
+                'identifier' => 'This account is '.$user->status.'. Please contact the barangay office.',
+            ]);
+        }
+
         // Completing Google sign-in verifies the email address returned by Google.
         $user->forceFill([
             'google_id' => $google->getId(),

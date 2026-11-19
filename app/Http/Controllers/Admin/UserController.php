@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Exports\UsersExport;
 use App\Http\Controllers\Controller;
+use App\Models\EmployeeProfile;
 use App\Models\ServiceRequest;
 use App\Models\User;
 use App\Services\SupabaseStorage;
@@ -22,6 +23,12 @@ class UserController extends Controller
 
     // Same folder the admin profile page uses.
     private const PHOTO_FOLDER = 'admin-profile-photos';
+
+    private const STATUSES = ['active' => 'Active', 'inactive' => 'Inactive', 'suspended' => 'Suspended'];
+
+    private const EMPLOYMENT_TYPES = ['full_time' => 'Full-time', 'part_time' => 'Part-time', 'contract' => 'Contract'];
+
+    private const STATUS_VARIANTS = ['active' => 'success', 'inactive' => 'neutral', 'suspended' => 'danger'];
 
     public function __construct(
         private SupabaseStorage $avatars,
@@ -90,7 +97,9 @@ class UserController extends Controller
             ];
         });
         $detailFields = [
+            'status_label' => ['Account Status', null],
             'employee_id' => ['Employee ID', 'staff'],
+            'employment_type_label' => ['Employment Type', 'staff'],
             'department' => ['Department', 'staff'],
             'position' => ['Position', 'staff'],
             'office' => ['Office', 'staff'],
@@ -117,6 +126,8 @@ class UserController extends Controller
                     'name' => $user->name,
                     'email' => $user->email,
                     'role' => $user->role,
+                    'status' => $user->status,
+                    'status_label' => self::STATUSES[$user->status] ?? ucfirst($user->status),
                     'is_self' => $request->user()->is($user),
                     'is_staff' => $user->isStaff(),
                     'permission_count' => count($user->permissions ?? []),
@@ -125,6 +136,8 @@ class UserController extends Controller
                     'avatar_url' => $user->avatar_url,
                     'phone' => $user->phone,
                     'employee_id' => $employee?->employee_id,
+                    'employment_type' => $employee?->employment_type,
+                    'employment_type_label' => self::EMPLOYMENT_TYPES[$employee?->employment_type] ?? null,
                     'department' => $employee?->department,
                     'position' => $employee?->position,
                     'office' => $employee?->office,
@@ -153,7 +166,18 @@ class UserController extends Controller
 
         $errors = $request->session()->get('errors');
         $createFailed = $errors !== null && $errors->getBag('default')->hasAny([
-            'name', 'email', 'role', 'department', 'position', 'phone', 'office', 'date_hired', 'password', 'avatar',
+            'name',
+            'email',
+            'role',
+            'employee_id',
+            'employment_type',
+            'department',
+            'position',
+            'phone',
+            'office',
+            'date_hired',
+            'password',
+            'avatar',
         ]);
         $updateErrors = $errors?->getBag('updateUser');
         $reopenId = $updateErrors?->any() ? (int) $request->old('edit_user_id') : null;
@@ -165,6 +189,10 @@ class UserController extends Controller
         $permissionList = config('permissions.list');
         $oldPermissions = (array) $request->old('permissions', []);
         $permissionsUserId = $request->old('permissions_user_id');
+        $statuses = self::STATUSES;
+        $statusVariants = self::STATUS_VARIANTS;
+        $employmentTypes = self::EMPLOYMENT_TYPES;
+        $nextEmployeeId = $this->nextEmployeeId();
 
         return view('admin.users.index', compact(
             'all',
@@ -187,6 +215,10 @@ class UserController extends Controller
             'identityStatuses',
             'detailFields',
             'userRecords',
+            'statuses',
+            'statusVariants',
+            'employmentTypes',
+            'nextEmployeeId',
         ));
     }
 
@@ -198,6 +230,8 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'role' => ['required', Rule::in(['staff', 'admin', 'citizen'])],
+            'employee_id' => ['required_if:role,staff,admin', 'nullable', 'string', 'max:50', 'unique:employee_profiles,employee_id'],
+            'employment_type' => ['required_if:role,staff,admin', 'nullable', Rule::in(array_keys(self::EMPLOYMENT_TYPES))],
             'department' => ['required_if:role,staff,admin', 'nullable', 'string', 'max:255'],
             'position' => ['required_if:role,staff,admin', 'nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'regex:/^\+639\d{9}$/', 'unique:users,phone'],
@@ -213,6 +247,8 @@ class UserController extends Controller
             ],
         ]);
 
+        $validated = $this->otherValues($validated, $request);
+
         // Only staff/admin get a photo here. Upload first; it is removed again if the save fails.
         $avatarPath = null;
         if ($validated['role'] !== 'citizen' && $request->hasFile('avatar')) {
@@ -227,6 +263,7 @@ class UserController extends Controller
 
         try {
             DB::transaction(function () use ($validated, $avatarPath) {
+                // New accounts start as Active (column default).
                 $user = User::create([
                     'name' => $validated['name'],
                     'email' => $validated['email'],
@@ -242,7 +279,8 @@ class UserController extends Controller
 
                 if ($validated['role'] !== 'citizen') {
                     $user->employeeProfile()->create([
-                        'employee_id' => 'BSLCNPH-'.str_pad((string) $user->id, 6, '0', STR_PAD_LEFT),
+                        'employee_id' => $validated['employee_id'],
+                        'employment_type' => $validated['employment_type'],
                         'department' => $validated['department'],
                         'position' => $validated['position'],
                         'office' => $validated['office'] ?? null,
@@ -280,6 +318,8 @@ class UserController extends Controller
                 Rule::unique('users', 'email')->ignore($user->id),
             ],
             'role' => ['required', Rule::in($user->role === 'citizen' ? ['citizen'] : ['staff', 'admin'])],
+            'status' => ['required', Rule::in(array_keys(self::STATUSES))],
+            'employment_type' => ['required_if:role,staff,admin', 'nullable', Rule::in(array_keys(self::EMPLOYMENT_TYPES))],
             'department' => ['required_if:role,staff,admin', 'nullable', 'string', 'max:255'],
             'position' => ['required_if:role,staff,admin', 'nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'regex:/^\+639\d{9}$/', Rule::unique('users', 'phone')->ignore($user->id)],
@@ -297,6 +337,8 @@ class UserController extends Controller
             ],
         ]);
 
+        $validated = $this->otherValues($validated, $request);
+
         // Citizen details (saved to citizen_profiles)
         $citizen = ($user->role !== 'citizen' || ! $user->citizenProfile) ? [] : $request->validateWithBag('updateUser', [
             'civil_status' => ['required', Rule::in(['Single', 'Married', 'Widowed', 'Separated', 'Divorced'])],
@@ -310,6 +352,12 @@ class UserController extends Controller
         ], ['phone.regex' => 'Enter a valid phone number.']);
 
         $roleChanged = $validated['role'] !== $user->role;
+
+        if ($request->user()->is($user) && $validated['status'] !== 'active') {
+            return back()
+                ->withInput()
+                ->withErrors(['status' => 'You cannot deactivate or suspend your own account.'], 'updateUser');
+        }
 
         if ($roleChanged) {
             if ($request->user()->is($user)) {
@@ -349,6 +397,7 @@ class UserController extends Controller
                     'email' => $validated['email'],
                     'phone' => $validated['phone'] ?? null,
                     'role' => $validated['role'],
+                    'status' => $validated['status'],
                 ];
 
                 if (($validated['phone'] ?? null) !== $user->phone) {
@@ -372,6 +421,7 @@ class UserController extends Controller
 
                 if ($isEmployee) {
                     $profile = [
+                        'employment_type' => $validated['employment_type'],
                         'department' => $validated['department'],
                         'position' => $validated['position'],
                         'office' => $validated['office'] ?? null,
@@ -439,7 +489,8 @@ class UserController extends Controller
                 if (ServiceRequest::query()
                     ->where('user_id', $user->id)
                     ->whereHas('issuedDocuments')
-                    ->exists()) {
+                    ->exists()
+                ) {
                     return false;
                 }
 
@@ -496,5 +547,27 @@ class UserController extends Controller
     private function adminCount(): int
     {
         return User::where('role', 'admin')->count();
+    }
+
+    // "Others" picked: save the typed text instead of the word "others"
+    private function otherValues(array $validated, Request $request): array
+    {
+        foreach (['department', 'position', 'office'] as $field) {
+            if (($validated[$field] ?? null) === 'others' && filled($request->input($field.'_other'))) {
+                $validated[$field] = trim($request->input($field.'_other'));
+            }
+        }
+
+        return $validated;
+    }
+
+    // Next free ID for this year, e.g. BSLCNPH-2026-0001
+    private function nextEmployeeId(): string
+    {
+        $prefix = 'BSLCNPH-'.now()->year.'-';
+        $last = EmployeeProfile::where('employee_id', 'like', $prefix.'%')->max('employee_id');
+        $next = $last ? (int) substr($last, -4) + 1 : 1;
+
+        return $prefix.str_pad((string) $next, 4, '0', STR_PAD_LEFT);
     }
 }

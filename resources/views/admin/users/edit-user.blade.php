@@ -57,6 +57,9 @@
                         <p id="editUserRoleNote" class="mt-1 hidden text-xs text-(--gray-500) dark:text-(--gray-300)"></p>
                     </x-form.input>
 
+                    <x-form.input light id="editUser_status" name="status" label="Account Status" type="select" required
+                        :options="$statuses" :use-old="false" :value="$editOld['status'] ?? null" />
+
                     <x-form.input light id="editUser_phone" name="phone" label="Phone Number" type="tel"
                         autocomplete="off" placeholder="Enter phone number" :use-old="false" :value="$editOld['phone'] ?? null" />
                 </div>
@@ -67,14 +70,68 @@
                 <legend class="text-(--blue-700) text-xs font-bold uppercase tracking-wide dark:text-(--celadon-500)">Employment</legend>
 
                 <div class="mt-3 grid gap-4 sm:grid-cols-2">
-                    <x-form.input light id="editUser_department" name="department" label="Department" required
-                        placeholder="Enter department" :use-old="false" :value="$editOld['department'] ?? null" />
+                    <x-form.input light id="editUser_employment_type" name="employment_type" label="Employment Type"
+                        type="select" required :options="$employmentTypes" :use-old="false"
+                        :value="$editOld['employment_type'] ?? null" />
 
-                    <x-form.input light id="editUser_position" name="position" label="Position" required
-                        placeholder="Enter job position" :use-old="false" :value="$editOld['position'] ?? null" />
+                    <x-form.input light id="editUser_department" name="department" label="Department" type="select"
+                        required :use-old="false" :value="$editOld['department'] ?? null" :options="[
+                            'administration_records' => 'Administration & Records',
+                            'barangay_council' => 'Barangay Council',
+                            'finance_treasury' => 'Finance & Treasury',
+                            'peace_order' => 'Peace & Order',
+                            'health_nutrition' => 'Health & Nutrition',
+                            'social_welfare' => 'Social Welfare',
+                            'disaster_risk_reduction' => 'Disaster Risk Reduction',
+                            'environment_infrastructure' => 'Environment & Infrastructure',
+                            'others' => 'Others',
+                        ]" />
 
-                    <x-form.input light id="editUser_office" name="office" label="Office (Optional)"
-                        placeholder="Enter office" :use-old="false" :value="$editOld['office'] ?? null" />
+                    <div data-other-for="department" class="hidden">
+                        <x-form.input light id="editUser_department_other" name="department_other"
+                            label="Specify Department" placeholder="Enter department" :use-old="false"
+                            :value="$editOld['department_other'] ?? null" />
+                    </div>
+
+                    <x-form.input light id="editUser_position" name="position" label="Position" type="select" required
+                        :use-old="false" :value="$editOld['position'] ?? null" :options="[
+                            'punong_barangay' => 'Punong Barangay',
+                            'barangay_kagawad' => 'Barangay Kagawad',
+                            'sk_chairperson' => 'SK Chairperson',
+                            'sk_kagawad' => 'SK Kagawad',
+                            'barangay_secretary' => 'Barangay Secretary',
+                            'barangay_treasurer' => 'Barangay Treasurer',
+                            'barangay_tanod' => 'Barangay Tanod',
+                            'administrative_assistant' => 'Administrative Assistant',
+                            'bhw' => 'Barangay Health Worker (BHW)',
+                            'day_care_worker' => 'Day Care Worker',
+                            'others' => 'Others',
+                        ]" />
+
+                    <div data-other-for="position" class="hidden">
+                        <x-form.input light id="editUser_position_other" name="position_other" label="Specify Position"
+                            placeholder="Enter position" :use-old="false" :value="$editOld['position_other'] ?? null" />
+                    </div>
+
+                    <x-form.input light id="editUser_office" name="office" label="Office (Optional)" type="select"
+                        :use-old="false" :value="$editOld['office'] ?? null" :options="[
+                            'office_punong_barangay' => 'Office of the Punong Barangay',
+                            'secretarys_office' => 'Barangay Secretary\'s Office',
+                            'treasurers_office' => 'Barangay Treasurer\'s Office',
+                            'administrative_office' => 'Barangay Administrative Office',
+                            'council_office' => 'Barangay Council Office',
+                            'peace_order_office' => 'Barangay Peace & Order Office',
+                            'health_station' => 'Barangay Health Station',
+                            'social_welfare_desk' => 'Social Welfare Desk',
+                            'disaster_response_office' => 'Disaster Response Office',
+                            'environment_sanitation_office' => 'Environment & Sanitation Office',
+                            'others' => 'Others',
+                        ]" />
+
+                    <div data-other-for="office" class="hidden">
+                        <x-form.input light id="editUser_office_other" name="office_other" label="Specify Office"
+                            placeholder="Enter office" :use-old="false" :value="$editOld['office_other'] ?? null" />
+                    </div>
 
                     <x-form.input light id="editUser_date_hired" name="date_hired" label="Date Hired (Optional)"
                         type="date" max="{{ now()->toDateString() }}" placeholder="Select date" :use-old="false"
@@ -118,23 +175,6 @@
 
                     <x-form.input light id="editUser_zip_code" name="zip_code" label="Zip Code" required
                         placeholder="Enter zip code" :use-old="false" :value="$editOld['zip_code'] ?? null" />
-                </div>
-            </fieldset>
-
-            {{-- Password --}}
-            <fieldset class="border-t border-(--gray-200) pt-5 dark:border-white/10">
-                <legend class="text-(--blue-700) text-xs font-bold uppercase tracking-wide dark:text-(--celadon-500)">Change Password</legend>
-
-                <div class="mt-3 grid gap-4 sm:grid-cols-2">
-                    <div class="grid">
-                        <x-form.input light id="editUser_password" name="password" data-validate label="New Password"
-                            type="password" autocomplete="new-password" placeholder="Enter new password" :use-old="false" />
-                        <x-feedbacks.password-requirement input-id="editUser_password" />
-                    </div>
-
-                    <x-form.input light id="editUser_password_confirmation" name="password_confirmation" data-validate
-                        label="Confirm New Password" type="password" autocomplete="new-password"
-                        placeholder="Confirm new password" :use-old="false" />
                 </div>
             </fieldset>
         </div>
@@ -181,12 +221,37 @@
         let savedName = '';
 
         // Fields filled from the user record
-        const fields = ['name', 'email', 'role', 'phone', 'department', 'position', 'office', 'date_hired',
+        const fields = ['name', 'email', 'role', 'status', 'phone', 'employment_type', 'date_hired',
             'civil_status', 'religion', 'occupation', 'house_number', 'barangay', 'city_municipality',
             'province', 'zip_code'
         ];
-        const requiredStaff = ['department', 'position'];
+        // Dropdowns that also have a "Specify ..." box for "Others"
+        const picks = ['department', 'position', 'office'];
+        const requiredStaff = ['employment_type', 'department', 'position'];
         const requiredCitizen = ['civil_status', 'barangay', 'city_municipality', 'province', 'zip_code'];
+
+        // Show the "Specify ..." box only when "Others" is picked
+        picks.forEach((name) => {
+            const select = $('editUser_' + name);
+            const box = modal.querySelector(`[data-other-for="${name}"]`);
+            const input = $('editUser_' + name + '_other');
+
+            select.addEventListener('change', () => {
+                const show = select.value === 'others';
+                box.classList.toggle('hidden', !show);
+                input.required = show && !$('editUserEmployment').classList.contains('hidden');
+                if (!show) input.value = '';
+            });
+        });
+
+        // Pick the saved option. A value that is not in the list was typed under "Others".
+        function fillPick(name, value) {
+            const select = $('editUser_' + name);
+            const known = !!value && [...select.options].some((opt) => opt.value === value);
+
+            select.value = known ? value : (value ? 'others' : '');
+            $('editUser_' + name + '_other').value = known ? '' : (value || '');
+        }
 
         // Show a photo, or the initials when there is none
         function showAvatar(url, name) {
@@ -211,9 +276,7 @@
             if (!keepOld) {
                 $('editUserErrors')?.remove();
                 fields.forEach((f) => $('editUser_' + f).value = u[f] ?? '');
-                $('editUser_password').value = '';
-                $('editUser_password').dispatchEvent(new Event('input'));
-                $('editUser_password_confirmation').value = '';
+                picks.forEach((f) => fillPick(f, u[f]));
                 fileInput.value = '';
                 $('editUserRemove').checked = false;
             }
@@ -237,6 +300,9 @@
                 (isCitizen ? '  Citizen accounts keep the citizen role.' : '');
             note.classList.toggle('hidden', !locked);
 
+            // Nobody can suspend or deactivate their own account.
+            [...$('editUser_status').options].forEach((opt) => opt.disabled = u.is_self && opt.value !== 'active');
+
             // Employment and photo: staff / admin only. Citizen details: citizens with a profile only.
             const showCitizen = isCitizen && u.has_citizen;
             $('editUserEmployment').classList.toggle('hidden', isCitizen);
@@ -244,6 +310,9 @@
             $('editUserCitizen').classList.toggle('hidden', !showCitizen);
             requiredStaff.forEach((f) => $('editUser_' + f).required = !isCitizen);
             requiredCitizen.forEach((f) => $('editUser_' + f).required = showCitizen);
+
+            // Refresh the "Specify ..." boxes (after the Employment section is shown or hidden)
+            picks.forEach((f) => $('editUser_' + f).dispatchEvent(new Event('change')));
 
             showAvatar(savedAvatar, savedName);
             $('editUserRemoveWrap').classList.toggle('hidden', !u.avatar_url);

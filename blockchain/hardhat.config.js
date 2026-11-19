@@ -1,9 +1,13 @@
-require("@nomicfoundation/hardhat-toolbox");
-require("dotenv").config({ quiet: true });
+import hardhatToolboxMochaEthersPlugin from "@nomicfoundation/hardhat-toolbox-mocha-ethers";
+import { defineConfig } from "hardhat/config";
+import dotenv from "dotenv";
+
+dotenv.config({ quiet: true });
 
 const { RPC_URL, PRIVATE_KEY, ETHERSCAN_API_KEY } = process.env;
 
-module.exports = {
+export default defineConfig({
+    plugins: [hardhatToolboxMochaEthersPlugin],
     solidity: {
         version: "0.8.24",
         settings: {
@@ -17,12 +21,24 @@ module.exports = {
         // "live" means whatever network RPC_URL points to. "sepolia" stays so old commands still work.
         ...(RPC_URL && PRIVATE_KEY
             ? {
-                  sepolia: { url: RPC_URL, accounts: [PRIVATE_KEY] },
-                  live: { url: RPC_URL, accounts: [PRIVATE_KEY] },
+                  sepolia: {
+                      type: "http",
+                      chainType: "l1",
+                      url: RPC_URL,
+                      accounts: [PRIVATE_KEY],
+                  },
+                  live: {
+                      type: "http",
+                      chainType: "l1",
+                      url: RPC_URL,
+                      accounts: [PRIVATE_KEY],
+                  },
               }
             : {}),
     },
-    etherscan: {
-        apiKey: ETHERSCAN_API_KEY || "",
+    verify: {
+        etherscan: {
+            apiKey: ETHERSCAN_API_KEY || "",
+        },
     },
-};
+});

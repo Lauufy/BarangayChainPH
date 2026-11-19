@@ -27,6 +27,7 @@ use Illuminate\Notifications\Notifiable;
     'password',
     'google_id',
     'role',
+    'status',
 ])]
 #[Hidden([
     'password',
@@ -38,6 +39,10 @@ class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use Auditable, HasFactory, Notifiable;
+
+    protected $attributes = [
+        'status' => 'active',
+    ];
 
     protected function casts(): array
     {

@@ -1,9 +1,12 @@
-const path = require("path");
-require("dotenv").config({
-    path: path.join(__dirname, "..", ".env"),
+import dotenv from "dotenv";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+import { ethers } from "ethers";
+
+dotenv.config({
+    path: join(dirname(fileURLToPath(import.meta.url)), "..", ".env"),
     quiet: true,
 });
-const { ethers } = require("ethers");
 
 const ABI = [
     "function issue(bytes32 documentId, bytes32 fileHash)",

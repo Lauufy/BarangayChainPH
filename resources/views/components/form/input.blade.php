@@ -16,12 +16,7 @@
     $fieldId = $id ?? $name;
     $current = $useOld ? old($name, $value) : $value;
 
-    // ------------------------------------------------------------------
-    // Colors. Uses the theme tokens (resources/css/theme.css).
-    // $light = adaptive: white in light mode, dark in dark mode (the toggle changes it)
-    // else   = always dark navy
-    // (full class names are written out so Tailwind can find them)
-    // ------------------------------------------------------------------
+
     $fieldColors = $light
         ? 'border-(--gray-300) bg-(--white) text-(--gray-900) hover:border-(--gray-400) focus:border-(--blue-600) focus:ring-[color-mix(in_srgb,var(--blue-600)_20%,transparent)] dark:border-(--gray-600) dark:bg-(--gray-800) dark:text-(--gray-50) dark:hover:border-(--gray-500) dark:focus:border-(--green-400) dark:focus:ring-[color-mix(in_srgb,var(--green-400)_15%,transparent)]'
         : 'border-white/10 bg-(--blue-900) text-(--white) hover:border-white/20 focus:border-(--green-400) focus:ring-[color-mix(in_srgb,var(--green-400)_10%,transparent)]';

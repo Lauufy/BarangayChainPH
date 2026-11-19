@@ -8,9 +8,9 @@
     "check-deployment": "node scripts/check-deployment.js"
   },
   "keywords": [],
-  "type": "commonjs",
+  "type": "module",
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^7.0.0",
+    "@nomicfoundation/hardhat-toolbox-mocha-ethers": "^4.0.0",
     "hardhat": "^3.22.0"
   },
   "directories": {

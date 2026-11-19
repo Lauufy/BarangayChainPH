@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'employee_id',
     'department',
     'position',
+    'employment_type',
     'office',
     'date_hired',
     'photo_path',

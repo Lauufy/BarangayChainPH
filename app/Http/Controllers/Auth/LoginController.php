@@ -60,11 +60,15 @@ class LoginController extends Controller
             $this->fail($field, 'This account cannot log in.');
         }
 
+        if ($user->status !== 'active') {
+            $this->fail($field, 'This account is '.$user->status.'. Please contact the barangay office.');
+        }
+
         if ($byPhone && ! $user->phone_verified_at) {
             $request->session()->put('otp', $otps->startLogin($user, 'sms', $remember));
 
             return redirect()->route('verification.otp.show')
-                ->with('success', 'We sent a verification code to ' . $otps->mask('sms', $user->phone) . '.');
+                ->with('success', 'We sent a verification code to '.$otps->mask('sms', $user->phone).'.');
         }
 
         // Two-factor is optional: users turn it on in their settings.
@@ -80,7 +84,7 @@ class LoginController extends Controller
             $request->session()->put('otp', $otps->startLogin($user, 'sms', $remember));
 
             return redirect()->route('verification.otp.show')
-                ->with('success', 'We sent a verification code to ' . $otps->mask('sms', $user->phone) . '.');
+                ->with('success', 'We sent a verification code to '.$otps->mask('sms', $user->phone).'.');
         }
 
         // Email login still requires a verified email, or an available verified channel.
@@ -94,7 +98,7 @@ class LoginController extends Controller
             $request->session()->put('otp', $otps->startLogin($user, 'email', $remember));
 
             return redirect()->route('verification.otp.show')
-                ->with('success', 'We sent an email verification code to ' . $otps->mask('email', $user->email) . '.');
+                ->with('success', 'We sent an email verification code to '.$otps->mask('email', $user->email).'.');
         }
 
         // Two ways to get the code: let the citizen choose.
@@ -112,7 +116,7 @@ class LoginController extends Controller
         $request->session()->put('otp', $otps->startLogin($user, array_key_first($channels), $remember));
 
         return redirect()->route('verification.otp.show')
-            ->with('success', 'We sent a verification code to ' . reset($channels) . '.');
+            ->with('success', 'We sent a verification code to '.reset($channels).'.');
     }
 
     public function destroy(Request $request)
@@ -127,8 +131,8 @@ class LoginController extends Controller
             ->with('success', 'You have been logged out successfully.')
             ->withHeaders([
                 'Cache-Control' => 'no-cache, no-store, max-age=0, must-revalidate',
-                'Pragma'        => 'no-cache',
-                'Expires'       => 'Sat, 01 Jan 1990 00:00:00 GMT',
+                'Pragma' => 'no-cache',
+                'Expires' => 'Sat, 01 Jan 1990 00:00:00 GMT',
             ]);
     }
 

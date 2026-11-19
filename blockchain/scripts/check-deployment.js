@@ -1,4 +1,4 @@
-const { ethers } = require("ethers");
+import { ethers } from "ethers";
 
 const ABI = [
     "function owner() view returns (address)",

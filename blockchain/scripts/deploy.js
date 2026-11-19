@@ -1,30 +1,31 @@
-const hre = require('hardhat');
+import { network } from "hardhat";
 
 async function main() {
-  const [deployer] = await hre.ethers.getSigners();
-  const network = await hre.ethers.provider.getNetwork();
+  const { ethers, networkName } = await network.create();
+  const [deployer] = await ethers.getSigners();
+  const chain = await ethers.provider.getNetwork();
 
   console.log(`Deploying from ${deployer.address}`);
-  console.log(`Network: ${hre.network.name}, chain ID: ${network.chainId}`);
+  console.log(`Network: ${networkName}, chain ID: ${chain.chainId}`);
 
-  const registry = await hre.ethers.deployContract('PermitRegistry');
+  const registry = await ethers.deployContract("PermitRegistry");
   await registry.waitForDeployment();
 
   const deployTx = registry.deploymentTransaction();
-  if (hre.network.name !== 'hardhat' && hre.network.name !== 'localhost') {
+  if (networkName !== "default" && networkName !== "hardhat" && networkName !== "localhost") {
     await deployTx.wait(2); // wait for 2 confirmations on real networks
   }
 
   const address = await registry.getAddress();
   console.log(`PermitRegistry deployed to: ${address}`);
   console.log(`Deploy transaction: ${deployTx.hash}`);
-  console.log('');
-  console.log('Laravel .env (public values, safe to note down):');
+  console.log("");
+  console.log("Laravel .env (public values, safe to note down):");
   console.log(`BLOCKCHAIN_CONTRACT=${address}`);
-  console.log(`BLOCKCHAIN_CHAIN_ID=${network.chainId}`);
-  console.log(`BLOCKCHAIN_NETWORK=${hre.network.name}`);
-  console.log('');
-  console.log('blockchain/.env:');
+  console.log(`BLOCKCHAIN_CHAIN_ID=${chain.chainId}`);
+  console.log(`BLOCKCHAIN_NETWORK=${networkName}`);
+  console.log("");
+  console.log("blockchain/.env:");
   console.log(`REGISTRY_ADDRESS=${address}`);
 }
 

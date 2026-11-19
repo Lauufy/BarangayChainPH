@@ -13,7 +13,17 @@
         <div class="min-w-0">
             <h3 id="viewUserName" class="truncate text-lg font-semibold text-(--gray-900) dark:text-(--off-white)"></h3>
             <p id="viewUserEmail" class="truncate text-sm text-(--gray-500) dark:text-(--gray-300)"></p>
-            <x-tables.badge id="viewUserRole" variant="neutral" class="mt-2"></x-tables.badge>
+
+            <div class="mt-2 flex flex-wrap items-center gap-2">
+                <x-tables.badge id="viewUserRole" variant="neutral"></x-tables.badge>
+
+                {{-- One badge per status; JS shows the matching one. --}}
+                @foreach ($statuses as $key => $label)
+                    <span data-status-badge="{{ $key }}" class="hidden">
+                        <x-tables.badge :variant="$statusVariants[$key]">{{ $label }}</x-tables.badge>
+                    </span>
+                @endforeach
+            </div>
         </div>
     </div>
 
@@ -81,6 +91,10 @@
                 $('viewUserName').textContent = u.name;
                 $('viewUserEmail').textContent = u.email;
                 $('viewUserRole').textContent = u.role;
+
+                // Show only the badge that matches this account's status
+                modal.querySelectorAll('[data-status-badge]').forEach((el) =>
+                    el.classList.toggle('hidden', el.dataset.statusBadge !== u.status));
 
                 // Staff fields hide for citizens, citizen fields hide for staff / admin
                 const isCitizen = u.role === 'citizen';
