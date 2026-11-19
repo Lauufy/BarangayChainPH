@@ -61,8 +61,7 @@
                     class="border-(--blue-700)/10 mt-2 flex flex-col gap-2 border-t pt-3 sm:hidden dark:border-white/10">
                     @if ($dashboard ?? null)
                         <a href="{{ $dashboard }}"
-                            class="bg-(--blue-700) text-(--off-white) hover:bg-(--celadon-500) hover:text-(--blue-850) dark:bg-(--celadon-500) dark:text-(--blue-850) focus-visible:outline-(--blue-700) dark:focus-visible:outline-(--celadon-500) flex items-center justify-center rounded-sm px-5 py-3 text-sm font-semibold transition hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 motion-reduce:hover:translate-y-0 dark:hover:bg-white">Go
-                            to Dashboard</a>
+                            class="bg-(--blue-700) text-(--off-white) hover:bg-(--celadon-500) hover:text-(--blue-850) dark:bg-(--celadon-500) dark:text-(--blue-850) focus-visible:outline-(--blue-700) dark:focus-visible:outline-(--celadon-500) flex items-center justify-center rounded-sm px-5 py-3 text-sm font-semibold transition hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 motion-reduce:hover:translate-y-0 dark:hover:bg-white">Continue to Dashboard</a>
                     @else
                         <a href="{{ route('login') }}"
                             class="focus-visible:outline-(--blue-700) dark:focus-visible:outline-(--celadon-500) max-xl:hover:bg-(--blue-700)/10 relative rounded-sm px-3 py-3 text-center text-sm font-semibold transition-colors focus-visible:outline-2 dark:max-xl:hover:bg-white/10">
@@ -81,7 +80,7 @@
 
                 @if ($dashboard ?? null)
                     <a href="{{ $dashboard }}"
-                        class="bg-(--blue-700) text-(--off-white) hover:bg-(--celadon-500) hover:text-(--blue-850) dark:bg-(--celadon-500) dark:text-(--blue-850) focus-visible:outline-(--blue-700) dark:focus-visible:outline-(--celadon-500) hidden items-center rounded-sm px-5 py-3 text-sm font-semibold transition hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 motion-reduce:hover:translate-y-0 sm:inline-flex dark:hover:bg-white">Dashboard</a>
+                        class="bg-(--blue-700) text-(--off-white) hover:bg-(--celadon-500) hover:text-(--blue-850) dark:bg-(--celadon-500) dark:text-(--blue-850) focus-visible:outline-(--blue-700) dark:focus-visible:outline-(--celadon-500) hidden items-center rounded-sm px-5 py-3 text-sm font-semibold transition hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 motion-reduce:hover:translate-y-0 sm:inline-flex dark:hover:bg-white">Continue</a>
                 @else
                     <a href="{{ route('login') }}"
                         class="focus-visible:outline-(--blue-700) dark:focus-visible:outline-(--celadon-500) hidden rounded-sm px-2 py-1.5 text-sm font-semibold hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 sm:inline">
