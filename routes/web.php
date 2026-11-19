@@ -28,13 +28,25 @@ use App\Http\Controllers\Citizen\ServiceRequestController;
 use App\Http\Controllers\Citizen\TicketController;
 use App\Http\Controllers\PermitVerificationController;
 use App\Http\Controllers\TicketParticipantPhotoController;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 // ===== Public routes (no login required) =====
 
 // Landing page.
-Route::view('/', 'home')->name('home');
+Route::get('/', function () {
+    $user = Auth::user();
+    $dashboard = match (true) {
+        $user instanceof User && $user->isCitizen() => route('citizen.dashboard'),
+        $user instanceof User && ($user->isAdmin() || $user->isStaff()) => route('admin.dashboard'),
+        default => null,
+    };
+
+    return view('home', compact('dashboard'));
+})->name('home');
+
 // Terms of service page.
 Route::view('/terms', 'legal.terms')->name('terms');
 // Privacy policy page.
