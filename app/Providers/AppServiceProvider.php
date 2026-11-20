@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\AuditLogger;
+use App\Support\SyncVersion;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -11,6 +12,7 @@ use Illuminate\Console\Events\ScheduledTaskFinished;
 use Illuminate\Console\Events\ScheduledTaskStarting;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Queue\Events\JobExceptionOccurred;
 use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
@@ -73,6 +75,16 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(ScheduledTaskStarting::class, fn () => AuditLogger::beginBackgroundExecution());
         Event::listen(ScheduledTaskFinished::class, fn () => AuditLogger::endBackgroundExecution());
         Event::listen(ScheduledTaskFailed::class, fn () => AuditLogger::endBackgroundExecution());
+
+        // Live page refresh: a new, read, or deleted notification changes the version
+        // so the admin and citizen layouts pick it up on their next poll.
+        $bumpSync = function (DatabaseNotification $notification): void {
+            SyncVersion::bumpUser($notification->notifiable_id);
+            SyncVersion::bumpAdmin();
+        };
+
+        DatabaseNotification::saved($bumpSync);
+        DatabaseNotification::deleted($bumpSync);
 
         if (app()->environment('production')) {
             URL::forceScheme('https');

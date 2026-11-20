@@ -1,10 +1,14 @@
 {{--
     Email | Mobile number tabs. Only the picked tab is sent to the server
     (the hidden tab's input is disabled), and "mode" says which one it was.
-    Colors follow the site theme (light / dark).
+
+    Mobile numbers use the Philippine format: +63 9XX XXX XXXX. The user types
+    only the 10 digits after +63 (e.g. 9171234567). A leading 0 or 63, spaces
+    and dashes are cleaned up automatically (09171234567 -> 9171234567).
 
     Usage:
-    <x-form.contact-tabs email-name="email" email-label="Email Address" />
+    <x-form.contact-tabs email-name="email" email-label="Email Address"
+        email-error-message="Please use a valid email." />
 --}}
 @props([
     'emailName' => 'email',
@@ -12,15 +16,13 @@
     'emailType' => 'email',
     'emailPlaceholder' => 'you@example.com',
     'emailAutocomplete' => 'email',
+    'emailErrorMessage' => null, // custom text for an invalid email
+    'phoneErrorMessage' => 'Enter a valid PH mobile number, like 9171234567.', // custom text for an invalid mobile number
 ])
 
 @php
     $mode = old('mode', 'email') === 'phone' ? 'phone' : 'email';
     $tab = 'flex min-w-0 flex-1 items-center justify-center rounded px-3 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--blue-600) dark:focus-visible:ring-(--green-400)';
-    $muted = 'text-(--gray-500) dark:text-(--gray-400)';
-
-    // Paint over the browser's blue autofill background, keep text and caret readable (same as x-form.input)
-    $autofill = '[&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_var(--white)] [&:-webkit-autofill]:[-webkit-text-fill-color:var(--gray-900)] [&:-webkit-autofill]:caret-(--gray-900) dark:[&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_var(--gray-800)] dark:[&:-webkit-autofill]:[-webkit-text-fill-color:var(--gray-50)] dark:[&:-webkit-autofill]:caret-(--white)';
 @endphp
 
 <div data-contact-tabs data-mode="{{ $mode }}" class="space-y-4">
@@ -41,35 +43,28 @@
             :type="$emailType"
             :autocomplete="$emailAutocomplete"
             :placeholder="$emailPlaceholder"
+            :error-message="$emailErrorMessage"
             required
         />
     </div>
 
-    {{-- Mobile number tab: the user types only the part after +63 --}}
-    <div data-panel="phone" class="group" @if ($mode !== 'phone') hidden @endif>
-        <label for="phone" class="{{ $muted }} mb-1.5 block text-xs font-semibold uppercase tracking-wider transition-colors group-focus-within:text-(--blue-600) dark:group-focus-within:text-(--green-400)">
-            Mobile number
-        </label>
-
-        <div class="relative">
-            <span class="{{ $muted }} pointer-events-none absolute inset-y-0 left-3.5 flex items-center gap-1.5 text-sm">
-                <span class="text-[10px] font-bold">PH</span> +63
-            </span>
-
-            <input
-                id="phone"
-                name="phone"
-                type="tel"
-                inputmode="numeric"
-                maxlength="11"
-                pattern="0?9[0-9]{9}"
-                required
-                autocomplete="tel-national"
-                placeholder="9171234567"
-                value="{{ preg_replace('/^(\+?63|0)/', '', (string) old('phone')) }}"
-                class="{{ $autofill }} block h-14 w-full rounded-md border border-(--gray-300) bg-(--white) pl-20 pr-3.5 text-base text-(--gray-900) outline-none transition placeholder:text-(--gray-400) hover:border-(--gray-400) focus:border-(--blue-600) focus:ring-2 focus:ring-[color-mix(in_srgb,var(--blue-600)_20%,transparent)] disabled:opacity-60 dark:border-(--gray-600) dark:bg-(--gray-800) dark:text-(--gray-50) dark:placeholder:text-(--gray-500) dark:hover:border-(--gray-500) dark:focus:border-(--green-400) dark:focus:ring-[color-mix(in_srgb,var(--green-400)_15%,transparent)] sm:text-sm"
-            >
-        </div>
+    {{-- Mobile number tab: the user types only the 10 digits after +63 --}}
+    <div data-panel="phone" @if ($mode !== 'phone') hidden @endif>
+        <x-form.input
+            light
+            name="phone"
+            label="Mobile number"
+            type="tel"
+            prefix="+63"
+            :value="preg_replace('/^(\+?63|0)/', '', (string) old('phone'))"
+            :use-old="false"
+            :error-message="$phoneErrorMessage"
+            inputmode="numeric"
+            pattern="9[0-9]{9}"
+            autocomplete="tel-national"
+            placeholder="9171234567"
+            required
+        />
     </div>
 </div>
 
@@ -96,9 +91,28 @@
             });
         }
 
+        // Clean a typed or pasted PH mobile number down to the 10 digits after +63.
+        function cleanPhoneNumber(value) {
+            let digits = value.replace(/\D/g, '');
+
+            if (digits.startsWith('63') && digits.length > 10) digits = digits.slice(2); // +63 917...
+            if (digits.startsWith('0')) digits = digits.slice(1); // 0917...
+
+            return digits.slice(0, 10);
+        }
+
         document.addEventListener('click', event => {
             const tab = event.target.closest('[data-tab]');
             if (tab) setContactMode(tab.closest('[data-contact-tabs]'), tab.dataset.tab);
+        });
+
+        document.addEventListener('input', event => {
+            const field = event.target;
+
+            if (field.matches('[data-panel="phone"] input[name="phone"]')) {
+                const cleaned = cleanPhoneNumber(field.value);
+                if (field.value !== cleaned) field.value = cleaned;
+            }
         });
 
         document.addEventListener('DOMContentLoaded', () => {

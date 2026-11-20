@@ -24,8 +24,8 @@
         {{-- Errors --}}
         <x-feedbacks.form-errors />
 
-        {{-- Login form --}}
-        <form action="{{ route('login.store') }}" method="POST" class="space-y-4">
+        {{-- Login form (data-validate = check fields after the user stops typing) --}}
+        <form action="{{ route('login.store') }}" method="POST" class="space-y-4" data-validate>
             @csrf
 
             {{-- Email / Employee ID tab  or  Mobile number tab --}}
@@ -46,7 +46,7 @@
                 maxlength="30"
                 required
                 autocomplete="current-password"
-                placeholder="Password"
+                placeholder="Enter your password"
             />
 
             {{-- Remember me / Forgot password --}}

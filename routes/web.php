@@ -27,6 +27,7 @@ use App\Http\Controllers\Citizen\ServiceApplicationController;
 use App\Http\Controllers\Citizen\ServiceRequestController;
 use App\Http\Controllers\Citizen\TicketController;
 use App\Http\Controllers\PermitVerificationController;
+use App\Http\Controllers\SyncVersionController;
 use App\Http\Controllers\TicketParticipantPhotoController;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -66,6 +67,12 @@ Route::get('/verify/permit/{documentUuid}', [
 ])->whereUuid('documentUuid')
     ->middleware('throttle:60,1')
     ->name('permits.verify');
+
+// Live-sync version check polled by the admin and citizen layouts (logged-in users only).
+Route::get('/sync/version/{scope}', SyncVersionController::class)
+    ->whereIn('scope', ['admin', 'citizen'])
+    ->middleware(['auth', 'nocache', 'throttle:120,1'])
+    ->name('sync.version');
 
 // ===== Guest routes (logged-out users only) =====
 

@@ -1,0 +1,50 @@
+:root {
+    --reveal-distance: 2rem;
+    --reveal-duration: 700ms;
+    --reveal-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html.js [data-reveal] {
+    opacity: 0;
+    transition:
+        opacity var(--reveal-duration) var(--reveal-ease),
+        transform var(--reveal-duration) var(--reveal-ease);
+    transition-delay: var(--reveal-delay, 0ms);
+    will-change: opacity, transform;
+}
+
+html.js [data-reveal='up'] {
+    transform: translate3d(0, var(--reveal-distance), 0);
+}
+
+html.js [data-reveal='down'] {
+    transform: translate3d(0, calc(var(--reveal-distance) * -1), 0);
+}
+
+html.js [data-reveal='left'] {
+    transform: translate3d(calc(var(--reveal-distance) * -1), 0, 0);
+}
+
+html.js [data-reveal='right'] {
+    transform: translate3d(var(--reveal-distance), 0, 0);
+}
+
+html.js [data-reveal='zoom'] {
+    transform: scale(0.94);
+}
+
+/* "fade" has no transform — opacity only */
+
+html.js [data-reveal].is-visible {
+    opacity: 1;
+    transform: none;
+}
+
+/* Respect users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    html.js [data-reveal] {
+        opacity: 1;
+        transform: none;
+        transition: none;
+    }
+}

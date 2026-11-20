@@ -6,20 +6,27 @@
     'value' => null,
     'options' => [],
     'hint' => null,
+    'errorMessage' => null, // custom text shown when the field fails client-side validation
     'raised' => false, // true = label always floated, placeholder always visible
     'light' => false, // true = follows the theme toggle (white in light mode, dark in dark mode)
                       // false = always the dark navy style (login, register, etc.)
     'useOld' => true, // false = always show $value, ignore old input
+    'prefix' => null, // text inside the field before the value (e.g. +63), shows while the label is floated
 ])
 
 @php
     $fieldId = $id ?? $name;
     $current = $useOld ? old($name, $value) : $value;
 
+    $required = $attributes->has('required'); // shows the red asterisk
+    $invalid = $errors->has($name); // Laravel validation error
 
     $fieldColors = $light
         ? 'border-(--gray-300) bg-(--white) text-(--gray-900) hover:border-(--gray-400) focus:border-(--blue-600) focus:ring-[color-mix(in_srgb,var(--blue-600)_20%,transparent)] dark:border-(--gray-600) dark:bg-(--gray-800) dark:text-(--gray-50) dark:hover:border-(--gray-500) dark:focus:border-(--green-400) dark:focus:ring-[color-mix(in_srgb,var(--green-400)_15%,transparent)]'
         : 'border-white/10 bg-(--blue-900) text-(--white) hover:border-white/20 focus:border-(--green-400) focus:ring-[color-mix(in_srgb,var(--green-400)_10%,transparent)]';
+
+    // Red border and ring when the field is invalid (aria-invalid="true")
+    $errorColors = 'aria-invalid:border-(--red-500) aria-invalid:hover:border-(--red-500) aria-invalid:focus:border-(--red-500) aria-invalid:focus:ring-[color-mix(in_srgb,var(--red-500)_20%,transparent)]';
 
     // Paint over the browser's autofill background, keep text and caret readable
     $autofill = $light
@@ -43,7 +50,7 @@
         : 'hover:text-(--green-400) focus-visible:ring-(--green-400)';
 
     // ------------------------------------------------------------------
-    // Placeholder: hidden until focus, unless "raised"
+    // Placeholder: hidden until focus or error, unless "raised"
     // ------------------------------------------------------------------
     $placeholderColor = $light
         ? 'placeholder:text-(--gray-400) dark:placeholder:text-(--gray-500)'
@@ -53,7 +60,13 @@
         ? 'focus:placeholder:text-(--gray-400) dark:focus:placeholder:text-(--gray-500)'
         : 'focus:placeholder:text-[color-mix(in_srgb,var(--blue-100)_40%,transparent)]';
 
-    $placeholder = $raised ? $placeholderColor : "placeholder:text-transparent $placeholderOnFocus";
+    $placeholderOnError = $light
+        ? 'aria-invalid:placeholder:text-(--gray-400) dark:aria-invalid:placeholder:text-(--gray-500)'
+        : 'aria-invalid:placeholder:text-[color-mix(in_srgb,var(--blue-100)_40%,transparent)]';
+
+    $placeholder = $raised
+        ? $placeholderColor
+        : "placeholder:text-transparent $placeholderOnFocus $placeholderOnError";
 
     // ------------------------------------------------------------------
     // Field classes shared by input, select and textarea
@@ -63,13 +76,21 @@
         : 'read-only:cursor-not-allowed read-only:opacity-60';
 
     $base = implode(' ', [
-        'peer validation-input block w-full rounded-md border pb-1.5 pl-3.5 pt-5',
+        'peer validation-input block w-full rounded-md border pb-1.5 pt-5',
+        $prefix ? 'pl-14' : 'pl-3.5',
         'text-base outline-none transition focus:ring-2 sm:text-sm',
         'disabled:opacity-60',
         $readOnly,
         $fieldColors,
+        $errorColors,
         $autofill,
     ]);
+
+    // Marks the field invalid and passes the custom error text to the JS validation
+    $aria = [
+        'aria-invalid' => $invalid ? 'true' : null,
+        'data-error-message' => $errorMessage,
+    ];
 
     // ------------------------------------------------------------------
     // Floating label
@@ -80,11 +101,12 @@
         default => 'top-1/2 -translate-y-1/2',
     };
 
-    // Label moves up and shrinks on focus, autofill, or when the field has a value
+    // Label moves up and shrinks on focus, autofill, error, or when the field has a value
     $labelFloated = implode(' ', [
         'peer-focus:top-2.5 peer-focus:translate-y-0 peer-focus:text-[10px]',
         'peer-autofill:top-2.5 peer-autofill:translate-y-0 peer-autofill:text-[10px]',
         'peer-not-placeholder-shown:top-2.5 peer-not-placeholder-shown:translate-y-0 peer-not-placeholder-shown:text-[10px]',
+        'peer-aria-invalid:top-2.5 peer-aria-invalid:translate-y-0 peer-aria-invalid:text-[10px]',
     ]);
 
     $labelClasses = implode(' ', [
@@ -102,11 +124,11 @@
 
         @if ($type === 'textarea')
             <textarea id="{{ $fieldId }}" name="{{ $name }}"
-                {{ $attributes->class([$base, $placeholder, 'min-h-[7rem] resize-y pr-3.5']) }}>{{ $current }}</textarea>
+                {{ $attributes->class([$base, $placeholder, 'min-h-[7rem] resize-y pr-3.5'])->merge($aria) }}>{{ $current }}</textarea>
         @elseif ($type === 'select')
             {{-- options: ['value' => 'Label'] --}}
             <select id="{{ $fieldId }}" name="{{ $name }}"
-                {{ $attributes->except('placeholder')->class([$base, $optionBg, 'h-14 appearance-none pr-10']) }}>
+                {{ $attributes->except('placeholder')->class([$base, $optionBg, 'h-14 appearance-none pr-10'])->merge($aria) }}>
                 <option value="">{{ $attributes->get('placeholder', 'Select an option') }}</option>
                 @foreach ($options as $optionValue => $optionLabel)
                     <option value="{{ $optionValue }}" @selected((string) $current === (string) $optionValue)>
@@ -123,11 +145,15 @@
             {{-- text, email, tel, number, password, date... --}}
             <input id="{{ $fieldId }}" name="{{ $name }}" type="{{ $type }}"
                 @if ($type !== 'password') value="{{ $current }}" @endif
-                {{ $attributes->class([$base, $placeholder, 'h-14', $type === 'password' ? 'pr-11' : 'pr-3.5']) }}>
+                {{ $attributes->class([$base, $placeholder, 'h-14', $type === 'password' ? 'pr-11' : 'pr-3.5'])->merge($aria) }}>
+
+            @if ($prefix)
+                <span class="{{ $muted }} pointer-events-none absolute bottom-1.5 left-3.5 top-5 items-center text-base sm:text-sm {{ $raised ? 'flex' : 'hidden peer-focus:flex peer-not-placeholder-shown:flex peer-aria-invalid:flex' }}">{{ $prefix }}</span>
+            @endif
         @endif
 
         <label for="{{ $fieldId }}" class="{{ $labelClasses }}">
-            {{ $label }}
+            {{ $label }}@if ($required)<span class="ml-0.5 text-(--red-500)">*</span>@endif
         </label>
 
         {{-- Show / hide password button --}}
@@ -146,8 +172,8 @@
         @endif
     </div>
 
-    {{-- Error message (filled by JS on blur, hidden while typing) --}}
-    <p data-error-for="{{ $name }}" class="mt-1 hidden text-xs text-(--red-500)"></p>
+    {{-- Error message: Laravel errors show on load, JS fills this on blur --}}
+    <p data-error-for="{{ $name }}" class="{{ $invalid ? '' : 'hidden' }} mt-1 text-xs text-(--red-500)">{{ $errors->first($name) }}</p>
 
     @if ($hint)
         <p class="{{ $muted }} mt-1 text-xs">{{ $hint }}</p>

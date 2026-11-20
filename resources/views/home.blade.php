@@ -21,6 +21,7 @@
     <script>
         document.documentElement.classList.add('js')
     </script>
+    {{-- app.js imports ./reveal (scroll animations); app.css imports ./reveal.css --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
@@ -750,6 +751,7 @@
 
     </main>
 
+    {{-- Header menu + active-section highlight (scroll animations now live in resources/js/reveal.js) --}}
     <script>
         const header = document.getElementById('site-header');
         const menu = document.getElementById('menu');
@@ -797,40 +799,6 @@
                 if (target) spy.observe(target);
             });
         }
-
-        // Scroll-reveal animations
-        (() => {
-            const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-            // Groups: children inherit the animation type and get a staggered delay
-            document.querySelectorAll('[data-reveal-group]').forEach((group) => {
-                const type = group.dataset.revealGroup || 'up';
-                [...group.children].forEach((child, i) => {
-                    child.dataset.reveal ||= type;
-                    child.style.setProperty('--reveal-delay', `${i * 90}ms`);
-                });
-            });
-
-            const targets = document.querySelectorAll('[data-reveal]');
-
-            if (reduce || !('IntersectionObserver' in window)) {
-                targets.forEach((el) => el.classList.add('is-visible'));
-                return;
-            }
-
-            const io = new IntersectionObserver((entries) => {
-                entries.forEach((entry) => {
-                    if (!entry.isIntersecting) return;
-                    entry.target.classList.add('is-visible');
-                    io.unobserve(entry.target);
-                });
-            }, {
-                threshold: 0.12,
-                rootMargin: '0px 0px -8% 0px'
-            });
-
-            targets.forEach((el) => io.observe(el));
-        })();
     </script>
 
     <script src="https://www.tuqlas.com/chatbot.js" data-key="tq_live_b008f3e486ad59592451ce7d324b4c54c94ccd3a"

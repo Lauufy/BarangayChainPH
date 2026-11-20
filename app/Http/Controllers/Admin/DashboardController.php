@@ -9,10 +9,18 @@ use App\Models\ServiceRequest;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
+    /** Seconds the shared dashboard numbers stay cached. */
+    private const STATS_TTL = 60;
+
+    /** Seconds a staff member's workload summary stays cached. */
+    private const WORKLOAD_TTL = 30;
+
     public function index(): View
     {
         $user = auth()->user();
@@ -22,56 +30,45 @@ class DashboardController extends Controller
         $hour = now()->hour;
         $greeting = $hour < 12 ? 'Good morning' : ($hour < 18 ? 'Good afternoon' : 'Good evening');
 
-        $canReviewPermits = $user->hasPermission('permits.review');
-        $canReviewIdentity = $user->hasPermission('identity.review');
-        $workload = null;
-
-        if ($user->isStaff()) {
-            $requestQuery = ServiceRequest::query()
-                ->whereIn('status', [ServiceRequest::PENDING, ServiceRequest::PROCESSING]);
-            $identityQuery = IdentityVerification::query()
-                ->where('status', IdentityVerification::PENDING);
-            $oldestRequest = $canReviewPermits
-                ? (clone $requestQuery)->orderBy('created_at')->first(['reference_number', 'service_type', 'created_at'])
-                : null;
-            $oldestIdentity = $canReviewIdentity
-                ? (clone $identityQuery)
-                    ->orderByRaw('COALESCE(submitted_at, created_at)')
-                    ->first(['created_at', 'submitted_at'])
-                : null;
-            $oldestCreatedAt = $oldestRequest?->created_at;
-            $oldestLabel = $oldestRequest
-                ? $oldestRequest->reference_number.' · '.$oldestRequest->serviceTitle()
-                : null;
-            $identitySubmittedAt = $oldestIdentity?->submitted_at ?? $oldestIdentity?->created_at;
-
-            if ($identitySubmittedAt && (! $oldestCreatedAt || $identitySubmittedAt->lessThan($oldestCreatedAt))) {
-                $oldestCreatedAt = $identitySubmittedAt;
-                $oldestLabel = 'Identity review';
-            }
-
-            $workload = [
-                'can_review_permits' => $canReviewPermits,
-                'can_review_identity' => $canReviewIdentity,
-                'requests' => $canReviewPermits ? (clone $requestQuery)->count() : 0,
-                'identity_reviews' => $canReviewIdentity ? (clone $identityQuery)->count() : 0,
-                'oldest_item' => $oldestCreatedAt ? [
-                    'label' => $oldestLabel,
-                    'age_days' => (int) floor(Carbon::parse($oldestCreatedAt)->diffInSeconds(now()) / 86400),
-                ] : null,
+        // Shared numbers: the same for every admin/staff, so they are cached once for everyone.
+        // Run `php artisan cache:clear` if you need to see new records immediately.
+        $stats = Cache::remember('admin.dashboard.stats', self::STATS_TTL, function (): array {
+            return [
+                'citizens' => $this->cardStats(
+                    User::query()->where('role', 'citizen')
+                ),
+                'permits' => $this->cardStats(
+                    ServiceRequest::query()->where('status', ServiceRequest::PENDING)
+                ),
+                'verifications' => $this->cardStats(
+                    IdentityVerification::query()->where('status', IdentityVerification::PENDING),
+                    'COALESCE(submitted_at, created_at)'
+                ),
+                'verified' => $this->cardStats(
+                    IdentityVerification::query()->where('status', IdentityVerification::VERIFIED)
+                ),
+                'participation' => $this->participation(),
+                'requestStatus' => $this->requestStatus(),
+                // Issued permits that the blockchain has not confirmed yet
+                'unrecordedPermits' => IssuedDocument::query()
+                    ->whereNull('revoked_at')
+                    ->whereDoesntHave('blockchainRecord', fn ($query) => $query->whereNotNull('recorded_at'))
+                    ->count(),
             ];
-        }
+        });
 
-        // One query per card: the count and the "latest" date come from the same records.
-        // With no records the date is null; the stat card shows a temporary date for a 0 value.
-        $citizens = User::query()->where('role', 'citizen');
-        $pendingPermits = ServiceRequest::query()->where('status', ServiceRequest::PENDING);
-        $pendingVerifications = IdentityVerification::query()->where('status', IdentityVerification::PENDING);
-        $verified = IdentityVerification::query()->where('status', IdentityVerification::VERIFIED);
+        // Personal workload: depends on the user's permissions, so it is cached per user.
+        $workload = $user->isStaff()
+            ? Cache::remember(
+                'admin.dashboard.workload.'.$user->getKey(),
+                self::WORKLOAD_TTL,
+                fn (): array => $this->workload($user)
+            )
+            : null;
 
-        $participation = $this->participation();
-        $requestStatus = $this->requestStatus();
+        // Kept fresh on purpose (small query, always up to date).
         $recentPermits = ServiceRequest::with('user')->latest()->limit(5)->get();
+
         $shortcuts = collect([
             ['admin.users.index', 'User & Role Management', $isAdmin],
             ['admin.identity-verification.index', 'Identity Verification', $can('identity.review')],
@@ -94,58 +91,135 @@ class DashboardController extends Controller
             'miniCard' => 'rounded-xl bg-(--gray-50) p-4 dark:bg-(--gray-900)',
             'miniTitle' => 'text-sm text-(--gray-600) dark:text-(--gray-300)',
             'miniNumber' => 'mt-1 text-2xl font-bold tabular-nums text-(--gray-900) dark:text-(--gray-50)',
-            'totalCitizens' => (clone $citizens)->count(),
-            'citizensLatest' => (clone $citizens)->max('created_at'), // last registered citizen
-            'citizensTrend' => $this->monthTrend($citizens),
 
-            'pendingPermits' => (clone $pendingPermits)->count(),
-            'permitsLatest' => (clone $pendingPermits)->max('created_at'), // last submitted request
-            'permitsTrend' => $this->monthTrend($pendingPermits),
+            'totalCitizens' => $stats['citizens']['total'],
+            'citizensLatest' => $stats['citizens']['latest'], // last registered citizen
+            'citizensTrend' => $stats['citizens']['trend'],
 
-            'pendingVerifications' => (clone $pendingVerifications)->count(),
-            'verificationsLatest' => (clone $pendingVerifications)
-                ->selectRaw('MAX(COALESCE(submitted_at, created_at)) as latest')
-                ->value('latest'), // last submitted verification
-            'verificationsTrend' => $this->monthTrend($pendingVerifications),
+            'pendingPermits' => $stats['permits']['total'],
+            'permitsLatest' => $stats['permits']['latest'], // last submitted request
+            'permitsTrend' => $stats['permits']['trend'],
 
-            'authenticatedDocuments' => (clone $verified)->count(),
-            'verifiedLatest' => (clone $verified)->max('created_at'), // swap to your verified date column if you have one
-            'verifiedTrend' => $this->monthTrend($verified),
+            'pendingVerifications' => $stats['verifications']['total'],
+            'verificationsLatest' => $stats['verifications']['latest'], // last submitted verification
+            'verificationsTrend' => $stats['verifications']['trend'],
 
-            'participation' => $participation,
-            'participationTotal' => array_sum($participation['values']),
-            'requestStatus' => $requestStatus,
-            'requestStatusTotal' => array_sum($requestStatus),
+            'authenticatedDocuments' => $stats['verified']['total'],
+            'verifiedLatest' => $stats['verified']['latest'], // swap to your verified date column if you have one
+            'verifiedTrend' => $stats['verified']['trend'],
+
+            'participation' => $stats['participation'],
+            'participationTotal' => array_sum($stats['participation']['values']),
+            'requestStatus' => $stats['requestStatus'],
+            'requestStatusTotal' => array_sum($stats['requestStatus']),
 
             'recentPermits' => $recentPermits,
-            // Issued permits that the blockchain has not confirmed yet
-            'unrecordedPermits' => IssuedDocument::query()
-                ->whereNull('revoked_at')
-                ->whereDoesntHave('blockchainRecord', fn ($query) => $query->whereNotNull('recorded_at'))
-                ->count(),
+            'unrecordedPermits' => $stats['unrecordedPermits'],
             'workload' => $workload,
         ]);
     }
 
     /**
+     * Review workload for a staff member (pending permits and identity checks).
+     *
+     * @return array<string, mixed>
+     */
+    private function workload(User $user): array
+    {
+        $canReviewPermits = $user->hasPermission('permits.review');
+        $canReviewIdentity = $user->hasPermission('identity.review');
+
+        $requestQuery = ServiceRequest::query()
+            ->whereIn('status', [ServiceRequest::PENDING, ServiceRequest::PROCESSING]);
+        $identityQuery = IdentityVerification::query()
+            ->where('status', IdentityVerification::PENDING);
+
+        $oldestRequest = $canReviewPermits
+            ? (clone $requestQuery)->orderBy('created_at')->first(['reference_number', 'service_type', 'created_at'])
+            : null;
+        $oldestIdentity = $canReviewIdentity
+            ? (clone $identityQuery)
+                ->orderByRaw('COALESCE(submitted_at, created_at)')
+                ->first(['created_at', 'submitted_at'])
+            : null;
+
+        $oldestCreatedAt = $oldestRequest?->created_at;
+        $oldestLabel = $oldestRequest
+            ? $oldestRequest->reference_number.' · '.$oldestRequest->serviceTitle()
+            : null;
+        $identitySubmittedAt = $oldestIdentity?->submitted_at ?? $oldestIdentity?->created_at;
+
+        if ($identitySubmittedAt && (! $oldestCreatedAt || $identitySubmittedAt->lessThan($oldestCreatedAt))) {
+            $oldestCreatedAt = $identitySubmittedAt;
+            $oldestLabel = 'Identity review';
+        }
+
+        return [
+            'can_review_permits' => $canReviewPermits,
+            'can_review_identity' => $canReviewIdentity,
+            'requests' => $canReviewPermits ? (clone $requestQuery)->count() : 0,
+            'identity_reviews' => $canReviewIdentity ? (clone $identityQuery)->count() : 0,
+            'oldest_item' => $oldestCreatedAt ? [
+                'label' => $oldestLabel,
+                'age_days' => (int) floor(Carbon::parse($oldestCreatedAt)->diffInSeconds(now()) / 86400),
+            ] : null,
+        ];
+    }
+
+    /**
+     * Everything one stat card needs from a single query:
+     * the total, the latest date, and the month-over-month trend.
+     *
+     * @return array{total: int, latest: ?string, trend: ?float}
+     */
+    private function cardStats(Builder $query, string $latest = 'created_at'): array
+    {
+        $startOfMonth = now()->startOfMonth();
+        $lastMonthStart = now()->subMonthNoOverflow()->startOfMonth();
+        $lastMonthSamePoint = now()->subMonthNoOverflow();
+
+        $row = (clone $query)->toBase()->selectRaw(
+            "COUNT(*) as total,
+             MAX({$latest}) as latest,
+             SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END) as this_month,
+             SUM(CASE WHEN created_at BETWEEN ? AND ? THEN 1 ELSE 0 END) as last_month",
+            [$startOfMonth, $lastMonthStart, $lastMonthSamePoint]
+        )->first();
+
+        $thisMonth = (int) ($row->this_month ?? 0);
+        $lastMonth = (int) ($row->last_month ?? 0);
+
+        return [
+            'total' => (int) ($row->total ?? 0),
+            // With no records the date is null; the stat card shows a temporary date for a 0 value.
+            'latest' => $row->latest ?? null,
+            // Null when last month has nothing to compare against (the card hides the trend).
+            'trend' => $lastMonth > 0 ? round((($thisMonth - $lastMonth) / $lastMonth) * 100, 1) : null,
+        ];
+    }
+
+    /**
      * Permit requests per month for the last 12 months (bar chart).
+     * The database does the grouping, so no records are loaded into PHP.
      *
      * @return array{labels: array<int, string>, values: array<int, int>}
      */
     private function participation(): array
     {
         $start = now()->subMonths(11)->startOfMonth();
+        $monthExpression = $this->monthExpression();
 
         $byMonth = ServiceRequest::query()
             ->where('created_at', '>=', $start)
-            ->get(['created_at'])
-            ->groupBy(fn ($request) => $request->created_at->format('Y-m'));
+            ->selectRaw("{$monthExpression} as ym, COUNT(*) as total")
+            ->groupBy('ym')
+            ->pluck('total', 'ym');
 
         $months = collect(range(0, 11))->map(fn ($i) => $start->copy()->addMonths($i));
 
         return [
             'labels' => $months->map(fn ($month) => $month->format('M'))->all(),
-            'values' => $months->map(fn ($month) => $byMonth->get($month->format('Y-m'), collect())->count())->all(),
+            'values' => $months->map(fn ($month) => (int) ($byMonth[$month->format('Y-m')] ?? 0))->all(),
         ];
     }
 
@@ -170,18 +244,14 @@ class DashboardController extends Controller
     }
 
     /**
-     * Percent change in new records: this month so far vs the same stretch of last month.
-     * Returns null when last month has nothing to compare against (the card hides the trend).
+     * SQL that turns created_at into "YYYY-MM" for the current database driver.
      */
-    private function monthTrend(Builder $query): ?float
+    private function monthExpression(): string
     {
-        $startOfMonth = now()->startOfMonth();
-        $lastMonthStart = now()->subMonthNoOverflow()->startOfMonth();
-        $lastMonthSamePoint = now()->subMonthNoOverflow();
-
-        $thisMonth = (clone $query)->where('created_at', '>=', $startOfMonth)->count();
-        $lastMonth = (clone $query)->whereBetween('created_at', [$lastMonthStart, $lastMonthSamePoint])->count();
-
-        return $lastMonth > 0 ? round((($thisMonth - $lastMonth) / $lastMonth) * 100, 1) : null;
+        return match (DB::connection()->getDriverName()) {
+            'pgsql' => "to_char(created_at, 'YYYY-MM')",
+            'sqlite' => "strftime('%Y-%m', created_at)",
+            default => "DATE_FORMAT(created_at, '%Y-%m')", // MySQL / MariaDB
+        };
     }
 }

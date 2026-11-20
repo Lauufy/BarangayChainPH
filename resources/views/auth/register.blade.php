@@ -46,6 +46,7 @@
 
             {{-- Password + Confirm Password --}}
             <div class="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
+                {{-- Weak password text is hidden here, the requirement list below covers it --}}
                 <x-form.input
                     light
                     name="password"
@@ -70,6 +71,7 @@
                     required
                     autocomplete="new-password"
                     placeholder="Re-enter your password"
+                    error-message="Passwords do not match."
                 />
             </div>
 
