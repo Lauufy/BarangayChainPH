@@ -38,7 +38,10 @@ class DashboardController extends Controller
                     User::query()->where('role', 'citizen')
                 ),
                 'permits' => $this->cardStats(
-                    ServiceRequest::query()->where('status', ServiceRequest::PENDING)
+                    ServiceRequest::query()->whereIn('status', [
+                        ServiceRequest::PENDING,
+                        ServiceRequest::PROCESSING,
+                    ])
                 ),
                 'verifications' => $this->cardStats(
                     IdentityVerification::query()->where('status', IdentityVerification::PENDING),
@@ -170,6 +173,9 @@ class DashboardController extends Controller
      * Everything one stat card needs from a single query:
      * the total, the latest date, and the month-over-month trend.
      *
+     * @template TModel of \Illuminate\Database\Eloquent\Model
+     *
+     * @param  Builder<TModel>  $query
      * @return array{total: int, latest: ?string, trend: ?float}
      */
     private function cardStats(Builder $query, string $latest = 'created_at'): array

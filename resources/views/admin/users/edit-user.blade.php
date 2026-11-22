@@ -32,9 +32,6 @@
                         </p>
                     </x-form.input>
 
-                    <x-form.input light id="editUser_status" name="status" label="Account Status" type="select"
-                        required :options="$statuses" :use-old="false" :value="$editOld['status'] ?? null" />
-
                     <x-form.input light id="editUser_phone" name="phone" label="Phone Number" type="tel"
                         autocomplete="off" placeholder="Enter phone number" :use-old="false" :value="$editOld['phone'] ?? null" />
                 </div>
@@ -191,7 +188,7 @@
         const $ = (id) => document.getElementById(id);
 
         // Fields filled from the user record
-        const fields = ['name', 'email', 'role', 'status', 'phone', 'employment_type', 'date_hired',
+        const fields = ['name', 'email', 'role', 'phone', 'employment_type', 'date_hired',
             'civil_status', 'religion', 'occupation', 'house_number', 'barangay', 'city_municipality',
             'province', 'zip_code'
         ];
@@ -257,10 +254,6 @@
             note.textContent = u.is_self ? "You can't change your own role." :
                 (isCitizen ? '  Citizen accounts keep the citizen role.' : '');
             note.classList.toggle('hidden', !locked);
-
-            // Nobody can suspend or deactivate their own account.
-            [...$('editUser_status').options].forEach((opt) => opt.disabled = u.is_self && opt.value !==
-                'active');
 
             // Employment: staff / admin only. Citizen details: citizens with a profile only.
             const showCitizen = isCitizen && u.has_citizen;

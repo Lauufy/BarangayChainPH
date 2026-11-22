@@ -8,7 +8,7 @@
     <div class="space-y-6">
         {{-- Explain the ledger and show its key transaction totals. --}}
         <x-admin.page-header label="System Integrity" title="Blockchain Transaction Ledger"
-            text="Inspect blockchain transaction references and recorded document hashes." :export-url="route('admin.exports.show', ['module' => 'blockchain-ledger'])" />
+            text="Inspect blockchain transaction references and recorded document hashes." />
 
         {{-- Summary of confirmed, failed, and total records. --}}
         <div class="grid gap-4 sm:grid-cols-3">

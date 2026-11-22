@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\PublicContactController;
 use App\Http\Controllers\Shared\PermitVerificationController;
 use App\Http\Controllers\Shared\SyncVersionController;
 use App\Http\Controllers\Shared\TicketParticipantPhotoController;
@@ -20,6 +21,10 @@ Route::get('/', function () {
 
     return view('home', compact('dashboard'));
 })->name('home');
+
+Route::post('/contact', [PublicContactController::class, 'store'])
+    ->middleware('throttle:5,1')
+    ->name('contact.store');
 
 // Terms of service page.
 Route::view('/terms', 'legal.terms')->name('terms');

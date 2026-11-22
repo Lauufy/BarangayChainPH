@@ -6,7 +6,7 @@
     <div class="space-y-6">
         {{-- Explain the permit queue and summarize request totals. --}}
         <x-admin.page-header label="Citizen Services" title="Permit & Clearance Processing"
-            text="Monitor applications and manage permit processing workflows." :export-url="route('admin.exports.show', ['module' => 'permits'])" />
+            text="Monitor applications and manage permit processing workflows." />
 
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <x-admin.stat-card label="Total Requests" subtitle="All submitted applications" :value="number_format($requestCounts['total'] ?? 0)"
@@ -22,7 +22,7 @@
                 </x-slot:icon>
             </x-admin.stat-card>
 
-            <x-admin.stat-card label="Pending" subtitle="Awaiting review" :value="number_format($requestCounts['pending'] ?? 0)" :trend="$requestTrends['pending'] ?? null"
+            <x-admin.stat-card label="Pending / Processing" subtitle="Awaiting review or currently handled" :value="number_format($requestCounts['pending'] ?? 0)" :trend="$requestTrends['pending'] ?? null"
                 :invert="true" :latest="$requestLatest['pending'] ?? null" latest-label="Oldest waiting">
                 <x-slot:icon>
                     {{-- Lucide: clock --}}

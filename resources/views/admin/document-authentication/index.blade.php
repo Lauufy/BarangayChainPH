@@ -6,7 +6,7 @@
     <div class="space-y-6">
         {{-- Explain the review queue and summarize the number of authentication records. --}}
         <x-admin.page-header label="Document Security" title="Document Authentication"
-            text="Review document verification records and authentication results." :export-url="route('admin.exports.show', ['module' => 'document-authentication'])" />
+            text="Review document verification records and authentication results." />
 
         {{-- Totals for submitted, pending, and authenticated documents. --}}
         <div class="grid gap-4 sm:grid-cols-3">

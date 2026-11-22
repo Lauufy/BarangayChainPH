@@ -5,8 +5,7 @@
 @section('content')
     <div class="space-y-6">
         <x-admin.page-header label="Administration" title="User & Role Management"
-            text="Manage employee accounts, citizen accounts, and administrator access."
-            :export-url="route('admin.exports.show', ['module' => 'users', 'format' => 'csv'] + request()->only('users_tab'))" />
+            text="Manage employee accounts, citizen accounts, and administrator access." />
 
         {{-- Summary --}}
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -192,6 +191,7 @@
 
         @include('admin.users.view-user')
         @include('admin.users.edit-user')
+        @include('admin.users.status-user')
         @include('admin.users.permissions-user')
         @include('admin.users.create-user')
     </div>

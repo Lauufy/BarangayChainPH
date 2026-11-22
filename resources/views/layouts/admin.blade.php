@@ -241,9 +241,10 @@
                             class="sb-section-label mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-[#8b93b8]">
                             Communication</p>
                         <div class="space-y-0.5">
-                            <x-admin.nav-link href="/admin/tickets" match="admin/tickets*">
-                                <x-slot:icon><path d="M5 3h14a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3H10l-5 4v-4a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3z"/><circle class="cut" cx="8" cy="10.5" r="1.2"/><circle class="cut" cx="12" cy="10.5" r="1.2"/><circle class="cut" cx="16" cy="10.5" r="1.2"/></x-slot:icon>
-                                Ticket Messages
+                            <x-admin.nav-link :href="route('admin.tickets.index')" :match="['admin/tickets*', 'admin/contact-messages*']"
+                                :badge="$newContactMessagesCount > 9 ? '9+' : ($newContactMessagesCount ?: null)">
+                                <x-slot:icon><path d="M5 3h14a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3H10l-5 4v-4a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3z"/><path d="M8 8h8M8 12h5"/></x-slot:icon>
+                                Communications Management
                             </x-admin.nav-link>
                         </div>
                     </div>
@@ -309,35 +310,65 @@
                         </summary>
 
                         <div
-                            class="absolute right-0 z-50 mt-3 max-w-[calc(100vw-2rem)] rounded-xl border border-(--gray-200) bg-(--white) shadow-xl shadow-black/10 dark:border-white/10 dark:bg-(--gray-800) w-96 overflow-hidden">
-                            <div class="border-(--gray-200) border-b px-5 py-4 dark:border-white/10">
-                                <p class="text-(--gray-900) dark:text-(--gray-50) text-sm font-semibold">Notifications
-                                </p>
-                                <p id="admin-notification-subtitle"
-                                    class="text-(--gray-500) dark:text-(--gray-400) mt-0.5 text-xs">
-                                    @if (auth()->user()->unreadNotifications()->count())
-                                        You have {{ auth()->user()->unreadNotifications()->count() }} new
-                                        {{ \Illuminate\Support\Str::plural('notification', auth()->user()->unreadNotifications()->count()) }}.
-                                    @else
-                                        You're all caught up.
-                                    @endif
-                                </p>
+                            class="absolute right-0 z-50 mt-3 w-104 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-(--gray-200) bg-(--gray-50) p-3 shadow-xl shadow-black/10 dark:border-white/10 dark:bg-(--gray-900)">
+
+                            {{-- Header --}}
+                            <div class="flex items-start justify-between gap-3">
+                                <div>
+                                    <p class="text-(--gray-900) dark:text-(--gray-50) text-lg font-bold leading-tight">
+                                        Notifications</p>
+                                    <p id="admin-notification-subtitle"
+                                        class="text-(--gray-500) dark:text-(--gray-400) mt-0.5 text-xs">
+                                        @if (auth()->user()->unreadNotifications()->count())
+                                            You have {{ auth()->user()->unreadNotifications()->count() }} new
+                                            {{ \Illuminate\Support\Str::plural('notification', auth()->user()->unreadNotifications()->count()) }}.
+                                        @else
+                                            You're all caught up.
+                                        @endif
+                                    </p>
+                                </div>
+
+                                @if (auth()->user()->unreadNotifications()->count())
+                                    <form id="admin-mark-all-form" method="POST"
+                                        action="{{ route('admin.notifications.read-all') }}">
+                                        @csrf
+                                        <button type="submit"
+                                            class="text-(--gray-500) dark:text-(--gray-300) flex shrink-0 items-center gap-1.5 rounded-lg border border-(--gray-200) bg-(--white) px-3 py-1.5 text-xs font-medium transition-colors hover:bg-(--gray-100) dark:border-white/10 dark:bg-(--gray-800) dark:hover:bg-white/10">
+                                            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                stroke-linejoin="round" aria-hidden="true">
+                                                <path d="M20 6 9 17l-5-5" />
+                                            </svg>
+                                            Mark all as read
+                                        </button>
+                                    </form>
+                                @endif
                             </div>
 
-                            <div class="max-h-96 overflow-y-auto px-5 py-4">
+                            {{-- Tabs --}}
+                            <div
+                                class="mt-3 grid grid-cols-2 overflow-hidden rounded-lg border border-(--blue-600) bg-(--white) dark:bg-(--gray-800)">
+                                <button type="button" data-notif-tab="all"
+                                    class="bg-(--blue-600) text-(--white) py-1.5 text-xs font-bold uppercase tracking-wide transition-colors">
+                                    All
+                                </button>
+                                <button type="button" data-notif-tab="unread"
+                                    class="text-(--gray-900) dark:text-(--gray-50) py-1.5 text-xs font-bold uppercase tracking-wide transition-colors">
+                                    Unread
+                                </button>
+                            </div>
+
+                            {{-- List --}}
+                            <div class="mt-2.5 max-h-80 space-y-1 overflow-y-auto">
                                 @forelse (auth()->user()->notifications()->latest()->limit(10)->get() as $notification)
-                                    <div class="relative flex gap-3 pb-5 last:pb-0">
-                                        @unless ($loop->last)
-                                            <span
-                                                class="left-4.5 bg-(--gray-200) absolute bottom-1 top-10 w-px -translate-x-1/2 dark:bg-white/10"
-                                                aria-hidden="true"></span>
-                                        @endunless
+                                    <div data-notif-item data-unread="{{ $notification->read_at ? '0' : '1' }}"
+                                        class="relative flex gap-2 rounded-lg border border-(--gray-200) bg-(--white) p-2.5 dark:border-white/10 dark:bg-(--gray-800)">
 
                                         @switch($notification->data['status'] ?? 'info')
                                             @case('verified')
                                                 <span
-                                                    class="bg-[color-mix(in_srgb,var(--green-500)_16%,transparent)] text-(--green-600) dark:text-(--green-300) relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
-                                                    <svg class="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none"
+                                                    class="bg-[color-mix(in_srgb,var(--green-500)_16%,transparent)] text-(--green-600) dark:text-(--green-300) relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
+                                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none"
                                                         stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
                                                         stroke-linejoin="round" aria-hidden="true">
                                                         <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20ZM9 12l2 2 4-4" />
@@ -347,19 +378,20 @@
 
                                             @case('rejected')
                                                 <span
-                                                    class="bg-[color-mix(in_srgb,var(--red-500)_14%,transparent)] text-(--red-600) dark:text-(--red-500) relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
-                                                    <svg class="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none"
+                                                    class="bg-[color-mix(in_srgb,var(--red-500)_14%,transparent)] text-(--red-600) dark:text-(--red-500) relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
+                                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none"
                                                         stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
                                                         stroke-linejoin="round" aria-hidden="true">
-                                                        <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20ZM15 9l-6 6M9 9l6 6" />
+                                                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
+                                                        <path d="M12 9v4M12 17h.01" />
                                                     </svg>
                                                 </span>
                                             @break
 
                                             @default
                                                 <span
-                                                    class="bg-[color-mix(in_srgb,var(--amber-500)_16%,transparent)] text-(--amber-500) relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
-                                                    <svg class="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none"
+                                                    class="bg-[color-mix(in_srgb,var(--amber-500)_16%,transparent)] text-(--amber-500) relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
+                                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none"
                                                         stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
                                                         stroke-linejoin="round" aria-hidden="true">
                                                         <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20ZM12 16v-4M12 8h.01" />
@@ -367,14 +399,11 @@
                                                 </span>
                                         @endswitch
 
-                                        <form method="POST"
-                                            action="{{ route('admin.notifications.read', $notification->id) }}"
-                                            class="min-w-0 flex-1">
-                                            @csrf
-                                            <button type="submit" class="group w-full text-left">
-                                                <span class="flex items-start justify-between gap-3">
-                                                    <span
-                                                        class="text-(--gray-900) dark:text-(--gray-50) text-[13px] font-semibold group-hover:underline">
+                                        <div class="min-w-0 flex-1">
+                                            <div class="flex items-start justify-between gap-1">
+                                                <div class="flex min-w-0 items-center gap-1">
+                                                    <a href="{{ $notification->data['url'] ?? route('admin.notifications.index') }}"
+                                                        class="text-(--blue-900) dark:text-(--gray-50) text-sm font-bold hover:underline">
                                                         {{ $notification->data['title'] ?? 'Notification' }}
                                                         @unless ($notification->read_at)
                                                             <span data-admin-unread-dot
@@ -382,35 +411,33 @@
                                                                 <span class="sr-only">Unread</span>
                                                             </span>
                                                         @endunless
-                                                    </span>
-                                                    <span
-                                                        class="text-(--gray-500) dark:text-(--gray-400) shrink-0 whitespace-nowrap font-mono text-[11px]">{{ $notification->created_at->diffForHumans() }}</span>
-                                                </span>
+                                                    </a>
+                                                </div>
                                                 <span
-                                                    class="text-(--gray-500) dark:text-(--gray-400) mt-0.5 block text-xs">{{ $notification->data['message'] ?? '' }}</span>
-                                            </button>
-                                        </form>
+                                                    class="text-(--gray-500) dark:text-(--gray-400) shrink-0 whitespace-nowrap text-xs">{{ $notification->created_at->diffForHumans() }}</span>
+                                            </div>
+
+                                            <span
+                                                class="text-(--gray-500) dark:text-(--gray-400) mt-0.5 block text-xs leading-snug">
+                                                {{ $notification->data['message'] ?? '' }}
+                                            </span>
+                                        </div>
                                     </div>
                                 @empty
                                     <p class="text-(--gray-500) dark:text-(--gray-400) px-2 py-8 text-center text-sm">
                                         No notifications yet.</p>
                                 @endforelse
+
+                                <p data-notif-unread-empty hidden
+                                    class="text-(--gray-500) dark:text-(--gray-400) px-2 py-8 text-center text-sm">
+                                    No unread notifications.</p>
                             </div>
 
-                            <div
-                                class="border-(--gray-200) bg-(--gray-50) dark:bg-(--gray-900) flex items-center justify-between border-t px-5 py-3 dark:border-white/10">
-                                @if (auth()->user()->unreadNotifications()->count())
-                                    <form id="admin-mark-all-form" method="POST"
-                                        action="{{ route('admin.notifications.read-all') }}">
-                                        @csrf
-                                        <button
-                                            class="text-xs font-semibold text-(--blue-700) hover:underline dark:text-(--blue-300)">Mark
-                                            all as read</button>
-                                    </form>
-                                @endif
+                            {{-- Footer --}}
+                            <div class="mt-3 text-center">
                                 <a href="{{ route('admin.notifications.index') }}"
-                                    class="text-xs font-semibold text-(--blue-700) hover:underline dark:text-(--blue-300) ml-auto">View
-                                    all</a>
+                                    class="text-xs font-bold text-(--blue-900) hover:underline dark:text-(--blue-300)">View
+                                    All</a>
                             </div>
                         </div>
                     </details>
@@ -545,33 +572,6 @@
             } catch (e) {}
         });
 
-        // ---------- Opening the bell marks everything as read ----------
-        notificationMenu?.addEventListener('toggle', async () => {
-            const form = $('admin-mark-all-form');
-            const badge = $('admin-notification-count');
-            if (!notificationMenu.open || !form || !badge) return;
-
-            try {
-                const response = await fetch(form.action, {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
-                    },
-                    body: new FormData(form),
-                    credentials: 'same-origin',
-                });
-                if (!response.ok) throw new Error('Could not mark notifications as read.');
-
-                badge.remove();
-                form.remove();
-                $('admin-notification-subtitle').textContent = "You're all caught up.";
-                document.querySelectorAll('[data-admin-unread-dot]').forEach((dot) => dot.remove());
-            } catch (error) {
-                console.error(error);
-            }
-        });
-
         // ---------- Live refresh: only when the server reports a change ----------
         // Comparable HTML of an element (chart canvases ignore their runtime size attributes)
         function signature(element) {
@@ -631,6 +631,36 @@
             version: @json(\App\Support\SyncVersion::current(auth()->id(), 'admin')),
             refresh: refreshContent,
             hasUnsavedInput,
+        });
+
+        // ---------- Notification tabs (delegated, so it survives live-refresh swaps) ----------
+        function applyNotifTab(filter) {
+            if (!notificationMenu) return;
+
+            const items = notificationMenu.querySelectorAll('[data-notif-item]');
+            const emptyMsg = notificationMenu.querySelector('[data-notif-unread-empty]');
+            let visible = 0;
+
+            items.forEach((item) => {
+                const show = filter === 'all' || item.dataset.unread === '1';
+                item.style.display = show ? '' : 'none';
+                if (show) visible++;
+            });
+
+            if (emptyMsg) emptyMsg.hidden = !(filter === 'unread' && visible === 0 && items.length > 0);
+
+            notificationMenu.querySelectorAll('[data-notif-tab]').forEach((tab) => {
+                const on = tab.dataset.notifTab === filter;
+                tab.classList.toggle('bg-(--blue-600)', on);
+                tab.classList.toggle('text-(--white)', on);
+                tab.classList.toggle('text-(--gray-900)', !on);
+                tab.classList.toggle('dark:text-(--gray-50)', !on);
+            });
+        }
+
+        notificationMenu?.addEventListener('click', (event) => {
+            const tab = event.target.closest('[data-notif-tab]');
+            if (tab) applyNotifTab(tab.dataset.notifTab);
         });
 
         // ---------- Close menus on outside click or Escape ----------

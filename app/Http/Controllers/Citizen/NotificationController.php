@@ -6,54 +6,48 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class NotificationController extends Controller
 {
-    // Full list page
-    public function index(Request $request)
+    // List page (All / Unread, 10 per page).
+    public function index(Request $request): View
     {
-        $notifications = $request->user()->notifications()->paginate(10);
+        $user = $request->user();
+        $filter = $request->query('filter') === 'unread' ? 'unread' : 'all';
 
-        return view('citizen.notifications.index', compact('notifications'));
+        $query = $filter === 'unread'
+            ? $user->unreadNotifications()
+            : $user->notifications();
+
+        return view('citizen.notifications.index', [
+            'notifications' => $query->paginate(10)->withQueryString(),
+            'unreadCount' => $user->unreadNotifications()->count(),
+            'filter' => $filter,
+        ]);
     }
 
-    // Mark one as read.
-    // - Dismiss button in the bell (fetch) gets JSON back.
-    // - Clicking an item on the notifications page goes to its link.
+    // Mark one notification as read only after an explicit user action.
     public function read(Request $request, string $id): RedirectResponse|JsonResponse
     {
         $notification = $request->user()->notifications()->findOrFail($id);
         $notification->markAsRead();
 
-        if ($request->expectsJson()) {
-            return response()->json(['ok' => true]);
-        }
-
-        return redirect()->to($this->notificationPath(
-            $notification->data['url'] ?? null,
-            route('citizen.notifications', [], false),
-        ));
+        return $request->expectsJson()
+            ? response()->json([
+                'ok' => true,
+                'unreadCount' => $request->user()->unreadNotifications()->count(),
+            ])
+            : back();
     }
 
-    // Mark all as read
-    // - Bell (fetch) gets JSON back; the notifications page gets a redirect.
+    // Mark ALL unread as read.
     public function readAll(Request $request): RedirectResponse|JsonResponse
     {
         $request->user()->unreadNotifications->markAsRead();
 
-        if ($request->expectsJson()) {
-            return response()->json(['ok' => true]);
-        }
-
-        return back();
-    }
-
-    private function notificationPath(mixed $url, string $fallback): string
-    {
-        $path = is_string($url) ? parse_url($url, PHP_URL_PATH) : null;
-
-        return is_string($path) && str_starts_with($path, '/') && ! str_starts_with($path, '//')
-            ? $path
-            : $fallback;
+        return $request->expectsJson()
+            ? response()->json(['ok' => true])
+            : back();
     }
 }

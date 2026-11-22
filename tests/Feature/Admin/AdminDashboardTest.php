@@ -6,6 +6,7 @@ use App\Models\IdentityVerification;
 use App\Models\ServiceRequest;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 class AdminDashboardTest extends TestCase
@@ -45,6 +46,20 @@ class AdminDashboardTest extends TestCase
             ->get(route('admin.dashboard'))
             ->assertOk()
             ->assertSee('BRGY-DASH-0001');
+    }
+
+    public function test_pending_permit_count_includes_processing_requests(): void
+    {
+        ServiceRequest::factory()->create(['status' => ServiceRequest::PENDING]);
+        ServiceRequest::factory()->create(['status' => ServiceRequest::PROCESSING]);
+        ServiceRequest::factory()->create(['status' => ServiceRequest::APPROVED]);
+        Cache::forget('admin.dashboard.stats');
+
+        $response = $this->actingAs(User::factory()->create(['role' => 'admin']))
+            ->get(route('admin.dashboard'));
+
+        $response->assertOk()
+            ->assertViewHas('pendingPermits', 2);
     }
 
     public function test_user_management_shortcut_is_only_shown_to_admins(): void

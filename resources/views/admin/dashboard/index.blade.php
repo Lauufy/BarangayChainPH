@@ -33,7 +33,7 @@
                 </x-slot:icon>
             </x-admin.stat-card>
 
-            <x-admin.stat-card label="Pending Permits" subtitle="Awaiting review" :value="number_format($pendingPermits ?? 0)" :trend="$permitsTrend ?? null"
+            <x-admin.stat-card label="Pending Permits" subtitle="Awaiting review or processing" :value="number_format($pendingPermits ?? 0)" :trend="$permitsTrend ?? null"
                 :invert="true" :latest="$permitsLatest ?? null" latest-label="Last submitted" :href="$can('permits.review') ? route('admin.permits.index') : null">
                 <x-slot:icon>
                     {{-- Lucide: clipboard-check --}}

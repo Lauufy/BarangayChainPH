@@ -133,6 +133,7 @@ class UserController extends Controller
                     'permission_count' => count($user->permissions ?? []),
                     'permissions' => array_values($user->permissions ?? []),
                     'permissions_url' => route('admin.users.permissions.update', $user),
+                    'status_url' => route('admin.users.status', $user),
                     'avatar_url' => $user->avatar_url,
                     'phone' => $user->phone,
                     'employee_id' => $employee?->employee_id,
@@ -182,6 +183,9 @@ class UserController extends Controller
         $updateErrors = $errors?->getBag('updateUser');
         $reopenId = $updateErrors?->any() ? (int) $request->old('edit_user_id') : null;
         $editOld = $reopenId ? $request->old() : [];
+        $statusErrors = $errors?->getBag('updateUserStatus');
+        $statusReopenId = $statusErrors?->any() ? (int) $request->old('status_user_id') : null;
+        $statusOld = $statusReopenId ? $request->old() : [];
         $permissionErrors = $errors?->getBag('updatePermissions');
         $permissionsReopenId = $permissionErrors?->any()
             ? (int) $request->old('permissions_user_id')
@@ -203,6 +207,8 @@ class UserController extends Controller
             'createFailed',
             'reopenId',
             'editOld',
+            'statusReopenId',
+            'statusOld',
             'permissionsReopenId',
             'permissionList',
             'oldPermissions',
@@ -318,7 +324,6 @@ class UserController extends Controller
                 Rule::unique('users', 'email')->ignore($user->id),
             ],
             'role' => ['required', Rule::in($user->role === 'citizen' ? ['citizen'] : ['staff', 'admin'])],
-            'status' => ['required', Rule::in(array_keys(self::STATUSES))],
             'employment_type' => ['required_if:role,staff,admin', 'nullable', Rule::in(array_keys(self::EMPLOYMENT_TYPES))],
             'department' => ['required_if:role,staff,admin', 'nullable', 'string', 'max:255'],
             'position' => ['required_if:role,staff,admin', 'nullable', 'string', 'max:255'],
@@ -352,12 +357,6 @@ class UserController extends Controller
         ], ['phone.regex' => 'Enter a valid phone number.']);
 
         $roleChanged = $validated['role'] !== $user->role;
-
-        if ($request->user()->is($user) && $validated['status'] !== 'active') {
-            return back()
-                ->withInput()
-                ->withErrors(['status' => 'You cannot deactivate or suspend your own account.'], 'updateUser');
-        }
 
         if ($roleChanged) {
             if ($request->user()->is($user)) {
@@ -397,7 +396,6 @@ class UserController extends Controller
                     'email' => $validated['email'],
                     'phone' => $validated['phone'] ?? null,
                     'role' => $validated['role'],
-                    'status' => $validated['status'],
                 ];
 
                 if (($validated['phone'] ?? null) !== $user->phone) {
@@ -463,6 +461,25 @@ class UserController extends Controller
         return redirect()
             ->route('admin.users.index')
             ->with('success', 'The account was updated successfully.');
+    }
+
+    public function updateStatus(Request $request, User $user): RedirectResponse
+    {
+        $validated = $request->validateWithBag('updateUserStatus', [
+            'status' => ['required', Rule::in(array_keys(self::STATUSES))],
+        ]);
+
+        if ($request->user()->is($user) && $validated['status'] !== 'active') {
+            return back()
+                ->withInput()
+                ->withErrors(['status' => 'You cannot deactivate or suspend your own account.'], 'updateUserStatus');
+        }
+
+        $user->update(['status' => $validated['status']]);
+
+        return redirect()
+            ->route('admin.users.index')
+            ->with('success', 'The account status was updated successfully.');
     }
 
     /**

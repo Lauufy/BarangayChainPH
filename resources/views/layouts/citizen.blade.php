@@ -67,109 +67,131 @@
                             </summary>
 
                             <div
-                                class="rounded-xl border border-(--blue-700)/10 bg-white shadow-xl dark:border-white/15 dark:bg-(--blue-850)/97 absolute inset-x-4 top-full z-40 mt-2 sm:inset-x-auto sm:right-0 sm:w-96">
-                                <div class="border-(--blue-700)/10 border-b px-4 py-3 dark:border-white/10">
-                                    <p class="text-(--blue-700) dark:text-(--off-white) text-sm font-bold">Notifications
-                                    </p>
-                                    <p id="notification-subtitle"
-                                        class="text-(--blue-700)/70 dark:text-(--off-white)/70 mt-0.5 text-xs">
-                                        @if (auth()->user()->unreadNotifications()->count() > 0)
-                                            You have {{ auth()->user()->unreadNotifications()->count() }} new
-                                            {{ str('notification')->plural(auth()->user()->unreadNotifications()->count()) }}.
-                                        @else
-                                            You're all caught up.
-                                        @endif
-                                    </p>
+                                class="rounded-xl border border-(--blue-700)/10 bg-(--off-white) p-3 shadow-xl dark:border-white/15 dark:bg-(--blue-850) absolute inset-x-4 top-full z-40 mt-2 overflow-hidden sm:inset-x-auto sm:right-0 sm:w-104">
+
+                                {{-- Header --}}
+                                <div class="flex items-start justify-between gap-3">
+                                    <div>
+                                        <p
+                                            class="text-(--blue-700) dark:text-(--off-white) text-lg font-bold leading-tight">
+                                            Notifications</p>
+                                        <p id="notification-subtitle"
+                                            class="text-(--blue-700)/70 dark:text-(--off-white)/70 mt-0.5 text-xs">
+                                            @if (auth()->user()->unreadNotifications()->count() > 0)
+                                                You have {{ auth()->user()->unreadNotifications()->count() }} new
+                                                {{ str('notification')->plural(auth()->user()->unreadNotifications()->count()) }}.
+                                            @else
+                                                You're all caught up.
+                                            @endif
+                                        </p>
+                                    </div>
+
+                                    @if (auth()->user()->unreadNotifications()->count() > 0)
+                                        <form id="mark-all-form" method="POST"
+                                            action="{{ route('citizen.notifications.read-all') }}">
+                                            @csrf
+                                            <button type="submit"
+                                                class="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--blue-700) dark:focus-visible:outline-(--celadon-500) text-(--blue-700)/80 dark:text-(--off-white)/80 flex shrink-0 items-center gap-1.5 rounded-lg border border-(--blue-700)/15 bg-white px-3 py-1.5 text-xs font-medium transition-colors hover:bg-(--blue-700)/5 dark:border-white/15 dark:bg-white/5 dark:hover:bg-white/10">
+                                                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                    stroke-linejoin="round" aria-hidden="true">
+                                                    <path d="M20 6 9 17l-5-5" />
+                                                </svg>
+                                                Mark all as read
+                                            </button>
+                                        </form>
+                                    @endif
                                 </div>
 
-                                <div class="max-h-96 overflow-y-auto px-4 py-4">
+                                {{-- Tabs --}}
+                                <div
+                                    class="mt-3 grid grid-cols-2 overflow-hidden rounded-lg border border-(--blue-700) bg-white dark:border-(--celadon-500) dark:bg-white/5">
+                                    <button type="button" data-notif-tab="all" aria-pressed="true"
+                                        class="bg-(--blue-700) text-(--off-white) dark:bg-(--celadon-500) dark:text-(--blue-850) focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--blue-700) py-1.5 text-xs font-bold uppercase tracking-wide transition-colors">
+                                        All
+                                    </button>
+                                    <button type="button" data-notif-tab="unread" aria-pressed="false"
+                                        class="text-(--blue-700) dark:text-(--off-white) focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--blue-700) py-1.5 text-xs font-bold uppercase tracking-wide transition-colors">
+                                        Unread
+                                    </button>
+                                </div>
+
+                                {{-- List --}}
+                                <div class="mt-2.5 max-h-80 space-y-1 overflow-y-auto">
                                     @forelse (auth()->user()->notifications()->latest()->limit(10)->get() as $n)
-                                        <div class="relative pb-5 last:pb-0">
-                                            @unless ($loop->last)
-                                                <span
-                                                    class="bg-(--blue-700)/15 left-4.5 absolute bottom-1 top-10 w-px -translate-x-1/2 dark:bg-white/15"
-                                                    aria-hidden="true"></span>
-                                            @endunless
+                                        <div data-notification-item data-unread="{{ $n->read_at === null ? '1' : '0' }}"
+                                            class="relative flex items-start gap-2 rounded-lg border border-(--blue-700)/10 bg-white p-2.5 dark:border-white/10 dark:bg-white/5">
 
-                                            <form method="POST" action="{{ route('citizen.notifications.read', $n->id) }}">
-                                                @csrf
-                                                <button type="submit"
-                                                    class="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--blue-700) dark:focus-visible:outline-(--celadon-500) group/item flex w-full items-start gap-3 rounded-sm text-left">
-
-                                                    @switch($n->data['status'] ?? 'info')
-                                                        @case('verified')
-                                                            <span
-                                                                class="bg-[color-mix(in_srgb,var(--green-500)_18%,transparent)] text-(--green-600) dark:text-(--green-300) flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
-                                                                <svg class="h-4.5 w-4.5" fill="none" stroke="currentColor"
-                                                                    stroke-width="1.6" viewBox="0 0 24 24" aria-hidden="true">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                                        d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                                                                </svg>
-                                                            </span>
-                                                        @break
-
-                                                        @case('rejected')
-                                                            <span
-                                                                class="bg-[color-mix(in_srgb,var(--red-500)_15%,transparent)] text-(--red-600) dark:text-(--red-500) flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
-                                                                <svg class="h-4.5 w-4.5" fill="none" stroke="currentColor"
-                                                                    stroke-width="1.6" viewBox="0 0 24 24" aria-hidden="true">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                                        d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
-                                                                </svg>
-                                                            </span>
-                                                        @break
-
-                                                        @default
-                                                            <span
-                                                                class="bg-[color-mix(in_srgb,var(--amber-500)_18%,transparent)] text-(--amber-500) flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
-                                                                <svg class="h-4.5 w-4.5" fill="none" stroke="currentColor"
-                                                                    stroke-width="1.6" viewBox="0 0 24 24" aria-hidden="true">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                                        d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
-                                                                </svg>
-                                                            </span>
-                                                    @endswitch
-
-                                                    <span class="min-w-0 flex-1">
-                                                        <span class="flex items-start justify-between gap-3">
-                                                            <span
-                                                                class="text-(--blue-700) dark:text-(--off-white) text-[13px] font-semibold group-hover/item:underline">
-                                                                {{ $n->data['title'] ?? 'Notification' }}
-                                                                @if ($n->read_at === null)
-                                                                    <span data-unread-dot
-                                                                        class="bg-(--blue-700) dark:bg-(--celadon-500) ml-1 inline-block h-2 w-2 rounded-full align-middle"><span
-                                                                            class="sr-only">Unread</span></span>
-                                                                @endif
-                                                            </span>
-                                                            <span
-                                                                class="text-(--blue-700)/70 dark:text-(--off-white)/70 shrink-0 whitespace-nowrap text-[11px]">{{ $n->created_at->diffForHumans() }}</span>
-                                                        </span>
-                                                        <span
-                                                            class="text-(--blue-700)/70 dark:text-(--off-white)/70 mt-0.5 block text-xs">{{ $n->data['message'] ?? '' }}</span>
+                                            @switch($n->data['status'] ?? 'info')
+                                                @case('verified')
+                                                    <span
+                                                        class="bg-[color-mix(in_srgb,var(--green-500)_18%,transparent)] text-(--green-600) dark:text-(--green-300) relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
+                                                        <svg class="h-5 w-5" fill="none" stroke="currentColor"
+                                                            stroke-width="1.6" viewBox="0 0 24 24" aria-hidden="true">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                                        </svg>
                                                     </span>
-                                                </button>
-                                            </form>
+                                                @break
+
+                                                @case('rejected')
+                                                    <span
+                                                        class="bg-[color-mix(in_srgb,var(--red-500)_15%,transparent)] text-(--red-600) dark:text-(--red-500) relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
+                                                        <svg class="h-5 w-5" fill="none" stroke="currentColor"
+                                                            stroke-width="1.6" viewBox="0 0 24 24" aria-hidden="true">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                                                        </svg>
+                                                    </span>
+                                                @break
+
+                                                @default
+                                                    <span
+                                                        class="bg-[color-mix(in_srgb,var(--amber-500)_18%,transparent)] text-(--amber-500) relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
+                                                        <svg class="h-5 w-5" fill="none" stroke="currentColor"
+                                                            stroke-width="1.6" viewBox="0 0 24 24" aria-hidden="true">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+                                                        </svg>
+                                                    </span>
+                                            @endswitch
+
+                                            <div class="min-w-0 flex-1">
+                                                <div class="flex items-start justify-between gap-1">
+                                                    <div class="flex min-w-0 items-center gap-1">
+                                                        <a href="{{ $n->data['url'] ?? route('citizen.notifications') }}"
+                                                            class="text-(--blue-700) dark:text-(--off-white) text-sm font-bold hover:underline">
+                                                            {{ $n->data['title'] ?? 'Notification' }}
+                                                            @if ($n->read_at === null)
+                                                                <span data-unread-dot
+                                                                    class="bg-(--blue-700) dark:bg-(--celadon-500) ml-1 inline-block h-2 w-2 rounded-full align-middle">
+                                                                    <span class="sr-only">Unread</span>
+                                                                </span>
+                                                            @endif
+                                                        </a>
+                                                    </div>
+                                                    <span
+                                                        class="text-(--blue-700)/70 dark:text-(--off-white)/70 shrink-0 whitespace-nowrap text-xs">{{ $n->created_at->diffForHumans() }}</span>
+                                                </div>
+                                                <span
+                                                    class="text-(--blue-700)/70 dark:text-(--off-white)/70 mt-0.5 block text-xs leading-snug">{{ $n->data['message'] ?? '' }}</span>
+                                            </div>
                                         </div>
                                     @empty
                                         <p
                                             class="text-(--blue-700)/70 dark:text-(--off-white)/70 px-2 py-8 text-center text-sm">
                                             No notifications yet.</p>
                                     @endforelse
+
+                                    <p data-notif-unread-empty hidden
+                                        class="text-(--blue-700)/70 dark:text-(--off-white)/70 px-2 py-8 text-center text-sm">
+                                        No unread notifications.</p>
                                 </div>
 
-                                <div
-                                    class="border-(--blue-700)/10 flex items-center justify-between gap-3 border-t px-4 py-3 dark:border-white/10">
-                                    @if (auth()->user()->unreadNotifications()->count() > 0)
-                                        <form id="mark-all-form" method="POST"
-                                            action="{{ route('citizen.notifications.read-all') }}">
-                                            @csrf
-                                            <button
-                                                class="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--blue-700) dark:focus-visible:outline-(--celadon-500) rounded-sm text-sm font-semibold text-(--blue-700) underline underline-offset-4 dark:text-(--celadon-500)">Mark
-                                                all as read</button>
-                                        </form>
-                                    @endif
+                                {{-- Footer --}}
+                                <div class="mt-3 text-center">
                                     <a href="{{ route('citizen.notifications') }}"
-                                        class="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--blue-700) dark:focus-visible:outline-(--celadon-500) rounded-sm text-sm font-semibold text-(--blue-700) underline underline-offset-4 dark:text-(--celadon-500) ml-auto">View
+                                        class="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--blue-700) dark:focus-visible:outline-(--celadon-500) rounded-sm text-sm font-bold text-(--blue-700) underline underline-offset-4 dark:text-(--celadon-500)">View
                                         all</a>
                                 </div>
                             </div>
@@ -304,30 +326,41 @@
         const bell = $('notification-menu');
         const menus = [$('user-menu'), bell].filter(Boolean);
 
-        // ---------- Opening the bell marks everything as read ----------
-        bell?.addEventListener('toggle', async () => {
-            const form = $('mark-all-form');
-            if (!bell.open || !form) return;
+        // ---------- Notification tabs (state lives in the DOM, so it survives live-refresh swaps) ----------
+        function currentNotifTab() {
+            return bell?.querySelector('[data-notif-tab][aria-pressed="true"]')?.dataset.notifTab ?? 'all';
+        }
 
-            try {
-                const res = await fetch(form.action, {
-                    method: 'POST',
-                    headers: {
-                        Accept: 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
-                    body: new FormData(form),
-                    credentials: 'same-origin',
-                });
-                if (!res.ok) throw new Error('Unable to mark notifications as read.');
+        function applyNotifTab(filter) {
+            if (!bell) return;
 
-                $('notification-count')?.remove();
-                $('notification-subtitle').textContent = "You're all caught up.";
-                document.querySelectorAll('[data-unread-dot]').forEach((d) => d.remove());
-                form.remove();
-            } catch (e) {
-                console.error(e);
-            }
+            const items = bell.querySelectorAll('[data-notification-item]');
+            const emptyMsg = bell.querySelector('[data-notif-unread-empty]');
+            let visible = 0;
+
+            items.forEach((item) => {
+                const show = filter === 'all' || item.dataset.unread === '1';
+                item.style.display = show ? '' : 'none';
+                if (show) visible++;
+            });
+
+            if (emptyMsg) emptyMsg.hidden = !(filter === 'unread' && visible === 0 && items.length > 0);
+
+            bell.querySelectorAll('[data-notif-tab]').forEach((tab) => {
+                const on = tab.dataset.notifTab === filter;
+                tab.setAttribute('aria-pressed', String(on));
+                tab.classList.toggle('bg-(--blue-700)', on);
+                tab.classList.toggle('text-(--off-white)', on);
+                tab.classList.toggle('dark:bg-(--celadon-500)', on);
+                tab.classList.toggle('dark:text-(--blue-850)', on);
+                tab.classList.toggle('text-(--blue-700)', !on);
+                tab.classList.toggle('dark:text-(--off-white)', !on);
+            });
+        }
+
+        bell?.addEventListener('click', (event) => {
+            const tab = event.target.closest('[data-notif-tab]');
+            if (tab) applyNotifTab(tab.dataset.notifTab);
         });
 
         // ---------- Live refresh: only when the server reports a change ----------

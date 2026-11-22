@@ -640,16 +640,30 @@
                 </div>
 
                 {{-- Contact form (stretches to match the left column) --}}
-                <form method="POST" action="{{ url('/contact') }}" data-reveal="right"
+                <form method="POST" action="{{ route('contact.store') }}" data-reveal="right"
                     class="bg-(--blue-860) flex h-full min-w-0 flex-col rounded-sm border border-white/10 p-6 sm:p-8">
                     @csrf
                     <h3 class="text-xl font-semibold">Send us a message</h3>
                     <p class="text-(--off-white)/70 mt-1 text-xs">We typically respond within 1 business day.</p>
 
+                    @if (session('success'))
+                        <p role="status"
+                            class="mt-4 rounded-sm border border-emerald-300/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-100">
+                            {{ session('success') }}
+                        </p>
+                    @endif
+
+                    @if (session('error'))
+                        <p role="alert"
+                            class="mt-4 rounded-sm border border-red-300/30 bg-red-500/10 px-3 py-2 text-sm text-red-100">
+                            {{ session('error') }}
+                        </p>
+                    @endif
+
                     <div class="mt-6 grid flex-1 gap-4 sm:grid-cols-2 sm:grid-rows-[auto_auto_auto_1fr]">
                         <div>
                             <x-form.input name="first_name" id="contact-first-name" label="First Name *"
-                                placeholder="Juan" autocomplete="given-name" required>
+                                placeholder="Juan" autocomplete="given-name" maxlength="100" required>
                                 @error('first_name')
                                     <p class="mt-1 text-xs text-red-300">{{ $message }}</p>
                                 @enderror
@@ -658,7 +672,7 @@
 
                         <div>
                             <x-form.input name="last_name" id="contact-last-name" label="Last Name *"
-                                placeholder="Dela Cruz" autocomplete="family-name" required>
+                                placeholder="Dela Cruz" autocomplete="family-name" maxlength="100" required>
                                 @error('last_name')
                                     <p class="mt-1 text-xs text-red-300">{{ $message }}</p>
                                 @enderror
@@ -667,7 +681,7 @@
 
                         <div class="sm:col-span-2">
                             <x-form.input name="email" id="contact-email" type="email" label="Email Address *"
-                                placeholder="juan@example.com" autocomplete="email" required>
+                                placeholder="juan@example.com" autocomplete="email" maxlength="254" required>
                                 @error('email')
                                     <p class="mt-1 text-xs text-red-300">{{ $message }}</p>
                                 @enderror
@@ -692,7 +706,7 @@
 
                         <div>
                             <x-form.input name="subject" id="contact-subject" label="Subject *"
-                                placeholder="Brief summary" required>
+                                placeholder="Brief summary" maxlength="200" required>
                                 @error('subject')
                                     <p class="mt-1 text-xs text-red-300">{{ $message }}</p>
                                 @enderror
@@ -703,7 +717,7 @@
                         <div
                             class="flex min-h-0 flex-col sm:col-span-2 [&>div]:flex [&>div]:flex-1 [&>div]:flex-col [&_.relative]:flex-1 [&_textarea]:h-full">
                             <x-form.input name="message" id="contact-message" type="textarea" label="Message *"
-                                placeholder="How can Barangay San Luis help you?" rows="4" required>
+                                placeholder="How can Barangay San Luis help you?" rows="4" maxlength="5000" required>
                                 @error('message')
                                     <p class="mt-1 text-xs text-red-300">{{ $message }}</p>
                                 @enderror

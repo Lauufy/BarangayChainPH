@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\Auditable;
+use App\Models\Concerns\BumpsSyncVersion;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -43,7 +44,7 @@ use Illuminate\Support\Str;
 ])]
 class ServiceRequest extends Model
 {
-    use Auditable, HasFactory;
+    use Auditable, BumpsSyncVersion, HasFactory;
 
     // Service types (must match 'type' in config/barangay_services.php)
     public const CERTIFICATE_OF_INDIGENCY = 'certificate_of_indigency';

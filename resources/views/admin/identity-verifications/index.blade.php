@@ -6,7 +6,7 @@
     <div class="space-y-6">
         {{-- Explain the review queue and summarize current identity-verification activity. --}}
         <x-admin.page-header label="Citizen Services" title="Digital Identity Verification"
-            text="Review citizen identity information and verification submissions." :export-url="route('admin.exports.show', ['module' => 'identity-verifications'])" />
+            text="Review citizen identity information and verification submissions." />
 
         {{-- Pending, verified, and rejected submission totals. --}}
         <div class="grid gap-4 sm:grid-cols-3">

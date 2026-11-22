@@ -350,7 +350,7 @@ class OtpAuthenticationTest extends TestCase
             'mode' => 'email',
             'identifier' => $user->email,
             'password' => 'WrongPass123!',
-        ])->assertSessionHasErrors('identifier');
+        ])->assertSessionHasErrors('password');
 
         $this->post(route('login.store'), [
             'mode' => 'email',

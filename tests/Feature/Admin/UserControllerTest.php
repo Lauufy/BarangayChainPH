@@ -92,21 +92,22 @@ class UserControllerTest extends TestCase
         $this->assertDatabaseHas('users', ['id' => $citizen->id]);
     }
 
-    public function test_user_delete_uses_confirmation_and_delete_form(): void
+    public function test_user_actions_offer_status_management_without_delete(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        User::factory()->create(['role' => 'citizen', 'name' => 'Alex Rivera']);
+        $citizen = User::factory()->create(['role' => 'citizen', 'name' => 'Alex Rivera']);
 
         $this->actingAs($admin)
             ->get(route('admin.users.index'))
             ->assertOk()
-            ->assertSee('data-confirm-title="Delete user?"', false)
-            ->assertSee('data-confirm-text="This will permanently delete Alex Rivera. This cannot be undone."', false)
-            ->assertSee('data-confirm-label="Delete"', false)
-            ->assertSee('data-cancel-label="Cancel"', false)
-            ->assertSee('data-confirm-variant="danger"', false)
-            ->assertSee('name="_token"', false)
-            ->assertSee('name="_method" value="DELETE"', false);
+            ->assertSee('onclick="openUserStatusModal('.$citizen->id.')"', false)
+            ->assertSee('id="userStatusModal"', false)
+            ->assertSee('name="_method" value="PATCH"', false)
+            ->assertSee('value="active"', false)
+            ->assertSee('value="inactive"', false)
+            ->assertSee('value="suspended"', false)
+            ->assertDontSee('Delete user?', false)
+            ->assertDontSee('id="editUser_status"', false);
     }
 
     public function test_users_index_renders_each_tab_and_supplies_records_for_the_modals(): void
@@ -200,8 +201,9 @@ class UserControllerTest extends TestCase
             ->put(route('admin.users.update', $staff), [
                 'edit_user_id' => $staff->id,
                 'name' => 'Changed name',
-                'email' => $staff->email,
-                'role' => 'citizen',
+                'email' => 'not-an-email',
+                'role' => 'staff',
+                'employment_type' => 'full_time',
                 'department' => 'Administration',
                 'position' => 'Clerk',
             ])

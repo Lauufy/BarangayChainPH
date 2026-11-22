@@ -77,10 +77,33 @@ class ProcessingStatusTest extends TestCase
         $this->assertSame(ServiceRequest::APPROVED, $application->fresh()->status);
     }
 
+    public function test_permit_management_pending_count_includes_processing_requests(): void
+    {
+        $this->makeRequest(ServiceRequest::PENDING);
+        $this->makeRequest(ServiceRequest::PROCESSING);
+        $this->makeRequest(ServiceRequest::APPROVED);
+
+        $this->actingAs($this->admin())
+            ->get(route('admin.permits.index'))
+            ->assertOk()
+            ->assertViewHas('requestCounts', [
+                'total' => 3,
+                'pending' => 2,
+                'processing' => 1,
+                'completed' => 1,
+            ]);
+    }
+
     public function test_a_processing_request_can_be_rejected(): void
     {
         $application = $this->makeRequest(ServiceRequest::PROCESSING);
+        $citizen = $application->user;
+        $initialVersion = $this->actingAs($citizen)
+            ->getJson(route('sync.version', ['scope' => 'citizen']))
+            ->assertOk()
+            ->json('version');
         $admin = $this->admin();
+        Notification::fake();
 
         $this->actingAs($admin)
             ->post(route('admin.permits.reject', $application), ['rejection_reason' => 'Documents are unreadable.'])
@@ -89,6 +112,12 @@ class ProcessingStatusTest extends TestCase
         $this->assertSame(ServiceRequest::REJECTED, $application->fresh()->status);
         $this->assertSame($admin->id, $application->fresh()->processed_by);
         $this->assertNotNull($application->fresh()->processed_at);
+
+        $updatedVersion = $this->actingAs($citizen)
+            ->getJson(route('sync.version', ['scope' => 'citizen']))
+            ->assertOk()
+            ->json('version');
+        $this->assertNotSame($initialVersion, $updatedVersion);
     }
 
     public function test_a_processing_request_can_be_approved_and_issued(): void
@@ -108,6 +137,11 @@ class ProcessingStatusTest extends TestCase
         Queue::fake();
         Notification::fake();
         $application = $this->makeRequest(ServiceRequest::PROCESSING);
+        $citizen = $application->user;
+        $initialVersion = $this->actingAs($citizen)
+            ->getJson(route('sync.version', ['scope' => 'citizen']))
+            ->assertOk()
+            ->json('version');
         $admin = $this->admin();
 
         $this->actingAs($admin)
@@ -119,5 +153,11 @@ class ProcessingStatusTest extends TestCase
         $this->assertSame(ServiceRequest::APPROVED, $application->fresh()->status);
         $this->assertSame($admin->id, $application->fresh()->processed_by);
         $this->assertNotNull($application->fresh()->processed_at);
+
+        $updatedVersion = $this->actingAs($citizen)
+            ->getJson(route('sync.version', ['scope' => 'citizen']))
+            ->assertOk()
+            ->json('version');
+        $this->assertNotSame($initialVersion, $updatedVersion);
     }
 }

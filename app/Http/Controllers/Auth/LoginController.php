@@ -97,10 +97,17 @@ class LoginController extends Controller
             $this->audit('auth.login_failed', $user, $idLog);
 
             $left = RateLimiter::remaining($accountKey, self::MAX_ATTEMPTS);
+            $attempts = $left.' '.Str::plural('attempt', $left).' left.';
 
+            // Account found, so the password is the wrong part.
+            if ($user) {
+                $this->fail('password', 'Incorrect password. '.$attempts);
+            }
+
+            // No account found, so the email, employee ID or phone is the wrong part.
             $this->fail(
                 $field,
-                'Incorrect login details or password. '.$left.' '.Str::plural('attempt', $left).' left.'
+                ($byPhone ? 'No account found with that mobile number. ' : 'No account found with that email or employee ID. ').$attempts
             );
         }
 

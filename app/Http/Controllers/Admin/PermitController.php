@@ -52,7 +52,8 @@ class PermitController extends Controller
 
         $requestCounts = [
             'total' => $byStatus->sum('total'),
-            'pending' => $byStatus[ServiceRequest::PENDING]->total ?? 0,
+            'pending' => ($byStatus[ServiceRequest::PENDING]->total ?? 0)
+                + ($byStatus[ServiceRequest::PROCESSING]->total ?? 0),
             'processing' => $byStatus[ServiceRequest::PROCESSING]->total ?? 0,
             'completed' => $byStatus[ServiceRequest::APPROVED]->total ?? 0,
         ];
@@ -61,7 +62,9 @@ class PermitController extends Controller
 
         $requestLatest = [
             'total' => $toDate($byStatus->max('latest_submitted')),
-            'pending' => $toDate($byStatus[ServiceRequest::PENDING]->oldest_submitted ?? null),
+            'pending' => $toDate($byStatus
+                ->only([ServiceRequest::PENDING, ServiceRequest::PROCESSING])
+                ->min('oldest_submitted')),
             'processing' => $toDate($byStatus[ServiceRequest::PROCESSING]->latest_activity ?? null),
             'completed' => $toDate($byStatus[ServiceRequest::APPROVED]->latest_activity ?? null),
         ];

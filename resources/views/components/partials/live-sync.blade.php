@@ -41,13 +41,13 @@
                 if (!res.ok) return;
 
                 const {
-                    v
+                    version: currentVersion
                 } = await res.json();
-                if (v === lastVersion) return; // nothing changed, skip the page fetch
+                if (currentVersion === lastVersion) return; // nothing changed, skip the page fetch
                 if (isEditing() || hasUnsavedInput()) return; // retry on the next tick
 
                 await refresh();
-                lastVersion = v;
+                lastVersion = currentVersion;
             } catch (error) {
                 console.error(error);
             } finally {

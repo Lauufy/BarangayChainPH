@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Exports\TicketsExport;
 use App\Http\Controllers\Controller;
+use App\Models\ContactMessage;
 use App\Models\Ticket;
 use App\Notifications\TicketReplied;
 use Illuminate\Http\RedirectResponse;
@@ -17,8 +18,12 @@ class TicketInboxController extends Controller
         $perPage = $request->integer('per_page', 15);
         $perPage = in_array($perPage, [10, 15, 25, 50], true) ? $perPage : 15;
         $tickets = $export->query($request)->paginate($perPage)->appends($request->except('search'));
+        $contactMessages = ContactMessage::query()
+            ->withCount('replies')
+            ->latest('updated_at')
+            ->paginate(15, ['*'], 'inquiries_page');
 
-        return view('admin.tickets.index', compact('tickets'));
+        return view('admin.tickets.index', compact('tickets', 'contactMessages'));
     }
 
     public function show(Ticket $ticket): View

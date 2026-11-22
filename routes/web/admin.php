@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\BlockchainLedgerController;
+use App\Http\Controllers\Admin\ContactMessageController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DocumentAuthenticationController;
 use App\Http\Controllers\Admin\ExportController;
@@ -55,6 +56,10 @@ Route::middleware(['auth', 'nocache', 'role:admin,staff'])
         Route::middleware('role:admin')->group(function () {
             // List, create, update, and delete users.
             Route::resource('users', UserController::class)->only(['index', 'store', 'update', 'destroy']);
+
+            // Change a user's account status.
+            Route::patch('/users/{user}/status', [UserController::class, 'updateStatus'])
+                ->name('users.status');
 
             // Show a user's permissions.
             Route::get('/users/{user}/permissions', [UserController::class, 'permissions'])
@@ -121,6 +126,18 @@ Route::middleware(['auth', 'nocache', 'role:admin,staff'])
                 Route::post('/tickets/{ticket}', 'reply')
                     ->middleware('throttle:30,1')
                     ->name('tickets.reply');
+            });
+
+        Route::middleware('permission:tickets.reply')
+            ->prefix('contact-messages')
+            ->name('contact-messages.')
+            ->controller(ContactMessageController::class)
+            ->group(function () {
+                Route::get('/', 'index')->name('index');
+                Route::get('/{contactMessage}', 'show')->name('show');
+                Route::post('/{contactMessage}/reply', 'reply')
+                    ->middleware('throttle:30,1')
+                    ->name('reply');
             });
 
         // Document authentication page (needs the documents.authenticate permission).

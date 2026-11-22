@@ -13,8 +13,7 @@
 
     <div class="space-y-4" data-table-key="audit-logs">
         <x-admin.page-header label="Security & Accountability" title="Audit Logs"
-            text="Review changes made to applications and issued documents."
-            :export-url="route('admin.exports.show', ['module' => 'audit-logs'] + request()->only('user_id', 'action', 'date'))" />
+            text="Review changes made to applications and issued documents." />
 
         <x-tables.card title="System Activity History"
             description="Changes to service requests and issued documents." :paginator="$logs" :searchable="false"

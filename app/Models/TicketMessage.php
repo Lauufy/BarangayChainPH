@@ -10,9 +10,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class TicketMessage extends Model
 {
     protected $touches = ['ticket'];
+
     protected function casts(): array
     {
         return [
+            'body' => 'encrypted',
             'is_system' => 'boolean',
             'read_at' => 'datetime',
         ];

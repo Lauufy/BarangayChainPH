@@ -1,699 +1,139 @@
+{{-- resources/views/admin/notifications/index.blade.php --}}
 @extends('layouts.admin')
 
-@section('title', 'Notifications & Messaging')
+@section('title', 'Notifications')
 
 @section('content')
-    {{-- Introduce the notification and messaging workspace. --}}
-    <x-admin.page-header label="Communication" title="Notifications & Messaging"
-        text="Manage announcements and communicate with citizens." />
+    @php
+        // Icon look per status (light + dark)
+        $styles = [
+            'verified' => [
+                'color' => 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400',
+                'icon' => 'M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z',
+            ],
+            'welcome' => [
+                'color' => 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400',
+                'icon' => 'M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3 2.48Z',
+            ],
+            'rejected' => [
+                'color' => 'bg-red-100 text-red-600 dark:bg-red-500/15 dark:text-red-400',
+                'icon' => 'M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z',
+            ],
+            'info' => [
+                'color' => 'bg-blue-100 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400',
+                'icon' => 'M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0',
+            ],
+        ];
 
-    {{-- Show announcement status and open the existing notification preview modal. --}}
-    <div
-        class="mb-5 flex flex-col gap-3 rounded-xl border border-blue-100 bg-blue-50 p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div class="flex items-center gap-3">
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-blue-600">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-                        d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 00-12 0v3.2a2 2 0 01-.6 1.4L4 17h5m6 0a3 3 0 11-6 0m6 0H9" />
-                </svg>
-            </div>
-            <div>
-                <h3 class="text-sm font-bold text-slate-900">Notifications & Announcements</h3>
-                <p class="text-xs text-slate-500">No published announcements yet.</p>
-            </div>
+        $tab = 'rounded-lg px-4 py-1.5 text-sm font-semibold transition';
+        $tabActive = 'bg-blue-600 text-white shadow-sm';
+        $tabIdle = 'text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800';
+        $pageBtn = 'rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium dark:border-slate-700';
+        $pageLink = 'bg-white text-slate-700 transition hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800';
+        $pageOff = 'text-slate-400 dark:text-slate-600';
+    @endphp
+
+    <x-admin.page-header label="Communication" title="Notifications"
+        text="Reviews, approvals, credit warnings and announcements. Older than 12 months are removed automatically." />
+
+    <div class="space-y-5">
+        {{-- Toolbar --}}
+        <div class="mt-2 flex flex-wrap items-center justify-between gap-3">
+            <nav class="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 dark:border-slate-700 dark:bg-slate-900"
+                aria-label="Filter notifications">
+                <a href="{{ route('admin.notifications.index') }}"
+                    class="{{ $tab }} {{ $filter === 'all' ? $tabActive : $tabIdle }}"
+                    @if ($filter === 'all') aria-current="page" @endif>All</a>
+
+                <a href="{{ route('admin.notifications.index', ['filter' => 'unread']) }}"
+                    class="{{ $tab }} {{ $filter === 'unread' ? $tabActive : $tabIdle }}"
+                    @if ($filter === 'unread') aria-current="page" @endif>Unread ({{ $unreadCount }})</a>
+
+                {{-- Inbox: placeholder only, no function yet --}}
+                <button type="button" disabled title="Coming soon"
+                    class="{{ $tab }} cursor-not-allowed text-slate-400 dark:text-slate-600">Inbox</button>
+            </nav>
+
+            {{-- Always visible; disabled when there is nothing unread --}}
+            <form method="POST" action="{{ route('admin.notifications.read-all') }}">
+                @csrf
+                <button type="submit" @disabled($unreadCount === 0)
+                    class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-900 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400 disabled:hover:bg-white dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800 dark:disabled:text-slate-600 dark:disabled:hover:bg-slate-900">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"
+                        aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="m4.5 12.75 6 6 9-13.5M1.5 13.5l3 3M9 16.5l9-13.5" />
+                    </svg>
+                    Mark all as read
+                </button>
+            </form>
         </div>
 
-        <x-form.button type="button" id="new-notification" color="blue" class="px-4 py-2">
-            + New Notification
-        </x-form.button>
-    </div>
+        {{-- List --}}
+        <section class="rounded-2xl border border-slate-200 bg-white p-2.5 dark:border-slate-700 dark:bg-slate-900">
+            @forelse ($notifications as $notification)
+                @php
+                    $style = $styles[$notification->data['status'] ?? 'info'] ?? $styles['info'];
+                    $isUnread = $notification->read_at === null;
+                    $title = $notification->data['title'] ?? 'Notification';
+                @endphp
 
-    {{-- The inbox and conversation preview remain frontend-only demo interactions. --}}
-    <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-
-        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 p-5">
-            <div>
-                <h3 class="font-bold text-slate-900">Citizen Messages</h3>
-                <p class="mt-1 text-sm text-slate-500">
-                    Manage inquiries received by barangay staff.
-                </p>
-            </div>
-
-            <span
-                class="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700">
-                <span class="h-2 w-2 rounded-full bg-blue-600"></span>
-                <span id="unread-count">1 unread</span>
-            </span>
-        </div>
-
-        <div class="grid min-h-150 grid-cols-1 md:grid-cols-3">
-
-            {{-- Search, filter, and select a citizen conversation. --}}
-            <aside class="border-b border-slate-200 md:col-span-1 md:border-b-0 md:border-r">
-
-                <div class="p-4">
-                    <label for="message-search" class="sr-only">Search conversations</label>
-                    <div class="relative">
-                        <svg class="absolute left-3 top-3 h-4 w-4 text-slate-400" fill="none" stroke="currentColor"
-                            viewBox="0 0 24 24">
-                            <circle cx="11" cy="11" r="7" stroke-width="2" />
-                            <path stroke-linecap="round" stroke-width="2" d="m16 16 4 4" />
+                <div
+                    class="{{ $isUnread ? 'bg-indigo-50/70 dark:bg-blue-500/10' : 'bg-slate-100 dark:bg-slate-800' }} {{ $loop->last ? '' : 'mb-2' }} flex items-start gap-3 rounded-xl px-4 py-3">
+                    <span class="{{ $style['color'] }} flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
+                        <svg class="h-4.5 w-4.5" fill="none" stroke="currentColor" stroke-width="1.6"
+                            viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="{{ $style['icon'] }}" />
                         </svg>
-                        <input id="message-search" type="search" placeholder="Search citizens..."
-                            class="w-full rounded-lg border border-slate-200 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
+                    </span>
+
+                    <div class="min-w-0 flex-1">
+                        @if (!empty($notification->data['url']))
+                            <a href="{{ $notification->data['url'] }}"
+                                class="text-sm font-semibold text-slate-900 hover:underline dark:text-slate-50">{{ $title }}</a>
+                        @else
+                            <p class="text-sm font-semibold text-slate-900 dark:text-slate-50">{{ $title }}</p>
+                        @endif
+                        <p class="mt-0.5 text-sm text-slate-600 dark:text-slate-300">{{ $notification->data['message'] ?? '' }}</p>
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ $notification->created_at->format('d M Y, h:i A') }}</p>
                     </div>
 
-                    <div class="mt-4 flex gap-1 rounded-lg bg-slate-100 p-1">
-                        <button type="button" data-filter="all"
-                            class="filter-btn flex-1 rounded-md bg-white px-2 py-2 text-xs font-semibold text-blue-700 shadow-sm">
-                            All
-                        </button>
-                        <button type="button" data-filter="unread"
-                            class="filter-btn flex-1 rounded-md px-2 py-2 text-xs font-medium text-slate-500 hover:text-slate-900">
-                            Unread
-                        </button>
-                        <button type="button" data-filter="pending"
-                            class="filter-btn flex-1 rounded-md px-2 py-2 text-xs font-medium text-slate-500 hover:text-slate-900">
-                            Pending
-                        </button>
-                    </div>
+                    @if ($isUnread)
+                        <span class="mt-2 h-2 w-2 shrink-0 rounded-full bg-blue-600 dark:bg-blue-400" role="img"
+                            aria-label="Unread"></span>
+                    @endif
                 </div>
-
-                <div id="inbox-list" class="divide-y divide-slate-100">
-                    @foreach ($citizenMessages as $index => $citizen)
-                        <button type="button" data-id="{{ $citizen['id'] }}"
-                            class="conversation-item flex w-full items-start gap-3 border-l-4 p-4 text-left transition
-                        {{ $index === 0 ? 'active-conversation border-l-blue-600 bg-blue-50' : 'border-l-transparent hover:bg-slate-50' }}">
-
-                            <div
-                                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-700">
-                                {{ $citizen['initials'] }}
-                            </div>
-
-                            <div class="min-w-0 flex-1">
-                                <div class="flex items-center justify-between gap-2">
-                                    <span class="citizen-name truncate text-sm font-semibold text-slate-900">
-                                        {{ $citizen['name'] }}
-                                    </span>
-                                    <span class="shrink-0 text-xs text-slate-400">
-                                        {{ $citizen['time'] }}
-                                    </span>
-                                </div>
-
-                                <p class="mt-1 text-xs font-medium text-slate-600">
-                                    {{ $citizen['subject'] }}
-                                </p>
-
-                                <p class="mt-1 truncate text-xs text-slate-400">
-                                    {{ $citizen['preview'] }}
-                                </p>
-
-                                <div class="mt-2 flex flex-wrap gap-1.5">
-                                    @if ($citizen['unread'])
-                                        <span
-                                            class="unread-badge rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
-                                            Unread
-                                        </span>
-                                    @endif
-
-                                    <span
-                                        class="pending-badge rounded-full px-2 py-0.5 text-[10px] font-semibold
-                                    {{ $citizen['pending'] ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700' }}">
-                                        {{ $citizen['pending'] ? 'Pending' : 'Resolved' }}
-                                    </span>
-                                </div>
-                            </div>
-                        </button>
-                    @endforeach
-                </div>
-
-                <p id="empty-inbox" class="hidden p-6 text-center text-sm text-slate-400">
-                    No conversations match this filter.
-                </p>
-            </aside>
-
-            {{-- Display the selected conversation and its reply preview. --}}
-            <section class="flex min-w-0 flex-col md:col-span-2">
-
-                {{-- Chat header --}}
-                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 p-4">
-                    <div class="flex min-w-0 items-center gap-3">
-                        <div id="chat-avatar"
-                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-700">
-                            MS
-                        </div>
-                        <div class="min-w-0">
-                            <h4 id="chat-name" class="truncate font-semibold text-slate-900">
-                                Maria Santos
-                            </h4>
-                            <p id="chat-subject" class="mt-1 truncate text-xs text-slate-500">
-                                Barangay Clearance
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="flex flex-wrap items-center gap-2">
-                        <button type="button" id="citizen-details"
-                            class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50">
-                            View Details
-                        </button>
-                        <button type="button" id="resolve-chat"
-                            class="rounded-lg border border-emerald-200 px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50">
-                            Mark Resolved
-                        </button>
-                    </div>
-                </div>
-
-                {{-- Message timeline --}}
-                <div id="chat-timeline" class="flex flex-1 flex-col gap-4 bg-slate-50 p-4 sm:p-6">
-
-                    <div class="date-divider flex items-center gap-3">
-                        <div class="h-px flex-1 bg-slate-200"></div>
-                        <span class="text-[11px] font-medium text-slate-400">Today</span>
-                        <div class="h-px flex-1 bg-slate-200"></div>
-                    </div>
-
-                    <div class="flex items-start gap-2">
-                        <div
-                            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
-                            MS
-                        </div>
-                        <div class="max-w-[85%]">
-                            <p class="mb-1 text-xs text-slate-400">Maria Santos · 9:30 AM</p>
-                            <div
-                                class="rounded-2xl rounded-tl-sm border border-slate-200 bg-white p-3 text-sm leading-6 text-slate-700 shadow-sm">
-                                Good morning! May I ask about the requirements for a barangay clearance?
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="flex items-start justify-end gap-2">
-                        <div class="max-w-[85%]">
-                            <p class="mb-1 text-right text-xs text-slate-400">Barangay Staff · 9:35 AM</p>
-                            <div class="rounded-2xl rounded-tr-sm bg-blue-600 p-3 text-sm leading-6 text-white shadow-sm">
-                                Good morning! Please prepare a valid ID and the required supporting documents.
-                            </div>
-                        </div>
-                        <div
-                            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-600">
-                            BS
-                        </div>
-                    </div>
-
-                    <div class="flex items-start gap-2">
-                        <div
-                            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
-                            MS
-                        </div>
-                        <div class="max-w-[85%]">
-                            <p class="mb-1 text-xs text-slate-400">Maria Santos · 9:42 AM</p>
-                            <div
-                                class="rounded-2xl rounded-tl-sm border border-slate-200 bg-white p-3 text-sm leading-6 text-slate-700 shadow-sm">
-                                Thank you for your assistance!
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-
-                {{-- Reply composer --}}
-                <form id="reply-form" class="border-t border-slate-200 bg-white p-4">
-                    <div class="mb-3 flex items-center justify-between gap-2">
-                        <label for="reply-message" class="text-sm font-semibold text-slate-700">
-                            Reply to citizen
-                        </label>
-
-                        <label for="attachment"
-                            class="flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-100">
-                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-                                    d="m21.4 11.6-8.5 8.5a5.5 5.5 0 01-7.8-7.8l9.2-9.2a3.5 3.5 0 015 5l-9.2 9.2a1.5 1.5 0 01-2.2-2.2l8.5-8.5" />
-                            </svg>
-                            Attach File
-                        </label>
-                        <input id="attachment" type="file" class="hidden">
-                    </div>
-
-                    <p id="attachment-name" class="mb-2 hidden break-all text-xs text-blue-600"></p>
-
-                    <div class="flex items-end gap-2">
-                        <textarea id="reply-message" rows="2" placeholder="Write your reply..."
-                            class="min-w-0 flex-1 resize-none rounded-xl border border-slate-200 px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"></textarea>
-
-                        <button type="submit"
-                            class="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700">
-                            Send
-                        </button>
-                    </div>
-
-                    <p id="reply-feedback" class="mt-2 hidden text-xs text-amber-600"></p>
-                    <p class="mt-2 text-xs text-slate-400">
-                        UI preview only. Messages and attachments are not delivered or saved.
+            @empty
+                <div class="py-12 text-center">
+                    <p class="text-sm font-semibold text-slate-900 dark:text-slate-50">
+                        {{ $filter === 'unread' ? "You're all caught up" : 'No notifications yet' }}
                     </p>
-                </form>
-
-            </section>
-        </div>
-    </div>
-
-    {{-- Show contact details for the selected citizen. --}}
-    <div id="details-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/40 p-4">
-        <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <div class="flex items-center justify-between">
-                <h3 class="text-lg font-bold text-slate-900">Citizen Details</h3>
-                <button type="button" id="close-details"
-                    class="rounded-lg px-3 py-1 text-xl text-slate-400 hover:bg-slate-100"
-                    aria-label="Close">&times;</button>
-            </div>
-
-            <div class="mt-5 flex items-center gap-3">
-                <div id="details-avatar"
-                    class="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 font-bold text-blue-700">
-                    MS
-                </div>
-                <div>
-                    <p id="details-name" class="font-semibold text-slate-900">Maria Santos</p>
-                    <p class="text-xs text-slate-500">Registered citizen · Demo data</p>
-                </div>
-            </div>
-
-            <div class="mt-5 space-y-3 rounded-xl bg-slate-50 p-4 text-sm">
-                <div>
-                    <p class="text-xs text-slate-400">Inquiry</p>
-                    <p id="details-subject" class="mt-1 font-medium text-slate-700"></p>
-                </div>
-                <div>
-                    <p class="text-xs text-slate-400">Contact number</p>
-                    <p id="details-phone" class="mt-1 text-slate-700"></p>
-                </div>
-                <div>
-                    <p class="text-xs text-slate-400">Email</p>
-                    <p id="details-email" class="mt-1 text-slate-700"></p>
-                </div>
-            </div>
-
-            <button type="button" id="close-details-bottom"
-                class="mt-5 w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
-                Close
-            </button>
-        </div>
-    </div>
-
-    {{-- Preview a new announcement without saving or sending it. --}}
-    <div id="notification-modal" class="fixed inset-0 z-60 hidden overflow-y-auto bg-slate-900/50 p-4" role="dialog"
-        aria-modal="true" aria-labelledby="notification-modal-title">
-        <div class="flex min-h-full items-center justify-center">
-            <div class="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl">
-
-                <div class="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
-                    <div>
-                        <h3 id="notification-modal-title" class="text-xl font-bold text-slate-900">
-                            Create New Notification
-                        </h3>
-                        <p class="mt-1 text-sm text-slate-500">
-                            Prepare an announcement for Barangay San Luis citizens.
-                        </p>
-                    </div>
-                    <button type="button" id="close-notification-modal"
-                        class="rounded-lg px-3 py-1 text-2xl leading-none text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                        aria-label="Close notification modal">&times;</button>
-                </div>
-
-                <form id="notification-form" class="space-y-5 p-6">
-                    <div>
-                        <label for="notification-title" class="mb-2 block text-sm font-semibold text-slate-700">
-                            Notification Title
-                        </label>
-                        <x-form.input light id="notification-title" name="notification_title"
-                            label="Notification Title" maxlength="120" required
-                            placeholder="e.g. Barangay Hall Schedule Update" />
-                    </div>
-
-                    <div>
-                        <label for="notification-message" class="mb-2 block text-sm font-semibold text-slate-700">
-                            Announcement Message
-                        </label>
-                        <x-form.input light id="notification-message" name="notification_message" type="textarea"
-                            label="Announcement Message" rows="5" required
-                            placeholder="Write the details of your announcement here..." />
-                    </div>
-
-                    <div>
-                        <label for="notification-recipients" class="mb-2 block text-sm font-semibold text-slate-700">
-                            Recipients
-                        </label>
-                        <select id="notification-recipients" name="notification_recipients"
-                            class="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
-                            <option value="all">All Citizens</option>
-                            <option value="registered">Registered Citizens</option>
-                        </select>
-                    </div>
-
-                    <div id="notification-preview" class="hidden rounded-xl border border-blue-100 bg-blue-50 p-4"
-                        aria-live="polite">
-                        <p class="mb-2 text-xs font-bold uppercase tracking-wide text-blue-700">Preview</p>
-                    </div>
-
-                    <p class="rounded-lg bg-amber-50 p-3 text-xs leading-5 text-amber-700">
-                        UI prototype only. This preview is not saved to a database and will not be sent to citizens.
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                        {{ $filter === 'unread' ? 'You have no unread notifications.' : 'When something happens, you will see it here.' }}
                     </p>
+                </div>
+            @endforelse
+        </section>
 
-                    <div class="flex flex-wrap justify-end gap-3 border-t border-slate-100 pt-5">
-                        <button type="button" id="cancel-notification"
-                            class="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
-                            Cancel
-                        </button>
-                        <button type="submit"
-                            class="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700">
-                            Preview Notification
-                        </button>
-                    </div>
-                </form>
+        {{-- Pagination --}}
+        @if ($notifications->total() > 0)
+            <div class="flex items-center justify-between gap-3">
+                @if ($notifications->onFirstPage())
+                    <span class="{{ $pageBtn }} {{ $pageOff }}">Previous</span>
+                @else
+                    <a href="{{ $notifications->previousPageUrl() }}" class="{{ $pageBtn }} {{ $pageLink }}">Previous</a>
+                @endif
+
+                <span class="text-sm text-slate-500 dark:text-slate-400">
+                    {{ $notifications->firstItem() }}–{{ $notifications->lastItem() }} of {{ $notifications->total() }}
+                </span>
+
+                @if ($notifications->hasMorePages())
+                    <a href="{{ $notifications->nextPageUrl() }}" class="{{ $pageBtn }} {{ $pageLink }}">Next</a>
+                @else
+                    <span class="{{ $pageBtn }} {{ $pageOff }}">Next</span>
+                @endif
             </div>
-        </div>
+        @endif
     </div>
-
-    {{-- Frontend-only demo interactions --}}
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const citizens = @json($citizenMessages);
-            const items = [...document.querySelectorAll('.conversation-item')];
-
-            let activeId = 1;
-            let activeFilter = 'all';
-
-            const search = document.getElementById('message-search');
-            const inbox = document.getElementById('inbox-list');
-            const emptyInbox = document.getElementById('empty-inbox');
-            const timeline = document.getElementById('chat-timeline');
-            const unreadCount = document.getElementById('unread-count');
-            const resolveButton = document.getElementById('resolve-chat');
-            const replyForm = document.getElementById('reply-form');
-            const replyInput = document.getElementById('reply-message');
-            const feedback = document.getElementById('reply-feedback');
-            const attachment = document.getElementById('attachment');
-            const attachmentName = document.getElementById('attachment-name');
-
-            const modal = document.getElementById('details-modal');
-
-            function activeCitizen() {
-                return citizens.find(c => c.id === activeId);
-            }
-
-            function updateUnreadCount() {
-                const count = citizens.filter(c => c.unread).length;
-                unreadCount.textContent = count + ' unread';
-            }
-
-            function renderInbox() {
-                let visibleCount = 0;
-
-                items.forEach(item => {
-                    const citizen = citizens.find(c => c.id === Number(item.dataset.id));
-                    const query = search.value.trim().toLowerCase();
-
-                    const matchesSearch =
-                        citizen.name.toLowerCase().includes(query) ||
-                        citizen.subject.toLowerCase().includes(query);
-
-                    const matchesFilter =
-                        activeFilter === 'all' ||
-                        (activeFilter === 'unread' && citizen.unread) ||
-                        (activeFilter === 'pending' && citizen.pending);
-
-                    const visible = matchesSearch && matchesFilter;
-
-                    item.classList.toggle('hidden', !visible);
-
-                    if (visible) visibleCount++;
-
-                    item.classList.toggle('active-conversation', citizen.id === activeId);
-                    item.classList.toggle('bg-blue-50', citizen.id === activeId);
-                    item.classList.toggle('border-l-blue-600', citizen.id === activeId);
-                    item.classList.toggle('border-l-transparent', citizen.id !== activeId);
-
-                    const unreadBadge = item.querySelector('.unread-badge');
-                    if (unreadBadge) unreadBadge.classList.toggle('hidden', !citizen.unread);
-
-                    const status = item.querySelector('.pending-badge');
-                    status.textContent = citizen.pending ? 'Pending' : 'Resolved';
-                    status.className = 'pending-badge rounded-full px-2 py-0.5 text-[10px] font-semibold ' +
-                        (citizen.pending ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700');
-                });
-
-                emptyInbox.classList.toggle('hidden', visibleCount > 0);
-                updateUnreadCount();
-            }
-
-            function addBubble(message, citizen) {
-                const isStaff = message.from === 'staff';
-                const row = document.createElement('div');
-                row.className = 'flex items-start gap-2 ' + (isStaff ? 'justify-end' : '');
-
-                const avatar = document.createElement('div');
-                avatar.className =
-                    'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ' +
-                    (isStaff ? 'bg-slate-200 text-slate-600' : 'bg-blue-100 text-blue-700');
-                avatar.textContent = isStaff ? 'BS' : citizen.initials;
-
-                const wrapper = document.createElement('div');
-                wrapper.className = 'max-w-[85%]';
-
-                const meta = document.createElement('p');
-                meta.className = 'mb-1 text-xs text-slate-400 ' + (isStaff ? 'text-right' : '');
-                meta.textContent = (isStaff ? 'Barangay Staff' : citizen.name) + ' · ' + message.time;
-
-                const bubble = document.createElement('div');
-                bubble.className = 'rounded-2xl p-3 text-sm leading-6 shadow-sm ' +
-                    (isStaff ?
-                        'rounded-tr-sm bg-blue-600 text-white' :
-                        'rounded-tl-sm border border-slate-200 bg-white text-slate-700');
-
-                bubble.textContent = message.text;
-
-                wrapper.append(meta, bubble);
-
-                if (isStaff) {
-                    row.append(wrapper, avatar);
-                } else {
-                    row.append(avatar, wrapper);
-                }
-
-                timeline.appendChild(row);
-            }
-
-            function selectCitizen(id) {
-                activeId = id;
-                const citizen = activeCitizen();
-
-                citizen.unread = false;
-
-                document.getElementById('chat-name').textContent = citizen.name;
-                document.getElementById('chat-avatar').textContent = citizen.initials;
-                document.getElementById('chat-subject').textContent = citizen.subject;
-
-                timeline.replaceChildren();
-
-                const dividerRow = document.createElement('div');
-                dividerRow.className = 'date-divider flex items-center gap-3';
-
-                const line1 = document.createElement('div');
-                line1.className = 'h-px flex-1 bg-slate-200';
-
-                const date = document.createElement('span');
-                date.className = 'text-[11px] font-medium text-slate-400';
-                date.textContent = 'Conversation history';
-
-                const line2 = line1.cloneNode();
-
-                dividerRow.append(line1, date, line2);
-                timeline.appendChild(dividerRow);
-
-                citizen.messages.forEach(message => addBubble(message, citizen));
-
-                resolveButton.textContent = citizen.pending ? 'Mark Resolved' : 'Reopen Conversation';
-                resolveButton.className = 'rounded-lg border px-3 py-2 text-xs font-semibold ' +
-                    (citizen.pending ?
-                        'border-emerald-200 text-emerald-700 hover:bg-emerald-50' :
-                        'border-amber-200 text-amber-700 hover:bg-amber-50');
-
-                feedback.classList.add('hidden');
-                replyInput.value = '';
-                attachment.value = '';
-                attachmentName.classList.add('hidden');
-
-                renderInbox();
-            }
-
-            document.querySelectorAll('.filter-btn').forEach(button => {
-                button.addEventListener('click', function() {
-                    activeFilter = this.dataset.filter;
-
-                    document.querySelectorAll('.filter-btn').forEach(btn => {
-                        btn.className =
-                            'filter-btn flex-1 rounded-md px-2 py-2 text-xs font-medium text-slate-500 hover:text-slate-900';
-                    });
-
-                    this.className =
-                        'filter-btn flex-1 rounded-md bg-white px-2 py-2 text-xs font-semibold text-blue-700 shadow-sm';
-
-                    renderInbox();
-                });
-            });
-
-            items.forEach(item => {
-                item.addEventListener('click', function() {
-                    selectCitizen(Number(this.dataset.id));
-                });
-            });
-
-            search.addEventListener('input', renderInbox);
-
-            resolveButton.addEventListener('click', function() {
-                const citizen = activeCitizen();
-                citizen.pending = !citizen.pending;
-
-                feedback.textContent = citizen.pending ?
-                    'Demo: Conversation reopened. This change is not saved.' :
-                    'Demo: Conversation marked as resolved. This change is not saved.';
-                feedback.classList.remove('hidden');
-
-                renderInbox();
-                selectCitizen(activeId);
-            });
-
-            document.getElementById('citizen-details').addEventListener('click', function() {
-                const citizen = activeCitizen();
-
-                document.getElementById('details-name').textContent = citizen.name;
-                document.getElementById('details-avatar').textContent = citizen.initials;
-                document.getElementById('details-subject').textContent = citizen.subject;
-                document.getElementById('details-phone').textContent = citizen.phone;
-                document.getElementById('details-email').textContent = citizen.email;
-
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-            });
-
-            function closeModal() {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }
-
-            document.getElementById('close-details').addEventListener('click', closeModal);
-            document.getElementById('close-details-bottom').addEventListener('click', closeModal);
-
-            modal.addEventListener('click', function(event) {
-                if (event.target === modal) closeModal();
-            });
-
-            attachment.addEventListener('change', function() {
-                if (this.files.length) {
-                    attachmentName.textContent = 'Selected file: ' + this.files[0].name;
-                    attachmentName.classList.remove('hidden');
-                } else {
-                    attachmentName.classList.add('hidden');
-                }
-            });
-
-            replyForm.addEventListener('submit', function(event) {
-                event.preventDefault();
-
-                const text = replyInput.value.trim();
-
-                if (!text) {
-                    feedback.textContent = 'Please type a reply first.';
-                    feedback.classList.remove('hidden');
-                    return;
-                }
-
-                const citizen = activeCitizen();
-
-                citizen.messages.push({
-                    from: 'staff',
-                    text: text,
-                    time: new Date().toLocaleTimeString([], {
-                        hour: 'numeric',
-                        minute: '2-digit'
-                    })
-                });
-
-                citizen.preview = text;
-                citizen.time = 'Just now';
-                citizen.pending = true;
-
-                const dateDivider = timeline.querySelector('.date-divider');
-                if (dateDivider) {
-                    addBubble(citizen.messages[citizen.messages.length - 1], citizen);
-                }
-
-                replyInput.value = '';
-                feedback.textContent =
-                    'Demo reply added to this preview only. It was not delivered or saved.';
-                feedback.classList.remove('hidden');
-
-                renderInbox();
-            });
-
-            // New Notification modal (frontend demo only)
-            const notificationModal = document.getElementById('notification-modal');
-            const notificationForm = document.getElementById('notification-form');
-            const notificationPreview = document.getElementById('notification-preview');
-
-            function openNotificationModal() {
-                notificationModal.classList.remove('hidden');
-                document.body.classList.add('overflow-hidden');
-                document.getElementById('notification-title').focus();
-            }
-
-            function closeNotificationModal() {
-                notificationModal.classList.add('hidden');
-                document.body.classList.remove('overflow-hidden');
-            }
-
-            document.getElementById('new-notification').addEventListener('click', openNotificationModal);
-            document.getElementById('close-notification-modal').addEventListener('click', closeNotificationModal);
-            document.getElementById('cancel-notification').addEventListener('click', closeNotificationModal);
-
-            notificationModal.addEventListener('click', function(event) {
-                if (event.target === notificationModal) closeNotificationModal();
-            });
-
-            document.addEventListener('keydown', function(event) {
-                if (event.key === 'Escape' && !notificationModal.classList.contains('hidden')) {
-                    closeNotificationModal();
-                }
-            });
-
-            notificationForm.addEventListener('submit', function(event) {
-                event.preventDefault();
-
-                const title = document.getElementById('notification-title').value.trim();
-                const message = document.getElementById('notification-message').value.trim();
-                const recipients = document.getElementById('notification-recipients');
-                const recipientLabel = recipients.options[recipients.selectedIndex].text;
-
-                if (!title || !message) return;
-
-                notificationPreview.innerHTML = '';
-                const previewTitle = document.createElement('p');
-                previewTitle.className = 'font-semibold text-slate-900';
-                previewTitle.textContent = title;
-
-                const previewMessage = document.createElement('p');
-                previewMessage.className = 'mt-1 whitespace-pre-wrap text-sm text-slate-600';
-                previewMessage.textContent = message;
-
-                const previewRecipients = document.createElement('p');
-                previewRecipients.className = 'mt-2 text-xs font-medium text-blue-700';
-                previewRecipients.textContent = 'Recipients: ' + recipientLabel;
-
-                notificationPreview.append(previewTitle, previewMessage, previewRecipients);
-                notificationPreview.classList.remove('hidden');
-            });
-
-            renderInbox();
-        });
-    </script>
-
 @endsection
