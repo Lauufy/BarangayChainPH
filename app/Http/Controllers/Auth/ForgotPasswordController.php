@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\AuditLogger;
 use App\Services\OtpService;
 use App\Support\Phone;
 use Illuminate\Http\Request;
@@ -18,6 +19,8 @@ class ForgotPasswordController extends Controller
 
     public function sendResetLink(Request $request, OtpService $otps)
     {
+        $user = null;
+
         // Mobile number tab: send a code by SMS instead of an email link.
         if ($request->input('mode') === 'phone') {
             return $this->sendSmsCode($request, $otps);
@@ -30,6 +33,8 @@ class ForgotPasswordController extends Controller
         $status = Password::sendResetLink(
             $request->only('email')
         );
+        $user = User::whereRaw('LOWER(email) = ?', [strtolower((string) $request->input('email'))])->first();
+        $this->audit('password_reset.requested', $user);
 
         if ($status !== Password::RESET_LINK_SENT) {
             return back()
@@ -57,12 +62,26 @@ class ForgotPasswordController extends Controller
         $user = User::where('phone', $data['phone'])->whereNotNull('phone_verified_at')->first();
 
         if (! $user) {
+            $this->audit('password_reset.requested', null);
+
             return back()->withInput()->withErrors(['phone' => 'No account uses this verified mobile number.']);
         }
 
         $request->session()->put('otp', $otps->start('reset', 'sms', $user->phone, $user->name, ['user_id' => $user->id]));
+        $this->audit('password_reset.requested', $user);
 
         return redirect()->route('verification.otp.show')
             ->with('success', 'We sent a code to your mobile number.');
+    }
+
+    private function audit(string $action, ?User $user): void
+    {
+        try {
+            app(AuditLogger::class)->log($action, $user, newValues: [
+                'ip_address' => request()->ip(),
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 }

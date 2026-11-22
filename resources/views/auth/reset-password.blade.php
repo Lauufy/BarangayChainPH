@@ -23,7 +23,7 @@
             <div class="rounded-md border border-(--gray-200) bg-(--white) p-4 shadow-sm dark:border-(--gray-700) dark:bg-(--blue-850)/80 sm:p-5">
                 <form method="POST"
                     action="{{ route($isSmsReset ? 'password.sms.update' : 'password.update') }}"
-                    class="space-y-4">
+                    class="space-y-4" data-validate>
                     @csrf
 
                     @unless ($isSmsReset)
@@ -33,14 +33,16 @@
                             autocomplete="email" placeholder="Enter your registered email" />
                     @endunless
 
+                    {{-- Weak password text is hidden here, the requirement list below covers it --}}
                     <x-form.input light name="password" label="New Password" type="password" data-password-strength
-                        maxlength="16" required autocomplete="new-password" placeholder="Enter your new password">
+                        minlength="8" maxlength="16" required autofocus autocomplete="new-password"
+                        placeholder="Enter your new password">
                         <x-feedbacks.password-requirement />
                     </x-form.input>
 
                     <x-form.input light name="password_confirmation" label="Confirm New Password" type="password"
-                        data-password-confirmation maxlength="16" required autocomplete="new-password"
-                        placeholder="Re-enter your new password" />
+                        data-password-confirmation minlength="8" maxlength="16" required autocomplete="new-password"
+                        placeholder="Re-enter your new password" error-message="Passwords do not match." />
 
                     <x-form.button type="submit" color="blue" class="w-full" loading-text="Updating password...">
                         RESET PASSWORD

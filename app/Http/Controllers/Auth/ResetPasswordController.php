@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\AuditLogger;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
@@ -39,6 +41,7 @@ class ResetPasswordController extends Controller
                 ])->save();
 
                 event(new PasswordReset($user));
+                $this->finishReset($user);
             }
         );
 
@@ -83,6 +86,7 @@ class ResetPasswordController extends Controller
 
         $request->session()->forget('sms_reset');
         event(new PasswordReset($user));
+        $this->finishReset($user);
 
         return redirect()
             ->route('login')
@@ -111,5 +115,18 @@ class ResetPasswordController extends Controller
     {
         return redirect()->route('password.request')
             ->withErrors(['phone' => 'Your reset session expired. Please start again.']);
+    }
+
+    private function finishReset(User $user): void
+    {
+        DB::table('sessions')->where('user_id', $user->id)->delete();
+
+        try {
+            app(AuditLogger::class)->log('password_reset.completed', $user, newValues: [
+                'ip_address' => request()->ip(),
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 }

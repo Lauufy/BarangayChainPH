@@ -123,4 +123,67 @@ class LoginControllerTest extends TestCase
 
         $this->assertAuthenticatedAs($user);
     }
+
+    public function test_unknown_account_login_uses_generic_error_and_logs_failed_event(): void
+    {
+        $this->post(route('login.store'), [
+            'identifier' => 'missing@example.com',
+            'password' => 'WrongPass123!',
+        ])
+            ->assertSessionHasErrors([
+                'identifier' => 'Invalid credentials.',
+            ]);
+
+        $this->assertGuest();
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'login.failed',
+            'subject_id' => 'unknown',
+        ]);
+    }
+
+    public function test_wrong_password_uses_generic_error_and_logs_failed_event(): void
+    {
+        $user = User::factory()->withoutTwoFactor()->create([
+            'email' => 'known@example.com',
+        ]);
+
+        $this->post(route('login.store'), [
+            'identifier' => $user->email,
+            'password' => 'WrongPass123!',
+        ])
+            ->assertSessionHasErrors([
+                'password' => 'Invalid credentials.',
+            ]);
+
+        $this->assertGuest();
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'login.failed',
+            'subject_id' => (string) $user->id,
+        ]);
+    }
+
+    public function test_account_lockout_logs_lockout_event(): void
+    {
+        $user = User::factory()->withoutTwoFactor()->create([
+            'email' => 'locked@example.com',
+        ]);
+
+        for ($attempt = 0; $attempt < 3; $attempt++) {
+            $this->post(route('login.store'), [
+                'identifier' => $user->email,
+                'password' => 'WrongPass123!',
+            ]);
+        }
+
+        $this->post(route('login.store'), [
+            'identifier' => $user->email,
+            'password' => 'WrongPass123!',
+        ])
+            ->assertSessionHasErrors('login');
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'login.lockout',
+            'subject_id' => (string) $user->id,
+        ]);
+    }
 }

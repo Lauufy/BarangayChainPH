@@ -100,7 +100,7 @@ class OtpController extends Controller
             RateLimiter::tooManyAttempts($targetKey, self::MAX_RESENDS_PER_TARGET)
             || RateLimiter::tooManyAttempts($ipKey, self::MAX_RESENDS_PER_IP)
         ) {
-            $this->audit('otp.resend_throttled', $otp);
+            $this->audit('otp.throttled', $otp);
 
             return back()->withErrors(['otp' => 'Too many code requests. Please try again later.']);
         }

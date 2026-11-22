@@ -39,7 +39,6 @@ trait UpdatesTwoFactor
 
         if (! filled($user->password) || ! Hash::check($data['current_password'], $user->password)) {
             RateLimiter::hit($key, 900);
-            $log('auth.2fa_change_failed');
 
             throw ValidationException::withMessages(['current_password' => 'The password is incorrect.']);
         }
@@ -64,7 +63,7 @@ trait UpdatesTwoFactor
 
         if ((bool) $user->two_factor_enabled !== $enabled) {
             $user->forceFill(['two_factor_enabled' => $enabled])->save();
-            $log($enabled ? 'auth.2fa_enabled' : 'auth.2fa_disabled');
+            $log($enabled ? 'two_factor.enabled' : 'two_factor.disabled');
         }
 
         return back()->with('success', $enabled

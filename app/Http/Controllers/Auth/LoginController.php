@@ -53,8 +53,13 @@ class LoginController extends Controller
         $normalized = Str::lower(trim($data[$field]));
         $accountKey = 'login|'.sha1($normalized).'|'.$ip;
         $ipKey = 'login-ip|'.$ip;
+        $idLog = [
+            'identifier_type' => $byPhone ? 'phone' : 'email_or_employee_id',
+            'identifier_ref' => substr(hash_hmac('sha256', $normalized, (string) config('app.key')), 0, 16),
+        ];
 
         if ($locked = $this->lockedFor($accountKey, $ipKey)) {
+            $this->audit('login.lockout', null, $idLog + ['seconds' => $locked]);
             $this->lockout($locked);
         }
 
@@ -79,36 +84,17 @@ class LoginController extends Controller
             $passwordOk = false;
         }
 
-        $idLog = [
-            'identifier_type' => $byPhone ? 'phone' : 'email_or_employee_id',
-            // Keyed hash, never the typed identifier itself.
-            'identifier_ref' => substr(hash_hmac('sha256', $normalized, (string) config('app.key')), 0, 16),
-        ];
-
         if (! $passwordOk) {
             RateLimiter::hit($accountKey, self::LOCK_SECONDS);
             RateLimiter::hit($ipKey, self::LOCK_SECONDS);
 
             if ($locked = $this->lockedFor($accountKey, $ipKey)) {
-                $this->audit('auth.lockout', $user, $idLog + ['seconds' => $locked]);
+                $this->audit('login.lockout', $user, $idLog + ['seconds' => $locked]);
                 $this->lockout($locked);
             }
 
-            $this->audit('auth.login_failed', $user, $idLog);
-
-            $left = RateLimiter::remaining($accountKey, self::MAX_ATTEMPTS);
-            $attempts = $left.' '.Str::plural('attempt', $left).' left.';
-
-            // Account found, so the password is the wrong part.
-            if ($user) {
-                $this->fail('password', 'Incorrect password. '.$attempts);
-            }
-
-            // No account found, so the email, employee ID or phone is the wrong part.
-            $this->fail(
-                $field,
-                ($byPhone ? 'No account found with that mobile number. ' : 'No account found with that email or employee ID. ').$attempts
-            );
+            $this->audit('login.failed', $user, $idLog);
+            $this->fail($user ? 'password' : $field, 'Invalid credentials.');
         }
 
         RateLimiter::clear($accountKey);

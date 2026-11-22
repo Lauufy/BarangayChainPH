@@ -23,13 +23,16 @@ class GoogleLoginTest extends TestCase
         Socialite::fake('google', SocialiteUser::fake([
             'id' => 'google-user-id',
             'email' => $user->email,
+            'email_verified' => true,
         ]));
 
         $response = $this->get('/auth/google/callback');
 
-        $response->assertRedirect(route('citizen.dashboard'));
-        $this->assertAuthenticatedAs($user);
-        $this->assertSame('google-user-id', $user->fresh()->google_id);
+        $response->assertRedirect(route('google.link.confirm'));
+        $this->assertGuest();
+        $this->assertNull($user->fresh()->google_id);
+        $this->assertSame($user->id, session('google_link_pending.user_id'));
+        $this->assertSame('google-user-id', session('google_link_pending.google_id'));
     }
 
     public function test_existing_google_account_with_pending_password_setup_continues_to_setup(): void
@@ -45,6 +48,7 @@ class GoogleLoginTest extends TestCase
         Socialite::fake('google', SocialiteUser::fake([
             'id' => $user->google_id,
             'email' => $user->email,
+            'email_verified' => true,
         ]));
 
         $this->get('/auth/google/callback')
@@ -55,7 +59,7 @@ class GoogleLoginTest extends TestCase
         $this->assertTrue($user->fresh()->google_password_setup_required);
     }
 
-    public function test_existing_account_with_verified_email_skips_password_setup(): void
+    public function test_existing_account_with_verified_email_requires_link_confirmation(): void
     {
         $user = User::factory()->create([
             'email' => 'registered@example.com',
@@ -67,18 +71,18 @@ class GoogleLoginTest extends TestCase
         Socialite::fake('google', SocialiteUser::fake([
             'id' => 'google-user-id',
             'email' => $user->email,
+            'email_verified' => true,
         ]));
 
         $this->get('/auth/google/callback')
-            ->assertRedirect(route('citizen.dashboard'));
+            ->assertRedirect(route('google.link.confirm'));
 
-        $this->assertAuthenticatedAs($user);
-        $this->assertNull(session('google_password_setup'));
-        $this->assertFalse($user->fresh()->google_password_setup_required);
-        $this->assertSame('google-user-id', $user->fresh()->google_id);
+        $this->assertGuest();
+        $this->assertNull($user->fresh()->google_id);
+        $this->assertSame($user->id, session('google_link_pending.user_id'));
     }
 
-    public function test_existing_account_with_verified_phone_skips_password_setup(): void
+    public function test_existing_account_with_verified_phone_requires_link_confirmation(): void
     {
         $user = User::factory()->create([
             'email' => 'phone-verified@example.com',
@@ -90,17 +94,18 @@ class GoogleLoginTest extends TestCase
         Socialite::fake('google', SocialiteUser::fake([
             'id' => 'google-user-id',
             'email' => $user->email,
+            'email_verified' => true,
         ]));
 
         $this->get('/auth/google/callback')
-            ->assertRedirect(route('citizen.dashboard'));
+            ->assertRedirect(route('google.link.confirm'));
 
-        $this->assertAuthenticatedAs($user);
-        $this->assertNull(session('google_password_setup'));
-        $this->assertFalse($user->fresh()->google_password_setup_required);
+        $this->assertGuest();
+        $this->assertNull($user->fresh()->google_id);
+        $this->assertSame($user->id, session('google_link_pending.user_id'));
     }
 
-    public function test_existing_account_with_nothing_verified_keeps_pending_password_setup(): void
+    public function test_existing_account_with_nothing_verified_requires_link_confirmation(): void
     {
         $user = User::factory()->create([
             'email' => 'unverified@example.com',
@@ -112,14 +117,15 @@ class GoogleLoginTest extends TestCase
         Socialite::fake('google', SocialiteUser::fake([
             'id' => 'google-user-id',
             'email' => $user->email,
+            'email_verified' => true,
         ]));
 
         $this->get('/auth/google/callback')
-            ->assertRedirect(route('google.password.setup'));
+            ->assertRedirect(route('google.link.confirm'));
 
         $this->assertGuest();
-        $this->assertSame($user->id, session('google_password_setup.user_id'));
-        $this->assertTrue($user->fresh()->google_password_setup_required);
+        $this->assertNull($user->fresh()->google_id);
+        $this->assertSame($user->id, session('google_link_pending.user_id'));
     }
 
     public function test_new_google_account_must_set_a_local_password_before_login(): void
@@ -128,6 +134,7 @@ class GoogleLoginTest extends TestCase
             'id' => 'new-google-user-id',
             'name' => 'New Citizen',
             'email' => 'new-citizen@example.com',
+            'email_verified' => true,
         ]));
 
         $response = $this->get('/auth/google/callback');
@@ -163,6 +170,7 @@ class GoogleLoginTest extends TestCase
             'id' => 'new-google-user-id',
             'name' => 'New Citizen',
             'email' => 'new-citizen@example.com',
+            'email_verified' => true,
         ]));
 
         $this->get('/auth/google/callback')
@@ -175,5 +183,145 @@ class GoogleLoginTest extends TestCase
 
         $this->assertGuest();
         $this->assertTrue(User::where('email', 'new-citizen@example.com')->firstOrFail()->google_password_setup_required);
+    }
+
+    public function test_unverified_google_email_is_refused(): void
+    {
+        Socialite::fake('google', SocialiteUser::fake([
+            'id' => 'google-user-id',
+            'email' => 'unverified-google@example.com',
+            'email_verified' => false,
+        ]));
+
+        $this->get('/auth/google/callback')
+            ->assertRedirect(route('login'))
+            ->assertSessionHasErrors('identifier');
+
+        $this->assertGuest();
+        $this->assertNull(session('google_link_pending'));
+    }
+
+    public function test_unauthenticated_link_attempt_is_blocked(): void
+    {
+        $this->get(route('google.link.confirm'))
+            ->assertRedirect(route('login'))
+            ->assertSessionHasErrors('identifier');
+
+        $this->post(route('google.link.confirm.post'), ['password' => 'password'])
+            ->assertRedirect(route('login'))
+            ->assertSessionHasErrors('identifier');
+    }
+
+    public function test_wrong_password_fails_google_link(): void
+    {
+        $user = User::factory()->withoutTwoFactor()->create([
+            'email' => 'wrong-password@example.com',
+            'password' => Hash::make('correct-password'),
+            'google_id' => null,
+        ]);
+        Socialite::fake('google', SocialiteUser::fake([
+            'id' => 'google-user-id',
+            'email' => $user->email,
+            'email_verified' => true,
+        ]));
+
+        $this->get('/auth/google/callback')
+            ->assertRedirect(route('google.link.confirm'));
+
+        $this->post(route('google.link.confirm.post'), ['password' => 'wrong-password'])
+            ->assertSessionHasErrors('password');
+
+        $this->assertGuest();
+        $this->assertNull($user->fresh()->google_id);
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'oauth.link_failed',
+            'subject_id' => (string) $user->id,
+        ]);
+    }
+
+    public function test_expired_pending_google_link_fails(): void
+    {
+        $user = User::factory()->withoutTwoFactor()->create([
+            'email' => 'expired-link@example.com',
+            'google_id' => null,
+        ]);
+
+        $this->withSession([
+            'google_link_pending' => [
+                'user_id' => $user->id,
+                'google_id' => 'google-user-id',
+                'expires_at' => now()->subMinute()->timestamp,
+            ],
+        ]);
+
+        $this->get(route('google.link.confirm'))
+            ->assertRedirect(route('login'))
+            ->assertSessionHasErrors('identifier');
+
+        $this->assertNull($user->fresh()->google_id);
+    }
+
+    public function test_correct_password_links_google_account(): void
+    {
+        $user = User::factory()->withoutTwoFactor()->create([
+            'email' => 'correct-password@example.com',
+            'password' => Hash::make('correct-password'),
+            'google_id' => null,
+        ]);
+        Socialite::fake('google', SocialiteUser::fake([
+            'id' => 'google-user-id',
+            'email' => $user->email,
+            'email_verified' => true,
+        ]));
+
+        $this->get('/auth/google/callback')
+            ->assertRedirect(route('google.link.confirm'));
+
+        $this->post(route('google.link.confirm.post'), ['password' => 'correct-password'])
+            ->assertRedirect(route('citizen.dashboard'));
+
+        $this->assertAuthenticatedAs($user);
+        $this->assertSame('google-user-id', $user->fresh()->google_id);
+        $this->assertFalse($user->fresh()->google_password_setup_required);
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'oauth.link_confirmed',
+            'subject_id' => (string) $user->id,
+        ]);
+    }
+
+    public function test_passwordless_account_can_confirm_google_link_with_otp(): void
+    {
+        $user = User::factory()->withoutTwoFactor()->create([
+            'email' => 'passwordless@example.com',
+            'google_id' => null,
+            'google_password_setup_required' => true,
+        ]);
+
+        $this->withSession([
+            'google_link_pending' => [
+                'user_id' => $user->id,
+                'google_id' => 'google-user-id',
+                'expires_at' => now()->addMinutes(10)->timestamp,
+            ],
+            'otp' => [
+                'purpose' => 'google_link',
+                'channel' => 'email',
+                'to' => $user->email,
+                'name' => $user->name,
+                'payload' => [],
+                'hash' => Hash::make('123456'),
+                'expires' => now()->addMinutes(10)->timestamp,
+            ],
+        ]);
+
+        $this->get(route('google.link.confirm'))
+            ->assertOk()
+            ->assertSee('Verification code');
+
+        $this->post(route('google.link.confirm.post'), ['otp' => '123456'])
+            ->assertRedirect(route('citizen.dashboard'));
+
+        $this->assertAuthenticatedAs($user);
+        $this->assertSame('google-user-id', $user->fresh()->google_id);
     }
 }

@@ -39,8 +39,8 @@ class GoogleController extends Controller
         // Only trust the email if Google itself says it is verified.
         $raw = (array) ($google->user ?? []);
         $emailVerifiedClaim = $raw['email_verified'] ?? $raw['verified_email'] ?? null;
-        $emailVerified = $emailVerifiedClaim === null
-            ? app()->runningUnitTests()
+        $emailVerified = is_bool($emailVerifiedClaim)
+            ? $emailVerifiedClaim
             : filter_var($emailVerifiedClaim, FILTER_VALIDATE_BOOLEAN);
 
         if ($email === '' || $googleId === '' || ! $emailVerified) {
@@ -65,35 +65,47 @@ class GoogleController extends Controller
             }
 
             if (! is_null($existing->google_id)) {
-                $this->audit('auth.google_link_rejected', $existing, ['reason' => 'different_google_id']);
+                $this->audit('oauth.link_failed', $existing, ['reason' => 'different_google_id']);
 
                 return $this->fail('This account is already linked to a different Google account.');
             }
 
-            $locallyVerified = ! is_null($existing->email_verified_at)
-                || ! is_null($existing->phone_verified_at);
+            $request->session()->put('google_link_pending', [
+                'user_id' => $existing->id,
+                'google_id' => $googleId,
+                'expires_at' => now()->addMinutes(10)->timestamp,
+            ]);
 
-            if ($locallyVerified) {
-                $existing->forceFill([
-                    'google_id' => $googleId,
-                    'email_verified_at' => $existing->email_verified_at ?? now(),
-                    'google_password_setup_required' => false,
-                    'two_factor_enabled' => false,
-                ])->save();
+            if (! $this->hasUsablePassword($existing)) {
+                $otpService = app(OtpService::class);
 
-                $this->audit('auth.google_linked', $existing);
+                if ($existing->email) {
+                    $channel = 'email';
+                    $to = $existing->email;
+                } elseif ($existing->phone_verified_at && $existing->phone) {
+                    $channel = 'sms';
+                    $to = $existing->phone;
+                } else {
+                    $request->session()->forget(['google_link_pending', 'otp']);
+                    $this->audit('oauth.link_failed', $existing, ['reason' => 'no_password_or_verified_contact']);
 
-                return $this->completeSignIn($request, $existing);
+                    return $this->fail('This account needs a password or a verified email/mobile number before Google can be linked.');
+                }
+
+                try {
+                    $request->session()->put('otp', $otpService->start('google_link', $channel, $to, $existing->name));
+                } catch (\Throwable $e) {
+                    report($e);
+                    $request->session()->forget(['google_link_pending', 'otp']);
+                    $this->audit('oauth.link_failed', $existing, ['reason' => 'otp_delivery_failed']);
+
+                    return $this->fail('We could not send a verification code. Please try again.');
+                }
             }
 
-            $existing->forceFill([
-                'google_id' => $googleId,
-                'google_password_setup_required' => true,
-            ])->save();
+            $this->audit('oauth.link_requested', $existing, ['google_id' => '[redacted]']);
 
-            $this->audit('auth.google_linked', $existing);
-
-            return $this->completeSignIn($request, $existing);
+            return redirect()->route('google.link.confirm');
         }
 
         // Brand-new citizen created from Google.
@@ -120,10 +132,20 @@ class GoogleController extends Controller
         $pending = $this->pendingLink($request);
 
         if (! $pending) {
+            $request->session()->forget(['google_link_pending', 'otp']);
+
             return $this->fail('Your Google linking session expired. Please continue with Google again.');
         }
 
-        return view('auth.google-link-confirm', ['email' => $pending['user']->email]);
+        $otp = $request->session()->get('otp');
+
+        return view('auth.google-link-confirm', [
+            'email' => $pending['user']->email,
+            'hasPassword' => $this->hasUsablePassword($pending['user']),
+            'otpTarget' => is_array($otp)
+                ? app(OtpService::class)->mask($otp['channel'], $otp['to'])
+                : null,
+        ]);
     }
 
     public function confirmLink(Request $request): RedirectResponse
@@ -136,29 +158,45 @@ class GoogleController extends Controller
             return $this->fail('Your Google linking session expired. Please continue with Google again.');
         }
 
-        $request->validate(['password' => ['required', 'string']]);
-
         /** @var User $user */
         $user = $pending['user'];
         $key = 'google-link:'.$user->id.'|'.$request->ip();
 
         if (RateLimiter::tooManyAttempts($key, 5)) {
-            $request->session()->forget('google_link_pending');
-            $this->audit('auth.google_link_locked', $user);
+            $request->session()->forget(['google_link_pending', 'otp']);
+            $this->audit('oauth.link_failed', $user, ['reason' => 'too_many_attempts']);
 
             return $this->fail('Too many attempts. Please try again later.');
         }
 
-        if (! Hash::check($request->input('password'), $user->password)) {
-            RateLimiter::hit($key, 900);
-            $this->audit('auth.google_link_failed', $user);
+        $confirmed = false;
 
-            return back()->withErrors(['password' => 'Incorrect password.']);
+        if ($this->hasUsablePassword($user)) {
+            $request->validate(['password' => ['required', 'string']]);
+            $confirmed = Hash::check((string) $request->input('password'), $user->password);
+        } else {
+            $request->validate(['otp' => ['required', 'digits:6']]);
+            $otp = $request->session()->get('otp');
+            $confirmed = is_array($otp)
+                && ($otp['purpose'] ?? null) === 'google_link'
+                && app(OtpService::class)->matches($otp, (string) $request->input('otp'));
+        }
+
+        if (! $confirmed) {
+            RateLimiter::hit($key, 900);
+            $this->audit('oauth.link_failed', $user);
+
+            return back()->withErrors(
+                $this->hasUsablePassword($user)
+                    ? ['password' => 'Incorrect password.']
+                    : ['otp' => 'The verification code is invalid or expired.']
+            );
         }
 
         // The Google ID must not have been claimed by someone else meanwhile.
         if (User::where('google_id', $pending['google_id'])->exists()) {
-            $request->session()->forget('google_link_pending');
+            $request->session()->forget(['google_link_pending', 'otp']);
+            $this->audit('oauth.link_failed', $user, ['reason' => 'google_id_already_linked']);
 
             return $this->fail('This Google account is already linked to another account.');
         }
@@ -168,17 +206,18 @@ class GoogleController extends Controller
         $user->forceFill([
             'google_id' => $pending['google_id'],
             'email_verified_at' => $user->email_verified_at ?? now(),
+            'google_password_setup_required' => false,
         ])->save();
 
-        $request->session()->forget('google_link_pending');
-        $this->audit('auth.google_linked', $user);
+        $request->session()->forget(['google_link_pending', 'otp']);
+        $this->audit('oauth.link_confirmed', $user);
 
         return $this->completeSignIn($request, $user);
     }
 
     public function cancelLink(Request $request): RedirectResponse
     {
-        $request->session()->forget('google_link_pending');
+        $request->session()->forget(['google_link_pending', 'otp']);
 
         return redirect()->route('login');
     }
@@ -321,6 +360,11 @@ class GoogleController extends Controller
         }
 
         return $user;
+    }
+
+    private function hasUsablePassword(User $user): bool
+    {
+        return filled($user->password) && ! $user->google_password_setup_required;
     }
 
     private function fail(string $message): RedirectResponse

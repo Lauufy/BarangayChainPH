@@ -23,9 +23,10 @@
 
             {{-- Request reset link or code --}}
             <div class="rounded-md border border-(--gray-200) bg-(--white) p-3 shadow-sm dark:border-(--gray-700) dark:bg-(--blue-850)/80 sm:p-4">
-                <form method="POST" action="{{ route('password.email') }}" class="space-y-4">
+                <form method="POST" action="{{ route('password.email') }}" class="space-y-4" data-validate>
                     @csrf
 
+                    {{-- Email or mobile number (email is validated by the data-validate script) --}}
                     <x-form.contact-tabs
                         email-name="email"
                         email-label="Email Address"

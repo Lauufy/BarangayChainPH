@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\AuditLog;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -58,7 +59,7 @@ class AuditLogger
 
     public function log(
         string $action,
-        Model $subject,
+        ?Model $subject,
         array $oldValues = [],
         array $newValues = [],
         ?string $note = null,
@@ -99,7 +100,7 @@ class AuditLogger
 
     private function write(
         string $action,
-        Model $subject,
+        ?Model $subject,
         array $oldValues,
         array $newValues,
         ?Model $actor = null
@@ -116,8 +117,8 @@ class AuditLogger
             'user_id' => $actor?->getKey(),
             'user_role' => $actor?->getAttribute('role'),
             'action' => $action,
-            'subject_type' => $subject->getMorphClass(),
-            'subject_id' => (string) $subject->getKey(),
+            'subject_type' => $subject?->getMorphClass() ?? User::class,
+            'subject_id' => $subject ? (string) $subject->getKey() : 'unknown',
             'old_values' => $this->redactValues($oldValues) ?: null,
             'new_values' => $this->redactValues($newValues) ?: null,
             'ip_address' => $request instanceof Request ? $request->ip() : null,

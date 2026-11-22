@@ -11,7 +11,11 @@
 
             <p class="mt-2 text-sm leading-6 text-(--gray-600) dark:text-(--gray-300)">
                 An account for <strong>{{ $email }}</strong> already exists.
-                Enter its password to confirm it is yours and link it with Google.
+                @if ($hasPassword)
+                    Enter its password to confirm it is yours and link it with Google.
+                @else
+                    Enter the verification code sent to <strong>{{ $otpTarget }}</strong> to confirm it is yours and link it with Google.
+                @endif
             </p>
         </header>
 
@@ -20,17 +24,32 @@
         <form action="{{ route('google.link.confirm.post') }}" method="POST" class="space-y-4">
             @csrf
 
-            <x-form.input
-                light
-                name="password"
-                label="Account password"
-                type="password"
-                maxlength="64"
-                required
-                autofocus
-                autocomplete="current-password"
-                placeholder="Enter your account password"
-            />
+            @if ($hasPassword)
+                <x-form.input
+                    light
+                    name="password"
+                    label="Account password"
+                    type="password"
+                    maxlength="64"
+                    required
+                    autofocus
+                    autocomplete="current-password"
+                    placeholder="Enter your account password"
+                />
+            @else
+                <x-form.input
+                    light
+                    name="otp"
+                    label="Verification code"
+                    type="text"
+                    inputmode="numeric"
+                    maxlength="6"
+                    required
+                    autofocus
+                    autocomplete="one-time-code"
+                    placeholder="Enter the 6-digit code"
+                />
+            @endif
 
             <x-form.button type="submit" color="blue" class="w-full" loading-text="Linking account...">
                 CONFIRM AND LINK GOOGLE

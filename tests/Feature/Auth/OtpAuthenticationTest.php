@@ -15,6 +15,7 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request as ClientRequest;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Notifications\Notification as BaseNotification;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
@@ -565,6 +566,18 @@ class OtpAuthenticationTest extends TestCase
             'mode' => 'phone',
             'phone' => '9171234567',
         ])->assertRedirect(route('verification.otp.show'));
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'password_reset.requested',
+            'subject_id' => (string) $user->id,
+        ]);
+        DB::table('sessions')->insert([
+            'id' => 'other-session',
+            'user_id' => $user->id,
+            'ip_address' => '127.0.0.1',
+            'user_agent' => 'test',
+            'payload' => 'test',
+            'last_activity' => now()->timestamp,
+        ]);
         $code = $this->smsCode('+639171234567');
         $this->post(route('verification.otp.verify'), ['otp' => $code])
             ->assertRedirect(route('password.sms.show'));
@@ -575,6 +588,11 @@ class OtpAuthenticationTest extends TestCase
 
         $this->assertTrue(Hash::check('NewStrong123!', $user->fresh()->password));
         $this->assertNull(session('sms_reset'));
+        $this->assertDatabaseMissing('sessions', ['id' => 'other-session']);
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'password_reset.completed',
+            'subject_id' => (string) $user->id,
+        ]);
     }
 
     public function test_sms_password_reset_page_is_available_after_code_verification(): void
@@ -692,6 +710,10 @@ class OtpAuthenticationTest extends TestCase
         ])->assertRedirect(route('login'));
 
         $this->assertTrue(Hash::check('NewStrong123!', $user->fresh()->password));
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'password_reset.completed',
+            'subject_id' => (string) $user->id,
+        ]);
     }
 
     public function test_textbee_server_error_is_reported_without_creating_a_user_or_logging_the_code(): void

@@ -418,33 +418,88 @@
                             required.
                         </p>
 
-                        {{-- Manual lookup form --}}
-                        <form action="{{ Route::has('verify.show') ? route('verify.show') : url('/verify') }}"
-                            method="GET" class="mt-7 max-w-md rounded-sm border border-white/15 bg-white/5 p-4">
-                            <label for="verify-code"
-                                class="text-(--off-white)/85 block text-xs font-semibold tracking-wide">
-                                Enter Reference Number or Document Hash
-                            </label>
-                            <div class="mt-2 flex flex-col gap-2 sm:flex-row">
-                                <input id="verify-code" type="text" name="reference" required
-                                    placeholder="e.g. BSL-2026-00412 or 0x94a7..."
-                                    class="focus:border-(--celadon-500) focus:ring-(--celadon-500)/70 text-(--off-white) placeholder:text-(--off-white)/50 w-full rounded-sm border border-white/20 bg-white/10 px-3.5 py-2.5 font-mono text-sm placeholder:font-sans focus:outline-none focus:ring-2">
-                                <button type="submit"
-                                    class="bg-(--celadon-500) text-(--blue-850) focus-visible:outline-(--celadon-500) shrink-0 rounded-sm px-5 py-2.5 text-sm font-bold transition hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2">
-                                    Verify Now
-                                </button>
-                            </div>
-                            <p class="text-(--off-white)/60 mt-2 text-xs">
-                                On mobile? Simply point your phone camera at the QR code on the bottom corner of the
-                                document.
-                            </p>
-                        </form>
+                        <div
+                            class="mt-7 max-w-xl overflow-hidden rounded-sm border border-white/15 bg-linear-to-br from-white/10 to-white/3 backdrop-blur-sm">
+                            <div class="grid items-center gap-6 p-6 sm:grid-cols-[1fr_auto] sm:gap-8 sm:p-7">
 
-                        <p
-                            class="border-(--celadon-500) text-(--off-white)/75 mt-6 max-w-md border-l-2 pl-4 text-xs leading-5">
-                            Public verification complies with the Data Privacy Act (RA 10173) by masking sensitive
-                            personal fields while proving record validity.
-                        </p>
+                                {{-- Left: message and action --}}
+                                <div>
+                                    <h3 class="text-(--off-white) text-xl font-semibold leading-snug">
+                                        Is your document genuine?
+                                    </h3>
+                                    <p class="text-(--off-white)/70 mt-2 max-w-sm text-sm leading-relaxed">
+                                        Confirm that we issued it and that nothing has been changed since. It takes a
+                                        few seconds and
+                                        needs no account.
+                                    </p>
+
+                                    <a href="#"
+                                        class="bg-(--celadon-500) text-(--blue-850) focus-visible:outline-(--celadon-500) group mt-5 inline-flex items-center gap-2.5 rounded-sm px-5 py-3 text-sm font-bold transition hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2">
+                                        Verify a document
+                                        <svg class="size-4 transition group-hover:translate-x-0.5" viewBox="0 0 20 20"
+                                            fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <path d="M4 10h12M11 5l5 5-5 5" />
+                                        </svg>
+                                    </a>
+
+                                    <p class="text-(--off-white)/55 mt-4 max-w-sm text-xs leading-relaxed">
+                                        On a phone? Scan the QR code in the bottom corner of your document and the
+                                        result opens
+                                        directly.
+                                    </p>
+                                </div>
+
+                                {{-- Right: document sketch showing where the QR code is --}}
+                                <div class="relative mx-auto w-36 shrink-0 sm:mx-0 sm:w-40" aria-hidden="true">
+                                    <svg viewBox="0 0 160 200" class="drop-shadow-[0_12px_24px_rgba(0,0,0,0.35)]"
+                                        fill="none">
+                                        {{-- Page --}}
+                                        <rect x="6" y="4" width="148" height="192" rx="3"
+                                            fill="#f4f6f3" />
+                                        {{-- Heading and body lines --}}
+                                        <rect x="22" y="24" width="64" height="7" rx="1.5"
+                                            fill="#1f3a5f" fill-opacity=".85" />
+                                        <rect x="22" y="40" width="40" height="3" rx="1.5"
+                                            fill="#1f3a5f" fill-opacity=".25" />
+                                        <g fill="#1f3a5f" fill-opacity=".14">
+                                            <rect x="22" y="62" width="116" height="3" rx="1.5" />
+                                            <rect x="22" y="72" width="108" height="3" rx="1.5" />
+                                            <rect x="22" y="82" width="116" height="3" rx="1.5" />
+                                            <rect x="22" y="92" width="88" height="3" rx="1.5" />
+                                            <rect x="22" y="110" width="116" height="3" rx="1.5" />
+                                            <rect x="22" y="120" width="100" height="3" rx="1.5" />
+                                        </g>
+                                        {{-- Signature line --}}
+                                        <path d="M22 156c6-8 10 4 16-3s8-2 14-1" stroke="#1f3a5f" stroke-opacity=".5"
+                                            stroke-width="1.5" stroke-linecap="round" />
+                                        {{-- QR corner highlight --}}
+                                        <rect x="104" y="146" width="40" height="40" rx="2.5"
+                                            fill="#fff" stroke="#3fb892" stroke-width="2"
+                                            stroke-dasharray="4 3" />
+                                        <g fill="#1f3a5f">
+                                            <rect x="110" y="152" width="10" height="10" />
+                                            <rect x="128" y="152" width="10" height="10" />
+                                            <rect x="110" y="170" width="10" height="10" />
+                                            <rect x="124" y="166" width="4" height="4" />
+                                            <rect x="130" y="172" width="8" height="4" />
+                                            <rect x="124" y="176" width="4" height="4" />
+                                            <rect x="132" y="180" width="6" height="2" />
+                                        </g>
+                                    </svg>
+
+                                    {{-- Verified seal --}}
+                                    <span
+                                        class="bg-(--celadon-500) text-(--blue-850) ring-(--blue-850) absolute -right-3 -top-3 flex size-11 items-center justify-center rounded-full shadow-lg ring-4">
+                                        <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                            stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="m6 12.5 4 4 8-9" />
+                                        </svg>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
 
                     <figure class="bg-(--blue-900) rounded-xl p-3 shadow-2xl ring-1 ring-white/15"
@@ -717,7 +772,8 @@
                         <div
                             class="flex min-h-0 flex-col sm:col-span-2 [&>div]:flex [&>div]:flex-1 [&>div]:flex-col [&_.relative]:flex-1 [&_textarea]:h-full">
                             <x-form.input name="message" id="contact-message" type="textarea" label="Message *"
-                                placeholder="How can Barangay San Luis help you?" rows="4" maxlength="5000" required>
+                                placeholder="How can Barangay San Luis help you?" rows="4" maxlength="5000"
+                                required>
                                 @error('message')
                                     <p class="mt-1 text-xs text-red-300">{{ $message }}</p>
                                 @enderror

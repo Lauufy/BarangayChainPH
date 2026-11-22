@@ -6,7 +6,7 @@
     <div class="space-y-5">
         <a href="{{ route('admin.tickets.index', ['communications_tab' => 'inquiries']) }}"
             class="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:underline dark:text-blue-300">
-            <span aria-hidden="true">←</span> Back to Communications Management
+            <span aria-hidden="true"></span> Back to Communications Management
         </a>
 
         <header>

@@ -25,38 +25,33 @@ class SecurityHeaders
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->headers->set('Permissions-Policy', 'camera=(self), geolocation=(), microphone=()');
 
-        // HSTS tells browsers to always use HTTPS. Never on local, or you get stuck on https.
-        if ($request->isSecure() && ! app()->isLocal()) {
+        // HSTS tells browsers to always use HTTPS. It is only set in production.
+        if ($request->isSecure() && config('app.env') === 'production') {
             $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
         }
 
-        // The content policy is skipped on local so the Vite dev server keeps working.
-        $mode = env('CSP_MODE', 'report-only');
+        $header = config('security.csp.enforce', false)
+            ? 'Content-Security-Policy'
+            : 'Content-Security-Policy-Report-Only';
 
-        if (! app()->isLocal() && $mode !== 'off') {
-            $header = $mode === 'enforce'
-                ? 'Content-Security-Policy'
-                : 'Content-Security-Policy-Report-Only';
-
-            $response->headers->set($header, $this->policy($nonce));
-        }
+        $response->headers->set($header, $this->policy($nonce));
 
         return $response;
     }
 
     private function policy(string $nonce): string
     {
-        return implode('; ', [
-            "default-src 'self'",
-            "script-src 'self' 'nonce-{$nonce}'",
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.bunny.net",
-            "font-src 'self' data: https://fonts.gstatic.com https://fonts.bunny.net",
-            "img-src 'self' data: blob: https://*.supabase.co",
-            "media-src 'self' blob:",
-            "connect-src 'self' https://*.supabase.co",
-            "frame-ancestors 'none'",
-            "base-uri 'self'",
-            "object-src 'none'",
-        ]);
+        $directives = config('security.csp.directives', []);
+        $policy = [];
+
+        foreach ($directives as $name => $sources) {
+            $renderedSources = array_map(
+                fn (string $source): string => str_replace('{nonce}', $nonce, $source),
+                $sources
+            );
+            $policy[] = $name.' '.implode(' ', $renderedSources);
+        }
+
+        return implode('; ', $policy);
     }
 }

@@ -268,6 +268,10 @@ class ProfileAndEmployeeLoginTest extends TestCase
             ->assertSessionHasNoErrors();
 
         $this->assertTrue($user->fresh()->two_factor_enabled);
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'two_factor.enabled',
+            'subject_id' => (string) $user->id,
+        ]);
     }
 
     public function test_staff_can_turn_two_factor_on(): void
@@ -288,6 +292,10 @@ class ProfileAndEmployeeLoginTest extends TestCase
             ->assertSessionHasNoErrors();
 
         $this->assertTrue($user->fresh()->two_factor_enabled);
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'two_factor.enabled',
+            'subject_id' => (string) $user->id,
+        ]);
     }
 
     public function test_user_can_turn_two_factor_off(): void
@@ -308,6 +316,10 @@ class ProfileAndEmployeeLoginTest extends TestCase
             ->assertSessionHasNoErrors();
 
         $this->assertFalse($user->fresh()->two_factor_enabled);
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'two_factor.disabled',
+            'subject_id' => (string) $user->id,
+        ]);
     }
 
     public function test_toggle_requires_correct_password(): void
