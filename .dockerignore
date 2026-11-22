@@ -1,0 +1,47 @@
+# Environment secrets (at any folder depth, so blockchain/.env is covered)
+**/.env
+**/.env.*
+!**/.env.example
+
+# Hardhat build output
+blockchain/artifacts
+blockchain/cache
+blockchain/typechain-types
+
+# Git
+.git
+.github
+
+# Dependencies installed inside the Docker image
+**/node_modules
+vendor
+
+# Built or generated locally (rebuilt inside the image)
+public/build
+public/hot
+public/storage
+
+# Laravel logs and generated runtime files
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+bootstrap/cache/*.php
+*.log
+
+# Test and development artifacts
+.phpunit.cache
+.phpunit.result.cache
+tests
+coverage
+
+# Docker files themselves
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# Local editor and operating-system files
+.vscode
+.idea
+.DS_Store
+Thumbs.db

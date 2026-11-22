@@ -1,0 +1,5 @@
+/* Public Sans: body, headings, forms, labels */
+@import '@fontsource-variable/public-sans';
+
+/* JetBrains Mono: reference numbers, IDs, hashes */
+@import '@fontsource-variable/jetbrains-mono';

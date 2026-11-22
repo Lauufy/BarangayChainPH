@@ -1,0 +1,349 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\EmployeeProfile;
+use App\Models\User;
+use App\Notifications\EmailVerificationOtp;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Route;
+use Tests\TestCase;
+
+class ProfileAndEmployeeLoginTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_registration_form_only_requests_basic_account_details(): void
+    {
+        $response = $this->get(route('register'));
+
+        $response->assertOk()
+            ->assertSee('name="name"', false)
+            ->assertSee('name="email"', false)
+            ->assertSee('name="phone"', false)
+            ->assertSee('name="password"', false)
+            ->assertSee('name="password_confirmation"', false)
+            ->assertDontSee('name="date_of_birth"', false)
+            ->assertDontSee('name="civil_status"', false)
+            ->assertDontSee('name="nationality"', false)
+            ->assertDontSee('name="religion"', false)
+            ->assertDontSee('name="house_number"', false)
+            ->assertDontSee('name="street"', false)
+            ->assertDontSee('name="barangay"', false)
+            ->assertDontSee('name="city_municipality"', false)
+            ->assertDontSee('name="province"', false)
+            ->assertDontSee('name="zip_code"', false);
+    }
+
+    public function test_privacy_policy_discloses_collected_citizen_details(): void
+    {
+        $response = $this->get(route('privacy'));
+
+        $response->assertOk()
+            ->assertSee('Privacy Policy')
+            ->assertSee('civil status')
+            ->assertSee('house/lot/block number')
+            ->assertSee('religion are optional');
+    }
+
+    public function test_terms_route_displays_terms_of_service(): void
+    {
+        $response = $this->get(route('terms'));
+
+        $response->assertOk()
+            ->assertSee('Terms of Service')
+            ->assertSee('Acceptance of Terms');
+    }
+
+    public function test_email_verification_creates_a_separate_citizen_profile(): void
+    {
+        Http::fake([
+            'https://www.google.com/recaptcha/api/siteverify' => Http::response(['success' => true], 200),
+            'https://api.pwnedpasswords.com/range/*' => Http::response('', 200),
+        ]);
+        Notification::fake();
+        config(['services.recaptcha.secret_key' => 'test-secret']);
+
+        $this->post(route('register.store'), [
+            'name' => 'Jordan Citizen',
+            'email' => 'jordan@example.com',
+            'password' => 'StrongPass123!',
+            'password_confirmation' => 'StrongPass123!',
+            'terms' => '1',
+            'g-recaptcha-response' => 'valid-token',
+        ])->assertRedirect(route('verification.otp.show'));
+
+        $code = null;
+        Notification::assertSentOnDemand(EmailVerificationOtp::class, function (
+            EmailVerificationOtp $notification,
+            array $channels,
+            object $notifiable
+        ) use (&$code): bool {
+            foreach ($notification->toMail($notifiable)->introLines as $line) {
+                if (preg_match('/^\d{6}$/', $line)) {
+                    $code = $line;
+                }
+            }
+
+            return $code !== null && in_array('mail', $channels, true);
+        });
+
+        $response = $this->post(route('verification.otp.verify'), ['otp' => $code]);
+
+        $response->assertRedirect(route('citizen.dashboard'));
+        $this->assertDatabaseHas('users', [
+            'email' => 'jordan@example.com',
+            'role' => 'citizen',
+        ]);
+        $this->assertNotNull(
+            User::where('email', 'jordan@example.com')
+                ->firstOrFail()
+                ->email_verified_at
+        );
+        $citizen = User::where('email', 'jordan@example.com')->firstOrFail();
+        $this->assertModelExists($citizen->citizenProfile);
+        $this->assertNull($citizen->phone);
+        $this->assertNull($citizen->citizenProfile->date_of_birth);
+        $this->assertNull($citizen->citizenProfile->civil_status);
+        $this->assertNull($citizen->citizenProfile->nationality);
+        $this->assertNull($citizen->citizenProfile->address);
+        $this->assertNull($citizen->citizenProfile->barangay);
+    }
+
+    public function test_registration_accepts_only_basic_details_until_email_verification(): void
+    {
+        Http::fake([
+            'https://www.google.com/recaptcha/api/siteverify' => Http::response(['success' => true], 200),
+            'https://api.pwnedpasswords.com/range/*' => Http::response('', 200),
+        ]);
+        Notification::fake();
+        config(['services.recaptcha.secret_key' => 'test-secret']);
+
+        $response = $this->post(route('register.store'), [
+            'name' => 'Jordan Citizen',
+            'email' => 'jordan@example.com',
+            'phone' => '09171234567',
+            'mode' => 'email',
+            'password' => 'StrongPass123!',
+            'password_confirmation' => 'StrongPass123!',
+            'terms' => '1',
+            'g-recaptcha-response' => 'valid-token',
+        ]);
+
+        $response->assertRedirect(route('verification.otp.show'));
+        $response->assertSessionHas('otp.name', 'Jordan Citizen');
+        $response->assertSessionHas('otp.to', 'jordan@example.com');
+        $response->assertSessionHas('otp.payload.email', 'jordan@example.com');
+        $this->assertNull(session('otp.payload.phone'));
+        $response->assertSessionMissing('otp.payload.date_of_birth');
+        $response->assertSessionMissing('otp.payload.civil_status');
+        $this->assertDatabaseMissing('users', ['email' => 'jordan@example.com']);
+    }
+
+    public function test_private_storage_files_are_not_served_publicly(): void
+    {
+        $this->assertFalse(Route::has('storage.local'));
+    }
+
+    public function test_employee_can_log_in_with_employee_id(): void
+    {
+        $user = User::factory()->create([
+            'name' => 'Taylor Staff',
+            'email' => 'taylor@example.com',
+            'password' => 'StrongPass123!',
+            'role' => 'staff',
+            'two_factor_enabled' => false,
+        ]);
+
+        EmployeeProfile::create([
+            'user_id' => $user->id,
+            'employee_id' => 'BSLCNPH-000123',
+            'department' => 'Records',
+            'position' => 'Clerk',
+        ]);
+
+        $response = $this->post(route('login.store'), [
+            'identifier' => 'bslcnph-000123',
+            'password' => 'StrongPass123!',
+        ]);
+
+        $response->assertRedirect(route('admin.dashboard'));
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_admin_created_staff_accounts_receive_an_employee_id(): void
+    {
+        Http::fake([
+            'https://api.pwnedpasswords.com/range/*' => Http::response('', 200),
+        ]);
+        $employeeId = 'BSLCNPH-'.now()->year.'-0001';
+
+        $admin = User::factory()->create([
+            'role' => 'admin',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.users.index'))
+            ->assertOk()
+            ->assertSee('Staff / Employee')
+            ->assertSee('value="'.$employeeId.'"', false);
+
+        $response = $this->post(route('admin.users.store'), [
+            'name' => 'Morgan Employee',
+            'email' => 'morgan@example.com',
+            'role' => 'staff',
+            'employee_id' => $employeeId,
+            'employment_type' => 'full_time',
+            'department' => 'Records',
+            'position' => 'Clerk',
+            'phone' => '09170000000',
+            'office' => 'Barangay Hall',
+            'date_hired' => '2024-01-15',
+            'password' => 'StrongPass123!',
+            'password_confirmation' => 'StrongPass123!',
+        ]);
+
+        $response->assertRedirect(route('admin.users.index'));
+        $employee = User::where('email', 'morgan@example.com')->firstOrFail();
+        $this->assertSame('+639170000000', $employee->phone);
+        $this->assertSame($employeeId, $employee->employeeProfile->employee_id);
+        $this->assertSame('Records', $employee->employeeProfile->department);
+        $this->assertSame('Barangay Hall', $employee->employeeProfile->office);
+        $this->assertSame('2024-01-15', $employee->employeeProfile->date_hired->toDateString());
+        $this->assertSame(config('permissions.staff_defaults'), $employee->permissions);
+    }
+
+    public function test_admin_created_administrator_gets_employee_id(): void
+    {
+        Http::fake([
+            'https://api.pwnedpasswords.com/range/*' => Http::response('', 200),
+        ]);
+        $employeeId = 'BSLCNPH-'.now()->year.'-0001';
+
+        $signedInAdmin = User::factory()->create([
+            'role' => 'admin',
+        ]);
+
+        $this->actingAs($signedInAdmin)
+            ->get(route('admin.users.index'))
+            ->assertOk()
+            ->assertSee('value="'.$employeeId.'"', false);
+
+        $response = $this->post(route('admin.users.store'), [
+            'name' => 'Carlo Admin',
+            'email' => 'carlo.admin@example.com',
+            'role' => 'admin',
+            'employee_id' => $employeeId,
+            'employment_type' => 'full_time',
+            'department' => 'Administration',
+            'position' => 'Administrator',
+            'password' => 'StrongPass123!',
+            'password_confirmation' => 'StrongPass123!',
+        ]);
+
+        $response->assertRedirect(route('admin.users.index'));
+        $carloAdmin = User::where('email', 'carlo.admin@example.com')->firstOrFail();
+        $this->assertSame('Carlo Admin', $carloAdmin->name);
+        $this->assertSame($employeeId, $carloAdmin->employeeProfile->employee_id);
+        $this->assertSame('admin', $carloAdmin->role);
+    }
+
+    public function test_citizen_can_turn_two_factor_on(): void
+    {
+        $user = User::factory()->create([
+            'role' => 'citizen',
+            'email_verified_at' => now(),
+            'password' => 'Password123!',
+            'two_factor_enabled' => false,
+        ]);
+
+        $this->actingAs($user)
+            ->put(route('citizen.profile.two-factor'), [
+                'two_factor_enabled' => 1,
+                'current_password' => 'Password123!',
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $this->assertTrue($user->fresh()->two_factor_enabled);
+    }
+
+    public function test_staff_can_turn_two_factor_on(): void
+    {
+        $user = User::factory()->create([
+            'role' => 'staff',
+            'email_verified_at' => now(),
+            'password' => 'Password123!',
+            'two_factor_enabled' => false,
+        ]);
+
+        $this->actingAs($user)
+            ->put(route('admin.profile.two-factor'), [
+                'two_factor_enabled' => 1,
+                'current_password' => 'Password123!',
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $this->assertTrue($user->fresh()->two_factor_enabled);
+    }
+
+    public function test_user_can_turn_two_factor_off(): void
+    {
+        $user = User::factory()->create([
+            'role' => 'citizen',
+            'email_verified_at' => now(),
+            'password' => 'Password123!',
+            'two_factor_enabled' => true,
+        ]);
+
+        $this->actingAs($user)
+            ->put(route('citizen.profile.two-factor'), [
+                'two_factor_enabled' => 0,
+                'current_password' => 'Password123!',
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $this->assertFalse($user->fresh()->two_factor_enabled);
+    }
+
+    public function test_toggle_requires_correct_password(): void
+    {
+        $user = User::factory()->create([
+            'role' => 'citizen',
+            'email_verified_at' => now(),
+            'password' => 'Password123!',
+            'two_factor_enabled' => false,
+        ]);
+
+        $this->actingAs($user)
+            ->put(route('citizen.profile.two-factor'), [
+                'two_factor_enabled' => 1,
+                'current_password' => 'wrong',
+            ])->assertSessionHasErrors('current_password');
+
+        $this->assertFalse($user->fresh()->two_factor_enabled);
+    }
+
+    public function test_cannot_turn_on_without_a_verified_email_or_phone(): void
+    {
+        $user = User::factory()->create([
+            'role' => 'citizen',
+            'email_verified_at' => null,
+            'phone_verified_at' => null,
+            'password' => 'Password123!',
+            'two_factor_enabled' => false,
+        ]);
+
+        $this->actingAs($user)
+            ->put(route('citizen.profile.two-factor'), [
+                'two_factor_enabled' => 1,
+                'current_password' => 'Password123!',
+            ])->assertSessionHasErrors('two_factor_enabled');
+
+        $this->assertFalse($user->fresh()->two_factor_enabled);
+    }
+}

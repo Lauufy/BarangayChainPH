@@ -1,0 +1,23 @@
+{
+  "name": "blockchain",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "hardhat test",
+    "check-deployment": "node scripts/check-deployment.js"
+  },
+  "keywords": [],
+  "type": "module",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox-mocha-ethers": "^4.0.0",
+    "hardhat": "^3.22.0"
+  },
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+    "dotenv": "^18.0.10",
+    "ethers": "^6.17.0"
+  }
+}

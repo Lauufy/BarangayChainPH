@@ -1,0 +1,56 @@
+/* ---------- 1. BASE PALETTE ---------- */
+
+:root {
+    /* Navy Blue — Primary Brand */
+    --blue-50: #EEF2FA;
+    --blue-100: #D9E2F5;
+    --blue-200: #B5C6E8;
+    --blue-300: #8CA4D4;
+    --blue-400: #5F7FBD;
+    --blue-500: #3F5FA3;
+    --blue-600: #1F3F7A;
+    --blue-700: #173266;
+    --blue-800: #112652;
+    --blue-850: #070b24;
+    --blue-860: #070b24fd;
+    --blue-870: #090f31c4;
+    --blue-900: #0B1A3A;
+    
+
+    /* Olive Green — Secondary Brand */
+    --green-50: #F6F8EC;
+    --green-100: #E9EFD0;
+    --green-200: #D6E0A8;
+    --green-300: #BCCB78;
+    --green-400: #9DB04C;
+    --green-500: #7F9437;
+    --green-600: #667A2B;
+    --green-700: #52631F;
+    --green-800: #414F1A;
+    --green-900: #333F16;
+    --celadon-500: #9de4a0;
+    --celadon-600: #77a07a;
+    --gold-500: #ffd900;    
+
+    /* Neutral Colors */
+    --white: #FFFFFF;
+    --off-white: #FAF9F6;
+    --gray-50: #F8FAFC;
+    --gray-100: #F1F5F9;
+    --gray-200: #E2E8F0;
+    --gray-300: #CBD5E1;
+    --gray-400: #94A3B8;
+    --gray-500: #64748B;
+    --gray-600: #475569;
+    --gray-700: #334155;
+    --gray-800: #1E293B;
+    --gray-900: #0F172A;
+
+    /* Status Colors */
+    --amber-500: #F59E0B;
+    --red-500: #EF4444;
+    --red-600: #DC2626;
+
+    /* Black */
+    --black-700: #020018;
+}

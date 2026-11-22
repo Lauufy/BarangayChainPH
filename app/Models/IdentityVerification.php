@@ -1,0 +1,100 @@
+<?php
+
+namespace App\Models;
+
+use App\Models\Concerns\Auditable;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
+
+#[Fillable([
+    'user_id',
+    'status',
+    'document_type',
+    'document_path',
+    'document_original_name',
+    'id_number_hash',
+    'selfie_path',
+    'selfie_source',
+    'consented_at',
+    'submitted_at',
+    'reviewed_by',
+    'reviewed_at',
+    'rejection_reason',
+    'ocr_status',
+    'ocr_flags',
+    'ocr_processed_at',
+])]
+
+// Never expose the private file path in JSON or arrays.
+#[Hidden([
+    'document_path',
+    'selfie_path',
+    'id_number_hash',
+])]
+
+/**
+ * @property int $id
+ * @property string $status
+ * @property string|null $rejection_reason
+ *
+ * Stores a citizen's identity verification submission and review state.
+ */
+class IdentityVerification extends Model
+{
+    use Auditable, HasFactory;
+
+    // The possible statuses (Unverified = no row yet)
+    public const PENDING = 'pending';
+
+    public const VERIFIED = 'verified';
+
+    public const REJECTED = 'rejected';
+
+    protected function casts(): array
+    {
+        return [
+            'consented_at' => 'datetime',
+            'submitted_at' => 'datetime',
+            'reviewed_at' => 'datetime',
+            'ocr_flags' => 'array',
+            'ocr_processed_at' => 'datetime',
+        ];
+    }
+
+    // The citizen who submitted this application
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    // The staff or admin who reviewed it
+    public function reviewer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
+    }
+
+    // Full path of the uploaded ID (kept in the private storage folder)
+    public function filePath(): string
+    {
+        return Storage::disk('local')->path($this->document_path);
+    }
+
+    public function isPending(): bool
+    {
+        return $this->status === self::PENDING;
+    }
+
+    public function isVerified(): bool
+    {
+        return $this->status === self::VERIFIED;
+    }
+
+    public function isRejected(): bool
+    {
+        return $this->status === self::REJECTED;
+    }
+}
