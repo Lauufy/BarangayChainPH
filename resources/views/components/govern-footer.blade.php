@@ -15,22 +15,6 @@
             <span class="hidden h-16 border-l border-white/15 sm:block" aria-hidden="true"></span>
 
             <div class="flex flex-col items-center gap-3 sm:items-start">
-                <nav aria-label="Footer navigation"
-                    class="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm font-medium sm:justify-start">
-                    <a href="{{ url('/') }}#about"
-                        class="rounded-sm text-(--off-white)/75 transition-colors hover:text-(--celadon-500) focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--celadon-500)">About</a>
-                    <a href="{{ url('/') }}#services"
-                        class="rounded-sm text-(--off-white)/75 transition-colors hover:text-(--celadon-500) focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--celadon-500)">Services</a>
-                    <a href="{{ url('/') }}#process"
-                        class="rounded-sm text-(--off-white)/75 transition-colors hover:text-(--celadon-500) focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--celadon-500)">How
-                        it works</a>
-                    <a href="{{ url('/') }}#verify"
-                        class="rounded-sm text-(--off-white)/75 transition-colors hover:text-(--celadon-500) focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--celadon-500)">Verify</a>
-                    <a href="{{ url('/') }}#faq"
-                        class="rounded-sm text-(--off-white)/75 transition-colors hover:text-(--celadon-500) focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--celadon-500)">FAQ</a>
-                    <a href="{{ url('/') }}#contact"
-                        class="rounded-sm text-(--off-white)/75 transition-colors hover:text-(--celadon-500) focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--celadon-500)">Contact</a>
-                </nav>
 
                 <div
                     class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-(--off-white)/60 sm:justify-start">
@@ -61,15 +45,6 @@
 
         {{-- Contact --}}
         <div class="flex flex-col items-center gap-3 text-sm lg:items-end">
-            <a href="https://www.facebook.com/barangay.sanluis.35" target="_blank" rel="noopener noreferrer"
-                class="inline-flex items-center gap-2 rounded-sm text-(--off-white)/75 transition-colors hover:text-(--celadon-500) focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--celadon-500)">
-                <svg class="h-5 w-5 text-(--celadon-500)" fill="none" stroke="currentColor" stroke-width="1.5"
-                    viewBox="0 0 24 24" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                </svg>
-                Official Facebook Page
-            </a>
 
             <a href="mailto:barangaychain@gmail.com"
                 class="inline-flex items-center gap-2 rounded-sm text-(--off-white)/75 transition-colors hover:text-(--celadon-500) focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--celadon-500)">

@@ -419,22 +419,22 @@
                         </p>
 
                         <div
-                            class="mt-7 max-w-xl overflow-hidden rounded-sm border border-white/15 bg-linear-to-br from-white/10 to-white/3 backdrop-blur-sm">
-                            <div class="grid items-center gap-6 p-6 sm:grid-cols-[1fr_auto] sm:gap-8 sm:p-7">
+                            class="bg-linear-to-br to-white/3 mt-7 max-w-xl overflow-hidden rounded-sm border border-white/15 from-white/10 backdrop-blur-sm">
+                            <div class="grid items-center gap-5 p-5 sm:grid-cols-[1fr_auto] sm:gap-6 sm:p-6">
 
                                 {{-- Left: message and action --}}
                                 <div>
-                                    <h3 class="text-(--off-white) text-xl font-semibold leading-snug">
+                                    <h3 class="text-(--off-white) text-lg font-semibold leading-snug">
                                         Is your document genuine?
                                     </h3>
-                                    <p class="text-(--off-white)/70 mt-2 max-w-sm text-sm leading-relaxed">
+                                    <p class="text-(--off-white)/70 mt-1.5 max-w-xs text-sm leading-relaxed">
                                         Confirm that we issued it and that nothing has been changed since. It takes a
                                         few seconds and
                                         needs no account.
                                     </p>
 
                                     <a href="#"
-                                        class="bg-(--celadon-500) text-(--blue-850) focus-visible:outline-(--celadon-500) group mt-5 inline-flex items-center gap-2.5 rounded-sm px-5 py-3 text-sm font-bold transition hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2">
+                                        class="bg-(--celadon-500) text-(--blue-850) focus-visible:outline-(--celadon-500) group mt-4 inline-flex items-center gap-2 rounded-sm px-4 py-2.5 text-sm font-bold transition hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2">
                                         Verify a document
                                         <svg class="size-4 transition group-hover:translate-x-0.5" viewBox="0 0 20 20"
                                             fill="none" stroke="currentColor" stroke-width="2"
@@ -443,7 +443,7 @@
                                         </svg>
                                     </a>
 
-                                    <p class="text-(--off-white)/55 mt-4 max-w-sm text-xs leading-relaxed">
+                                    <p class="text-(--off-white)/55 mt-3 max-w-xs text-xs leading-relaxed">
                                         On a phone? Scan the QR code in the bottom corner of your document and the
                                         result opens
                                         directly.
@@ -451,8 +451,8 @@
                                 </div>
 
                                 {{-- Right: document sketch showing where the QR code is --}}
-                                <div class="relative mx-auto w-36 shrink-0 sm:mx-0 sm:w-40" aria-hidden="true">
-                                    <svg viewBox="0 0 160 200" class="drop-shadow-[0_12px_24px_rgba(0,0,0,0.35)]"
+                                <div class="relative mx-auto w-28 shrink-0 sm:mx-0 sm:w-32" aria-hidden="true">
+                                    <svg viewBox="0 0 160 200" class="drop-shadow-[0_10px_20px_rgba(0,0,0,0.35)]"
                                         fill="none">
                                         {{-- Page --}}
                                         <rect x="6" y="4" width="148" height="192" rx="3"
@@ -490,8 +490,8 @@
 
                                     {{-- Verified seal --}}
                                     <span
-                                        class="bg-(--celadon-500) text-(--blue-850) ring-(--blue-850) absolute -right-3 -top-3 flex size-11 items-center justify-center rounded-full shadow-lg ring-4">
-                                        <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        class="bg-(--celadon-500) text-(--blue-850) ring-(--blue-850) absolute -right-2.5 -top-2.5 flex size-9 items-center justify-center rounded-full shadow-lg ring-[3px]">
+                                        <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                             stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
                                             <path d="m6 12.5 4 4 8-9" />
                                         </svg>
@@ -648,7 +648,7 @@
         {{-- Contact --}}
         <section id="contact"
             class="bg-(--blue-860) text-(--off-white) dark:bg-(--blue-870) dark:border-t dark:border-white/10">
-            <div class="mx-auto grid max-w-7xl gap-12 px-5 py-12 sm:px-8 sm:py-24 lg:grid-cols-2 lg:gap-16">
+            <div class="mx-auto grid max-w-7xl gap-12 px-5 pb-10 pt-12 sm:px-8 sm:pt-24 lg:grid-cols-2 lg:gap-16">
                 <div class="min-w-0" data-reveal="left">
                     <p class="text-(--celadon-500) text-xs font-bold uppercase tracking-wider">Barangay Hall Directory
                     </p>
@@ -662,7 +662,7 @@
 
                     <dl class="mt-8 space-y-5">
                         @foreach ([
-        ['M15 10.5a3 3 0 11-6 0 3 3 0 016 0zM19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z', 'Location', 'Ynares Hall, Barangay San Luis, Antipolo City, Rizal 1870', null],
+        ['M15 10.5a3 3 0 11-6 0 3 3 0 016 0zM19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z', 'Location', 'J53X+J7G, Sitio Pinagminahan, Antipolo, 1870 Rizal', 'https://maps.app.goo.gl/FWAKAkvL37kM2vyX6'],
         ['M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z', 'Office Hours', 'Monday to Friday, 8:00 AM to 5:00 PM', null],
         ['M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z', 'Telephone', '8-8555-245', 'tel:88555245'],
         ['M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75', 'Email', 'barangaychain@gmail.com', 'mailto:barangaychain@gmail.com'],
@@ -793,7 +793,9 @@
                 <div class="relative rounded-xl border border-white/10 bg-white/5 p-2" data-reveal="zoom">
                     <iframe title="Map of Barangay San Luis, Antipolo City" loading="lazy"
                         class="h-80 w-full rounded-lg sm:h-96"
-                        src="https://www.google.com/maps?q=Barangay+San+Luis+Antipolo+City+Rizal&output=embed"></iframe>
+                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3860.912572643502!2d121.1982!3d14.604056!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3397bf14228c2a5b%3A0x7acfc6e2d3f77ee7!2sBarangay%20San%20Luis%20Main%20Hall!5e0!3m2!1sen!2sph!4v1795418170568!5m2!1sen!2sph"
+                        width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"
+                        referrerpolicy="strict-origin-when-cross-origin"></iframe>
 
                     <a href="https://www.google.com/maps/search/?api=1&query=Barangay+San+Luis+Antipolo+City+Rizal"
                         target="_blank" rel="noopener noreferrer"
