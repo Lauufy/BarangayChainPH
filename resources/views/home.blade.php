@@ -796,13 +796,6 @@
                         src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3860.912572643502!2d121.1982!3d14.604056!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3397bf14228c2a5b%3A0x7acfc6e2d3f77ee7!2sBarangay%20San%20Luis%20Main%20Hall!5e0!3m2!1sen!2sph!4v1795418170568!5m2!1sen!2sph"
                         width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"
                         referrerpolicy="strict-origin-when-cross-origin"></iframe>
-
-                    <a href="https://www.google.com/maps/search/?api=1&query=Barangay+San+Luis+Antipolo+City+Rizal"
-                        target="_blank" rel="noopener noreferrer"
-                        class="bg-(--blue-900) text-(--celadon-500) hover:bg-(--celadon-500) hover:text-(--blue-850) focus-visible:outline-(--celadon-500) absolute bottom-6 left-1/2 inline-flex -translate-x-1/2 items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold shadow-lg ring-1 ring-white/15 transition focus-visible:outline-2 focus-visible:outline-offset-2">
-                        Open in Google Maps
-                        <span aria-hidden="true">→</span>
-                    </a>
                 </div>
             </div>
         </section>
