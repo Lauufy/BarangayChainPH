@@ -2,9 +2,9 @@
     'name',
     'id' => null,
     'label',
-    'type' => 'text',
+    'type' => 'text', // text | email | password | number | tel | url | datetime-local | select | textarea
     'value' => null,
-    'options' => [],
+    'options' => [], // select only: ['value' => 'Label']
     'hint' => null,
     'errorMessage' => null, // custom text shown when the field fails client-side validation
     'raised' => false, // true = label always floated, placeholder always visible
@@ -15,12 +15,45 @@
 ])
 
 @php
+    // ------------------------------------------------------------------
+    // Type handling
+    // ------------------------------------------------------------------
+    $supportedTypes = [
+        'text', 'email', 'password', 'number', 'tel', 'url',
+        'datetime-local', 'select', 'textarea',
+        'date', 'time', // extras, remove if not needed
+    ];
+    $type = in_array($type, $supportedTypes, true) ? $type : 'text';
+
+    // Types where the browser always paints something inside the field (mask / selected option),
+    // so the label must stay floated and the placeholder trick can't be used.
+    $alwaysFloated = in_array($type, ['select', 'datetime-local', 'date', 'time'], true);
+    $isDateLike = in_array($type, ['datetime-local', 'date', 'time'], true);
+
+    // Prefix only makes sense on plain single-line inputs
+    $prefix = in_array($type, ['text', 'tel', 'number', 'url', 'email'], true) ? $prefix : null;
+
+    // Phone with a country prefix: digits only, leading 0 stripped (09171234567 -> 9171234567)
+    $isPrefixedPhone = $type === 'tel' && $prefix;
+
     $fieldId = $id ?? $name;
     $current = $useOld ? old($name, $value) : $value;
+
+    // datetime-local needs "Y-m-d\TH:i"; convert Carbon/DateTime values or "Y-m-d H:i:s" strings
+    if ($type === 'datetime-local' && filled($current) && !($useOld && old($name) !== null)) {
+        try {
+            $current = \Illuminate\Support\Carbon::parse($current)->format('Y-m-d\TH:i');
+        } catch (\Throwable $e) {
+            // leave as is
+        }
+    }
 
     $required = $attributes->has('required'); // shows the red asterisk
     $invalid = $errors->has($name); // Laravel validation error
 
+    // ------------------------------------------------------------------
+    // Colors
+    // ------------------------------------------------------------------
     $fieldColors = $light
         ? 'border-(--gray-300) bg-(--white) text-(--gray-900) hover:border-(--gray-400) focus:border-(--blue-600) focus:ring-[color-mix(in_srgb,var(--blue-600)_20%,transparent)] dark:border-(--gray-600) dark:bg-(--gray-800) dark:text-(--gray-50) dark:hover:border-(--gray-500) dark:focus:border-(--green-400) dark:focus:ring-[color-mix(in_srgb,var(--green-400)_15%,transparent)]'
         : 'border-white/10 bg-(--blue-900) text-(--white) hover:border-white/20 focus:border-(--green-400) focus:ring-[color-mix(in_srgb,var(--green-400)_10%,transparent)]';
@@ -49,6 +82,11 @@
         ? 'hover:text-(--blue-600) focus-visible:ring-(--blue-600) dark:hover:text-(--green-400) dark:focus-visible:ring-(--green-400)'
         : 'hover:text-(--green-400) focus-visible:ring-(--green-400)';
 
+    // Native pickers (calendar / clock icon, popup) follow the field's theme
+    $colorScheme = $light
+        ? '[color-scheme:light] dark:[color-scheme:dark]'
+        : '[color-scheme:dark]';
+
     // ------------------------------------------------------------------
     // Placeholder: hidden until focus or error, unless "raised"
     // ------------------------------------------------------------------
@@ -71,32 +109,67 @@
     // ------------------------------------------------------------------
     // Field classes shared by input, select and textarea
     // ------------------------------------------------------------------
-    $readOnly = in_array($type, ['select', 'file'])
+    $readOnly = $type === 'select'
         ? ''
         : 'read-only:cursor-not-allowed read-only:opacity-60';
 
+    $typeSpecific = match (true) {
+        // hide the number spinners, they clash with the floating label layout
+        $type === 'number' => '[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none',
+        $isDateLike => "$colorScheme min-w-0 appearance-none",
+        $type === 'select' => $colorScheme,
+        default => '',
+    };
+
     $base = implode(' ', [
         'peer validation-input block w-full rounded-md border pb-1.5 pt-5',
-        $prefix ? 'pl-14' : 'pl-3.5',
+        'pl-3.5', // with a prefix, the inline style in $defaults overrides this
         'text-base outline-none transition focus:ring-2 sm:text-sm',
         'disabled:opacity-60',
         $readOnly,
+        $typeSpecific,
         $fieldColors,
         $errorColors,
         $autofill,
     ]);
 
-    // Marks the field invalid and passes the custom error text to the JS validation
-    $aria = [
+    // ------------------------------------------------------------------
+    // Default attributes (anything passed to the component overrides these)
+    // ------------------------------------------------------------------
+    $defaults = [
         'aria-invalid' => $invalid ? 'true' : null,
         'data-error-message' => $errorMessage,
+        // " " keeps :placeholder-shown working so the floating label knows when the field is empty
+        'placeholder' => $alwaysFloated ? null : ' ',
+        'inputmode' => match (true) {
+            $isPrefixedPhone => 'numeric',
+            $type === 'tel' => 'tel',
+            $type === 'email' => 'email',
+            $type === 'url' => 'url',
+            default => null,
+        },
+        'autocomplete' => match ($type) {
+            'email' => 'email',
+            'tel' => 'tel',
+            'url' => 'url',
+            'password' => 'current-password',
+            default => null,
+        },
+        // Left padding follows the prefix length: 0.875rem (pl-3.5) + prefix width + 0.625rem gap
+        'style' => $prefix
+            ? 'padding-left: calc(0.875rem + ' . mb_strlen($prefix) . 'ch + 0.625rem)'
+            : null,
+        // Prefixed phone: keep digits only and drop leading zeros
+        'oninput' => $isPrefixedPhone
+            ? "this.value = this.value.replace(/\\D/g, '').replace(/^0+/, '')"
+            : null,
     ];
 
     // ------------------------------------------------------------------
     // Floating label
     // ------------------------------------------------------------------
     $labelPosition = match (true) {
-        $raised => 'top-2.5 text-[10px]',
+        $raised || $alwaysFloated => 'top-2.5 text-[10px]',
         $type === 'textarea' => 'top-4',
         default => 'top-1/2 -translate-y-1/2',
     };
@@ -124,11 +197,11 @@
 
         @if ($type === 'textarea')
             <textarea id="{{ $fieldId }}" name="{{ $name }}"
-                {{ $attributes->class([$base, $placeholder, 'min-h-[7rem] resize-y pr-3.5'])->merge($aria) }}>{{ $current }}</textarea>
+                {{ $attributes->class([$base, $placeholder, 'min-h-[7rem] resize-y pr-3.5'])->merge($defaults) }}>{{ $current }}</textarea>
         @elseif ($type === 'select')
             {{-- options: ['value' => 'Label'] --}}
             <select id="{{ $fieldId }}" name="{{ $name }}"
-                {{ $attributes->except('placeholder')->class([$base, $optionBg, 'h-14 appearance-none pr-10'])->merge($aria) }}>
+                {{ $attributes->except('placeholder')->class([$base, $optionBg, 'h-14 appearance-none pr-10'])->merge($defaults) }}>
                 <option value="">{{ $attributes->get('placeholder', 'Select an option') }}</option>
                 @foreach ($options as $optionValue => $optionLabel)
                     <option value="{{ $optionValue }}" @selected((string) $current === (string) $optionValue)>
@@ -142,10 +215,10 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
             </svg>
         @else
-            {{-- text, email, tel, number, password, date... --}}
+            {{-- text, email, password, number, tel, url, datetime-local (+ date, time) --}}
             <input id="{{ $fieldId }}" name="{{ $name }}" type="{{ $type }}"
                 @if ($type !== 'password') value="{{ $current }}" @endif
-                {{ $attributes->class([$base, $placeholder, 'h-14', $type === 'password' ? 'pr-11' : 'pr-3.5'])->merge($aria) }}>
+                {{ $attributes->class([$base, $isDateLike ? '' : $placeholder, 'h-14', $type === 'password' ? 'pr-11' : 'pr-3.5'])->merge($defaults) }}>
 
             @if ($prefix)
                 <span class="{{ $muted }} pointer-events-none absolute bottom-1.5 left-3.5 top-5 items-center text-base sm:text-sm {{ $raised ? 'flex' : 'hidden peer-focus:flex peer-not-placeholder-shown:flex peer-aria-invalid:flex' }}">{{ $prefix }}</span>

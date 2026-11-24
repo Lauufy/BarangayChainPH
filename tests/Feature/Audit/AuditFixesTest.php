@@ -4,13 +4,15 @@ namespace Tests\Feature\Audit;
 
 use App\Http\Controllers\Citizen\IdentityVerificationController;
 use App\Http\Controllers\Shared\PermitVerificationController;
+use App\Models\CitizenProfile;
 use App\Models\ServiceRequest;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\DataProvider;
 use ReflectionMethod;
 use Tests\TestCase;
@@ -116,49 +118,40 @@ class AuditFixesTest extends TestCase
         return $method->invoke($controller, $application);
     }
 
-    // ---------- ID number validation ----------
+    // ---------- Two-sided ID upload without number validation ----------
 
-    public static function acceptedIdNumbers(): array
+    public function test_id_number_is_not_saved_when_a_citizen_stages_both_id_photos(): void
     {
-        return [
-            'plain' => ['P1234567A'],
-            'dashes' => ['N01-12-123456'],
-            'slash (local barangay ID)' => ['2024/00123'],
-            'spaces' => ['1234 5678 9012'],
-        ];
-    }
+        $citizen = User::factory()->create(['role' => 'citizen']);
+        CitizenProfile::create([
+            'user_id' => $citizen->id,
+            'date_of_birth' => '1990-01-01',
+            'address' => '1 Main Street, San Luis',
+            'barangay' => 'San Luis',
+            'gender' => 'Female',
+            'civil_status' => 'Single',
+            'nationality' => 'Filipino',
+            'place_of_birth' => 'San Luis',
+            'city_municipality' => 'San Luis',
+            'province' => 'Province',
+            'zip_code' => '1234',
+        ]);
+        Storage::fake('supabase');
 
-    #[DataProvider('acceptedIdNumbers')]
-    public function test_id_number_formats_the_form_allows_are_accepted_by_the_server(string $number): void
-    {
-        $this->assertSame([], $this->idNumberErrors($number));
-    }
+        $response = $this->actingAs($citizen)
+            ->withHeader('Accept', 'application/json')
+            ->post(route('citizen.identity-verification.id'), [
+                'document_type' => 'Passport',
+                'id_number' => 'INVALID @ VALUE',
+                'document' => UploadedFile::fake()->image('passport-front.jpg'),
+                'document_back' => UploadedFile::fake()->image('passport-back.jpg'),
+            ])
+            ->assertOk()
+            ->assertJsonPath('ok', true);
 
-    public static function rejectedIdNumbers(): array
-    {
-        return [
-            'too short' => ['AB12'],
-            'leading dash' => ['-12345678'],
-            'symbols' => ['AB@12345'],
-            'too long' => [str_repeat('1', 51)],
-        ];
-    }
-
-    #[DataProvider('rejectedIdNumbers')]
-    public function test_invalid_id_numbers_are_rejected(string $number): void
-    {
-        $this->assertContains('id_number', $this->idNumberErrors($number));
-    }
-
-    private function idNumberErrors(string $number): array
-    {
-        $controller = app(IdentityVerificationController::class);
-        $rules = (new ReflectionMethod($controller, 'idRules'))->invoke($controller);
-
-        return Validator::make(
-            ['document_type' => 'Passport', 'id_number' => $number],
-            $rules
-        )->errors()->keys();
+        $response->assertSessionHas('identity_verification.draft.document_type', 'Passport');
+        $this->assertDatabaseCount('identity_verifications', 0);
+        $this->assertArrayNotHasKey('id_number', session('identity_verification.draft'));
     }
 
     public function test_the_unused_id_lookup_endpoint_is_gone(): void

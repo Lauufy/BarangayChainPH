@@ -8,14 +8,13 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\Storage;
 
 #[Fillable([
     'user_id',
     'status',
     'document_type',
     'document_path',
-    'document_original_name',
+    'document_back_key',
     'id_number_hash',
     'selfie_path',
     'selfie_source',
@@ -29,25 +28,20 @@ use Illuminate\Support\Facades\Storage;
     'ocr_processed_at',
 ])]
 
-// Never expose the private file path in JSON or arrays.
+// Never expose private storage keys in JSON or arrays.
 #[Hidden([
     'document_path',
+    'document_back_key',
     'selfie_path',
     'id_number_hash',
 ])]
-
-/**
- * @property int $id
- * @property string $status
- * @property string|null $rejection_reason
- *
- * Stores a citizen's identity verification submission and review state.
- */
 class IdentityVerification extends Model
 {
     use Auditable, HasFactory;
 
     // The possible statuses (Unverified = no row yet)
+    public const DRAFT = 'draft';
+
     public const PENDING = 'pending';
 
     public const VERIFIED = 'verified';
@@ -75,12 +69,6 @@ class IdentityVerification extends Model
     public function reviewer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reviewed_by');
-    }
-
-    // Full path of the uploaded ID (kept in the private storage folder)
-    public function filePath(): string
-    {
-        return Storage::disk('local')->path($this->document_path);
     }
 
     public function isPending(): bool

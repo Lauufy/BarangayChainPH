@@ -768,11 +768,11 @@ class OtpAuthenticationTest extends TestCase
             ->assertSee('+639171234567');
     }
 
-    public function test_identity_details_save_the_contact_phone_on_the_user(): void
+    public function test_identity_details_keep_the_contact_phone_in_session_until_final_submission(): void
     {
         $user = $this->citizen(['email' => 'identity-phone@example.com']);
 
-        $this->actingAs($user)->post(route('citizen.identity-verification.details'), [
+        $response = $this->actingAs($user)->post(route('citizen.identity-verification.details'), [
             'phone' => '09171234567',
             'date_of_birth' => '1990-01-01',
             'gender' => 'Female',
@@ -787,12 +787,13 @@ class OtpAuthenticationTest extends TestCase
 
         $this->assertDatabaseHas('users', [
             'id' => $user->id,
-            'phone' => '+639171234567',
+            'phone' => null,
         ]);
+        $response->assertSessionHas('identity_verification.draft.details.phone', '+639171234567');
 
         $this->actingAs($user)->get(route('citizen.identity-verification'))
             ->assertOk()
-            ->assertSee('+639171234567');
+            ->assertSee('9171234567');
     }
 
     public function test_identity_details_ignore_the_current_users_phone_but_reject_another_users_phone(): void

@@ -8,7 +8,8 @@
         $editing = !in_array($status, ['pending', 'verified']);
         $labels = [1 => 'Details', 2 => 'ID', 3 => 'Selfie', 4 => 'Review'];
 
-        // Same design tokens as the service application page
+        // Same design tokens as the service application page.
+        // @include passes these variables to every step partial.
         $card =
             'rounded-lg bg-(--white) p-4 shadow-sm ring-1 ring-(--gray-200) dark:bg-(--gray-800) dark:ring-(--gray-700)';
         $h2 = 'text-lg font-bold text-(--blue-900) dark:text-(--blue-300)';
@@ -63,12 +64,12 @@
                         @else
                             <button type="button" id="back-button" class="{{ $btnGhost }}">Back</button>
 
-                            <div id="next-wrap" class="flex-2 sm:flex-none">
+                            <div id="next-wrap" class="flex-2 {{ $step === 4 ? 'hidden' : '' }} sm:flex-none">
                                 <button type="button" id="next-button" class="{{ $btnBlue }} sm:min-w-36">Next <span
                                         class="ml-1.5" aria-hidden="true">›</span></button>
                             </div>
 
-                            <div id="submit-wrap" class="hidden flex-2 sm:flex-none">
+                            <div id="submit-wrap" class="flex-2 {{ $step === 4 ? '' : 'hidden' }} sm:flex-none">
                                 <button type="submit" form="document-form" id="submit-button"
                                     class="{{ $btn }} bg-(--green-700) text-(--white) hover:bg-(--green-600) focus-visible:ring-(--green-500) w-full disabled:opacity-60 sm:w-auto sm:min-w-44">Submit
                                     for verification</button>
@@ -79,23 +80,6 @@
             </div>
         </header>
 
-        {{-- Status message --}}
-        @if ($status === 'verified')
-            <x-partials.citizen-notice type="green" title="Verified">Your identity is verified. You can now request
-                barangay
-                services.</x-partials.citizen-notice>
-        @elseif ($status === 'pending')
-            <x-partials.citizen-notice type="amber" title="Pending review">Your application was submitted. Barangay staff
-                will review it. You will be notified of the result.</x-partials.citizen-notice>
-        @elseif ($status === 'rejected')
-            <x-partials.citizen-notice type="red" title="Application rejected">
-                <p>Reason: {{ $verification->rejection_reason }}</p>
-                <p>Please fix the problem and submit again below.</p>
-            </x-partials.citizen-notice>
-        @else
-            <x-partials.citizen-notice title="Not verified yet">Complete the four steps below. Barangay staff will review
-                your application.</x-partials.citizen-notice>
-        @endif
 
         @unless ($editing)
             {{-- Show the submission only --}}
@@ -120,9 +104,14 @@
                     </div>
                 </dl>
 
-                <a href="{{ route('citizen.identity-verification.file', $verification) }}" target="_blank" rel="noopener"
-                    class="{{ $link }} {{ $line }} mt-4 inline-block border-t pt-4 text-sm">View my uploaded
-                    ID</a>
+                <div class="{{ $line }} mt-4 flex flex-wrap gap-4 border-t pt-4 text-sm">
+                    <a href="{{ route('citizen.identity-verification.file', ['verification' => $verification, 'type' => 'document']) }}"
+                        target="_blank" rel="noopener" class="{{ $link }}">View front of ID</a>
+                    @if ($verification->document_back_key)
+                        <a href="{{ route('citizen.identity-verification.file', ['verification' => $verification, 'type' => 'document_back']) }}"
+                            target="_blank" rel="noopener" class="{{ $link }}">View back of ID</a>
+                    @endif
+                </div>
             </section>
         @else
             {{-- Validation errors --}}
@@ -142,303 +131,21 @@
             <x-form.stepper id="identity-stepper" :steps="array_values($labels)" :current="$step" />
 
             @if ($step === 1)
-                {{-- STEP 1: Personal information --}}
-                <form id="details-form" method="POST" action="{{ route('citizen.identity-verification.details') }}"
-                    class="space-y-3">
-                    @csrf
-
-                    <div>
-                        <h2 class="{{ $h2 }}">Your details</h2>
-                        <p class="{{ $sub }}">
-                            Your name comes from your account and can't be changed here.
-                            @if (!auth()->user()->email)
-                                Please add your email address.
-                            @endif
-                        </p>
-                    </div>
-
-                    <section class="{{ $card }}">
-                        <h3 class="{{ $h3 }}">Personal information</h3>
-                        <div class="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                            <x-form.input light raised placeholder=" " name="name" label="Full name" :value="auth()->user()->name" />
-                            {{-- Email can only be added when the account has none (SMS sign-up) --}}
-                            <x-form.input light raised placeholder=" " name="email" label="Email" type="email"
-                                :value="old('email', auth()->user()->email)" :disabled="auth()->user()->email !== null" :required="auth()->user()->email === null" />
-                            <x-form.input light raised placeholder=" " name="date_of_birth" label="Date of birth" type="date"
-                                required :value="$profile?->date_of_birth?->format('Y-m-d')" />
-                            <x-form.input light raised name="gender" label="Gender" type="select" required
-                                placeholder="Select" :options="['Male' => 'Male', 'Female' => 'Female']" :value="$profile?->gender" />
-                            <x-form.input light raised name="civil_status" label="Civil status" type="select" required
-                                placeholder="Select" :options="[
-                                    'Single' => 'Single',
-                                    'Married' => 'Married',
-                                    'Widowed' => 'Widowed',
-                                    'Separated' => 'Separated',
-                                    'Divorced' => 'Divorced',
-                                ]" :value="$profile?->civil_status" />
-                            <x-form.input light raised placeholder=" " name="place_of_birth" label="Place of birth" required
-                                :value="$profile?->place_of_birth" />
-                            <x-form.input light raised placeholder=" " name="nationality" label="Nationality" required
-                                :value="$profile?->nationality" />
-                            <x-form.input light raised placeholder=" " name="religion" label="Religion (optional)"
-                                :value="$profile?->religion" />
-                            <x-form.input light raised placeholder=" " name="occupation" label="Occupation (optional)"
-                                :value="$profile?->occupation" />
-                        </div>
-                    </section>
-
-                    <section class="{{ $card }}">
-                        <h3 class="{{ $h3 }}">Address and contact</h3>
-                        <p class="{{ $sub }} mt-1">Use the address where you live now.</p>
-                        <div class="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                            <x-form.input light raised placeholder=" " name="phone" label="Phone number" type="tel"
-                                required :value="$user->phone" />
-                            <x-form.input light raised placeholder=" " name="house_number" label="House number (optional)"
-                                :value="$profile?->house_number" />
-                            <x-form.input light raised placeholder=" " name="barangay" label="Barangay" required
-                                :value="$profile?->barangay" />
-                            <x-form.input light raised placeholder=" " name="city_municipality" label="City / Municipality"
-                                required :value="$profile?->city_municipality" />
-                            <x-form.input light raised placeholder=" " name="province" label="Province" required
-                                :value="$profile?->province" />
-                            <x-form.input light raised placeholder=" " name="zip_code" label="ZIP code" required
-                                :value="$profile?->zip_code" />
-                        </div>
-                    </section>
-                </form>
+                @include('citizen.identity-verifications.steps.details')
             @else
-                {{-- STEPS 2 to 4: one form, one panel shown at a time. Everything is sent on the last step. --}}
+                {{-- STEPS 2 to 4: retain progress in the session until final submission. --}}
                 <form id="document-form" method="POST" action="{{ route('citizen.identity-verification.document') }}"
                     enctype="multipart/form-data">
                     @csrf
 
-                    {{-- STEP 2: ID --}}
-                    <div data-panel="2" class="space-y-3">
-                        <div>
-                            <h2 class="{{ $h2 }}">Upload your ID</h2>
-                            <p class="{{ $sub }}">Use a valid government ID. Your name and photo must be readable.
-                            </p>
-                        </div>
-
-                        <section class="{{ $card }}">
-                            <div class="grid gap-4 sm:grid-cols-2">
-                                <x-form.input light raised name="document_type" label="Type of ID" type="select" required
-                                    placeholder="Select" :options="array_combine($documentTypes, $documentTypes)" />
-                                <x-form.input light raised placeholder=" " name="id_number" label="ID number" required
-                                    maxlength="50" />
-                            </div>
-
-                            <div class="mt-4">
-                                <span class="text-(--gray-700) dark:text-(--gray-200) text-sm font-medium">ID photo or
-                                    scan</span>
-
-                                <label for="document" id="id-drop" class="{{ $dropzone }} mt-1.5">
-                                    <input id="document" name="document" type="file" required
-                                        accept=".jpg,.jpeg,.png,.pdf" class="sr-only">
-
-                                    <div data-empty class="flex flex-col items-center">
-                                        <span class="{{ $iconBox }}">
-                                            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                stroke-width="1.6" aria-hidden="true">
-                                                <path stroke-linecap="round" stroke-linejoin="round"
-                                                    d="M12 16V5m0 0-4 4m4-4 4 4M5 19h14" />
-                                            </svg>
-                                        </span>
-                                        <span class="{{ $ink }} mt-3 text-sm font-semibold">Choose a file or drop it
-                                            here</span>
-                                        <span class="{{ $muted }} mt-1 text-xs">JPG, PNG, or PDF, up to 5 MB. Photos
-                                            are shrunk automatically.</span>
-                                    </div>
-
-                                    <div data-filled class="hidden w-full flex-col items-center">
-                                        <img alt="ID preview"
-                                            class="{{ $thumb }} hidden max-h-48 w-auto max-w-full object-contain">
-                                        <span data-pdf
-                                            class="{{ $thumb }} {{ $ink }} hidden px-4 py-6 text-sm font-semibold">PDF
-                                            file</span>
-                                        <span data-name
-                                            class="{{ $ink }} mt-3 max-w-full truncate text-sm font-medium"></span>
-                                        <span class="{{ $link }} mt-0.5">Replace file</span>
-                                    </div>
-                                </label>
-                                <p id="file-error" class="text-(--red-600) mt-1.5 text-sm" role="alert"></p>
-                            </div>
-                        </section>
-                    </div>
-
-                    {{-- STEP 3: Selfie (upload or camera with face check) --}}
-                    <div data-panel="3" class="hidden space-y-3">
-                        <div>
-                            <h2 class="{{ $h2 }}">Take a selfie with your ID</h2>
-                            <p class="{{ $sub }}">Hold your ID next to your face. Use the camera or upload a photo.
-                            </p>
-                        </div>
-
-                        <section class="{{ $card }}">
-                            <ul
-                                class="bg-(--gray-50) text-(--gray-700) dark:bg-(--gray-900) dark:text-(--gray-200) space-y-1.5 rounded-lg p-4 text-sm">
-                                <li>✓ Your face and your ID are both clearly visible.</li>
-                                <li>✓ The lighting is good. No hat or sunglasses.</li>
-                                <li>✓ The ID text is sharp and not covered.</li>
-                            </ul>
-
-                            <input type="hidden" name="selfie_source" id="selfie-source" value="upload">
-
-                            <div role="tablist" aria-label="Selfie method"
-                                class="bg-(--gray-100) dark:bg-(--gray-900) mt-4 inline-flex rounded-lg p-1 text-sm font-semibold">
-                                <button type="button" role="tab" id="tab-upload" aria-selected="true"
-                                    class="bg-(--white) text-(--gray-900) dark:bg-(--gray-700) dark:text-(--gray-50) rounded-md px-4 py-2 shadow-sm transition">Upload
-                                    photo</button>
-                                <button type="button" role="tab" id="open-camera" aria-selected="false"
-                                    class="text-(--gray-600) hover:text-(--gray-900) dark:text-(--gray-300) dark:hover:text-(--gray-50) rounded-md px-4 py-2 transition">Use
-                                    camera</button>
-                            </div>
-
-                            <div class="mt-4">
-                                <label for="selfie" id="selfie-drop" class="{{ $dropzone }}">
-                                    <input id="selfie" name="selfie" type="file" required
-                                        accept="image/jpeg,image/png" class="sr-only">
-
-                                    <div data-empty class="flex flex-col items-center">
-                                        <span class="{{ $iconBox }}">
-                                            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                stroke-width="1.6" aria-hidden="true">
-                                                <circle cx="12" cy="9" r="3.5" />
-                                                <path stroke-linecap="round" stroke-linejoin="round"
-                                                    d="M5 20a7 7 0 0 1 14 0" />
-                                            </svg>
-                                        </span>
-                                        <span class="{{ $ink }} mt-3 text-sm font-semibold">Choose a selfie or drop
-                                            it here</span>
-                                        <span class="{{ $muted }} mt-1 text-xs">JPG or PNG. Photos are shrunk
-                                            automatically.</span>
-                                    </div>
-
-                                    <div data-filled class="hidden w-full flex-col items-center">
-                                        <img alt="Selfie preview"
-                                            class="{{ $thumb }} max-h-56 w-auto max-w-full object-contain">
-                                        <span data-name
-                                            class="{{ $ink }} mt-3 max-w-full truncate text-sm font-medium"></span>
-                                        <span class="{{ $link }} mt-0.5">Replace photo</span>
-                                    </div>
-                                </label>
-
-                                <div id="camera-box" class="hidden">
-                                    <div class="bg-(--gray-900) relative mx-auto w-full max-w-md overflow-hidden rounded-lg">
-                                        <video id="camera-video" autoplay playsinline muted
-                                            class="aspect-4/3 w-full -scale-x-100 object-cover"></video>
-                                        <div class="pointer-events-none absolute inset-0 flex items-center justify-center"
-                                            aria-hidden="true">
-                                            <div id="face-guide"
-                                                class="h-3/4 w-2/5 rounded-[50%] border-2 border-dashed border-white/70 transition-colors">
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <p id="face-status"
-                                        class="text-(--gray-600) dark:text-(--gray-300) mt-3 text-center text-sm font-medium"
-                                        role="status" aria-live="polite"></p>
-                                    <div class="mt-3 flex justify-center">
-                                        <button type="button" id="take-photo"
-                                            class="{{ $btn }} bg-(--blue-600) text-(--white) hover:bg-(--blue-700) focus-visible:ring-(--blue-600)">Take
-                                            photo</button>
-                                    </div>
-                                </div>
-
-                                <p id="selfie-error" class="text-(--red-600) mt-1.5 text-sm" role="alert"></p>
-                            </div>
-                        </section>
-                    </div>
-
-                    {{-- STEP 4: Review and consent --}}
-                    <div data-panel="4" class="hidden space-y-3">
-                        <div>
-                            <h2 class="{{ $h2 }}">Review and submit</h2>
-                            <p class="{{ $sub }}">Check that everything is correct, then accept the notice below.</p>
-                        </div>
-
-                        <section class="{{ $card }}">
-                            <h3 class="{{ $h3 }}">Your details</h3>
-                            <dl class="mt-3 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
-                                <div>
-                                    <dt class="{{ $muted }}">Full name</dt>
-                                    <dd class="{{ $ink }} mt-1 font-medium">{{ auth()->user()->name }}</dd>
-                                </div>
-                                <div>
-                                    <dt class="{{ $muted }}">Date of birth</dt>
-                                    <dd class="{{ $ink }} mt-1 font-medium">
-                                        {{ $profile?->date_of_birth?->format('M j, Y') ?? '—' }}</dd>
-                                </div>
-                                <div class="sm:col-span-2 lg:col-span-3">
-                                    <dt class="{{ $muted }}">Address</dt>
-                                    <dd class="{{ $ink }} mt-1 font-medium">
-                                        {{ collect([$profile?->house_number, $profile?->barangay, $profile?->city_municipality, $profile?->province, $profile?->zip_code])->filter()->implode(', ') ?:'—' }}
-                                    </dd>
-                                </div>
-                                <div>
-                                    <dt class="{{ $muted }}">ID type</dt>
-                                    <dd id="review-type" class="{{ $ink }} mt-1 font-medium"></dd>
-                                </div>
-                                <div>
-                                    <dt class="{{ $muted }}">ID number</dt>
-                                    <dd id="review-number" class="{{ $ink }} mt-1 font-medium"></dd>
-                                </div>
-                            </dl>
-                        </section>
-
-                        <section class="{{ $card }}">
-                            <h3 class="{{ $h3 }}">Photos</h3>
-                            <div class="mt-3 grid grid-cols-2 gap-4">
-                                <figure>
-                                    <div
-                                        class="bg-(--gray-50) ring-(--gray-200) dark:bg-(--gray-900) dark:ring-(--gray-700) flex h-32 items-center justify-center overflow-hidden rounded-md ring-1">
-                                        <img id="review-id" alt="Your ID" class="hidden h-full w-full object-contain">
-                                        <span id="review-id-empty"
-                                            class="{{ $muted }} px-2 text-center text-xs"></span>
-                                    </div>
-                                    <figcaption class="{{ $muted }} mt-2 text-xs">ID</figcaption>
-                                </figure>
-                                <figure>
-                                    <div
-                                        class="bg-(--gray-50) ring-(--gray-200) dark:bg-(--gray-900) dark:ring-(--gray-700) flex h-32 items-center justify-center overflow-hidden rounded-md ring-1">
-                                        <img id="review-selfie" alt="Your selfie"
-                                            class="hidden h-full w-full object-contain">
-                                    </div>
-                                    <figcaption class="{{ $muted }} mt-2 text-xs">Selfie with ID</figcaption>
-                                </figure>
-                            </div>
-                        </section>
-
-                        {{-- Change this text to match your barangay's official privacy notice --}}
-                        <section class="{{ $card }}">
-                            <h3 class="{{ $h3 }}">Data privacy notice</h3>
-                            <p class="text-(--gray-600) dark:text-(--gray-300) mt-2 text-sm leading-6">
-                                We collect your personal details, ID, and selfie only to verify your identity for
-                                barangay online services.
-                                They are stored privately and can only be viewed by authorized barangay staff.
-                                They are not shared with other citizens or made public.
-                                Only a coded proof of the decision is kept in the system ledger. Your personal data is
-                                never put on it.
-                                We handle your data in line with the Data Privacy Act of 2012 (Republic Act 10173).
-                            </p>
-                        </section>
-
-                        <section class="{{ $card }}">
-                            <h3 class="{{ $h3 }}">Confirmation</h3>
-                            <div class="text-(--gray-700) dark:text-(--gray-200) mt-3 space-y-3 text-sm">
-                                <x-form.checkbox name="agree_truth" required>
-                                    I confirm that the information, ID, and photo I submitted are true and belong to me.
-                                </x-form.checkbox>
-                                <x-form.checkbox name="agree_privacy" required>
-                                    I have read the data privacy notice and I agree to the use of my personal data for
-                                    identity verification.
-                                </x-form.checkbox>
-                            </div>
-                        </section>
-                    </div>
+                    @include('citizen.identity-verifications.steps.id')
+                    @include('citizen.identity-verifications.steps.selfie')
+                    @include('citizen.identity-verifications.steps.review')
                 </form>
 
                 <script>
-                    const backUrl = @json(route('citizen.identity-verification'));
+                (() => {
+                    const backUrl = @json(route('citizen.identity-verification', ['step' => 1]));
                     const MAX_SIZE = 5 * 1024 * 1024; // same as the Laravel rule (max:5120)
                     const VISION = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
                     const MODEL =
@@ -448,11 +155,21 @@
                     const $ = (id) => document.getElementById(id);
                     const all = (sel) => document.querySelectorAll(sel);
                     const form = $('document-form');
-                    const idNumber = form.id_number;
-                    const idDrop = $('id-drop');
+                    const idType = form.elements.document_type;
+                    const documentInput = $('document');
+                    const documentBackInput = $('document_back');
+                    const idDrop = documentInput.closest('[data-upload]');
+                    const idBackDrop = documentBackInput.closest('[data-upload]');
                     const selfieInput = $('selfie');
                     const selfieDrop = $('selfie-drop');
                     const selfieError = $('selfie-error');
+                    const csrfToken = @json(csrf_token());
+                    let hasSavedSelfie = @json(filled($draft['selfie_path'] ?? null));
+                    let documentPreviewUrl = @json($draftPreviewUrls['document']);
+                    let documentSavedName = @json(filled($draft['document_path'] ?? null) ? 'Saved front of ID' : null);
+                    let documentBackPreviewUrl = @json($draftPreviewUrls['document_back']);
+                    let documentBackSavedName = @json(filled($draft['document_back_key'] ?? null) ? 'Saved back of ID' : null);
+                    let selfiePreviewUrl = @json($draftPreviewUrls['selfie']);
                     const tabUpload = $('tab-upload');
                     const tabCamera = $('open-camera');
                     const cameraBox = $('camera-box');
@@ -461,7 +178,7 @@
                     const faceStatus = $('face-status');
                     const faceGuide = $('face-guide');
 
-                    let currentStep = 2;
+                    let currentStep = @json($step);
                     let cameraStream = null;
                     let detector = null;
                     let faceTimer = null;
@@ -507,20 +224,48 @@
                         drop.querySelector('[data-name]').textContent = file ? file.name : '';
                     }
 
+                    function renderSavedSelfie() {
+                        if (!hasSavedSelfie || !selfiePreviewUrl) return;
+
+                        const img = selfieDrop.querySelector('img');
+                        img.src = selfiePreviewUrl;
+                        img.classList.remove('hidden');
+                        showDrop(selfieDrop, {
+                            name: 'Saved selfie'
+                        });
+                    }
+
                     // Makes a file input work: shrink, check, preview, drag and drop
-                    function setupUpload(input, drop, errorBox, types, typeError) {
+                    function setupUpload(input, drop, errorBox, types, typeError, hasSavedFile, renderSavedFile) {
                         const img = drop.querySelector('img');
                         const pdf = drop.querySelector('[data-pdf]');
 
                         function refresh(error) {
                             errorBox.textContent = error || '';
-                            if (error) input.value = '';
+
+                            if (error) {
+                                input.value = '';
+                                if (hasSavedFile()) {
+                                    renderSavedFile();
+                                    return;
+                                }
+                            }
 
                             const file = input.files[0];
+                            if (!file && hasSavedFile()) {
+                                renderSavedFile();
+                                return;
+                            }
+
                             const isImage = file && file.type.startsWith('image/');
                             if (isImage) img.src = URL.createObjectURL(file);
                             img.classList.toggle('hidden', !isImage);
-                            if (pdf) pdf.classList.toggle('hidden', !file || isImage);
+                            if (pdf) {
+                                pdf.classList.toggle('hidden', !file || isImage);
+                                if (file && !isImage) pdf.removeAttribute('href');
+                                if (file && !isImage) pdf.textContent = 'PDF file';
+                                else if (file && isImage && hasSavedFile()) pdf.removeAttribute('href');
+                            }
                             showDrop(drop, file);
                         }
 
@@ -560,31 +305,36 @@
                         });
                     }
 
-                    setupUpload($('document'), idDrop, $('file-error'),
-                        ['image/jpeg', 'image/png', 'application/pdf'], 'The ID must be a JPG, PNG, or PDF file.');
                     setupUpload(selfieInput, selfieDrop, selfieError,
-                        ['image/jpeg', 'image/png'], 'The selfie must be a JPG or PNG file.');
+                        ['image/jpeg', 'image/png'], 'The selfie must be a JPG or PNG file.',
+                        () => hasSavedSelfie, renderSavedSelfie);
 
                     // A chosen file means the selfie was uploaded
                     selfieInput.addEventListener('change', () => {
                         $('selfie-source').value = 'upload';
                     });
 
-                    // ---------- ID number ----------
-                    function checkIdNumber() {
-                        const value = idNumber.value.trim();
-                        let message = '';
-                        idNumber.value = value;
+                    function updateContinueButton() {
+                        const button = $('next-button');
+                        if (!button) return;
 
-                        if (value === '') message = 'Please enter your ID number.';
-                        else if (value.length < 5) message = 'The ID number is too short. Check it again.';
-                        else if (value.length > 50) message = 'The ID number must not be longer than 50 characters.';
-                        else if (!/^[A-Za-z0-9][A-Za-z0-9\-\/ ]*$/.test(value)) message =
-                            'The ID number can only have letters, numbers, spaces, dashes, and slashes.';
-
-                        idNumber.setCustomValidity(message); // empty message = valid
+                        button.firstChild.textContent = currentStep === 2 ? 'Continue ' : 'Next ';
                     }
-                    idNumber.addEventListener('input', () => idNumber.setCustomValidity(''));
+
+                    function renderSavedIdPreview(input, previewUrl, displayName, isImage) {
+                        const box = input.closest('[data-upload]');
+                        const preview = box.querySelector('[data-preview]');
+                        box.dataset.savedPreview = previewUrl || '';
+                        box.dataset.savedName = displayName || '';
+                        box.dataset.savedIsImage = String(isImage);
+                        preview.src = isImage ? previewUrl : '';
+                        preview.hidden = !isImage;
+                        box.querySelector('[data-placeholder]').hidden = isImage;
+                        box.querySelector('[data-file]').hidden = !displayName;
+                        box.querySelector('[data-name]').textContent = displayName || '';
+                        box.querySelector('[data-meta]').textContent = displayName ? 'Saved file' : '';
+                        input.value = '';
+                    }
 
                     // ---------- Face check ----------
                     function loadDetector() {
@@ -748,27 +498,34 @@
 
                     // ---------- Review ----------
                     function fillReview() {
-                        const idImg = idDrop.querySelector('img');
-                        const idFile = $('document').files[0];
-                        const showImage = !idImg.classList.contains('hidden');
-                        let number = idNumber.value.trim();
+                        $('review-type').textContent = idType.value;
 
-                        // Show only the last 4 characters of the ID number
-                        if (number.length > 4) number = '•'.repeat(number.length - 4) + number.slice(-4);
-
-                        $('review-type').textContent = form.document_type.value;
-                        $('review-number').textContent = number;
-
-                        // A PDF has no picture, so show its file name instead
-                        $('review-id').src = showImage ? idImg.src : '';
-                        $('review-id').classList.toggle('hidden', !showImage);
-                        $('review-id-empty').textContent = showImage || !idFile ? '' : idFile.name;
+                        [
+                            { input: documentInput, drop: idDrop, image: $('review-id-front'), name: $('review-id-front-empty'), savedName: documentSavedName },
+                            { input: documentBackInput, drop: idBackDrop, image: $('review-id-back'), name: $('review-id-back-empty'), savedName: documentBackSavedName },
+                        ].forEach(({ input, drop, image, name, savedName }) => {
+                            const preview = drop.querySelector('img');
+                            const showImage = !preview.hidden;
+                            const file = input.files[0];
+                            image.src = showImage ? preview.src : '';
+                            image.classList.toggle('hidden', !showImage);
+                            name.textContent = showImage ? '' : file?.name || savedName || '';
+                        });
 
                         $('review-selfie').src = selfieDrop.querySelector('img').src;
                         $('review-selfie').classList.remove('hidden');
                     }
 
                     // ---------- Steps ----------
+                    function updateStepFields(step) {
+                        all('[data-panel="2"] input, [data-panel="2"] select').forEach((field) => {
+                            field.disabled = step !== 2;
+                        });
+                        all('[data-panel="3"] input, [data-panel="3"] select').forEach((field) => {
+                            field.disabled = step !== 3;
+                        });
+                    }
+
                     function goToStep(step) {
                         stopCamera();
                         currentStep = step;
@@ -779,10 +536,12 @@
 
                         // The animated stepper component moves the line, dot and check for us
                         Stepper.set('identity-stepper', step);
+                        updateStepFields(step);
 
                         // Submit shows ONLY on the last step, Next shows on the others
                         $('next-wrap').classList.toggle('hidden', step === 4);
                         $('submit-wrap').classList.toggle('hidden', step !== 4);
+                        updateContinueButton();
 
                         if (step === 4) fillReview();
                         window.scrollTo({
@@ -791,13 +550,101 @@
                         });
                     }
 
-                    // Next: check the fields of this step first
-                    $('next-button').addEventListener('click', () => {
-                        if (currentStep === 2) checkIdNumber();
+                    function showStepErrors(step, errors) {
+                        const box = $(step === 2 ? 'id-server-errors' : 'selfie-server-errors');
+                        const messages = Object.values(errors || {}).flat();
+                        box.textContent = messages.length
+                            ? messages.join(' ')
+                            : 'We could not save your progress. Check your connection and try again.';
+                        box.classList.remove('hidden');
+                    }
 
+                    function clearStepErrors(step) {
+                        const box = $(step === 2 ? 'id-server-errors' : 'selfie-server-errors');
+                        box.textContent = '';
+                        box.classList.add('hidden');
+                    }
+
+                    async function saveStep(step) {
+                        const payload = new FormData();
+                        let endpoint;
+
+                        if (step === 2) {
+                            endpoint = @json(route('citizen.identity-verification.id'));
+                            payload.append('document_type', idType.value);
+                            if (documentInput.files[0]) payload.append('document', documentInput.files[0]);
+                            if (documentBackInput.files[0]) payload.append('document_back', documentBackInput.files[0]);
+                        } else {
+                            endpoint = @json(route('citizen.identity-verification.selfie'));
+                            payload.append('selfie_source', $('selfie-source').value);
+                            if (selfieInput.files[0]) payload.append('selfie', selfieInput.files[0]);
+                        }
+
+                        const button = $('next-button');
+                        const buttonHtml = button.innerHTML;
+                        button.disabled = true;
+                        button.textContent = 'Saving...';
+                        clearStepErrors(step);
+
+                        try {
+                            const response = await fetch(endpoint, {
+                                method: 'POST',
+                                headers: {
+                                    'Accept': 'application/json',
+                                    'X-CSRF-TOKEN': csrfToken,
+                                },
+                                body: payload,
+                            });
+                            const result = await response.json().catch(() => ({}));
+
+                            if (response.status === 422) {
+                                showStepErrors(step, result.errors);
+                                return;
+                            }
+
+                            if (!response.ok || !result.ok) {
+                                showStepErrors(step, result.errors || {});
+                                return;
+                            }
+
+                            if (step === 2) {
+                                documentPreviewUrl = result.document_preview_url;
+                                documentSavedName = 'Saved front of ID';
+                                renderSavedIdPreview(documentInput, documentPreviewUrl, documentSavedName, !result.document_is_pdf);
+                                documentInput.removeAttribute('required');
+                                documentBackPreviewUrl = result.document_back_preview_url;
+                                documentBackSavedName = 'Saved back of ID';
+                                renderSavedIdPreview(
+                                    documentBackInput,
+                                    documentBackPreviewUrl,
+                                    documentBackSavedName,
+                                    !result.document_back_is_pdf,
+                                );
+                                documentBackInput.removeAttribute('required');
+                            } else {
+                                hasSavedSelfie = true;
+                                selfiePreviewUrl = result.selfie_preview_url;
+                                selfieInput.value = '';
+                                selfieInput.removeAttribute('required');
+                                renderSavedSelfie();
+                            }
+
+                            goToStep(step + 1);
+                        } catch {
+                            showStepErrors(step, {});
+                        } finally {
+                            button.innerHTML = buttonHtml;
+                            updateContinueButton();
+                        }
+                    }
+
+                    // Next: check the current step, save it, and only then advance
+                    $('next-button').addEventListener('click', () => {
                         const fields = all(
                             `[data-panel="${currentStep}"] input, [data-panel="${currentStep}"] select`);
-                        if (Array.from(fields).every((field) => field.reportValidity())) goToStep(currentStep + 1);
+                        if (Array.from(fields).every((field) => field.reportValidity())) {
+                            saveStep(currentStep);
+                        }
                     });
 
                     // Back: from step 2 go back to the personal information page
@@ -819,6 +666,10 @@
                         if (currentStep !== 4) e.preventDefault();
                         else $('submit-button').disabled = true;
                     });
+
+                    renderSavedSelfie();
+                    goToStep(currentStep);
+                })();
                 </script>
             @endif
         @endunless

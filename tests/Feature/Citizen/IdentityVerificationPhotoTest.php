@@ -106,6 +106,7 @@ class IdentityVerificationPhotoTest extends TestCase
             'province' => 'Province',
             'zip_code' => '1234',
         ]);
+        $this->saveIdentityDetails($citizen);
 
         /** @var FilesystemAdapter $supabase */
         $supabase = Storage::fake('supabase');
@@ -114,12 +115,23 @@ class IdentityVerificationPhotoTest extends TestCase
         Queue::fake([ProcessIdentityOcr::class]);
 
         $response = $this->actingAs($citizen)
-            ->post(route('citizen.identity-verification.document'), [
+            ->post(route('citizen.identity-verification.id'), [
                 'document_type' => 'Philippine National ID',
-                'id_number' => '123456789',
                 'document' => UploadedFile::fake()->image('id.jpg'),
+                'document_back' => UploadedFile::fake()->image('id-back.jpg'),
+            ]);
+
+        $response->assertRedirect(route('citizen.identity-verification'));
+
+        $this->actingAs($citizen)
+            ->post(route('citizen.identity-verification.selfie'), [
                 'selfie' => UploadedFile::fake()->image('selfie.jpg'),
                 'selfie_source' => 'upload',
+            ])
+            ->assertRedirect(route('citizen.identity-verification'));
+
+        $response = $this->actingAs($citizen)
+            ->post(route('citizen.identity-verification.document'), [
                 'agree_truth' => '1',
                 'agree_privacy' => '1',
             ]);
@@ -128,11 +140,22 @@ class IdentityVerificationPhotoTest extends TestCase
 
         $verification = $citizen->identityVerifications()->latest()->firstOrFail();
         $supabase->assertExists($verification->document_path);
+        $supabase->assertExists($verification->document_back_key);
         $supabase->assertExists($verification->selfie_path);
         $local->assertMissing($verification->document_path);
+        $local->assertMissing($verification->document_back_key);
         $local->assertMissing($verification->selfie_path);
         $this->assertStringNotContainsString('http', $verification->document_path);
+        $this->assertStringNotContainsString('http', $verification->document_back_key);
         $this->assertStringNotContainsString('http', $verification->selfie_path);
+        $this->assertMatchesRegularExpression(
+            '#^identity-documents/'.$citizen->id.'/[0-9a-f-]{36}\.(jpg|jpeg|png)$#',
+            $verification->document_path
+        );
+        $this->assertMatchesRegularExpression(
+            '#^identity-documents/'.$citizen->id.'/[0-9a-f-]{36}\.(jpg|jpeg|png)$#',
+            $verification->document_back_key
+        );
         Queue::assertPushed(
             ProcessIdentityOcr::class,
             fn (ProcessIdentityOcr $job): bool => $job->verificationId === $verification->id
@@ -145,15 +168,33 @@ class IdentityVerificationPhotoTest extends TestCase
 
         $this->mock(SupabaseStorage::class)
             ->shouldReceive('temporaryUrl')
-            ->twice()
+            ->times(5)
             ->andReturn('https://storage.example/identity.jpg');
 
         $this->actingAs($citizen)
             ->get(route('citizen.identity-verification.file', $verification))
             ->assertRedirect('https://storage.example/identity.jpg');
 
+        $this->actingAs($citizen)
+            ->get(route('citizen.identity-verification.file', [
+                'verification' => $verification,
+                'type' => 'document_back',
+            ]))
+            ->assertRedirect('https://storage.example/identity.jpg');
+
+        $this->actingAs($citizen)
+            ->get(route('citizen.identity-verification.file', [
+                'verification' => $verification,
+                'type' => 'selfie',
+            ]))
+            ->assertRedirect('https://storage.example/identity.jpg');
+
         $this->actingAs($admin)
             ->get(route('admin.identity-verification.selfie', $verification))
+            ->assertRedirect('https://storage.example/identity.jpg');
+
+        $this->actingAs($admin)
+            ->get(route('admin.identity-verification.document-back', $verification))
             ->assertRedirect('https://storage.example/identity.jpg');
     }
 
@@ -176,6 +217,7 @@ class IdentityVerificationPhotoTest extends TestCase
             'province' => 'Province',
             'zip_code' => '1234',
         ]);
+        $this->saveIdentityDetails($citizen);
 
         /** @var FilesystemAdapter $supabase */
         $supabase = Storage::fake('supabase');
@@ -184,12 +226,23 @@ class IdentityVerificationPhotoTest extends TestCase
         Queue::fake([ProcessIdentityOcr::class]);
 
         $response = $this->actingAs($citizen)
-            ->post(route('citizen.identity-verification.document'), [
+            ->post(route('citizen.identity-verification.id'), [
                 'document_type' => 'Philippine National ID',
-                'id_number' => '987654321',
                 'document' => UploadedFile::fake()->create('id.pdf', 100, 'application/pdf'),
+                'document_back' => UploadedFile::fake()->create('id-back.pdf', 100, 'application/pdf'),
+            ]);
+
+        $response->assertRedirect(route('citizen.identity-verification'));
+
+        $this->actingAs($citizen)
+            ->post(route('citizen.identity-verification.selfie'), [
                 'selfie' => UploadedFile::fake()->image('selfie.jpg'),
                 'selfie_source' => 'upload',
+            ])
+            ->assertRedirect(route('citizen.identity-verification'));
+
+        $response = $this->actingAs($citizen)
+            ->post(route('citizen.identity-verification.document'), [
                 'agree_truth' => '1',
                 'agree_privacy' => '1',
             ]);
@@ -198,19 +251,46 @@ class IdentityVerificationPhotoTest extends TestCase
 
         $verification = $citizen->identityVerifications()->latest()->firstOrFail();
         $supabase->assertExists($verification->document_path);
+        $supabase->assertExists($verification->document_back_key);
         $supabase->assertExists($verification->selfie_path);
         $local->assertMissing($verification->document_path);
+        $local->assertMissing($verification->document_back_key);
         $local->assertMissing($verification->selfie_path);
         $this->assertStringNotContainsString('http', $verification->document_path);
         $this->assertStringNotContainsString('http', $verification->selfie_path);
 
         $this->mock(SupabaseStorage::class)
             ->shouldReceive('temporaryUrl')
-            ->once()
+            ->twice()
             ->andReturn('https://storage.example/identity.pdf');
 
         $this->actingAs($citizen)
             ->get(route('citizen.identity-verification.file', $verification))
             ->assertRedirect('https://storage.example/identity.pdf');
+
+        $this->actingAs($citizen)
+            ->get(route('citizen.identity-verification.file', [
+                'verification' => $verification,
+                'type' => 'document_back',
+            ]))
+            ->assertRedirect('https://storage.example/identity.pdf');
+    }
+
+    private function saveIdentityDetails(User $citizen): void
+    {
+        $this->actingAs($citizen)
+            ->post(route('citizen.identity-verification.details'), [
+                'phone' => '09171234567',
+                'date_of_birth' => '1990-01-01',
+                'gender' => 'Female',
+                'civil_status' => 'Single',
+                'nationality' => 'Filipino',
+                'place_of_birth' => 'San Luis',
+                'barangay' => 'San Luis',
+                'city_municipality' => 'San Luis',
+                'province' => 'Province',
+                'zip_code' => '1234',
+            ])
+            ->assertRedirect(route('citizen.identity-verification', ['step' => 2]));
     }
 }

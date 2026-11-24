@@ -66,13 +66,26 @@ Route::middleware(['auth', 'nocache', 'role:citizen'])
         Route::controller(IdentityVerificationController::class)->group(function () {
             // Show the identity verification page.
             Route::get('/identity-verification', 'show')->name('identity-verification');
-            // Save the personal details step.
+            // Keep the personal details step in the session.
             Route::post('/identity-verification/details', 'storeDetails')->name('identity-verification.details');
 
-            // Upload the ID document, limited to 10 per minute.
+            // Keep ID and selfie uploads in private staging until final submission.
+            Route::post('/identity-verification/id', 'storeId')
+                ->middleware('throttle:10,1')
+                ->name('identity-verification.id');
+
+            Route::post('/identity-verification/selfie', 'storeSelfie')
+                ->middleware('throttle:10,1')
+                ->name('identity-verification.selfie');
+
+            // Persist the session draft after consent.
             Route::post('/identity-verification/document', 'storeDocument')
                 ->middleware('throttle:10,1')
                 ->name('identity-verification.document');
+
+            // Serve a staged file through a short-lived URL for this session.
+            Route::get('/identity-verification/staged/{type}', 'stagedFile')
+                ->name('identity-verification.staged-file');
 
             // Serve an uploaded verification file (must belong to the logged-in citizen).
             Route::get('/identity-verification/document/{verification}', 'document')

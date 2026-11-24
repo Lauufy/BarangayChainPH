@@ -36,6 +36,7 @@ class DataErasureService
 
             foreach ($user->identityVerifications as $verification) {
                 $paths[] = $verification->document_path;
+                $paths[] = $verification->document_back_key;
                 $paths[] = $verification->selfie_path;
             }
 

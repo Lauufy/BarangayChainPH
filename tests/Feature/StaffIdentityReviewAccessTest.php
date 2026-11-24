@@ -49,13 +49,39 @@ class StaffIdentityReviewAccessTest extends TestCase
         $admin = User::factory()->create([
             'role' => 'admin',
         ]);
-        $verification = IdentityVerification::factory()->create();
+        $verification = IdentityVerification::factory()->create([
+            'document_back_key' => 'identity/test-back.jpg',
+        ]);
 
         $this->actingAs($admin)
             ->get(route('admin.identity-verification.show', $verification))
             ->assertOk()
             ->assertSee('Automated Document', false)
-            ->assertSeeText('Not processed yet');
+            ->assertSeeText('Not processed yet')
+            ->assertSee('Back of ID')
+            ->assertSee(route('admin.identity-verification.document-back', $verification));
+    }
+
+    public function test_staff_cannot_view_or_open_files_for_an_unsubmitted_draft(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $draft = IdentityVerification::factory()->create([
+            'status' => IdentityVerification::DRAFT,
+            'selfie_path' => 'identity-selfies/draft/selfie.jpg',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.identity-verification.show', $draft))
+            ->assertNotFound();
+
+        $this->get(route('admin.identity-verification.document', $draft))
+            ->assertNotFound();
+
+        $this->get(route('admin.identity-verification.selfie', $draft))
+            ->assertNotFound();
+
+        $this->get(route('admin.identity-verification.document-back', $draft))
+            ->assertNotFound();
     }
 
     public function test_identity_search_query_is_ignored_and_client_search_keeps_the_pager(): void
@@ -76,6 +102,12 @@ class StaffIdentityReviewAccessTest extends TestCase
 
         $otherUser = User::factory()->create(['role' => 'citizen', 'name' => 'Unrelated Citizen']);
         IdentityVerification::factory()->create(['user_id' => $otherUser->id]);
+        $draftUser = User::factory()->create(['role' => 'citizen', 'name' => 'Unsubmitted Draft Citizen']);
+        IdentityVerification::factory()->create([
+            'user_id' => $draftUser->id,
+            'status' => IdentityVerification::DRAFT,
+            'submitted_at' => null,
+        ]);
 
         $response = $this->actingAs($admin)->get(route('admin.identity-verification.index', [
             'search' => 'Needle',
@@ -85,6 +117,7 @@ class StaffIdentityReviewAccessTest extends TestCase
         $response->assertOk()
             ->assertSee('Needle Citizen A')
             ->assertSee('Unrelated Citizen')
+            ->assertDontSee('Unsubmitted Draft Citizen')
             ->assertViewHas('verifications', fn ($verifications): bool => $verifications->total() === 12)
             ->assertSee('data-table-key="identity-verifications"', false)
             ->assertSee('placeholder="Search citizen, email, or status"', false)

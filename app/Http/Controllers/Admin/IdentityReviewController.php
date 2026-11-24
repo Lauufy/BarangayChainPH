@@ -21,6 +21,7 @@ class IdentityReviewController extends Controller
         $perPage = $request->integer('per_page', 10);
         $perPage = in_array($perPage, [10, 15, 25, 50], true) ? $perPage : 10;
         $stats = IdentityVerification::query()
+            ->where('status', '!=', IdentityVerification::DRAFT)
             ->selectRaw('status, count(*) as total, max(submitted_at) as last_submitted, max(reviewed_at) as last_reviewed')
             ->groupBy('status')
             ->get()
@@ -43,9 +44,12 @@ class IdentityReviewController extends Controller
     // Show one application
     public function show(Request $request, IdentityVerification $verification)
     {
+        abort_if($verification->status === IdentityVerification::DRAFT, 404);
+
         $verification->load('user.citizenProfile', 'reviewer');
         $user = $verification->user;
         $documentUrl = route('admin.identity-verification.document', $verification);
+        $documentBackUrl = route('admin.identity-verification.document-back', $verification);
         $selfieUrl = route('admin.identity-verification.selfie', $verification);
         $fields = [
             'Name' => $user->name,
@@ -71,11 +75,15 @@ class IdentityReviewController extends Controller
             'profile' => $user->citizenProfile,
             'user' => $user,
             'documentUrl' => $documentUrl,
+            'documentBackUrl' => $documentBackUrl,
             'selfieUrl' => $selfieUrl,
             'fields' => $fields,
             'wideFields' => $wideFields,
             'selfieCaption' => $selfieCaption,
             'isImage' => ! str_ends_with($verification->document_path, '.pdf'),
+            'hasBackDocument' => filled($verification->document_back_key),
+            'isBackImage' => filled($verification->document_back_key)
+                && ! str_ends_with($verification->document_back_key, '.pdf'),
             'rejectedBefore' => IdentityVerification::where('user_id', $verification->user_id)
                 ->where('status', IdentityVerification::REJECTED)->count(),
         ]);
@@ -84,14 +92,28 @@ class IdentityReviewController extends Controller
     // Open the uploaded ID
     public function document(IdentityVerification $verification): RedirectResponse
     {
+        abort_if($verification->status === IdentityVerification::DRAFT, 404);
+
         return redirect()->away(
             $this->supabaseStorage->temporaryUrl($verification->document_path, now()->addMinutes(10))
+        );
+    }
+
+    // Open the back of the uploaded ID.
+    public function documentBack(IdentityVerification $verification): RedirectResponse
+    {
+        abort_if($verification->status === IdentityVerification::DRAFT, 404);
+        abort_unless($verification->document_back_key, 404);
+
+        return redirect()->away(
+            $this->supabaseStorage->temporaryUrl($verification->document_back_key, now()->addMinutes(10))
         );
     }
 
     // Open the selfie
     public function selfie(IdentityVerification $verification): RedirectResponse
     {
+        abort_if($verification->status === IdentityVerification::DRAFT, 404);
         abort_unless($verification->selfie_path, 404);
 
         return redirect()->away(

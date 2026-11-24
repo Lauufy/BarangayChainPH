@@ -24,6 +24,7 @@ class IdentityVerificationsExport implements AdminExport
     public function query(Request $request): Builder
     {
         return IdentityVerification::query()
+            ->where('status', '!=', IdentityVerification::DRAFT)
             ->with('user')
             ->latest('submitted_at');
     }

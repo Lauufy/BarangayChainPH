@@ -206,6 +206,8 @@ Route::middleware(['auth', 'nocache', 'role:admin,staff', 'permission:identity.r
         Route::get('/{verification}', 'show')->name('show');
         // Serve the submitted ID document.
         Route::get('/{verification}/document', 'document')->name('document');
+        // Serve the back of the submitted ID.
+        Route::get('/{verification}/document-back', 'documentBack')->name('document-back');
         // Serve the submitted selfie.
         Route::get('/{verification}/selfie', 'selfie')->name('selfie');
         // Approve the submission.

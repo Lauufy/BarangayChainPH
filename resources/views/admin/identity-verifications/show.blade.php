@@ -76,6 +76,12 @@
                         'verification' => $verification,
                     ])
                 </section>
+
+                <section
+                    class="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
+                    <h2 class="font-semibold">Manual ID review required</h2>
+                    <p class="mt-1">Browser checks cannot confirm the document type or side, read its text, verify the expiry date, or confirm authenticity. Review those details against the submitted ID.</p>
+                </section>
             </div>
 
             {{-- RIGHT: Submitted Evidence + decision buttons --}}
@@ -126,6 +132,40 @@
                                         class="mt-2 inline-block text-xs font-semibold text-sky-300 underline">Open
                                         uploaded
                                         file</a>
+                                </div>
+                            @endif
+                        </div>
+                    </figure>
+
+                    {{-- Back of ID --}}
+                    <figure
+                        class="group relative min-h-44 flex-1 overflow-hidden rounded-md bg-slate-900 dark:bg-slate-950 dark:ring-1 dark:ring-slate-800">
+                        <figcaption
+                            class="absolute left-3 top-3 z-10 rounded-md border border-white/30 bg-black/50 px-3 py-1 text-xs font-medium text-white backdrop-blur-md">
+                            Back of ID
+                        </figcaption>
+
+                        <div class="bg-(--gray-50) dark:bg-(--blue-870) absolute inset-0 flex items-center justify-center">
+                            @if ($hasBackDocument && $isBackImage)
+                                <button type="button" data-lightbox data-src="{{ $documentBackUrl }}"
+                                    data-title="Back of ID · {{ $verification->document_type }}"
+                                    class="block size-full cursor-zoom-in">
+                                    <img src="{{ $documentBackUrl }}" alt="Back of uploaded identification document"
+                                        class="size-full object-contain p-2 transition duration-300 group-hover:scale-[1.02]">
+                                </button>
+                                <a href="{{ $documentBackUrl }}" target="_blank" title="Open in new tab"
+                                    class="absolute right-3 top-3 z-10 rounded-md border border-white/30 bg-black/50 p-1.5 text-white backdrop-blur-md transition hover:bg-black/80"
+                                    aria-label="Open in new tab">Open</a>
+                            @elseif ($hasBackDocument)
+                                <div class="p-6 text-center">
+                                    <p class="text-sm font-semibold text-slate-300">Preview unavailable</p>
+                                    <a href="{{ $documentBackUrl }}" target="_blank"
+                                        class="mt-2 inline-block text-xs font-semibold text-sky-300 underline">Open
+                                        uploaded file</a>
+                                </div>
+                            @else
+                                <div class="p-6 text-center">
+                                    <p class="text-sm font-semibold text-slate-300">No back photo submitted</p>
                                 </div>
                             @endif
                         </div>

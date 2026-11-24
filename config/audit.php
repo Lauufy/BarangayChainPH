@@ -29,6 +29,7 @@ return [
         // Files and uploads
         '*url*',
         '*path*',
+        'document_back_key',
         '*file*',
         '*upload*',
         '*original_name*',

@@ -74,9 +74,14 @@ class EnforceRetention extends Command
         if ($live) {
             foreach ($verifications as $verification) {
                 $storage->delete($verification->document_path);
+                $storage->delete($verification->document_back_key);
                 $storage->delete($verification->selfie_path);
 
-                $verification->forceFill(['document_path' => '', 'selfie_path' => null])->save();
+                $verification->forceFill([
+                    'document_path' => '',
+                    'document_back_key' => null,
+                    'selfie_path' => null,
+                ])->save();
             }
         }
 

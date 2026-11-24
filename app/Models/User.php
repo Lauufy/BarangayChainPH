@@ -107,7 +107,9 @@ class User extends Authenticatable implements MustVerifyEmail
     // Returns: unverified, pending, verified, or rejected
     public function identityStatus(): string
     {
-        return $this->latestIdentityVerification?->status ?? 'unverified';
+        $status = $this->latestIdentityVerification?->status;
+
+        return $status === IdentityVerification::DRAFT ? 'unverified' : ($status ?? 'unverified');
     }
 
     // True only after staff or admin approved the application

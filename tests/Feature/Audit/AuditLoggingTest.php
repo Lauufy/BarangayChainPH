@@ -52,7 +52,7 @@ class AuditLoggingTest extends TestCase
             'status' => IdentityVerification::PENDING,
             'document_type' => 'National ID',
             'document_path' => 'private/id-card.pdf',
-            'document_original_name' => 'national-id.pdf',
+            'document_back_key' => 'identity-documents/private/550e8400-e29b-41d4-a716-446655440000.jpg',
             'id_number_hash' => 'sensitive-id-number-hash',
         ]);
 
@@ -80,7 +80,7 @@ class AuditLoggingTest extends TestCase
         $this->assertSame('[redacted]', $userLog->new_values['password']);
         $this->assertSame('[redacted]', $verificationLog->new_values['id_number_hash']);
         $this->assertSame('[redacted]', $verificationLog->new_values['document_path']);
-        $this->assertSame('[redacted]', $verificationLog->new_values['document_original_name']);
+        $this->assertSame('[redacted]', $verificationLog->new_values['document_back_key']);
         $this->assertSame('[redacted]', $log->new_values['signed_url']);
         $this->assertSame('[redacted]', $log->new_values['blob']);
         $this->assertSame('[redacted]', $log->new_values['id_number']);
@@ -121,7 +121,7 @@ class AuditLoggingTest extends TestCase
         Auth::logout();
 
         app(AuditLogger::class)->withinBackgroundExecution(
-            fn() => $serviceRequest->update(['status' => ServiceRequest::PROCESSING])
+            fn () => $serviceRequest->update(['status' => ServiceRequest::PROCESSING])
         );
 
         $log = AuditLog::query()
@@ -291,7 +291,7 @@ class AuditLoggingTest extends TestCase
     {
         return ServiceRequest::create([
             'user_id' => User::factory()->create(['role' => 'citizen'])->id,
-            'reference_number' => 'BRGY-20261106-' . fake()->unique()->numerify('####'),
+            'reference_number' => 'BRGY-20261106-'.fake()->unique()->numerify('####'),
             'service_type' => ServiceRequest::BARANGAY_CLEARANCE,
             'applicant_name' => 'Jamie Citizen',
             'address' => 'Barangay San Luis',

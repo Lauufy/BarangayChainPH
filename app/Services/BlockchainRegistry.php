@@ -3,15 +3,33 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
+use InvalidArgumentException;
 use RuntimeException;
 use Symfony\Component\Process\Process;
 
 class BlockchainRegistry
 {
-    // Write a permit's fingerprint to the blockchain (slow: waits for a block)
     public function issue(string $uuid, string $hash): array
     {
+        $this->assertValidDocumentId($uuid);
+
         return $this->run(['issue', $uuid, $hash]);
+    }
+
+    // Same cleanup as toDocumentId() in registry-cli.js (trim + lowercase)
+    private function assertValidDocumentId(string $uuid): void
+    {
+        $id = strtolower(trim($uuid));
+
+        // Empty, or only zeros and dashes (the nil UUID)
+        if (trim($id, '0-') === '') {
+            throw new InvalidArgumentException('The document ID cannot be empty or all zeros.');
+        }
+
+        if (! Str::isUuid($id)) {
+            throw new InvalidArgumentException('The document ID must be a valid UUID.');
+        }
     }
 
     // Cancel a permit on the blockchain (slow)
