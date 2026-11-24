@@ -26,6 +26,7 @@ const ABI = [
     "error SameOwner()",
     "error ContractPaused()",
     "error EmptyHash()",
+    "error ZeroDocumentId()",
     "error AlreadyIssued()",
     "error DocumentNotFound()",
     "error AlreadyRevoked()",

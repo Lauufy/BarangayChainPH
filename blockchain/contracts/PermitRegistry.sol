@@ -27,13 +27,31 @@ contract PermitRegistry {
     mapping(address => bool) public isIssuer;
     mapping(bytes32 => Record) private records;
 
-    event OwnershipTransferStarted(address indexed owner, address indexed pendingOwner);
-    event OwnershipTransferCancelled(address indexed owner, address indexed pendingOwner);
-    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    event OwnershipTransferStarted(
+        address indexed owner,
+        address indexed pendingOwner
+    );
+    event OwnershipTransferCancelled(
+        address indexed owner,
+        address indexed pendingOwner
+    );
+    event OwnershipTransferred(
+        address indexed previousOwner,
+        address indexed newOwner
+    );
     event IssuerChanged(address indexed account, bool allowed);
     event PauseChanged(bool paused, address indexed by);
-    event DocumentIssued(bytes32 indexed documentId, bytes32 fileHash, address indexed issuer, uint64 issuedAt);
-    event DocumentRevoked(bytes32 indexed documentId, address indexed revokedBy, uint64 revokedAt);
+    event DocumentIssued(
+        bytes32 indexed documentId,
+        bytes32 fileHash,
+        address indexed issuer,
+        uint64 issuedAt
+    );
+    event DocumentRevoked(
+        bytes32 indexed documentId,
+        address indexed revokedBy,
+        uint64 revokedAt
+    );
 
     error NotOwner();
     error NotIssuer();
@@ -43,6 +61,7 @@ contract PermitRegistry {
     error SameOwner();
     error ContractPaused();
     error EmptyHash();
+    error ZeroDocumentId();
     error AlreadyIssued();
     error DocumentNotFound();
     error AlreadyRevoked();
@@ -117,7 +136,11 @@ contract PermitRegistry {
     }
 
     /// @notice Record a newly issued document. A document id can only be issued once.
-    function issue(bytes32 documentId, bytes32 fileHash) external onlyIssuer whenNotPaused {
+    function issue(
+        bytes32 documentId,
+        bytes32 fileHash
+    ) external onlyIssuer whenNotPaused {
+        if (documentId == bytes32(0)) revert ZeroDocumentId();
         if (fileHash == bytes32(0)) revert EmptyHash();
 
         Record storage r = records[documentId];
@@ -138,7 +161,8 @@ contract PermitRegistry {
         Record storage r = records[documentId];
         if (!r.exists) revert DocumentNotFound();
         if (r.revokedAt != 0) revert AlreadyRevoked();
-        if (msg.sender != owner && msg.sender != r.issuer) revert NotDocumentIssuer();
+        if (msg.sender != owner && msg.sender != r.issuer)
+            revert NotDocumentIssuer();
 
         r.revokedAt = uint64(block.timestamp);
 
@@ -147,7 +171,10 @@ contract PermitRegistry {
 
     /// @notice Compare a file hash with what was anchored on chain.
     /// @dev Revoked wins over Mismatch, so a revoked document always reports as revoked.
-    function verify(bytes32 documentId, bytes32 fileHash) external view returns (Status) {
+    function verify(
+        bytes32 documentId,
+        bytes32 fileHash
+    ) external view returns (Status) {
         Record storage r = records[documentId];
 
         if (!r.exists) return Status.NotFound;
@@ -158,10 +185,18 @@ contract PermitRegistry {
     }
 
     /// @notice Read the stored record for a document.
-    function getRecord(bytes32 documentId)
+    function getRecord(
+        bytes32 documentId
+    )
         external
         view
-        returns (bool exists, bytes32 fileHash, address issuer, uint64 issuedAt, uint64 revokedAt)
+        returns (
+            bool exists,
+            bytes32 fileHash,
+            address issuer,
+            uint64 issuedAt,
+            uint64 revokedAt
+        )
     {
         Record storage r = records[documentId];
         return (r.exists, r.fileHash, r.issuer, r.issuedAt, r.revokedAt);
