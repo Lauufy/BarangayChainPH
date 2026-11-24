@@ -10,6 +10,19 @@ class HomeTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_home_links_to_the_public_permit_upload_form(): void
+    {
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('href="'.route('permits.verify.form').'"', false);
+
+        $this->get(route('permits.verify.form'))
+            ->assertOk()
+            ->assertViewIs('permits.upload')
+            ->assertSee('Permit number or QR reference')
+            ->assertDontSee('Verification result');
+    }
+
     public function test_home_displays_the_citizens_dashboard_link_when_signed_in(): void
     {
         $user = User::factory()->create(['role' => 'citizen']);

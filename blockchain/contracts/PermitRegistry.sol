@@ -26,6 +26,8 @@ contract PermitRegistry {
     bool public paused; // when true, new documents cannot be issued
     mapping(address => bool) public isIssuer;
     mapping(bytes32 => Record) private records;
+    mapping(bytes32 => uint32) public documentVersion;
+    mapping(bytes32 => bytes32) public documentFieldsHash;
 
     event OwnershipTransferStarted(
         address indexed owner,
@@ -65,6 +67,7 @@ contract PermitRegistry {
     error AlreadyIssued();
     error DocumentNotFound();
     error AlreadyRevoked();
+    error ZeroVersion();
 
     modifier onlyOwner() {
         if (msg.sender != owner) revert NotOwner();
@@ -140,6 +143,24 @@ contract PermitRegistry {
         bytes32 documentId,
         bytes32 fileHash
     ) external onlyIssuer whenNotPaused {
+        _issue(documentId, fileHash);
+    }
+
+    function issueVersioned(
+        bytes32 documentId,
+        bytes32 fileHash,
+        uint32 version,
+        bytes32 fieldsHash
+    ) external onlyIssuer whenNotPaused {
+        if (version == 0) revert ZeroVersion();
+        if (fieldsHash == bytes32(0)) revert EmptyHash();
+
+        _issue(documentId, fileHash);
+        documentVersion[documentId] = version;
+        documentFieldsHash[documentId] = fieldsHash;
+    }
+
+    function _issue(bytes32 documentId, bytes32 fileHash) private {
         if (documentId == bytes32(0)) revert ZeroDocumentId();
         if (fileHash == bytes32(0)) revert EmptyHash();
 
@@ -200,5 +221,14 @@ contract PermitRegistry {
     {
         Record storage r = records[documentId];
         return (r.exists, r.fileHash, r.issuer, r.issuedAt, r.revokedAt);
+    }
+
+    function getVersionedRecord(bytes32 documentId)
+        external
+        view
+        returns (bool exists, bytes32 fileHash, uint64 revokedAt, uint32 version, bytes32 fieldsHash)
+    {
+        Record storage r = records[documentId];
+        return (r.exists, r.fileHash, r.revokedAt, documentVersion[documentId], documentFieldsHash[documentId]);
     }
 }

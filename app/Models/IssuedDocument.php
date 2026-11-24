@@ -22,6 +22,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'expires_at',
     'qr_code_generated_at',
     'revoked_at',
+    'canonical_fields',
+    'replaced_by',
 ])]
 /** Stores an issued certificate and its verification metadata. */
 class IssuedDocument extends Model
@@ -36,6 +38,7 @@ class IssuedDocument extends Model
             'expires_at' => 'datetime',
             'qr_code_generated_at' => 'datetime',
             'revoked_at' => 'datetime',
+            'canonical_fields' => 'array',
         ];
     }
 
@@ -47,6 +50,11 @@ class IssuedDocument extends Model
     public function blockchainRecord(): HasOne
     {
         return $this->hasOne(BlockchainRecord::class);
+    }
+
+    public function replacement(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'replaced_by');
     }
 
     public function isValid(): bool

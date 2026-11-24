@@ -37,6 +37,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     tesseract-ocr \
     tesseract-ocr-eng \
+    poppler-utils \
     libpq-dev \
     libzip-dev \
     libpng-dev \
@@ -55,6 +56,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && tesseract --version \
     && tesseract --list-langs \
     && test -x /usr/bin/tesseract \
+    && test -x /usr/bin/pdftotext \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -65,6 +67,8 @@ RUN printf '%s\n' \
     'expose_php = Off' \
     'display_errors = Off' \
     'log_errors = On' \
+    'upload_max_filesize = 10M' \
+    'post_max_size = 12M' \
     'session.cookie_httponly = On' \
     'session.cookie_secure = On' \
     'session.cookie_samesite = Lax' \

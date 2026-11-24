@@ -9,6 +9,7 @@ use App\Models\IssuedDocument;
 use App\Models\ServiceRequest;
 use App\Models\User;
 use App\Services\BlockchainRegistry;
+use App\Services\PermitFields;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -17,6 +18,30 @@ use Tests\TestCase;
 class PermitBlockchainJobsTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_unanchored_versioned_permit_can_retry_on_the_upgraded_registry(): void
+    {
+        config(['blockchain.networks.sepolia.contract' => '0xupgraded']);
+        $document = $this->makeDocument();
+        $document->update(['canonical_fields' => ['number' => $document->document_number]]);
+        BlockchainRecord::factory()->for($document)->create(['network' => 'sepolia', 'contract' => '0xlegacy']);
+
+        $registry = $this->mock(BlockchainRegistry::class);
+        $registry->shouldReceive('lookup')->once()->with($document->document_uuid, '0xlegacy', 'sepolia', true)
+            ->andReturn(['ok' => false, 'code' => 'legacy_registry', 'exists' => false]);
+        $registry->shouldReceive('lookup')->once()->with($document->document_uuid, '0xupgraded', 'sepolia', true)
+            ->andReturn(['ok' => true, 'exists' => false]);
+        $registry->shouldReceive('issueVersioned')->once()
+            ->with($document->document_uuid, $document->file_hash, $document->version, PermitFields::commitment($document->canonical_fields), '0xupgraded', 'sepolia')
+            ->andReturn(['ok' => true, 'txHash' => '0xissue']);
+
+        (new RecordPermitOnBlockchain($document->id))->handle($registry);
+
+        $record = $document->fresh()->blockchainRecord;
+        $this->assertSame('0xupgraded', $record->contract);
+        $this->assertSame('0xissue', $record->tx_hash);
+        $this->assertNotNull($record->recorded_at);
+    }
 
     public function test_record_job_saves_the_blockchain_transaction_after_success(): void
     {

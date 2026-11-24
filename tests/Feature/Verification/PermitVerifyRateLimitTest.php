@@ -20,4 +20,15 @@ class PermitVerifyRateLimitTest extends TestCase
 
         $this->get($url)->assertStatus(429);
     }
+
+    public function test_uploads_are_limited_to_ten_attempts_a_minute(): void
+    {
+        $url = route('permits.verify.upload');
+
+        for ($i = 0; $i < 10; $i++) {
+            $this->post($url, ['ref' => (string) Str::uuid()])->assertUnprocessable();
+        }
+
+        $this->post($url)->assertStatus(429);
+    }
 }

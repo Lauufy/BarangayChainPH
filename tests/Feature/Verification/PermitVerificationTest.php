@@ -2,668 +2,225 @@
 
 namespace Tests\Feature\Verification;
 
-use App\Jobs\RevokePermitOnBlockchain;
 use App\Models\BlockchainRecord;
 use App\Models\IssuedDocument;
 use App\Models\ServiceRequest;
-use App\Models\User;
 use App\Models\VerificationLog;
 use App\Services\BlockchainRegistry;
-use App\Support\PermitStatusCache;
-use Illuminate\Filesystem\FilesystemAdapter;
+use App\Services\DocumentIssuer;
+use App\Services\PermitFields;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
-/** Covers certificate verification states and holder-data privacy. */
 class PermitVerificationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_valid_document_displays_genuine_page_with_masked_name(): void
+    public function test_qr_links_open_the_form_without_checking_or_showing_a_status(): void
     {
-        Storage::fake('local');
+        $reference = (string) Str::uuid();
+        $this->mock(BlockchainRegistry::class)->shouldNotReceive('lookup');
 
-        $user = User::factory()->create([
-            'role' => 'citizen',
-        ]);
+        $this->get(route('permits.verify', $reference))
+            ->assertRedirect(route('permits.verify.form', ['ref' => $reference]));
 
-        $application = ServiceRequest::create([
-            'user_id' => $user->id,
-            'reference_number' => 'BRGY-20261030-0001',
-            'service_type' => ServiceRequest::BARANGAY_CLEARANCE,
-            'applicant_name' => 'Carlo Mamaril',
-            'address' => 'Private address',
-            'age' => 22,
-            'purpose' => 'Employment',
-            'status' => ServiceRequest::APPROVED,
-            'permit_number' => 'PERMIT-20261030-ABCDEFGH',
-        ]);
-
-        $filePath = 'issued-documents/valid-document.pdf';
-        $fileContents = 'Valid PDF document content';
-
-        Storage::disk('local')->put($filePath, $fileContents);
-
-        $documentUuid = (string) Str::uuid();
-
-        $document = IssuedDocument::create([
-            'service_request_id' => $application->id,
-            'document_uuid' => $documentUuid,
-            'document_number' => 'PERMIT-20261030-ABCDEFGH',
-            'version' => 1,
-            'disk' => 'local',
-            'file_path' => $filePath,
-            'file_hash' => hash('sha256', $fileContents),
-            'issued_at' => '2026-10-30 12:00:00',
-        ]);
-
-        $this->recordedOnChain($document, ['ok' => true, 'status' => 'valid']);
-
-        $this->get(route('permits.verify', [
-            'documentUuid' => $documentUuid,
-        ]))
+        $this->get(route('permits.verify.form', ['ref' => $reference]))
             ->assertOk()
-            ->assertViewIs('permits.verify')
-            ->assertSee('This certificate is valid.')
-            ->assertSee('Barangay Clearance')
-            ->assertSee('C*** M***')
-            ->assertSee('BRGY-20261030-0001')
-            ->assertSee('October 30, 2026')
-            ->assertSee('Barangay San Luis')
-            ->assertSee('<meta name="robots" content="noindex, nofollow">', false)
-            ->assertDontSee('Carlo Mamaril')
-            ->assertDontSee('Private address')
-            ->assertDontSee('Employment')
-            ->assertDontSee('PERMIT-20261030-ABCDEFGH')
-            ->assertDontSee($filePath);
-    }
-
-    public function test_verification_attempts_are_logged_for_each_public_check(): void
-    {
-        Storage::fake('local');
-
-        $user = User::factory()->create(['role' => 'citizen']);
-        $application = ServiceRequest::create([
-            'user_id' => $user->id,
-            'reference_number' => 'BRGY-20261030-0002',
-            'service_type' => ServiceRequest::BARANGAY_CLEARANCE,
-            'applicant_name' => 'Carlo Mamaril',
-            'address' => 'Private address',
-            'age' => 22,
-            'purpose' => 'Employment',
-            'status' => ServiceRequest::APPROVED,
-            'permit_number' => 'PERMIT-20261030-VERIFYLOG',
-        ]);
-
-        $filePath = 'issued-documents/verify-log-document.pdf';
-        $fileContents = 'Verification log PDF content';
-        Storage::disk('local')->put($filePath, $fileContents);
-
-        $document = IssuedDocument::create([
-            'service_request_id' => $application->id,
-            'document_uuid' => (string) Str::uuid(),
-            'document_number' => 'PERMIT-20261030-VERIFYLOG',
-            'version' => 1,
-            'disk' => 'local',
-            'file_path' => $filePath,
-            'file_hash' => hash('sha256', $fileContents),
-            'issued_at' => now(),
-        ]);
-
-        $this->recordedOnChain($document, ['ok' => true, 'status' => 'valid']);
-
-        $this->get(route('permits.verify', ['documentUuid' => $document->document_uuid]))
-            ->assertOk();
-
-        $this->assertDatabaseHas('verification_logs', [
-            'service_request_id' => $application->id,
-            'result' => 'valid',
-        ]);
-    }
-
-    public function test_revoked_document_hides_holder_details(): void
-    {
-        Storage::fake('local');
-
-        $user = User::factory()->create([
-            'role' => 'citizen',
-        ]);
-
-        $application = ServiceRequest::create([
-            'user_id' => $user->id,
-            'reference_number' => 'BRGY-20261030-0002',
-            'service_type' => ServiceRequest::BARANGAY_CLEARANCE,
-            'applicant_name' => 'Carlo Mamaril',
-            'address' => 'Private address',
-            'age' => 22,
-            'purpose' => 'Employment',
-            'status' => ServiceRequest::APPROVED,
-            'permit_number' => 'PERMIT-20261030-REVOKED1',
-        ]);
-
-        $filePath = 'issued-documents/revoked-document.pdf';
-        $fileContents = 'Revoked PDF document content';
-
-        Storage::disk('local')->put($filePath, $fileContents);
-
-        $documentUuid = (string) Str::uuid();
-        $revokedAt = now();
-
-        $document = IssuedDocument::create([
-            'service_request_id' => $application->id,
-            'document_uuid' => $documentUuid,
-            'document_number' => 'PERMIT-20261030-REVOKED1',
-            'version' => 1,
-            'disk' => 'local',
-            'file_path' => $filePath,
-            'file_hash' => hash('sha256', $fileContents),
-            'issued_at' => $revokedAt,
-            'revoked_at' => $revokedAt,
-        ]);
-
-        $this->recordedOnChain($document, ['ok' => true, 'status' => 'valid']);
-
-        $this->get(route('permits.verify', [
-            'documentUuid' => $documentUuid,
-        ]))
-            ->assertOk()
-            ->assertSee('This certificate has been revoked.')
-            ->assertSee('Revoked on')
-            ->assertSee($revokedAt->format('F j, Y'))
-            ->assertSee('Barangay Clearance')
-            ->assertDontSee('Carlo M.')
-            ->assertDontSee('Carlo Mamaril')
-            ->assertDontSee('PERMIT-20261030-REVOKED1')
-            ->assertDontSee('BRGY-20261030-0002');
-    }
-
-    public function test_unknown_document_uuid_displays_no_record_found(): void
-    {
-        $this->get(route('permits.verify', [
-            'documentUuid' => (string) Str::uuid(),
-        ]))
-            ->assertOk()
-            ->assertViewIs('permits.verify')
-            ->assertSee('Not found')
-            ->assertDontSee('Carlo Mamaril');
-
-        $this->assertDatabaseHas('verification_logs', [
-            'service_request_id' => null,
-            'result' => 'not_found',
-        ]);
-    }
-
-    public function test_verification_still_succeeds_when_logging_fails(): void
-    {
-        $document = $this->makeIssuedDocument();
-        $this->recordedOnChain($document, ['ok' => true, 'status' => 'valid']);
-        $this->app['events']->listen('eloquent.creating: '.VerificationLog::class, function (): void {
-            throw new \RuntimeException('Verification log storage failed.');
-        });
-
-        $this->get(route('permits.verify', $document->document_uuid))
-            ->assertOk()
-            ->assertSee('This certificate is valid.');
+            ->assertViewIs('permits.upload')
+            ->assertSee('Verify uploaded file')
+            ->assertDontSee('Fake / Invalid');
 
         $this->assertDatabaseCount('verification_logs', 0);
     }
 
-    public function test_public_verification_route_remains_throttled(): void
+    public function test_exact_issued_pdf_checks_the_chain_and_shows_verified_details(): void
     {
-        $documentUuid = (string) Str::uuid();
-        $url = route('permits.verify', ['documentUuid' => $documentUuid]);
+        [$document, $pdf] = $this->issue();
+        $this->mockChain($document);
 
-        for ($attempt = 0; $attempt < 60; $attempt++) {
-            $this->get($url)->assertOk();
-        }
-
-        $this->get($url)->assertTooManyRequests();
-        $this->assertDatabaseCount('verification_logs', 60);
-    }
-
-    public function test_document_with_tampered_file_displays_cannot_be_confirmed(): void
-    {
-        Storage::fake('local');
-
-        $user = User::factory()->create([
-            'role' => 'citizen',
-        ]);
-
-        $application = ServiceRequest::create([
-            'user_id' => $user->id,
-            'reference_number' => 'BRGY-20261030-0003',
-            'service_type' => ServiceRequest::BARANGAY_CLEARANCE,
-            'applicant_name' => 'Carlo Mamaril',
-            'address' => 'Private address',
-            'age' => 22,
-            'purpose' => 'Employment',
-            'status' => ServiceRequest::APPROVED,
-            'permit_number' => 'PERMIT-20261030-TAMPERED',
-        ]);
-
-        $filePath = 'issued-documents/tampered-document.pdf';
-
-        // The stored file no longer matches the hash recorded at issuance.
-        Storage::disk('local')->put($filePath, 'Edited PDF document content');
-
-        $documentUuid = (string) Str::uuid();
-
-        $document = IssuedDocument::create([
-            'service_request_id' => $application->id,
-            'document_uuid' => $documentUuid,
-            'document_number' => 'PERMIT-20261030-TAMPERED',
-            'version' => 1,
-            'disk' => 'local',
-            'file_path' => $filePath,
-            'file_hash' => hash('sha256', 'Original PDF document content'),
-            'issued_at' => now(),
-        ]);
-
-        $this->recordedOnChain($document, ['ok' => true, 'status' => 'valid']);
-
-        $this->get(route('permits.verify', [
-            'documentUuid' => $documentUuid,
-        ]))
+        $this->upload($document->document_uuid, $pdf)
             ->assertOk()
-            ->assertSee('This certificate could not be verified.')
-            ->assertDontSee('Carlo M.')
-            ->assertDontSee('PERMIT-20261030-TAMPERED')
-            ->assertDontSee('BRGY-20261030-0003');
+            ->assertViewIs('permits.result')
+            ->assertViewHas('status', 'valid')
+            ->assertDontSee('multipart/form-data', false)
+            ->assertSee('Try another file')
+            ->assertSee($document->document_number)
+            ->assertSee('C*** M***')
+            ->assertDontSee('Carlo Mamaril');
+
+        $this->assertDatabaseHas('verification_logs', [
+            'service_request_id' => $document->service_request_id,
+            'result' => 'valid',
+        ]);
     }
 
-    public function test_unapproved_application_displays_cannot_be_confirmed(): void
+    public function test_edited_pdf_is_invalid_and_shows_field_differences(): void
     {
-        Storage::fake('local');
+        [$document] = $this->issue();
+        $this->mock(BlockchainRegistry::class)->shouldNotReceive('lookup');
+        $this->mock(PermitFields::class)->shouldReceive('differences')
+            ->once()->withArgs(fn (string $path, string $mime, array $expected): bool => is_file($path)
+                && $mime === 'application/pdf' && $expected['holder'] === 'Carlo Mamaril')
+            ->andReturn(['Permit holder']);
 
-        $user = User::factory()->create([
-            'role' => 'citizen',
-        ]);
-
-        $application = ServiceRequest::create([
-            'user_id' => $user->id,
-            'reference_number' => 'BRGY-20261030-0004',
-            'service_type' => ServiceRequest::CERTIFICATE_OF_RESIDENCY,
-            'applicant_name' => 'Carlo Mamaril',
-            'address' => 'Private address',
-            'age' => 22,
-            'purpose' => 'Employment',
-            'status' => ServiceRequest::PENDING,
-            'permit_number' => 'PERMIT-20261030-PENDING1',
-        ]);
-
-        $filePath = 'issued-documents/pending-document.pdf';
-        $fileContents = 'Pending PDF document content';
-
-        // File and hash are intact, so the only failing condition is the request status.
-        Storage::disk('local')->put($filePath, $fileContents);
-
-        $documentUuid = (string) Str::uuid();
-
-        $document = IssuedDocument::create([
-            'service_request_id' => $application->id,
-            'document_uuid' => $documentUuid,
-            'document_number' => 'PERMIT-20261030-PENDING1',
-            'version' => 1,
-            'disk' => 'local',
-            'file_path' => $filePath,
-            'file_hash' => hash('sha256', $fileContents),
-            'issued_at' => now(),
-        ]);
-
-        $this->recordedOnChain($document, ['ok' => true, 'status' => 'valid']);
-
-        $this->get(route('permits.verify', [
-            'documentUuid' => $documentUuid,
-        ]))
+        $this->upload($document->document_uuid, Pdf::loadHTML('<p>Permit holder: Another person</p>')->output())
             ->assertOk()
-            ->assertSee('This certificate could not be verified.')
-            ->assertDontSee('Carlo M.')
-            ->assertDontSee('PERMIT-20261030-PENDING1')
-            ->assertDontSee('BRGY-20261030-0004');
+            ->assertViewHas('status', 'invalid')
+            ->assertSee('Fields that differ')
+            ->assertSee('Permit holder');
     }
 
-    public function test_missing_stored_file_displays_cannot_be_confirmed(): void
+    public function test_copied_qr_on_a_different_pdf_fails_even_if_extracted_fields_match(): void
     {
-        Storage::fake('local');
+        [$document, $original] = $this->issue();
+        $this->mock(BlockchainRegistry::class)->shouldNotReceive('lookup');
+        $this->mock(PermitFields::class)->shouldReceive('differences')->once()->andReturn([]);
 
-        $user = User::factory()->create([
-            'role' => 'citizen',
-        ]);
-
-        $application = ServiceRequest::create([
-            'user_id' => $user->id,
-            'reference_number' => 'BRGY-20261030-0005',
-            'service_type' => ServiceRequest::BARANGAY_CLEARANCE,
-            'applicant_name' => 'Carlo Mamaril',
-            'address' => 'Private address',
-            'age' => 22,
-            'purpose' => 'Employment',
-            'status' => ServiceRequest::APPROVED,
-            'permit_number' => 'PERMIT-20261030-MISSING1',
-        ]);
-
-        $documentUuid = (string) Str::uuid();
-
-        // The PDF is never stored on the disk, so the record points at nothing.
-        $document = IssuedDocument::create([
-            'service_request_id' => $application->id,
-            'document_uuid' => $documentUuid,
-            'document_number' => 'PERMIT-20261030-MISSING1',
-            'version' => 1,
-            'disk' => 'local',
-            'file_path' => 'issued-documents/missing-document.pdf',
-            'file_hash' => hash('sha256', 'Missing PDF document content'),
-            'issued_at' => now(),
-        ]);
-
-        $this->recordedOnChain($document, ['ok' => true, 'status' => 'valid']);
-
-        $this->get(route('permits.verify', [
-            'documentUuid' => $documentUuid,
-        ]))
+        $this->upload($document->document_uuid, $original."\n% modified")
             ->assertOk()
-            ->assertSee('This certificate could not be verified.')
-            ->assertDontSee('Carlo M.')
-            ->assertDontSee('PERMIT-20261030-MISSING1')
-            ->assertDontSee('BRGY-20261030-0005');
+            ->assertViewHas('status', 'invalid');
     }
 
-    public function test_storage_failure_displays_could_not_be_checked(): void
+    public function test_another_permits_original_pdf_cannot_verify_under_this_qr_reference(): void
     {
-        $disk = \Mockery::mock(FilesystemAdapter::class);
+        [$first] = $this->issue();
+        [, $otherPdf] = $this->issue('Another Holder');
+        $this->mock(BlockchainRegistry::class)->shouldNotReceive('lookup');
+        $this->mock(PermitFields::class)->shouldReceive('differences')->once()->andReturn([]);
 
-        $disk->shouldReceive('exists')
-            ->once()
-            ->andThrow(new \RuntimeException('Storage unavailable'));
+        $this->upload($first->document_uuid, $otherPdf)->assertViewHas('status', 'invalid');
+    }
 
-        Storage::shouldReceive('disk')
-            ->with('supabase')
-            ->andReturn($disk);
+    public function test_reissued_original_is_revoked_and_links_to_its_replacement(): void
+    {
+        [$document, $pdf] = $this->issue();
+        $replacement = app(DocumentIssuer::class)->reissue($document->serviceRequest);
+        $document->refresh();
+        $this->assertSame($replacement->id, $document->replaced_by);
+        $this->assertSame(2, $replacement->version);
+        $this->assertNotSame($document->file_hash, $replacement->file_hash);
+        $this->mockChain($document);
 
-        $user = User::factory()->create([
-            'role' => 'citizen',
-        ]);
-
-        $application = ServiceRequest::create([
-            'user_id' => $user->id,
-            'reference_number' => 'BRGY-20261030-0006',
-            'service_type' => ServiceRequest::BARANGAY_CLEARANCE,
-            'applicant_name' => 'Carlo Mamaril',
-            'address' => 'Private address',
-            'age' => 22,
-            'purpose' => 'Employment',
-            'status' => ServiceRequest::APPROVED,
-            'permit_number' => 'PERMIT-20261030-OFFLINE1',
-        ]);
-
-        $documentUuid = (string) Str::uuid();
-
-        $document = IssuedDocument::create([
-            'service_request_id' => $application->id,
-            'document_uuid' => $documentUuid,
-            'document_number' => 'PERMIT-20261030-OFFLINE1',
-            'version' => 1,
-            'disk' => 'supabase',
-            'file_path' => 'issued-documents/offline-document.pdf',
-            'file_hash' => hash('sha256', 'Offline PDF document content'),
-            'issued_at' => now(),
-        ]);
-
-        $this->recordedOnChain($document, ['ok' => true, 'status' => 'valid']);
-
-        $this->get(route('permits.verify', [
-            'documentUuid' => $documentUuid,
-        ]))
+        $this->upload($document->document_number, $pdf)
             ->assertOk()
-            ->assertSee('Verification could not be completed right now.')
-            ->assertDontSee('Carlo M.')
-            ->assertDontSee('PERMIT-20261030-OFFLINE1');
-    }
-
-    public function test_whitespace_only_applicant_name_is_masked_as_applicant(): void
-    {
-        Storage::fake('local');
-
-        $user = User::factory()->create([
-            'role' => 'citizen',
-        ]);
-
-        $application = ServiceRequest::create([
-            'user_id' => $user->id,
-            'reference_number' => 'BRGY-20261030-0007',
-            'service_type' => ServiceRequest::BARANGAY_CLEARANCE,
-            'applicant_name' => '   ',
-            'address' => 'Private address',
-            'age' => 22,
-            'purpose' => 'Employment',
-            'status' => ServiceRequest::APPROVED,
-            'permit_number' => 'PERMIT-20261030-BLANKNM1',
-        ]);
-
-        $filePath = 'issued-documents/blank-name-document.pdf';
-        $fileContents = 'Blank name PDF document content';
-
-        Storage::disk('local')->put($filePath, $fileContents);
-
-        $documentUuid = (string) Str::uuid();
-
-        $document = IssuedDocument::create([
-            'service_request_id' => $application->id,
-            'document_uuid' => $documentUuid,
-            'document_number' => 'PERMIT-20261030-BLANKNM1',
-            'version' => 1,
-            'disk' => 'local',
-            'file_path' => $filePath,
-            'file_hash' => hash('sha256', $fileContents),
-            'issued_at' => now(),
-        ]);
-
-        $this->recordedOnChain($document, ['ok' => true, 'status' => 'valid']);
-
-        $this->get(route('permits.verify', [
-            'documentUuid' => $documentUuid,
-        ]))
-            ->assertOk()
-            ->assertSee('This certificate is valid.')
-            ->assertSee('Applicant')
-            ->assertViewHas('maskedApplicantName', 'Applicant');
-    }
-
-    // Pretends the permit is recorded on the blockchain, and that the chain answers with $answer
-    private function recordedOnChain(IssuedDocument $document, array $answer): void
-    {
-        BlockchainRecord::create(['issued_document_id' => $document->id, 'recorded_at' => now()]);
-
-        $registry = $this->mock(BlockchainRegistry::class);
-        $registry->shouldReceive('verify')->andReturn($answer);
-    }
-
-    private function makeIssuedDocument(array $attributes = []): IssuedDocument
-    {
-        Storage::fake('local');
-
-        $user = User::factory()->create(['role' => 'citizen']);
-
-        $application = ServiceRequest::create([
-            'user_id' => $user->id,
-            'reference_number' => 'BRGY-'.Str::upper(Str::random(12)),
-            'service_type' => ServiceRequest::BARANGAY_CLEARANCE,
-            'applicant_name' => 'Carlo Mamaril',
-            'address' => 'Private address',
-            'age' => 22,
-            'purpose' => 'Employment',
-            'status' => ServiceRequest::APPROVED,
-            'permit_number' => 'PERMIT-'.Str::upper(Str::random(12)),
-        ]);
-
-        Storage::disk('local')->put('issued-documents/chain-test.pdf', 'Chain test PDF content');
-
-        return IssuedDocument::create(array_merge([
-            'service_request_id' => $application->id,
-            'document_uuid' => (string) Str::uuid(),
-            'document_number' => $application->permit_number,
-            'version' => 1,
-            'disk' => 'local',
-            'file_path' => 'issued-documents/chain-test.pdf',
-            'file_hash' => hash('sha256', 'Chain test PDF content'),
-            'issued_at' => now(),
-        ], $attributes));
-    }
-
-    public function test_permit_not_yet_recorded_on_the_blockchain_is_pending_not_valid(): void
-    {
-        $document = $this->makeIssuedDocument();
-
-        $this->get(route('permits.verify', $document->document_uuid))
-            ->assertOk()
-            ->assertSee('has not been confirmed on the blockchain')
-            ->assertDontSee('This certificate is valid.')
-            ->assertDontSee('Carlo Mamaril')
+            ->assertViewHas('status', 'revoked')
+            ->assertSee('Revoked on '.$document->revoked_at->format('F j, Y'))
+            ->assertSee(route('permits.verify.form', ['ref' => $replacement->document_uuid]))
             ->assertDontSee('C*** M***');
     }
 
-    public function test_recorded_permit_is_valid_when_the_blockchain_agrees(): void
+    public function test_nonexistent_permit_is_invalid_and_is_logged(): void
     {
-        $document = $this->makeIssuedDocument();
-        $this->recordedOnChain($document, ['ok' => true, 'status' => 'valid']);
+        $this->mock(BlockchainRegistry::class)->shouldNotReceive('lookup');
 
-        $this->get(route('permits.verify', $document->document_uuid))
+        $this->upload((string) Str::uuid(), Pdf::loadHTML('<p>Unknown permit</p>')->output())
             ->assertOk()
-            ->assertSee('This certificate is valid.');
+            ->assertViewHas('status', 'invalid');
+
+        $this->assertDatabaseHas('verification_logs', ['service_request_id' => null, 'result' => 'invalid']);
     }
 
-    public function test_recorded_permit_is_invalid_when_the_blockchain_says_mismatch(): void
+    public function test_chain_hash_mismatch_is_invalid_even_for_a_revoked_permit(): void
     {
-        $document = $this->makeIssuedDocument();
-        $this->recordedOnChain($document, ['ok' => true, 'status' => 'mismatch']);
+        [$document, $pdf] = $this->issue();
+        $document->update(['revoked_at' => now()]);
+        $this->mockChain($document, ['fileHash' => '0x'.str_repeat('a', 64)]);
 
-        $this->get(route('permits.verify', $document->document_uuid))
-            ->assertOk()
-            ->assertSee('This certificate could not be verified.')
-            ->assertDontSee('This certificate is valid.');
+        $this->upload($document->document_uuid, $pdf)->assertViewHas('status', 'invalid');
     }
 
-    public function test_recorded_permit_is_unavailable_when_the_blockchain_cannot_be_reached(): void
+    public function test_chain_status_mismatch_is_invalid_while_revocation_is_pending(): void
     {
-        $document = $this->makeIssuedDocument();
-        $this->recordedOnChain($document, ['ok' => false, 'error' => 'RPC down']);
+        [$document, $pdf] = $this->issue();
+        $document->update(['revoked_at' => now()]);
+        $this->mockChain($document, ['revokedAt' => 0]);
 
-        $this->get(route('permits.verify', $document->document_uuid))
-            ->assertOk()
-            ->assertSee('Verification could not be completed right now.')
-            ->assertDontSee('This certificate is valid.');
+        $this->upload($document->document_uuid, $pdf)->assertViewHas('status', 'invalid');
     }
 
-    public function test_revoking_a_document_clears_its_cached_status(): void
+    public function test_chain_version_mismatch_is_invalid(): void
     {
-        Storage::fake('local');
+        [$document, $pdf] = $this->issue();
+        $this->mockChain($document, ['version' => 2]);
 
-        $document = $this->makeIssuedDocument();
-        $key = PermitStatusCache::keyFor($document->document_uuid);
-        BlockchainRecord::create([
-            'issued_document_id' => $document->id,
+        $this->upload($document->document_uuid, $pdf)->assertViewHas('status', 'invalid');
+    }
+
+    public function test_node_unavailability_never_confirms_an_exact_pdf(): void
+    {
+        [$document, $pdf] = $this->issue();
+        $this->mockChain($document, ['ok' => false]);
+
+        $this->upload($document->document_uuid, $pdf)
+            ->assertViewHas('status', 'unavailable')
+            ->assertSee('Cannot verify right now');
+    }
+
+    public function test_expired_permit_is_not_valid(): void
+    {
+        [$document, $pdf] = $this->issue(expired: true);
+        $this->mockChain($document);
+
+        $this->upload($document->document_uuid, $pdf)
+            ->assertViewHas('status', 'expired')
+            ->assertDontSee('C*** M***');
+    }
+
+    public function test_unsupported_file_is_rejected_and_logged(): void
+    {
+        $this->mock(BlockchainRegistry::class)->shouldNotReceive('lookup');
+        $temporaryFile = UploadedFile::fake()->createWithContent('fake.pdf', 'Plain text');
+
+        $this->post(route('permits.verify.upload'), [
+            'ref' => (string) Str::uuid(),
+            'permit' => new UploadedFile($temporaryFile->getPathname(), 'fake.pdf', 'application/pdf', null, true),
+        ])->assertUnprocessable()
+            ->assertViewIs('permits.upload')
+            ->assertSee('Choose a PDF, JPEG, or PNG file.');
+
+        $this->assertSame('invalid', VerificationLog::sole()->result);
+    }
+
+    private function issue(string $holder = 'Carlo Mamaril', bool $expired = false): array
+    {
+        Storage::fake('supabase');
+        $application = ServiceRequest::factory()->create(['applicant_name' => $holder]);
+        $document = app(DocumentIssuer::class)->issue($application, $expired ? now()->subDay() : null);
+
+        return [$document, Storage::disk('supabase')->get($document->file_path)];
+    }
+
+    private function mockChain(IssuedDocument $document, array $overrides = []): void
+    {
+        $anchor = BlockchainRecord::factory()->for($document)->create([
+            'contract' => '0x'.str_repeat('1', 40),
             'recorded_at' => now(),
         ]);
-
-        $registry = $this->mock(BlockchainRegistry::class);
-        $registry->shouldReceive('verify')
-            ->twice()
-            ->with($document->document_uuid, $document->file_hash, null, 'sepolia')
-            ->andReturn(['ok' => true, 'status' => 'valid']);
-        $registry->shouldReceive('revoke')
+        $this->mock(BlockchainRegistry::class)->shouldReceive('lookup')
             ->once()
-            ->with($document->document_uuid, null, 'sepolia')
-            ->andReturn(['ok' => true, 'txHash' => '0xrevoke']);
-
-        $this->get(route('permits.verify', $document->document_uuid))
-            ->assertOk()
-            ->assertSee('This certificate is valid.');
-
-        $this->assertSame('valid', Cache::get($key));
-
-        $document->revoked_at = now();
-        $document->save();
-        Cache::put($key, 'valid', 60);
-
-        (new RevokePermitOnBlockchain($document->id))->handle($registry);
-        Cache::put($key, 'valid', 60);
-
-        $this->get(route('permits.verify', $document->document_uuid))
-            ->assertOk()
-            ->assertSee('This certificate has been revoked.')
-            ->assertDontSee('This certificate is valid.');
-
-        $this->assertNull(Cache::get($key));
+            ->with($document->document_uuid, $anchor->contract, $anchor->anchorNetwork(), true)
+            ->andReturn($overrides + [
+                'ok' => true,
+                'exists' => true,
+                'fileHash' => '0x'.$document->file_hash,
+                'fieldsHash' => '0x'.PermitFields::commitment($document->canonical_fields),
+                'version' => $document->version,
+                'revokedAt' => $document->revoked_at?->timestamp ?? 0,
+            ]);
     }
 
-    public function test_revoked_status_is_not_cached(): void
+    private function upload(string $reference, string $pdf): TestResponse
     {
-        $document = $this->makeIssuedDocument(['revoked_at' => now()]);
-        $key = PermitStatusCache::keyFor($document->document_uuid);
+        $temporaryFile = UploadedFile::fake()->createWithContent('permit.pdf', $pdf);
 
-        $this->get(route('permits.verify', $document->document_uuid))
-            ->assertOk()
-            ->assertSee('This certificate has been revoked.');
-
-        $this->assertNull(Cache::get($key));
-    }
-
-    public function test_document_expiry_is_detected(): void
-    {
-        $document = $this->makeIssuedDocument();
-
-        $document->expires_at = now()->addDay();
-        $this->assertFalse($document->isExpired());
-
-        $document->expires_at = now()->subMinute();
-        $this->assertTrue($document->isExpired());
-
-        $document->expires_at = null;
-        $this->assertFalse($document->isExpired()); // old documents never expire
-    }
-
-    public function test_expired_document_shows_expired_message_and_hides_holder_details(): void
-    {
-        $document = $this->makeIssuedDocument();
-        $document->expires_at = now()->subDay();
-        $document->save();
-
-        $this->get(route('permits.verify', $document->document_uuid))
-            ->assertOk()
-            ->assertSee('This permit has expired.')
-            ->assertSee('request a reissue')
-            ->assertSee('Expired on')
-            ->assertDontSee('Carlo Mamaril')
-            ->assertDontSee('This certificate is valid.');
-    }
-
-    public function test_revoked_takes_priority_over_expired(): void
-    {
-        $document = $this->makeIssuedDocument();
-        $document->expires_at = now()->subDay();
-        $document->revoked_at = now();
-        $document->save();
-
-        $this->get(route('permits.verify', $document->document_uuid))
-            ->assertOk()
-            ->assertSee('This certificate has been revoked.')
-            ->assertDontSee('This permit has expired.');
-    }
-
-    public function test_valid_document_shows_its_valid_until_date(): void
-    {
-        $document = $this->makeIssuedDocument();
-        $document->expires_at = now()->addMonth();
-        $document->save();
-        $this->recordedOnChain($document, ['ok' => true, 'status' => 'valid']);
-
-        $this->get(route('permits.verify', $document->document_uuid))
-            ->assertOk()
-            ->assertSee('This certificate is valid.')
-            ->assertSee('Valid Until')
-            ->assertSee($document->expires_at->format('F j, Y'));
+        return $this->post(route('permits.verify.upload'), [
+            'ref' => $reference,
+            'permit' => new UploadedFile($temporaryFile->getPathname(), 'permit.pdf', 'application/pdf', null, true),
+        ]);
     }
 }

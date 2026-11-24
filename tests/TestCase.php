@@ -16,7 +16,9 @@ abstract class TestCase extends BaseTestCase
 
         $this->mock(BlockchainRegistry::class, function ($mock) {
             $mock->shouldReceive('verify')->andReturn(['ok' => true, 'status' => 'not_found']);
+            $mock->shouldReceive('lookup')->andReturn(['ok' => true, 'exists' => false]);
             $mock->shouldReceive('issue')->andReturn(['ok' => true, 'txHash' => '0xtest', 'contract' => '0xtest']);
+            $mock->shouldReceive('issueVersioned')->andReturn(['ok' => true, 'txHash' => '0xtest', 'contract' => '0xtest']);
             $mock->shouldReceive('revoke')->andReturn(['ok' => true, 'txHash' => '0xtest']);
             $mock->shouldReceive('contractInfo')->andReturn(null);
         });

@@ -50,6 +50,18 @@ class BlockchainRegistry
         return $this->run(['find-issuance-tx', $uuid], $contract, $network);
     }
 
+    public function issueVersioned(string $uuid, string $hash, int $version, string $fieldsHash, ?string $contract = null, ?string $network = null): array
+    {
+        $this->assertValidDocumentId($uuid);
+
+        return $this->run(['issue-versioned', $uuid, $hash, (string) $version, $fieldsHash], $contract, $network);
+    }
+
+    public function lookup(string $uuid, string $contract, ?string $network, bool $versioned): array
+    {
+        return $this->run(['get-versioned', $uuid, $versioned ? 'strict' : 'allow-legacy'], $contract, $network);
+    }
+
     // Emergency switch (owner only). While paused, new permits cannot be recorded.
     // Revoking and verifying keep working. Slow: waits for a block.
     public function setPaused(bool $paused): array
@@ -115,7 +127,7 @@ class BlockchainRegistry
             throw new RuntimeException('Unsupported blockchain network.');
         }
 
-        $writes = in_array($command, ['issue', 'revoke', 'pause', 'unpause'], true);
+        $writes = in_array($command, ['issue', 'issue-versioned', 'revoke', 'pause', 'unpause'], true);
         if ($writes && $profile === 'mainnet' && config('blockchain.mainnet_writes_enabled') !== true) {
             throw new RuntimeException('Ethereum mainnet writes are disabled.');
         }

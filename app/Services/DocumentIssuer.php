@@ -133,9 +133,11 @@ class DocumentIssuer
             $expiresAt
         );
 
-        $previous->update(['revoked_at' => $document->issued_at]);
-
         $application->issuedDocuments()->save($document);
+        $previous->update([
+            'revoked_at' => $document->issued_at,
+            'replaced_by' => $document->id,
+        ]);
 
         return $document;
     }
@@ -163,6 +165,8 @@ class DocumentIssuer
             'qr_code_generated_at' => $issuedAt,
         ]);
 
+        $document->canonical_fields = PermitFields::snapshot($document, $application);
+
         $pdfContent = Pdf::loadView('permits.pdf', [
             'application' => $application,
             'document' => $document,
@@ -188,7 +192,7 @@ class DocumentIssuer
     private function qrCodeDataUri(string $documentUuid): string
     {
         $verificationUrl = rtrim(config('app.url'), '/')
-            .route('permits.verify', ['documentUuid' => $documentUuid], false);
+            .route('permits.verify.form', ['ref' => $documentUuid], false);
 
         return (new Builder(writer: new PngWriter, data: $verificationUrl, size: 120, margin: 4))
             ->build()

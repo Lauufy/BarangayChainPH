@@ -25,6 +25,21 @@ describe("PermitRegistry", () => {
         registry = await ethers.deployContract("PermitRegistry");
     });
 
+    it("anchors the PDF hash, field commitment, and version through revocation", async () => {
+        const fieldsHash = ethers.sha256(ethers.toUtf8Bytes("canonical fields"));
+        await registry.issueVersioned(documentId, fileHash, 2, fieldsHash);
+        expect(await registry.getVersionedRecord(documentId)).to.deep.equal([
+            true, fileHash, 0n, 2n, fieldsHash,
+        ]);
+
+        await registry.revoke(documentId);
+        const revoked = await registry.getVersionedRecord(documentId);
+        expect(revoked.revokedAt).to.be.greaterThan(0n);
+        expect(revoked.fileHash).to.equal(fileHash);
+        expect(revoked.version).to.equal(2n);
+        expect(revoked.fieldsHash).to.equal(fieldsHash);
+    });
+
     describe("setup", () => {
         it("makes the deployer the owner and an issuer", async () => {
             expect(await registry.owner()).to.equal(owner.address);

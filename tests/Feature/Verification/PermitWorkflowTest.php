@@ -54,8 +54,8 @@ class PermitWorkflowTest extends TestCase
             ->withArgs(function (string $view, array $data): bool {
                 $this->assertSame('permits.pdf', $view);
 
-                $verificationUrl = route('permits.verify', [
-                    'documentUuid' => $data['document']->document_uuid,
+                $verificationUrl = route('permits.verify.form', [
+                    'ref' => $data['document']->document_uuid,
                 ]);
                 $this->assertStringStartsWith('https://barangay.example/', $verificationUrl);
 

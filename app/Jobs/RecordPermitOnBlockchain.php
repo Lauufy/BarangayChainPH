@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\BlockchainRecord;
 use App\Models\IssuedDocument;
 use App\Services\BlockchainRegistry;
+use App\Services\PermitFields;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
@@ -32,7 +33,7 @@ class RecordPermitOnBlockchain implements ShouldQueue
         // Row gone, revoked, or already recorded: nothing to do
         if (
             ! $document
-            || $document->revoked_at
+            || ($document->revoked_at && $document->canonical_fields === null)
             || ($document->blockchainRecord?->recorded_at && filled($document->blockchainRecord?->tx_hash))
         ) {
             return;
@@ -46,7 +47,38 @@ class RecordPermitOnBlockchain implements ShouldQueue
             ? config('blockchain.networks.'.$network.'.contract')
             : config('blockchain.contract'));
         $target = $record ? [$contract, $network] : [];
-        $existing = $registry->verify($document->document_uuid, $document->file_hash, ...$target);
+        $fieldsHash = $document->canonical_fields === null ? null : PermitFields::commitment($document->canonical_fields);
+        $existing = $fieldsHash === null
+            ? $registry->verify($document->document_uuid, $document->file_hash, ...$target)
+            : $registry->lookup($document->document_uuid, $contract ?? '', $network, true);
+
+        if (
+            $record && ! $record->recorded_at && blank($record->tx_hash)
+            && ($existing['code'] ?? null) === 'legacy_registry'
+            && ($existing['exists'] ?? null) === false
+        ) {
+            $profile = $network === 'live' ? 'sepolia' : $network;
+            $configuredContract = config('blockchain.networks.'.$profile.'.contract');
+            if (filled($configuredContract) && strcasecmp($configuredContract, $contract ?? '') !== 0) {
+                $existing = $registry->lookup($document->document_uuid, $configuredContract, $network, true);
+                if (($existing['ok'] ?? false) === true) {
+                    $record->update(['contract' => $configuredContract]);
+                    $contract = $configuredContract;
+                }
+            }
+        }
+
+        if ($fieldsHash !== null && ($existing['ok'] ?? false)) {
+            $existing['status'] = match (true) {
+                ($existing['exists'] ?? null) === false => 'not_found',
+                ($existing['exists'] ?? null) !== true,
+                ($existing['fileHash'] ?? null) !== '0x'.$document->file_hash,
+                ($existing['fieldsHash'] ?? null) !== '0x'.$fieldsHash,
+                ($existing['version'] ?? null) !== $document->version => 'mismatch',
+                ($existing['revokedAt'] ?? 0) > 0 => $document->revoked_at ? 'valid' : 'mismatch',
+                default => 'valid',
+            };
+        }
 
         if (! ($existing['ok'] ?? false)) {
             throw new RuntimeException('Blockchain verification failed: '.($existing['error'] ?? 'unknown'));
@@ -87,6 +119,10 @@ class RecordPermitOnBlockchain implements ShouldQueue
 
             $this->save($document, $values);
 
+            if ($document->fresh()?->revoked_at) {
+                RevokePermitOnBlockchain::dispatch($document->id)->afterCommit();
+            }
+
             return;
         }
 
@@ -94,8 +130,9 @@ class RecordPermitOnBlockchain implements ShouldQueue
             throw new RuntimeException('Blockchain document is already recorded with a different state.');
         }
 
-        // The real work: only the UUID and the hash go on the blockchain
-        $result = $registry->issue($document->document_uuid, $document->file_hash, ...$target);
+        $result = $fieldsHash === null
+            ? $registry->issue($document->document_uuid, $document->file_hash, ...$target)
+            : $registry->issueVersioned($document->document_uuid, $document->file_hash, $document->version, $fieldsHash, $contract, $network);
 
         if (! ($result['ok'] ?? false)) {
             $error = is_string($result['error'] ?? null) ? $result['error'] : 'unknown';

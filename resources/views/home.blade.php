@@ -433,7 +433,7 @@
                                         needs no account.
                                     </p>
 
-                                    <a href="#"
+                                    <a href="{{ route('permits.verify.form') }}"
                                         class="bg-(--celadon-500) text-(--blue-850) focus-visible:outline-(--celadon-500) group mt-4 inline-flex items-center gap-2 rounded-sm px-4 py-2.5 text-sm font-bold transition hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2">
                                         Verify a document
                                         <svg class="size-4 transition group-hover:translate-x-0.5" viewBox="0 0 20 20"
@@ -444,9 +444,8 @@
                                     </a>
 
                                     <p class="text-(--off-white)/55 mt-3 max-w-xs text-xs leading-relaxed">
-                                        On a phone? Scan the QR code in the bottom corner of your document and the
-                                        result opens
-                                        directly.
+                                        Scan the QR code on your document to open the upload form with its reference
+                                        already filled in.
                                     </p>
                                 </div>
 

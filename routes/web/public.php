@@ -41,10 +41,18 @@ Route::get('/tickets/{ticket}/participants/{participant}/photo', [
 // Public permit verification page, opened from the QR code on issued documents.
 Route::get('/verify/permit/{documentUuid}', [
     PermitVerificationController::class,
-    'show',
+    'legacy',
 ])->whereUuid('documentUuid')
     ->middleware('throttle:60,1')
     ->name('permits.verify');
+
+Route::get('/verify', [PermitVerificationController::class, 'show'])
+    ->middleware('throttle:60,1')
+    ->name('permits.verify.form');
+
+Route::post('/verify/result', [PermitVerificationController::class, 'verify'])
+    ->middleware('throttle:10,1,permit-upload:')
+    ->name('permits.verify.upload');
 
 // Live-sync version check polled by the admin and citizen layouts (logged-in users only).
 // SyncVersionController must reject a scope that does not match the user's role.

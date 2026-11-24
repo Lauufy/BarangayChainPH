@@ -6,194 +6,119 @@ use App\Http\Controllers\Controller;
 use App\Models\IssuedDocument;
 use App\Models\ServiceRequest;
 use App\Models\VerificationLog;
-use App\Services\BlockchainRegistry;
-use App\Support\PermitStatusCache;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Storage;
+use App\Services\PermitFields;
+use App\Services\PermitVerification;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
-use Illuminate\View\View;
 use Throwable;
 
-/** Verifies issued certificates and prepares the public verification page. */
 class PermitVerificationController extends Controller
 {
-    private const HIDE_INDIGENCY_TITLE = true;
-
-    public function show(string $documentUuid): View
+    public function legacy(string $documentUuid): RedirectResponse
     {
-        $document = IssuedDocument::with(['serviceRequest', 'blockchainRecord'])
-            ->where('document_uuid', $documentUuid)
-            ->first();
+        return redirect()->route('permits.verify.form', ['ref' => $documentUuid]);
+    }
 
-        $application = $document?->serviceRequest;
-        $status = $this->cachedStatus($document, $application);
+    public function show(Request $request): Response
+    {
+        $reference = $request->query('ref');
 
-        try {
-            VerificationLog::query()->create([
-                'service_request_id' => $document?->service_request_id,
-                'result' => $status === 'expired' ? 'invalid' : $status,
-            ]);
-        } catch (Throwable $e) {
-            report($e);
-        }
+        return $this->uploadPage(is_string($reference) ? substr($reference, 0, 64) : '');
+    }
 
-        // Only a valid document shows holder details.
-        $isValid = $status === 'valid';
-
-        return view('permits.verify', [
-            'status' => $status,
-            'documentTitle' => $this->documentTitle($application),
-            'maskedApplicantName' => $isValid ? $this->maskApplicantName($application->applicant_name) : null,
-            'referenceNumber' => $isValid ? $application->reference_number : null,
-            'issuedAt' => $document?->issued_at,
-            'revokedAt' => $document?->revoked_at,
-            'expiresAt' => $document?->expires_at,
-            'barangayName' => config('app.barangay_name', 'Barangay San Luis'),
+    public function verify(Request $request, PermitVerification $verification): Response
+    {
+        $validator = Validator::make($request->all(), [
+            'ref' => ['required', 'string', 'max:64'],
+            'permit' => ['required', 'file', 'mimetypes:application/pdf,image/jpeg,image/png', 'max:10240'],
+        ], [
+            'ref.required' => 'Enter the permit number printed on your document.',
+            'permit.required' => 'Choose a permit file to upload.',
+            'permit.mimetypes' => 'Choose a PDF, JPEG, or PNG file.',
+            'permit.max' => 'Choose a file no larger than 10 MB.',
+        ], [
+            'ref' => 'permit number or QR reference',
+            'permit' => 'permit file',
         ]);
+
+        $reference = $request->input('ref');
+        $reference = is_string($reference) ? substr($reference, 0, 64) : '';
+        $invalidUpload = $validator->fails();
+        $result = $invalidUpload
+            ? ['status' => 'invalid']
+            : $verification->check($reference, $request->file('permit'));
+
+        try {
+            VerificationLog::create([
+                'service_request_id' => ($result['document'] ?? null)?->service_request_id,
+                'result' => $result['status'] === 'expired' ? 'invalid' : $result['status'],
+            ]);
+        } catch (Throwable $exception) {
+            report($exception);
+        }
+
+        if ($invalidUpload) {
+            return $this->uploadPage($reference, $validator->errors()->getMessages(), 422);
+        }
+
+        return $this->resultPage($reference, $result);
     }
 
-    // A valid permit is checked at most once a minute to avoid slow blockchain calls.
-    private function cachedStatus(?IssuedDocument $document, ?ServiceRequest $application): string
+    private function uploadPage(string $reference, array $fieldErrors = [], int $httpStatus = 200): Response
     {
-        if ($document === null) {
-            return $this->resolveStatus($document, $application);
-        }
-
-        $key = PermitStatusCache::keyFor($document->document_uuid);
-
-        if (! $document->isValid()) {
-            PermitStatusCache::forget($document->document_uuid);
-
-            return 'revoked';
-        }
-
-        $status = Cache::get($key);
-
-        if ($status !== 'valid') {
-            Cache::forget($key);
-            $status = null;
-        }
-
-        if ($status === null) {
-            $status = $this->resolveStatus($document, $application);
-
-            if ($status === 'valid') {
-                $ttl = 60;
-
-                if ($document->expires_at) {
-                    $ttl = max(1, min(60, (int) now()->diffInSeconds($document->expires_at, false)));
-                }
-
-                Cache::put($key, $status, $ttl);
-            }
-        }
-
-        return $status;
+        return response()->view('permits.upload', [
+            'reference' => $reference,
+            'fieldErrors' => $fieldErrors,
+            'barangayName' => config('app.barangay_name', 'Barangay San Luis'),
+        ], $httpStatus, ['Cache-Control' => 'no-store, private']);
     }
 
-    private function resolveStatus(?IssuedDocument $document, ?ServiceRequest $application): string
+    private function resultPage(string $reference, array $result): Response
     {
-        if ($document === null) {
-            return 'not_found';
-        }
+        $status = $result['status'] ?? null;
+        $document = $result['document'] ?? null;
 
-        if (! $document->isValid()) {
-            return 'revoked';
-        }
+        return response()->view('permits.result', [
+            'reference' => $reference,
+            'status' => $status,
+            'document' => $document,
+            'details' => $status === 'valid' ? $this->details($document) : [],
+            'reason' => $result['reason'] ?? null,
+            'differences' => $result['differences'] ?? [],
+            'barangayName' => config('app.barangay_name', 'Barangay San Luis'),
+        ], 200, ['Cache-Control' => 'no-store, private']);
+    }
 
-        if ($document->isExpired()) {
-            return 'expired';
-        }
+    private function details(IssuedDocument $document): array
+    {
+        $fields = $document->canonical_fields ?? PermitFields::snapshot($document, $document->serviceRequest);
+        $parts = preg_split('/\s+/u', $fields['holder'], -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $holder = implode(' ', array_map(fn (string $part): string => Str::substr($part, 0, 1).'***', $parts));
 
+        return [
+            'Document type' => $this->documentTitle($document->serviceRequest, $fields['type']),
+            'Permit number' => $fields['number'],
+            'Reference number' => $document->serviceRequest->reference_number,
+            'Holder' => $holder ?: 'Applicant',
+            'Issued' => $fields['issued'],
+            'Expires' => $fields['expires'],
+            'Issuing office' => $fields['issuer'],
+            'Version' => $fields['version'],
+        ];
+    }
+
+    private function documentTitle(ServiceRequest $application, ?string $issuedTitle = null): string
+    {
         if (
-            $application === null
-            || $application->status !== ServiceRequest::APPROVED
-            || blank($application->permit_number)
-            || $application->permit_number !== $document->document_number
+            $application->service_type === ServiceRequest::CERTIFICATE_OF_INDIGENCY
+            || ($issuedTitle !== null && Str::contains($issuedTitle, 'indigency', ignoreCase: true))
         ) {
-            return 'invalid';
-        }
-
-        try {
-            $disk = Storage::disk($document->disk);
-
-            if (! $disk->exists($document->file_path)) {
-                return 'invalid';
-            }
-
-            // Hash of the PDF as it exists right now
-            $actualHash = hash('sha256', $disk->get($document->file_path));
-
-            // Old check: file against the hash in our own database
-            if (! hash_equals($document->file_hash, $actualHash)) {
-                return 'invalid';
-            }
-        } catch (Throwable $e) {
-            report($e);
-
-            return 'unavailable';
-        }
-
-        // A permit is only valid when the blockchain confirms it.
-        // Until it is recorded, the page shows "pending" and never "valid".
-        if (! $document->blockchainRecord?->recorded_at) {
-            return 'pending';
-        }
-
-        try {
-            $result = app(BlockchainRegistry::class)->verify(
-                $document->document_uuid,
-                $actualHash,
-                $document->blockchainRecord->contract,
-                $document->blockchainRecord->anchorNetwork()
-            );
-        } catch (Throwable $e) {
-            report($e);
-
-            return 'unavailable';
-        }
-
-        if (! ($result['ok'] ?? false)) {
-            report(new \RuntimeException('Blockchain verify failed: '.($result['error'] ?? 'unknown')));
-
-            return 'unavailable';
-        }
-
-        return match ($result['status'] ?? null) {
-            'valid' => 'valid',
-            'revoked' => 'revoked',
-            'mismatch', 'not_found' => 'invalid',
-            default => 'unavailable',
-        };
-    }
-
-    private function documentTitle(?ServiceRequest $application): string
-    {
-
-        if (self::HIDE_INDIGENCY_TITLE && $application?->service_type === ServiceRequest::CERTIFICATE_OF_INDIGENCY) {
             return 'Barangay Certificate';
         }
 
-        return match ($application?->service_type) {
-            ServiceRequest::BARANGAY_CLEARANCE => 'Barangay Clearance',
-            ServiceRequest::CERTIFICATE_OF_RESIDENCY => 'Certificate of Residency',
-            ServiceRequest::CERTIFICATE_OF_INDIGENCY => 'Certificate of Indigency',
-            ServiceRequest::BUSINESS_CLEARANCE => 'Barangay Business Clearance',
-            default => 'Barangay Document',
-        };
-    }
-
-    private function maskApplicantName(string $name): string
-    {
-        $parts = preg_split('/\s+/', trim($name), -1, PREG_SPLIT_NO_EMPTY);
-
-        if ($parts === []) {
-            return 'Applicant';
-        }
-
-        return implode(' ', array_map(
-            fn (string $part): string => Str::substr($part, 0, 1).'***',
-            $parts
-        ));
+        return $issuedTitle ?? $application->serviceTitle();
     }
 }

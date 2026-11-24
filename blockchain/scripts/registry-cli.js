@@ -12,6 +12,8 @@ if (process.env.REGISTRY_MANAGED_CONFIG !== "1") {
 
 const ABI = [
     "function issue(bytes32 documentId, bytes32 fileHash)",
+    "function issueVersioned(bytes32 documentId, bytes32 fileHash, uint32 version, bytes32 fieldsHash)",
+    "function getVersionedRecord(bytes32 documentId) view returns (bool exists, bytes32 fileHash, uint64 revokedAt, uint32 version, bytes32 fieldsHash)",
     "function revoke(bytes32 documentId)",
     "function setPaused(bool state)",
     "function owner() view returns (address)",
@@ -165,7 +167,7 @@ async function setPaused(state) {
     };
 }
 
-async function run([command, uuid, hash]) {
+async function run([command, uuid, hash, version, fieldsHash]) {
     if (command === "info") {
         return info();
     }
@@ -175,7 +177,7 @@ async function run([command, uuid, hash]) {
     }
 
     if (
-        !["issue", "revoke", "verify", "get", "find-issuance-tx"].includes(
+        !["issue", "issue-versioned", "revoke", "verify", "get", "get-versioned", "find-issuance-tx"].includes(
             command
         ) ||
         !uuid
@@ -241,6 +243,42 @@ async function run([command, uuid, hash]) {
         return { ok: true, status: STATUS[Number(status)] };
     }
 
+    if (command === "get-versioned") {
+        const reader = new ethers.Contract(address, ABI, provider);
+        try {
+            const record = await reader.getVersionedRecord(documentId);
+            return {
+                ok: true,
+                exists: record.exists,
+                fileHash: record.fileHash,
+                revokedAt: Number(record.revokedAt),
+                version: Number(record.version),
+                fieldsHash: record.fieldsHash,
+            };
+        } catch (error) {
+            // Old deployments revert without data on an unknown selector.
+            if (error.code !== "CALL_EXCEPTION" || error.data !== "0x") {
+                throw error;
+            }
+            const record = await reader.getRecord(documentId);
+            if (hash !== "allow-legacy") {
+                return {
+                    ok: false,
+                    code: "legacy_registry",
+                    exists: record.exists,
+                    error: "This registry does not support versioned permits. Configure the upgraded PermitRegistry.",
+                };
+            }
+            return {
+                ok: true,
+                exists: record.exists,
+                fileHash: record.fileHash,
+                revokedAt: Number(record.revokedAt),
+                version: 0,
+            };
+        }
+    }
+
     if (command === "get") {
         const reader = new ethers.Contract(address, ABI, provider);
         const record = await reader.getRecord(documentId);
@@ -261,10 +299,14 @@ async function run([command, uuid, hash]) {
     const wallet = new ethers.Wallet(need("PRIVATE_KEY"), provider);
     const writer = new ethers.Contract(address, ABI, wallet);
 
-    const tx =
-        command === "issue"
-            ? await writer.issue(documentId, toFileHash(hash))
-            : await writer.revoke(documentId);
+    let tx;
+    if (command === "issue-versioned") {
+        tx = await writer.issueVersioned(documentId, toFileHash(hash), version, toFileHash(fieldsHash));
+    } else if (command === "issue") {
+        tx = await writer.issue(documentId, toFileHash(hash));
+    } else {
+        tx = await writer.revoke(documentId);
+    }
     const receipt = await tx.wait(network.chainId === 1n ? 3 : 1);
 
     return {
@@ -279,7 +321,7 @@ async function run([command, uuid, hash]) {
 
 const args = process.argv.slice(2);
 // Reads should be fast. Writes wait for a block, which can take a while on a test network.
-const limitMs = ["verify", "get", "info"].includes(args[0]) ? 10_000 : 90_000;
+const limitMs = ["verify", "get", "get-versioned", "info"].includes(args[0]) ? 10_000 : 90_000;
 const watchdog = setTimeout(
     () => finish({ ok: false, error: "timeout" }, 1),
     limitMs

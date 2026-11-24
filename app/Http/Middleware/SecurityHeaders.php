@@ -34,14 +34,22 @@ class SecurityHeaders
             ? 'Content-Security-Policy'
             : 'Content-Security-Policy-Report-Only';
 
-        $response->headers->set($header, $this->policy($nonce));
+        $response->headers->set($header, $this->policy(
+            $nonce,
+            $request->routeIs('permits.verify.form')
+                || ($request->routeIs('permits.verify.upload') && $response->getStatusCode() === 422),
+        ));
 
         return $response;
     }
 
-    private function policy(string $nonce): string
+    private function policy(string $nonce, bool $allowLocalPdfPreview): string
     {
         $directives = config('security.csp.directives', []);
+        if ($allowLocalPdfPreview) {
+            $directives['frame-src'][] = 'blob:';
+        }
+
         $policy = [];
 
         foreach ($directives as $name => $sources) {
