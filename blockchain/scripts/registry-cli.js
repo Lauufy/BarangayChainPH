@@ -3,10 +3,12 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { ethers } from "ethers";
 
-dotenv.config({
-    path: join(dirname(fileURLToPath(import.meta.url)), "..", ".env"),
-    quiet: true,
-});
+if (process.env.REGISTRY_MANAGED_CONFIG !== "1") {
+    dotenv.config({
+        path: join(dirname(fileURLToPath(import.meta.url)), "..", ".env"),
+        quiet: true,
+    });
+}
 
 const ABI = [
     "function issue(bytes32 documentId, bytes32 fileHash)",
@@ -62,9 +64,9 @@ function need(name) {
 // Safety: never read events from or write to a chain or address we did not expect
 async function assertChain(provider, address) {
     const network = await provider.getNetwork();
-    const expected = process.env.EXPECTED_CHAIN_ID;
+    const expected = process.env.EXPECTED_CHAIN_ID || "11155111";
 
-    if (expected && Number(network.chainId) !== Number(expected)) {
+    if (network.chainId !== BigInt(expected)) {
         throw new Error(
             `Wrong network: expected chain ${expected} but connected to chain ${network.chainId}`
         );
@@ -79,6 +81,12 @@ async function assertChain(provider, address) {
     return network;
 }
 
+function assertWritesAllowed(chainId) {
+    if (chainId === 1n && process.env.ALLOW_MAINNET_WRITES !== "1") {
+        throw new Error("Ethereum mainnet writes are disabled.");
+    }
+}
+
 // Health check for the admin Smart Contract Management page.
 // Prints the issuer's ADDRESS only, never the private key.
 async function info() {
@@ -86,7 +94,7 @@ async function info() {
     const address = need("REGISTRY_ADDRESS");
     const wallet = new ethers.Wallet(need("PRIVATE_KEY"));
     const network = await provider.getNetwork();
-    const expected = process.env.EXPECTED_CHAIN_ID;
+    const expected = process.env.EXPECTED_CHAIN_ID || "11155111";
     const [balance, code] = await Promise.all([
         provider.getBalance(wallet.address),
         provider.getCode(address),
@@ -141,10 +149,11 @@ async function setPaused(state) {
     const address = need("REGISTRY_ADDRESS");
     const network = await assertChain(provider, address);
 
+    assertWritesAllowed(network.chainId);
     const wallet = new ethers.Wallet(need("PRIVATE_KEY"), provider);
     const writer = new ethers.Contract(address, ABI, wallet);
     const tx = await writer.setPaused(state);
-    const receipt = await tx.wait();
+    const receipt = await tx.wait(network.chainId === 1n ? 3 : 1);
 
     return {
         ok: true,
@@ -180,14 +189,38 @@ async function run([command, uuid, hash]) {
     const address = need("REGISTRY_ADDRESS");
     const documentId = toDocumentId(uuid);
 
+    const network = await assertChain(provider, address);
+
     if (command === "find-issuance-tx") {
-        await assertChain(provider, address);
 
         const reader = new ethers.Contract(address, ABI, provider);
+        const record = await reader.getRecord(documentId);
+        if (!record.exists) {
+            return { ok: true, found: false };
+        }
+
+        // The contract stores the issue block's timestamp. Find that block
+        // without sending an unbounded eth_getLogs request to the RPC.
+        let lower = 0;
+        let upper = await provider.getBlockNumber();
+        const issuedAt = Number(record.issuedAt);
+        while (lower < upper) {
+            const middle = Math.floor((lower + upper) / 2);
+            const block = await provider.getBlock(middle);
+            if (!block) {
+                throw new Error("Could not read a block while recovering the issuance transaction.");
+            }
+            if (block.timestamp < issuedAt) {
+                lower = middle + 1;
+            } else {
+                upper = middle;
+            }
+        }
+
         const events = await reader.queryFilter(
             reader.filters.DocumentIssued(documentId),
-            0,
-            "latest"
+            lower,
+            lower
         );
         const event = events.at(-1);
 
@@ -223,8 +256,8 @@ async function run([command, uuid, hash]) {
     }
 
     // issue / revoke
-    const network = await assertChain(provider, address);
 
+    assertWritesAllowed(network.chainId);
     const wallet = new ethers.Wallet(need("PRIVATE_KEY"), provider);
     const writer = new ethers.Contract(address, ABI, wallet);
 
@@ -232,7 +265,7 @@ async function run([command, uuid, hash]) {
         command === "issue"
             ? await writer.issue(documentId, toFileHash(hash))
             : await writer.revoke(documentId);
-    const receipt = await tx.wait();
+    const receipt = await tx.wait(network.chainId === 1n ? 3 : 1);
 
     return {
         ok: true,
@@ -265,7 +298,7 @@ run(args)
             {
                 ok: false,
                 error:
-                    error.revert?.name || error.shortMessage || error.message,
+                    error.revert?.name || (error.code ? "RPC request failed (" + error.code + ")" : error.message),
             },
             1
         )

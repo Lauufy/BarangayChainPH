@@ -1,6 +1,7 @@
 import { ethers } from "ethers";
 
 const ABI = [
+    "function paused() view returns (bool)",
     "function owner() view returns (address)",
     "function isIssuer(address account) view returns (bool)",
 ];
@@ -8,6 +9,8 @@ const ABI = [
 const rpcUrl = process.env.RPC_URL;
 const configuredAddress = process.env.REGISTRY_ADDRESS;
 const configuredIssuer = process.env.ISSUER_ADDRESS;
+const expectedOwner = process.env.EXPECTED_OWNER;
+const expectedChainId = BigInt(process.env.EXPECTED_CHAIN_ID || "11155111");
 
 function safeErrorMessage(error) {
     return String(error?.message ?? "unknown error")
@@ -32,6 +35,12 @@ async function main() {
         provider = new ethers.JsonRpcProvider(rpcUrl);
 
         const network = await provider.getNetwork();
+        if (network.chainId !== expectedChainId) {
+            throw new Error(`Expected chain ${expectedChainId}, connected to ${network.chainId}.`);
+        }
+        if (network.chainId === 1n && !expectedOwner) {
+            throw new Error("Set EXPECTED_OWNER to the production multisig address.");
+        }
         const code = await provider.getCode(address);
 
         if (code === "0x") {
@@ -41,6 +50,20 @@ async function main() {
         const registry = new ethers.Contract(address, ABI, provider);
         const owner = await registry.owner();
         const issuerIsAuthorized = await registry.isIssuer(issuerAddress);
+
+        if (expectedOwner && owner !== ethers.getAddress(expectedOwner)) {
+            throw new Error("The configured multisig does not own this registry.");
+        }
+        if (network.chainId === 1n) {
+            const [ownerCode, paused, issuerBalance] = await Promise.all([
+                provider.getCode(owner),
+                registry.paused(),
+                provider.getBalance(issuerAddress),
+            ]);
+            if (ownerCode === "0x" || owner === issuerAddress || paused || issuerBalance === 0n) {
+                throw new Error("Mainnet requires a contract owner separate from the funded issuer and an unpaused registry.");
+            }
+        }
 
         console.log("PASS: Contract code exists at the configured address.");
         console.log(`Contract: ${address}`);

@@ -72,3 +72,54 @@ Once the TODO deployment evidence is filled and verified, you do not need an acc
 ## What this does not prove
 
 This is a demo intended for a **test network**. Until the evidence checklist and live demo are completed, this document does not prove which contract is currently deployed. A test network does not show production readiness: there are no real citizens or real funds, the constructor initially assigns both owner and issuer to the deployer, and the contract has not been independently reviewed.
+
+## Cutover from Sepolia to Ethereum Mainnet
+
+Keep the application on `BLOCKCHAIN_NETWORK=sepolia` with
+`BLOCKCHAIN_MAINNET_WRITES_ENABLED=false` while preparing the deployment.
+Mainnet is chain ID 1 and Sepolia is chain ID 11155111.
+
+1. Inventory pending and recorded blockchain rows. Confirm that legacy `live`
+   and blank network values refer to Sepolia. Check existing contracts against
+   the corresponding transaction receipts. For older rows with a blank contract,
+   the app uses the configured Sepolia registry. Backfill any exceptions from
+   verified receipts before switching, and keep the historical RPC and relevant
+   issuer credentials available for verification and revocation.
+2. Rehearse issuance, verification, recovery after a worker interruption, and
+   revocation on Sepolia. Review the Solidity contract and the decision to
+   publish permit fingerprints on Mainnet before anchoring production permits.
+3. From the `blockchain` directory, load `MAINNET_RPC_URL` and
+   `MAINNET_DEPLOYER_KEY` from the deployment secret store. For the approved
+   deployment only, set `ALLOW_MAINNET_DEPLOY=1` in the process environment and
+   run `npx hardhat run scripts/deploy.js --network mainnet`. Record the address,
+   receipt, block, and verified source. Clear the deployment opt-in afterward.
+4. Transfer ownership to the production multisig and accept the transfer from
+   the multisig. Authorize and fund a separate backend issuer. Manage pause and
+   unpause through the multisig. Run `npm run check-deployment` with
+   `EXPECTED_CHAIN_ID=1`, `EXPECTED_OWNER` set to the multisig,
+   and `RPC_URL`, `REGISTRY_ADDRESS`, and `ISSUER_ADDRESS` set to the
+   production values. This check sends no transaction. Verify the multisig
+   signer set and threshold independently.
+5. Configure `BLOCKCHAIN_MAINNET_CONTRACT`, `BLOCKCHAIN_MAINNET_RPC_URL`, and
+   `BLOCKCHAIN_MAINNET_ISSUER_KEY` in the application. Keep the Sepolia
+   settings. Pause permit approvals and drain the blockchain queue during the
+   switch. Set `BLOCKCHAIN_NETWORK=mainnet` and
+   `BLOCKCHAIN_MAINNET_WRITES_ENABLED=true`, refresh cached config, and restart
+   the web and queue processes together. Use one writing worker per signer and
+   a queue visibility or retry timeout greater than the 120-second job timeout.
+6. Issue a controlled permit and confirm its Mainnet receipt, QR result, ledger
+   link, and revocation. Register the Mainnet deployment in Smart Contract
+   Management and mark it active. Check an existing Sepolia QR and ledger link. Monitor
+   failed jobs, RPC errors, and issuer balance before reopening approvals.
+
+Each permit keeps its original network and registry. Switching the default
+changes where new permits are anchored. Existing Sepolia transactions stay on
+Sepolia. If a permit needs a Mainnet anchor, use the permit reissue workflow
+after the switch to create a new version, then verify both the new anchor and
+the old permit's revocation.
+
+To roll back new issuance, pause approvals, drain or reconcile jobs, switch the
+default back to Sepolia, refresh cached config, and restart workers. Retain both
+network profiles. Pending jobs keep their original target, and Mainnet permits
+continue to use Mainnet. Turning off Mainnet writes also suspends pending
+Mainnet issuance and on-chain revocations until writes are re-enabled.

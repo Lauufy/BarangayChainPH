@@ -43,24 +43,24 @@
         {{-- Surface connectivity, deployment, and processing warnings. --}}
         @if (!$reachable)
             <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-                The blockchain could not be reached. Check BLOCKCHAIN_RPC_URL, BLOCKCHAIN_NODE_PATH and the issuer key.
+                The blockchain could not be reached. Check the RPC URL, issuer key, and BLOCKCHAIN_NODE_PATH.
             </div>
         @else
             @if (!$chainOk)
                 <div class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-                    Connected to the wrong network. Check BLOCKCHAIN_CHAIN_ID and BLOCKCHAIN_RPC_URL.
+                    Connected to the wrong network. Check BLOCKCHAIN_NETWORK and the RPC URL for that network.
                 </div>
             @endif
             @if (!$hasCode)
                 <div class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-                    No contract was found at this address on this network. Check BLOCKCHAIN_CONTRACT and BLOCKCHAIN_RPC_URL.
+                    No contract was found at this address on this network. Check the contract address and RPC URL for the active network.
                 </div>
             @endif
             @if ($mismatch)
                 <div class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
                     The active deployment recorded below ({{ $short($active->contract_address) }}) is not the contract the
                     system
-                    is using ({{ $short($info['contract']) }}). Update BLOCKCHAIN_CONTRACT in .env, then run
+                    is using ({{ $short($info['contract']) }}). Check the registered deployment and the contract address for the active network, then run
                     <span class="font-mono">php artisan config:clear</span>.
                 </div>
             @endif
@@ -94,7 +94,7 @@
             <div class="{{ $card }}">
                 <p class="text-xs text-slate-500">Network</p>
                 <p class="my-2 text-xl font-bold capitalize text-slate-900 dark:text-slate-300">
-                    {{ $active?->network ?? ($networkName ?? ($info ? 'Chain ' . $info['chainId'] : 'Unknown')) }}
+                    {{ $networkName ?? 'Unknown' }}
                 </p>
                 @if (!$reachable)
                     <x-tables.badge variant="warning">Unknown</x-tables.badge>
@@ -165,9 +165,9 @@
                             @endif
                         </td>
                         <td class="font-mono text-xs">
-                            @if ($explorerBase)
+                            @if ($deploymentExplorer = config('blockchain.networks.'.($d->network === 'live' ? 'sepolia' : $d->network).'.explorer_url'))
                                 <a class="text-blue-700 underline" target="_blank" rel="noopener"
-                                    href="{{ $explorerBase }}/address/{{ $d->contract_address }}">{{ $short($d->contract_address) }}</a>
+                                    href="{{ rtrim($deploymentExplorer, '/') }}/address/{{ $d->contract_address }}">{{ $short($d->contract_address) }}</a>
                             @else
                                 {{ $short($d->contract_address) }}
                             @endif
@@ -261,9 +261,9 @@
                             @endif
                         </td>
                         <td class="font-mono text-xs">
-                            @if ($tx && $explorerBase)
+                            @if ($transactionUrl = $record->transactionUrl($tx))
                                 <a class="text-blue-700 underline" target="_blank" rel="noopener"
-                                    href="{{ $explorerBase }}/tx/{{ $tx }}">{{ $short($tx) }}</a>
+                                    href="{{ $transactionUrl }}">{{ $short($tx) }}</a>
                             @else
                                 {{ $short($tx) }}
                             @endif

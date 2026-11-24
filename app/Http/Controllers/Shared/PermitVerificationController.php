@@ -144,7 +144,8 @@ class PermitVerificationController extends Controller
             $result = app(BlockchainRegistry::class)->verify(
                 $document->document_uuid,
                 $actualHash,
-                $document->blockchainRecord?->contract
+                $document->blockchainRecord->contract,
+                $document->blockchainRecord->anchorNetwork()
             );
         } catch (Throwable $e) {
             report($e);

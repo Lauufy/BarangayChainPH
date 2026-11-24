@@ -32,6 +32,20 @@ class BlockchainRecord extends Model
         ];
     }
 
+    public function anchorNetwork(): string
+    {
+        return $this->network && $this->network !== 'live' ? $this->network : 'sepolia';
+    }
+
+    public function transactionUrl(?string $hash): ?string
+    {
+        $explorer = config('blockchain.networks.'.$this->anchorNetwork().'.explorer_url');
+
+        return filled($hash) && filled($explorer)
+            ? rtrim($explorer, '/').'/tx/'.rawurlencode($hash)
+            : null;
+    }
+
     public function issuedDocument(): BelongsTo
     {
         return $this->belongsTo(IssuedDocument::class);

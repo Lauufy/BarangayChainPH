@@ -40,7 +40,13 @@ class RecordPermitOnBlockchain implements ShouldQueue
 
         // Safety check for retries: an earlier try may have succeeded
         // even though its answer never reached us.
-        $existing = $registry->verify($document->document_uuid, $document->file_hash);
+        $record = $document->blockchainRecord;
+        $network = $record?->anchorNetwork();
+        $contract = $record?->contract ?? ($network
+            ? config('blockchain.networks.'.$network.'.contract')
+            : config('blockchain.contract'));
+        $target = $record ? [$contract, $network] : [];
+        $existing = $registry->verify($document->document_uuid, $document->file_hash, ...$target);
 
         if (! ($existing['ok'] ?? false)) {
             throw new RuntimeException('Blockchain verification failed: '.($existing['error'] ?? 'unknown'));
@@ -48,14 +54,15 @@ class RecordPermitOnBlockchain implements ShouldQueue
 
         if (($existing['status'] ?? null) === 'valid') {
             $values = [
-                'contract' => $document->blockchainRecord?->contract ?? config('blockchain.contract'),
+                'contract' => $contract,
                 'recorded_at' => $document->blockchainRecord?->recorded_at ?? now(),
             ];
 
             try {
                 $transaction = $registry->findIssuanceTransaction(
                     $document->document_uuid,
-                    $document->blockchainRecord?->contract
+                    $record ? $contract : null,
+                    ...($network ? [$network] : [])
                 );
 
                 if (
@@ -88,14 +95,14 @@ class RecordPermitOnBlockchain implements ShouldQueue
         }
 
         // The real work: only the UUID and the hash go on the blockchain
-        $result = $registry->issue($document->document_uuid, $document->file_hash);
+        $result = $registry->issue($document->document_uuid, $document->file_hash, ...$target);
 
         if (! ($result['ok'] ?? false)) {
             $error = is_string($result['error'] ?? null) ? $result['error'] : 'unknown';
 
             if (str_contains($error, 'ContractPaused')) {
                 $this->save($document, [
-                    'contract' => config('blockchain.contract'),
+                    'contract' => $contract,
                     'error' => 'Blockchain issue failed: '.$error,
                 ]);
 
@@ -111,7 +118,7 @@ class RecordPermitOnBlockchain implements ShouldQueue
 
         // The script tells us which contract it used, so we save that one
         $this->save($document, [
-            'contract' => $result['contract'] ?? config('blockchain.contract'),
+            'contract' => $result['contract'] ?? $contract,
             'tx_hash' => $result['txHash'],
             'recorded_at' => now(),
         ]);
@@ -126,7 +133,7 @@ class RecordPermitOnBlockchain implements ShouldQueue
     {
         BlockchainRecord::updateOrCreate(
             ['issued_document_id' => $document->id],
-            $values + ['network' => config('blockchain.network'), 'error' => null]
+            $values + ['network' => $document->blockchainRecord?->anchorNetwork() ?? config('blockchain.network'), 'error' => null]
         );
     }
 

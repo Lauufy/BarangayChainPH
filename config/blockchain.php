@@ -1,21 +1,29 @@
 <?php
 
+$network = env('BLOCKCHAIN_NETWORK', 'sepolia');
+
+$networks = [
+    'sepolia' => [
+        'chain_id' => 11155111,
+        'explorer_url' => env('BLOCKCHAIN_SEPOLIA_EXPLORER_URL', env('BLOCKCHAIN_EXPLORER_URL', 'https://sepolia.etherscan.io')),
+        'contract' => env('BLOCKCHAIN_SEPOLIA_CONTRACT', env('BLOCKCHAIN_CONTRACT')),
+        'rpc_url' => env('BLOCKCHAIN_SEPOLIA_RPC_URL', env('BLOCKCHAIN_RPC_URL')),
+        'issuer_key' => env('BLOCKCHAIN_SEPOLIA_ISSUER_KEY', env('BLOCKCHAIN_ISSUER_KEY')),
+    ],
+    'mainnet' => [
+        'chain_id' => 1,
+        'explorer_url' => env('BLOCKCHAIN_MAINNET_EXPLORER_URL', 'https://etherscan.io'),
+        'contract' => env('BLOCKCHAIN_MAINNET_CONTRACT'),
+        'rpc_url' => env('BLOCKCHAIN_MAINNET_RPC_URL'),
+        'issuer_key' => env('BLOCKCHAIN_MAINNET_ISSUER_KEY'),
+    ],
+];
+
 return [
-    // Full path to node.exe (from your Laravel .env)
-    'node_path' => env('BLOCKCHAIN_NODE_PATH', 'node'),
-
-    // The folder that contains scripts/registry-cli.js
+    'node_path' => env('BLOCKCHAIN_NODE_PATH') ?: 'node',
     'folder' => base_path('blockchain'),
-
-    // Which blockchain we use. Defaults are the current Sepolia test network.
-    'network' => env('BLOCKCHAIN_NETWORK', 'sepolia'),
-    'chain_id' => (int) env('BLOCKCHAIN_CHAIN_ID', 11155111),
-
-    // Base address of the website that shows transactions (used to build links)
-    'explorer_url' => env('BLOCKCHAIN_EXPLORER_URL', 'https://sepolia.etherscan.io'),
-
-    // Filled in later, when we deploy to the real network
-    'contract' => env('BLOCKCHAIN_CONTRACT'),
-    'rpc_url' => env('BLOCKCHAIN_RPC_URL'),
-    'issuer_key' => env('BLOCKCHAIN_ISSUER_KEY'),
+    'network' => $network,
+    'networks' => $networks,
+    'mainnet_writes_enabled' => env('BLOCKCHAIN_MAINNET_WRITES_ENABLED', false),
+    ...($networks[$network === 'live' ? 'sepolia' : $network] ?? []),
 ];

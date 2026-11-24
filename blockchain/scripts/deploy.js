@@ -5,6 +5,10 @@ async function main() {
   const [deployer] = await ethers.getSigners();
   const chain = await ethers.provider.getNetwork();
 
+  if (chain.chainId === 1n && (networkName !== "mainnet" || process.env.ALLOW_MAINNET_DEPLOY !== "1")) {
+    throw new Error("Mainnet deployment requires --network mainnet and ALLOW_MAINNET_DEPLOY=1.");
+  }
+
   console.log(`Deploying from ${deployer.address}`);
   console.log(`Network: ${networkName}, chain ID: ${chain.chainId}`);
 
@@ -13,7 +17,7 @@ async function main() {
 
   const deployTx = registry.deploymentTransaction();
   if (networkName !== "default" && networkName !== "hardhat" && networkName !== "localhost") {
-    await deployTx.wait(2); // wait for 2 confirmations on real networks
+    await deployTx.wait(chain.chainId === 1n ? 3 : 2);
   }
 
   const address = await registry.getAddress();
@@ -21,15 +25,13 @@ async function main() {
   console.log(`Deploy transaction: ${deployTx.hash}`);
   console.log("");
   console.log("Laravel .env (public values, safe to note down):");
-  console.log(`BLOCKCHAIN_CONTRACT=${address}`);
-  console.log(`BLOCKCHAIN_CHAIN_ID=${chain.chainId}`);
-  console.log(`BLOCKCHAIN_NETWORK=${networkName}`);
+  console.log(`BLOCKCHAIN_${chain.chainId === 1n ? "MAINNET" : "SEPOLIA"}_CONTRACT=${address}`);
   console.log("");
   console.log("blockchain/.env:");
   console.log(`REGISTRY_ADDRESS=${address}`);
 }
 
 main().catch((error) => {
-  console.error(error);
+  console.error(error.code ? "Deployment failed (" + error.code + ")" : error.message);
   process.exitCode = 1;
 });

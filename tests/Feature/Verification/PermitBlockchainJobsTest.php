@@ -122,11 +122,11 @@ class PermitBlockchainJobsTest extends TestCase
         $registry = $this->mock(BlockchainRegistry::class);
         $registry->shouldReceive('verify')
             ->once()
-            ->with($document->document_uuid, $document->file_hash, '0xold')
+            ->with($document->document_uuid, $document->file_hash, '0xold', 'sepolia')
             ->andReturn(['ok' => true, 'status' => 'valid']);
         $registry->shouldReceive('revoke')
             ->once()
-            ->with($document->document_uuid, '0xold')
+            ->with($document->document_uuid, '0xold', 'sepolia')
             ->andReturn(['ok' => true, 'txHash' => '0xrevoke']);
 
         (new RevokePermitOnBlockchain($document->id))->handle($registry);
@@ -149,7 +149,7 @@ class PermitBlockchainJobsTest extends TestCase
         $registry = $this->mock(BlockchainRegistry::class);
         $registry->shouldReceive('verify')
             ->once()
-            ->with($document->document_uuid, $document->file_hash, null)
+            ->with($document->document_uuid, $document->file_hash, null, 'sepolia')
             ->andReturn(['ok' => true, 'status' => 'not_found']);
         $registry->shouldNotReceive('revoke');
 

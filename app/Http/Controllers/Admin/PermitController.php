@@ -397,7 +397,7 @@ class PermitController extends Controller
     private function recordOnBlockchain(IssuedDocument $document, bool $contractIsPaused = false): void
     {
         try {
-            BlockchainRecord::updateOrCreate(
+            $record = BlockchainRecord::firstOrCreate(
                 ['issued_document_id' => $document->id],
                 [
                     'network' => config('blockchain.network'),
@@ -405,8 +405,11 @@ class PermitController extends Controller
                     'error' => $contractIsPaused ? 'Blockchain issue failed: ContractPaused' : null,
                 ]
             );
+            $record->update(['error' => $contractIsPaused ? 'Blockchain issue failed: ContractPaused' : null]);
         } catch (Throwable $e) {
             report($e);
+
+            return;
         }
 
         if ($contractIsPaused) {

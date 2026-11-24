@@ -10,11 +10,11 @@ use Symfony\Component\Process\Process;
 
 class BlockchainRegistry
 {
-    public function issue(string $uuid, string $hash): array
+    public function issue(string $uuid, string $hash, ?string $contract = null, ?string $network = null): array
     {
         $this->assertValidDocumentId($uuid);
 
-        return $this->run(['issue', $uuid, $hash]);
+        return $this->run(['issue', $uuid, $hash], $contract, $network);
     }
 
     // Same cleanup as toDocumentId() in registry-cli.js (trim + lowercase)
@@ -33,21 +33,21 @@ class BlockchainRegistry
     }
 
     // Cancel a permit on the blockchain (slow)
-    public function revoke(string $uuid, ?string $contract = null): array
+    public function revoke(string $uuid, ?string $contract = null, ?string $network = null): array
     {
-        return $this->run(['revoke', $uuid], $contract);
+        return $this->run(['revoke', $uuid], $contract, $network);
     }
 
     // Compare a hash with the blockchain's copy (fast)
     // $contract is the contract the permit was recorded on. Empty means the current one.
-    public function verify(string $uuid, string $hash, ?string $contract = null): array
+    public function verify(string $uuid, string $hash, ?string $contract = null, ?string $network = null): array
     {
-        return $this->run(['verify', $uuid, $hash], $contract);
+        return $this->run(['verify', $uuid, $hash], $contract, $network);
     }
 
-    public function findIssuanceTransaction(string $uuid, ?string $contract = null): array
+    public function findIssuanceTransaction(string $uuid, ?string $contract = null, ?string $network = null): array
     {
-        return $this->run(['find-issuance-tx', $uuid], $contract);
+        return $this->run(['find-issuance-tx', $uuid], $contract, $network);
     }
 
     // Emergency switch (owner only). While paused, new permits cannot be recorded.
@@ -75,7 +75,7 @@ class BlockchainRegistry
         });
     }
 
-    private function run(array $args, ?string $contract = null): array
+    private function run(array $args, ?string $contract = null, ?string $network = null): array
     {
         // Safety lock: tests must never use the real blockchain
         if (app()->environment('testing')) {
@@ -85,7 +85,7 @@ class BlockchainRegistry
         $process = new Process(
             [config('blockchain.node_path'), 'scripts/registry-cli.js', ...$args],
             config('blockchain.folder'),
-            $this->chainSettings($args[0], $contract), // the chain settings for Node
+            $this->chainSettings($args[0], $contract, $network), // the chain settings for Node
             null,
             120 // give up after 120 seconds
         );
@@ -97,26 +97,40 @@ class BlockchainRegistry
 
         if (! is_array($result)) {
             throw new RuntimeException(
-                'Blockchain script gave no valid answer: '.$process->getErrorOutput()
+                'Blockchain script gave no valid answer.'
             );
         }
 
         return $result;
     }
 
-    private function chainSettings(string $command, ?string $contract = null): array
+    private function chainSettings(string $command, ?string $contract = null, ?string $network = null): array
     {
-        $settings = [
-            'RPC_URL' => config('blockchain.rpc_url'),
-            'REGISTRY_ADDRESS' => $contract ?: config('blockchain.contract'),
-            'EXPECTED_CHAIN_ID' => config('blockchain.chain_id'),
-        ];
+        $activeNetwork = config('blockchain.network');
+        $network ??= $activeNetwork;
+        $profile = $network === 'live' ? 'sepolia' : $network;
+        $settings = config('blockchain.networks.'.$profile);
 
-        // Only these commands need the key ('info' only derives the wallet address from it)
-        if (in_array($command, ['issue', 'revoke', 'pause', 'unpause', 'info'], true)) {
-            $settings['PRIVATE_KEY'] = config('blockchain.issuer_key');
+        if (! is_array($settings)) {
+            throw new RuntimeException('Unsupported blockchain network.');
         }
 
-        return array_filter($settings);
+        $writes = in_array($command, ['issue', 'revoke', 'pause', 'unpause'], true);
+        if ($writes && $profile === 'mainnet' && config('blockchain.mainnet_writes_enabled') !== true) {
+            throw new RuntimeException('Ethereum mainnet writes are disabled.');
+        }
+
+        if ($network === $activeNetwork) {
+            $settings = config('blockchain');
+        }
+
+        return [
+            'REGISTRY_MANAGED_CONFIG' => '1',
+            'RPC_URL' => $settings['rpc_url'] ?: false,
+            'REGISTRY_ADDRESS' => ($contract ?: $settings['contract']) ?: false,
+            'EXPECTED_CHAIN_ID' => (string) $settings['chain_id'],
+            'ALLOW_MAINNET_WRITES' => $writes && $profile === 'mainnet' ? '1' : false,
+            'PRIVATE_KEY' => ($writes || $command === 'info') ? ($settings['issuer_key'] ?: false) : false,
+        ];
     }
 }

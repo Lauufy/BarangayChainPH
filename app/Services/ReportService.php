@@ -277,9 +277,7 @@ class ReportService
                     default => 'Successful',
                 };
                 $hash = $record->revoke_tx_hash ?? $record->tx_hash;
-                $explorerUrl = filled($hash)
-                    ? rtrim((string) config('blockchain.explorer_url'), '/').'/tx/'.rawurlencode($hash)
-                    : null;
+                $explorerUrl = $record->transactionUrl($hash);
 
                 return [
                     'reference_number' => $request?->reference_number ?? 'Unavailable',

@@ -70,8 +70,8 @@
                         </td>
 
                         <td class="text-slate-700 dark:text-slate-300">
-                            @if ($record->tx_hash)
-                                <a href="{{ config('blockchain.explorer_url') }}/tx/{{ $record->tx_hash }}" target="_blank"
+                            @if ($url = $record->transactionUrl($record->tx_hash))
+                                <a href="{{ $url }}" target="_blank"
                                     rel="noopener" class="font-mono text-xs text-[#17325c] dark:text-slate-300 hover:underline">
                                     {{ Str::limit($record->tx_hash, 16) }}
                                 </a>
@@ -81,8 +81,8 @@
                         </td>
 
                         <td class="text-slate-700 dark:text-slate-300">
-                            @if ($record->revoke_tx_hash)
-                                <a href="{{ config('blockchain.explorer_url') }}/tx/{{ $record->revoke_tx_hash }}"
+                            @if ($url = $record->transactionUrl($record->revoke_tx_hash))
+                                <a href="{{ $url }}"
                                     target="_blank" rel="noopener" class="font-mono text-xs text-[#17325c] dark:text-slate-300 hover:underline">
                                     {{ Str::limit($record->revoke_tx_hash, 16) }}
                                 </a>

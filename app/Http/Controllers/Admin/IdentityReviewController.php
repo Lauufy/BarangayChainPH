@@ -140,16 +140,20 @@ class IdentityReviewController extends Controller
     {
         $route = 'admin.identity-verification.index';
 
-        if (! $verification->isPending()) {
-            return redirect()->route($route)->with('error', 'This application was already reviewed.');
+        $updated = IdentityVerification::whereKey($verification->getKey())
+            ->where('status', IdentityVerification::PENDING)
+            ->update([
+                'status' => $status,
+                'reviewed_by' => $request->user()->id,
+                'reviewed_at' => now(),
+                'rejection_reason' => $reason,
+            ]);
+
+        if (! $updated) {
+            return redirect()->route($route)->with('error', 'This application is no longer pending. Refresh the list to see its status.');
         }
 
-        $verification->update([
-            'status' => $status,
-            'reviewed_by' => $request->user()->id,
-            'reviewed_at' => now(),
-            'rejection_reason' => $reason,
-        ]);
+        $verification->refresh();
 
         // A mail problem must never undo the decision
         try {

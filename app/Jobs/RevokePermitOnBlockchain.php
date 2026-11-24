@@ -34,7 +34,9 @@ class RevokePermitOnBlockchain implements ShouldQueue
 
         $contract = $document->blockchainRecord?->contract;
 
-        $existing = $registry->verify($document->document_uuid, $document->file_hash, $contract);
+        $network = $document->blockchainRecord?->anchorNetwork();
+        $target = $network ? [$network] : [];
+        $existing = $registry->verify($document->document_uuid, $document->file_hash, $contract, ...$target);
 
         if (! ($existing['ok'] ?? false)) {
             throw new RuntimeException('Blockchain verification failed: '.($existing['error'] ?? 'unknown'));
@@ -59,7 +61,7 @@ class RevokePermitOnBlockchain implements ShouldQueue
             throw new RuntimeException('Blockchain returned an unrecognized permit status.');
         }
 
-        $result = $registry->revoke($document->document_uuid, $contract);
+        $result = $registry->revoke($document->document_uuid, $contract, ...$target);
 
         if (! ($result['ok'] ?? false)) {
             throw new RuntimeException('Blockchain revoke failed: '.($result['error'] ?? 'unknown'));

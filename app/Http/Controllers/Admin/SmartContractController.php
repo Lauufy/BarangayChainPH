@@ -48,7 +48,6 @@ class SmartContractController extends Controller
                     $isRevoked ? $record->revoke_tx_hash : $record->tx_hash,
                 ];
             });
-        $explorer = config('blockchain.explorer_url');
 
         return view('admin.smart-contracts.index', [
             'info' => $info,
@@ -56,7 +55,6 @@ class SmartContractController extends Controller
             'active' => $active,
             'officials' => $officials,
             'recent' => $recent,
-            'explorerBase' => $explorer ? rtrim($explorer, '/') : null,
             'networkName' => config('blockchain.network'),
             'isAdmin' => $request->user()->role === 'admin',
             'reachable' => (bool) $info,

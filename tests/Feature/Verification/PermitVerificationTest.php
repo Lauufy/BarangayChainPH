@@ -571,11 +571,11 @@ class PermitVerificationTest extends TestCase
         $registry = $this->mock(BlockchainRegistry::class);
         $registry->shouldReceive('verify')
             ->twice()
-            ->with($document->document_uuid, $document->file_hash, null)
+            ->with($document->document_uuid, $document->file_hash, null, 'sepolia')
             ->andReturn(['ok' => true, 'status' => 'valid']);
         $registry->shouldReceive('revoke')
             ->once()
-            ->with($document->document_uuid, null)
+            ->with($document->document_uuid, null, 'sepolia')
             ->andReturn(['ok' => true, 'txHash' => '0xrevoke']);
 
         $this->get(route('permits.verify', $document->document_uuid))

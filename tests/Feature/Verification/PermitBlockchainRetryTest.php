@@ -46,12 +46,15 @@ class PermitBlockchainRetryTest extends TestCase
             ->assertSessionHas('error');
     }
 
-    public function test_admin_can_retry_transaction_hash_recovery_for_an_already_recorded_permit(): void
+    public function test_admin_can_recover_a_sepolia_transaction_after_mainnet_cutover(): void
     {
         [$staff, $application] = $this->makeApprovedApplication();
         $document = $application->issuedDocuments()->firstOrFail();
+        config(['blockchain.network' => 'mainnet', 'blockchain.contract' => '0xmainnet']);
         BlockchainRecord::create([
             'issued_document_id' => $document->id,
+            'network' => 'sepolia',
+            'contract' => '0xsepolia',
             'recorded_at' => now(),
             'error' => BlockchainRecord::TX_HASH_RECOVERY_ERROR.' Retry the blockchain lookup or backfill the transaction hash.',
         ]);
@@ -59,9 +62,11 @@ class PermitBlockchainRetryTest extends TestCase
         $registry = $this->mock(BlockchainRegistry::class);
         $registry->shouldReceive('verify')
             ->once()
+            ->with($document->document_uuid, $document->file_hash, '0xsepolia', 'sepolia')
             ->andReturn(['ok' => true, 'status' => 'valid']);
         $registry->shouldReceive('findIssuanceTransaction')
             ->once()
+            ->with($document->document_uuid, '0xsepolia', 'sepolia')
             ->andReturn(['ok' => true, 'found' => true, 'txHash' => '0xrecovered']);
 
         $this->actingAs($staff)
@@ -71,6 +76,9 @@ class PermitBlockchainRetryTest extends TestCase
         $record = $document->fresh()->blockchainRecord;
 
         $this->assertSame('0xrecovered', $record->tx_hash);
+        $this->assertSame('sepolia', $record->network);
+        $this->assertSame('0xsepolia', $record->contract);
+        $this->assertSame('https://sepolia.etherscan.io/tx/0xrecovered', $record->transactionUrl($record->tx_hash));
         $this->assertNull($record->error);
     }
 
@@ -78,8 +86,11 @@ class PermitBlockchainRetryTest extends TestCase
     {
         [$staff, $application] = $this->makeApprovedApplication();
         $document = $application->issuedDocuments()->firstOrFail();
+        config(['blockchain.network' => 'mainnet', 'blockchain.contract' => '0xmainnet']);
         BlockchainRecord::create([
             'issued_document_id' => $document->id,
+            'network' => 'sepolia',
+            'contract' => '0xsepolia',
             'recorded_at' => now(),
             'error' => BlockchainRecord::TX_HASH_RECOVERY_ERROR.' Retry the blockchain lookup or backfill the transaction hash.',
         ]);
@@ -87,6 +98,7 @@ class PermitBlockchainRetryTest extends TestCase
         $registry = $this->mock(BlockchainRegistry::class);
         $registry->shouldReceive('verify')
             ->once()
+            ->with($document->document_uuid, $document->file_hash, '0xsepolia', 'sepolia')
             ->andReturn(['ok' => true, 'status' => 'valid']);
         $registry->shouldReceive('findIssuanceTransaction')
             ->once()
