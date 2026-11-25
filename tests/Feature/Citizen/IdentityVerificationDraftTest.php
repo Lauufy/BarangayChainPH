@@ -17,6 +17,21 @@ class IdentityVerificationDraftTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_rejected_citizen_sees_the_reviewers_requested_correction(): void
+    {
+        $citizen = $this->citizenWithCompleteDetails();
+        IdentityVerification::factory()->create([
+            'user_id' => $citizen->id,
+            'status' => IdentityVerification::REJECTED,
+            'rejection_reason' => 'Upload a clearer photo of the back of your ID.',
+        ]);
+
+        $this->actingAs($citizen)
+            ->get(route('citizen.identity-verification'))
+            ->assertOk()
+            ->assertSeeText('Upload a clearer photo of the back of your ID.');
+    }
+
     public function test_id_scanner_shows_both_side_uploads_below_one_camera_control(): void
     {
         $citizen = $this->citizenWithCompleteDetails();
@@ -149,6 +164,31 @@ class IdentityVerificationDraftTest extends TestCase
         $this->assertDatabaseCount('identity_verifications', 0);
         Storage::disk('supabase')->assertExists($draft['document_path']);
         Storage::disk('supabase')->assertExists($draft['document_back_key']);
+    }
+
+    public function test_review_returns_to_id_upload_when_the_saved_back_is_missing(): void
+    {
+        $citizen = $this->citizenWithCompleteDetails();
+        $disk = Storage::fake('supabase');
+        $this->saveId($citizen);
+        $this->saveSelfie($citizen);
+        $draft = session('identity_verification.draft');
+        $disk->delete($draft['document_back_key']);
+
+        $this->actingAs($citizen)->post(route('citizen.identity-verification.document'), [
+            'agree_truth' => '1',
+            'agree_privacy' => '1',
+        ])->assertRedirect(route('citizen.identity-verification', ['step' => 2]))
+            ->assertSessionHasErrors('document_back');
+
+        $this->withCookie(config('session.cookie'), session()->getId())
+            ->get(route('citizen.identity-verification', ['step' => 2]))
+            ->assertViewHas('step', 2)
+            ->assertSeeText('The saved back of your ID is missing.');
+        $this->assertNull(session('identity_verification.draft.document_back_key'));
+        $disk->assertExists([$draft['document_path'], $draft['selfie_path']]);
+        $this->assertEmpty($disk->allFiles('identity-documents'));
+        $this->assertDatabaseCount('identity_verifications', 0);
     }
 
     public function test_invalid_selfie_upload_does_not_change_the_session_draft(): void

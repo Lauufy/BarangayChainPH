@@ -56,7 +56,7 @@
 </section>
 
 @once
-    <script>
+    <script @if (app()->bound('csp-nonce')) nonce="{{ app('csp-nonce') }}" @endif>
         (() => {
             const initialize = () => {
                 const root = document.getElementById('id-scanner');

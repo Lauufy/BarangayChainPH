@@ -111,13 +111,15 @@
     <section class="{{ $card }}">
         <h3 class="{{ $h3 }}">Confirmation</h3>
         <div class="text-(--gray-700) dark:text-(--gray-200) mt-3 space-y-3 text-sm">
-            <x-form.checkbox name="agree_truth" required>
+            <x-form.checkbox name="agree_truth" required data-error-message="Confirm that the details and photos belong to you.">
                 I confirm that the information, ID, and photo I submitted are true and belong to me.
             </x-form.checkbox>
-            <x-form.checkbox name="agree_privacy" required>
+            <p id="agree_truth-error" class="text-sm text-(--red-600) empty:hidden"></p>
+            <x-form.checkbox name="agree_privacy" required data-error-message="Read the privacy notice and confirm your agreement.">
                 I have read the data privacy notice and I agree to the use of my personal data for
                 identity verification.
             </x-form.checkbox>
+            <p id="agree_privacy-error" class="text-sm text-(--red-600) empty:hidden"></p>
         </div>
     </section>
 </div>

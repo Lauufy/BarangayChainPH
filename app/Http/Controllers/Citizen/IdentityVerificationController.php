@@ -365,6 +365,24 @@ class IdentityVerificationController extends Controller
             ] as $key => $folder) {
                 $path = $draft[$key];
 
+                if (! Storage::disk('supabase')->exists($path)) {
+                    $this->discardFiles($createdPaths);
+                    $draft[$key] = null;
+                    $request->session()->put(self::DRAFT_SESSION_KEY, $draft);
+                    $message = match ($key) {
+                        'document_path' => 'The saved front of your ID is missing. Upload it again to continue.',
+                        'document_back_key' => 'The saved back of your ID is missing. Upload it again to continue.',
+                        'selfie_path' => 'Your saved selfie is missing. Take or upload it again to continue.',
+                    };
+
+                    if ($request->expectsJson()) {
+                        return $this->endpointError($request, $requiredFiles[$key], $message);
+                    }
+
+                    return redirect()->route('citizen.identity-verification', ['step' => $this->firstIncompleteStep($draft)])
+                        ->withErrors([$requiredFiles[$key] => $message]);
+                }
+
                 if ($this->isStagedPath($path, $user)) {
                     $finalPaths[$key] = $this->promoteStagedFile($path, $folder, $user);
                     $createdPaths[] = $finalPaths[$key];
@@ -446,7 +464,7 @@ class IdentityVerificationController extends Controller
             $this->discardFiles($createdPaths);
             report($exception);
 
-            return $this->endpointError($request, 'document', 'We could not submit your verification. Please try again.', 500);
+            return $this->endpointError($request, 'submission', 'Your draft is saved. Please try submitting again. If the problem continues, contact the barangay office.', 500);
         }
 
         $verification = $result['verification'];
@@ -639,15 +657,22 @@ class IdentityVerificationController extends Controller
 
     private function promoteStagedFile(string $path, string $folder, User $user): string
     {
-        if (! $this->isStagedPath($path, $user) || ! Storage::disk('supabase')->exists($path)) {
-            throw new \RuntimeException('A staged identity file is missing or invalid.');
-        }
-
         $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
         $destination = $folder.'/'.$user->id.'/'.Str::uuid().'.'.$extension;
-
-        if (! Storage::disk('supabase')->copy($path, $destination)) {
-            throw new \RuntimeException('A staged identity file could not be finalized.');
+        $disk = Storage::disk('supabase');
+        // The S3 adapter's copy operation requires an object ACL lookup.
+        $stream = $disk->readStream($path);
+        if (! is_resource($stream)) {
+            throw new \RuntimeException('A staged identity file could not be read.');
+        }
+        try {
+            if (! $disk->put($destination, $stream)) {
+                throw new \RuntimeException('A staged identity file could not be finalized.');
+            }
+        } finally {
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
         }
 
         return $destination;

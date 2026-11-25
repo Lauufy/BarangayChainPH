@@ -209,47 +209,47 @@
             </section>
 
             {{-- Recent permit requests --}}
-            <section class="{{ $panel }} min-w-0 overflow-hidden xl:col-span-2">
-                <div class="{{ $panelHead }} flex items-start justify-between gap-3">
-                    <div>
-                        <h2 class="{{ $panelTitle }}">Recent Permit Requests</h2>
-                        <p class="{{ $muted }} mt-0.5 text-xs">The latest requests submitted by citizens.</p>
-                    </div>
+            @if ($recentPermits !== null)
+                <section class="{{ $panel }} min-w-0 overflow-hidden xl:col-span-2">
+                    <div class="{{ $panelHead }} flex items-start justify-between gap-3">
+                        <div>
+                            <h2 class="{{ $panelTitle }}">Recent Permit Requests</h2>
+                            <p class="{{ $muted }} mt-0.5 text-xs">The latest requests submitted by citizens.</p>
+                        </div>
 
-                    @if ($can('permits.review'))
                         <a href="{{ route('admin.permits.index') }}"
                             class="bg-(--gray-100) text-(--gray-700) hover:bg-(--gray-200) dark:text-(--gray-200) shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors dark:bg-white/10 dark:hover:bg-white/20">View all</a>
-                    @endif
-                </div>
+                    </div>
 
-                <x-tables.table :heads="['Reference', 'Citizen', 'Permit Type', 'Date', 'Status']" :empty="$recentPermits->isEmpty()" message="No recent permit requests to display."
-                    hint="">
-                    @foreach ($recentPermits as $permit)
-                        <tr>
-                            <td
-                                class="text-(--gray-900) dark:text-(--gray-50) whitespace-nowrap font-mono text-xs font-medium">
-                                {{ $permit->reference_number ?? 'REQ-' . $permit->id }}
-                            </td>
-                            <td>
-                                <x-tables.user-cell :name="$permit->user->name ?? ($permit->citizen_name ?? '—')" :avatar="$permit->user->avatar_url ?? null" />
-                            </td>
-                            <td>{{ $permit->serviceTitle() }}</td>
-                            <td class="whitespace-nowrap">{{ $permit->created_at?->format('j M Y') }}</td>
-                            <td>
-                                <x-tables.badge :variant="match (strtolower($permit->status ?? 'pending')) {
-                                    'approved', 'completed', 'authenticated' => 'success',
-                                    'rejected', 'denied' => 'danger',
-                                    'pending' => 'warning',
-                                    'processing', 'under_review' => 'info',
-                                    default => 'neutral',
-                                }">
-                                    {{ str_replace('_', ' ', strtolower($permit->status ?? 'pending')) }}
-                                </x-tables.badge>
-                            </td>
-                        </tr>
-                    @endforeach
-                </x-tables.table>
-            </section>
+                    <x-tables.table :heads="['Reference', 'Citizen', 'Permit Type', 'Date', 'Status']" :empty="$recentPermits->isEmpty()" message="No recent permit requests to display."
+                        hint="">
+                        @foreach ($recentPermits as $permit)
+                            <tr>
+                                <td
+                                    class="text-(--gray-900) dark:text-(--gray-50) whitespace-nowrap font-mono text-xs font-medium">
+                                    {{ $permit->reference_number ?? 'REQ-' . $permit->id }}
+                                </td>
+                                <td>
+                                    <x-tables.user-cell :name="$permit->user->name ?? ($permit->citizen_name ?? '—')" :avatar="$permit->user->avatar_url ?? null" />
+                                </td>
+                                <td>{{ $permit->serviceTitle() }}</td>
+                                <td class="whitespace-nowrap">{{ $permit->created_at?->format('j M Y') }}</td>
+                                <td>
+                                    <x-tables.badge :variant="match (strtolower($permit->status ?? 'pending')) {
+                                        'approved', 'completed', 'authenticated' => 'success',
+                                        'rejected', 'denied' => 'danger',
+                                        'pending' => 'warning',
+                                        'processing', 'under_review' => 'info',
+                                        default => 'neutral',
+                                    }">
+                                        {{ str_replace('_', ' ', strtolower($permit->status ?? 'pending')) }}
+                                    </x-tables.badge>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </x-tables.table>
+                </section>
+            @endif
         </div>
     </div>
 @endsection

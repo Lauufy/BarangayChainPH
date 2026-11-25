@@ -61,7 +61,7 @@
         <div class="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {{-- prefix="+63": digits only, leading 0 stripped. Mobile numbers are 10 digits starting with 9 --}}
             <x-form.input light name="phone" label="Phone number" type="tel" required prefix="+63"
-                placeholder="9171234567" :value="old('phone', preg_replace('/^(\+?63|0)/', '', preg_replace('/[^\d+]/', '', $formDetails['phone'] ?? '')))" pattern="9\d{9}" maxlength="10"
+                placeholder="9171234567" :use-old="false" :value="preg_replace('/^(\+?63|0)/', '', preg_replace('/[^\d+]/', '', (string) old('phone', $formDetails['phone'] ?? '')))" pattern="9\d{9}" maxlength="10"
                 error-message="Enter a 10-digit mobile number starting with 9, e.g. 9171234567." />
 
             <x-form.input light name="province" label="Province" required :value="old('province', $formDetails['province'] ?? null)" placeholder="e.g. Rizal"

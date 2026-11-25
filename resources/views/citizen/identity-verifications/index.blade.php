@@ -114,11 +114,16 @@
                 </div>
             </section>
         @else
+            @if ($status === 'rejected' && filled($user->latestIdentityVerification?->rejection_reason))
+                <x-partials.citizen-notice type="amber" title="What to correct before submitting again">
+                    {{ $user->latestIdentityVerification->rejection_reason }}
+                </x-partials.citizen-notice>
+            @endif
             {{-- Validation errors --}}
             @if ($errors->any())
                 <div role="alert"
                     class="border-(--red-600) bg-(--white) text-(--red-600) dark:bg-(--gray-800) rounded-md border p-3 text-sm">
-                    <p class="font-semibold">Please fix the following:</p>
+                    <p class="font-semibold">{{ $errors->has('submission') ? 'Verification could not be submitted' : 'Please fix the following:' }}</p>
                     <ul class="mt-2 list-disc space-y-1 pl-5">
                         @foreach ($errors->all() as $message)
                             <li>{{ $message }}</li>
@@ -143,7 +148,7 @@
                     @include('citizen.identity-verifications.steps.review')
                 </form>
 
-                <script>
+                <script @if (app()->bound('csp-nonce')) nonce="{{ app('csp-nonce') }}" @endif>
                 (() => {
                     const backUrl = @json(route('citizen.identity-verification', ['step' => 1]));
                     const MAX_SIZE = 5 * 1024 * 1024; // same as the Laravel rule (max:5120)
@@ -518,11 +523,8 @@
 
                     // ---------- Steps ----------
                     function updateStepFields(step) {
-                        all('[data-panel="2"] input, [data-panel="2"] select').forEach((field) => {
-                            field.disabled = step !== 2;
-                        });
-                        all('[data-panel="3"] input, [data-panel="3"] select').forEach((field) => {
-                            field.disabled = step !== 3;
+                        all('[data-panel] input, [data-panel] select').forEach((field) => {
+                            field.disabled = Number(field.closest('[data-panel]').dataset.panel) !== step;
                         });
                     }
 
@@ -557,6 +559,7 @@
                             ? messages.join(' ')
                             : 'We could not save your progress. Check your connection and try again.';
                         box.classList.remove('hidden');
+                        box.scrollIntoView({ block: 'center' });
                     }
 
                     function clearStepErrors(step) {
@@ -634,6 +637,7 @@
                             showStepErrors(step, {});
                         } finally {
                             button.innerHTML = buttonHtml;
+                            button.disabled = false;
                             updateContinueButton();
                         }
                     }
@@ -642,7 +646,15 @@
                     $('next-button').addEventListener('click', () => {
                         const fields = all(
                             `[data-panel="${currentStep}"] input, [data-panel="${currentStep}"] select`);
-                        if (Array.from(fields).every((field) => field.reportValidity())) {
+                        const invalid = Array.from(fields).filter((field) => !field.checkValidity());
+                        if (invalid.length) {
+                            if (invalid.some(field => !field.getClientRects().length)) {
+                                showStepErrors(currentStep, invalid.map(field => field.dataset.errorMessage || field.validationMessage));
+                            } else {
+                                invalid[0].focus();
+                                invalid[0].closest('[data-upload], section')?.scrollIntoView({ block: 'center' });
+                            }
+                        } else {
                             saveStep(currentStep);
                         }
                     });
@@ -672,6 +684,31 @@
                 })();
                 </script>
             @endif
+            <script @if (app()->bound('csp-nonce')) nonce="{{ app('csp-nonce') }}" @endif>
+                (() => {
+                    const form = document.querySelector('#details-form, #document-form');
+                    const hintFor = field => field.closest('[data-upload]')?.querySelector('[data-error]')
+                        || form.querySelector(`[data-error-for="${field.name}"]`)
+                        || document.getElementById(field.name + '-error');
+
+                    form.addEventListener('invalid', ({ target: field }) => {
+                        const hint = hintFor(field);
+                        if (!hint) return;
+                        hint.id ||= field.id + '-error';
+                        hint.textContent = field.dataset.errorMessage || field.validationMessage;
+                        hint.classList.remove('hidden');
+                        field.setAttribute('aria-invalid', 'true');
+                        field.setAttribute('aria-describedby', hint.id);
+                    }, true);
+
+                    form.addEventListener('change', ({ target: field }) => {
+                        if (!field.validity?.valid || !field.hasAttribute('aria-invalid')) return;
+                        const hint = hintFor(field);
+                        if (hint) hint.textContent = '';
+                        field.removeAttribute('aria-invalid');
+                    }, true);
+                })();
+            </script>
         @endunless
     </div>
 @endsection

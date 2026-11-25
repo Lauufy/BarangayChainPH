@@ -32,7 +32,7 @@
         <div class="mt-4">
             <label for="selfie" id="selfie-drop" class="{{ $dropzone }}">
                 <input id="selfie" name="selfie" type="file" @required(blank($draft['selfie_path'] ?? null))
-                    accept="image/jpeg,image/png" class="sr-only">
+                    accept="image/jpeg,image/png" data-error-message="Take or upload a selfie holding your ID." class="sr-only">
 
                 <div data-empty class="{{ !empty($draft['selfie_path']) ? 'hidden' : 'flex' }} flex-col items-center">
                     <span class="{{ $iconBox }}">

@@ -54,7 +54,7 @@
 </ol>
 
 @once
-    <script>
+    <script @if (app()->bound('csp-nonce')) nonce="{{ app('csp-nonce') }}" @endif>
         window.Stepper = {
             // Go to a step (1 = first). Steps before it become "done", the others "next".
             set(target, step) {

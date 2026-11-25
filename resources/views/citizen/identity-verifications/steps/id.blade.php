@@ -10,7 +10,7 @@
 
     <section class="{{ $card }} space-y-4">
         <x-form.input light raised name="document_type" label="Type of ID" type="select" required
-            placeholder="Select" :options="array_combine($documentTypes, $documentTypes)" :value="$draft['document_type'] ?? null" />
+            placeholder="Select" error-message="Choose the type of ID you are uploading." :options="array_combine($documentTypes, $documentTypes)" :value="$draft['document_type'] ?? null" />
 
         <ul class="bg-(--gray-50) text-(--gray-700) dark:bg-(--gray-900) dark:text-(--gray-200) space-y-1.5 rounded-lg p-4 text-sm">
             <li>✓ Keep all four corners visible.</li>
@@ -38,7 +38,7 @@
                 <x-form.upload-docu name="document" id="document" label="Front of ID" accept=".jpg,.jpeg,.png,.pdf"
                     :max-mb="5" text="Choose or capture the front of your ID" :preview-url="$frontUrl"
                     :preview-name="$frontName" :preview-is-image="$frontPreviewIsImage"
-                    capture="environment" data-id-upload="front" :required="$frontRequired" />
+                    capture="environment" data-id-upload="front" data-error-message="Upload the front of your ID." :required="$frontRequired" />
 
             </div>
 
@@ -46,7 +46,7 @@
                 <x-form.upload-docu name="document_back" id="document_back" label="Back of ID" accept=".jpg,.jpeg,.png,.pdf"
                     :max-mb="5" text="Choose or capture the back of your ID" :preview-url="$backUrl"
                     :preview-name="$backName" :preview-is-image="$backPreviewIsImage"
-                    capture="environment" data-id-upload="back" :required="$backRequired" />
+                    capture="environment" data-id-upload="back" data-error-message="Upload the back of your ID." :required="$backRequired" />
             </div>
         </div>
     </section>

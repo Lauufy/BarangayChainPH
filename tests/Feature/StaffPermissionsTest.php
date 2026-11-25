@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\ServiceRequest;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
 class StaffPermissionsTest extends TestCase
@@ -28,6 +30,28 @@ class StaffPermissionsTest extends TestCase
         $this->actingAs($this->staff())
             ->get(route('admin.dashboard'))
             ->assertOk();
+    }
+
+    public function test_recent_permit_requests_require_review_permission_on_the_dashboard(): void
+    {
+        $resident = User::factory()->create(['role' => 'citizen', 'name' => 'Marisol Reyes']);
+        $permit = ServiceRequest::factory()->for($resident, 'user')->create();
+        $retrieved = 'eloquent.retrieved: '.ServiceRequest::class;
+        Event::fake([$retrieved]);
+
+        $this->actingAs($this->staff(['reports.view']))
+            ->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertDontSee('Recent Permit Requests')
+            ->assertDontSee($resident->name)
+            ->assertDontSee($permit->reference_number);
+
+        Event::assertNotDispatched($retrieved);
+
+        $this->actingAs($this->staff(['permits.review']))
+            ->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSeeTextInOrder(['Recent Permit Requests', $permit->reference_number, $resident->name]);
     }
 
     public function test_staff_pages_need_their_permission(): void

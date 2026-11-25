@@ -70,7 +70,9 @@ class DashboardController extends Controller
             : null;
 
         // Kept fresh on purpose (small query, always up to date).
-        $recentPermits = ServiceRequest::with('user')->latest()->limit(5)->get();
+        $recentPermits = $can('permits.review')
+            ? ServiceRequest::with('user')->latest()->limit(5)->get()
+            : null;
 
         $shortcuts = collect([
             ['admin.users.index', 'User & Role Management', $isAdmin],
