@@ -402,7 +402,7 @@ class ServiceApplicationController extends Controller
     {
         return ServiceRequest::query()->whereBelongsTo($user)
             ->where('service_type', $service['type'])
-            ->whereIn('status', [ServiceRequest::PENDING, ServiceRequest::PROCESSING]);
+            ->whereIn('status', [ServiceRequest::PENDING, ServiceRequest::PROCESSING, ServiceRequest::RESUBMISSION_REQUIRED]);
     }
 
     private function deleteFiles(array $paths): void

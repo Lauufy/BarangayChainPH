@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\SmartContractController;
 use App\Http\Controllers\Admin\TicketInboxController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Shared\PermitResubmissionController;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -87,6 +88,8 @@ Route::middleware(['auth', 'nocache', 'role:admin,staff'])
         Route::middleware('permission:permits.review')
             ->controller(PermitController::class)
             ->group(function () {
+                Route::post('/permits/{serviceRequest}/resubmission', [PermitResubmissionController::class, 'requestCorrections'])->name('permits.resubmission');
+
                 // List permit requests.
                 Route::get('/permits', 'index')->name('permits.index');
                 // Show one permit request.

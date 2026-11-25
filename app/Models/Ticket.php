@@ -25,6 +25,23 @@ class Ticket extends Model
         return $this->belongsTo(ServiceRequest::class);
     }
 
+    public function reference(): string
+    {
+        return $this->serviceRequest?->reference_number ?? 'Help ticket #'.$this->id;
+    }
+
+    public function citizenName(): string
+    {
+        return $this->serviceRequest?->applicant_name ?? $this->user->name;
+    }
+
+    public function citizenUrl(): string
+    {
+        return $this->service_request_id
+            ? route('citizen.tickets.show', $this->service_request_id)
+            : route('citizen.help.show', $this);
+    }
+
     public function messages(): HasMany
     {
         return $this->hasMany(TicketMessage::class);

@@ -8,6 +8,7 @@ use App\Http\Controllers\Citizen\ProfileController;
 use App\Http\Controllers\Citizen\ServiceApplicationController;
 use App\Http\Controllers\Citizen\ServiceRequestController;
 use App\Http\Controllers\Citizen\TicketController;
+use App\Http\Controllers\Shared\PermitResubmissionController;
 use Illuminate\Support\Facades\Route;
 
 // ===== Citizen routes (logged-in citizens only) =====
@@ -23,6 +24,9 @@ Route::middleware(['auth', 'nocache', 'role:citizen'])
         // Services list page (it loads its own data).
         Route::view('/services', 'citizen.services.index')->name('services');
 
+        Route::get('/applications/{serviceRequest}/resubmit', [PermitResubmissionController::class, 'edit'])->name('resubmissions.edit');
+        Route::post('/applications/{serviceRequest}/resubmit', [PermitResubmissionController::class, 'submit'])->name('resubmissions.submit');
+
         // Documents and applications pages.
         // Each method must authorize ownership of the bound serviceRequest.
         Route::controller(ServiceRequestController::class)->group(function () {
@@ -37,6 +41,13 @@ Route::middleware(['auth', 'nocache', 'role:citizen'])
             Route::get('/applications/{serviceRequest}/print', 'printApplication')->name('applications.print');
             // Cancel one application.
             Route::post('/applications/{serviceRequest}/cancel', 'cancelApplication')->name('applications.cancel');
+        });
+
+        Route::controller(TicketController::class)->prefix('help-center')->name('help.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/', 'store')->middleware('throttle:5,1')->name('store');
+            Route::get('/{ticket}', 'showHelp')->name('show');
+            Route::post('/{ticket}', 'replyHelp')->middleware('throttle:20,1')->name('reply');
         });
 
         // Show the support ticket of an application.
@@ -113,6 +124,7 @@ Route::middleware(['auth', 'nocache', 'role:citizen'])
 
             // Slugs that would collide with the fixed citizen routes above.
             $reservedSlugs = [
+                'help-center',
                 'dashboard',
                 'services',
                 'documents',

@@ -58,6 +58,8 @@ class ServiceRequest extends Model
     // Statuses
     public const PENDING = 'pending';
 
+    public const RESUBMISSION_REQUIRED = 'resubmission_required';
+
     public const PROCESSING = 'processing';
 
     public const APPROVED = 'approved';
@@ -105,6 +107,11 @@ class ServiceRequest extends Model
     public function issuedDocuments(): HasMany
     {
         return $this->hasMany(IssuedDocument::class);
+    }
+
+    public function revisions(): HasMany
+    {
+        return $this->hasMany(PermitRevision::class);
     }
 
     public function documents(): HasMany

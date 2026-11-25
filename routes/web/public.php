@@ -31,6 +31,10 @@ Route::view('/terms', 'legal.terms')->name('terms');
 // Privacy policy page.
 Route::view('/privacy', 'legal.privacy')->name('privacy');
 
+Route::get('/ticket-messages/{message}/attachment', \App\Http\Controllers\Shared\TicketAttachmentController::class)
+    ->middleware(['auth', 'nocache', 'role:citizen,admin,staff'])
+    ->name('tickets.attachment');
+
 // Serves a ticket participant's photo to authenticated citizens, admins, and staff only.
 Route::get('/tickets/{ticket}/participants/{participant}/photo', [
     TicketParticipantPhotoController::class,

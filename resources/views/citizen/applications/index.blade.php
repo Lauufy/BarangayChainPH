@@ -9,6 +9,7 @@
         // Badge colour per status (same map as the admin permits page)
         $statuses = [
             'pending' => 'warning',
+            'resubmission_required' => 'warning',
             'processing' => 'info',
             'approved' => 'success',
             'rejected' => 'danger',
@@ -44,11 +45,6 @@
                         $hasTicket = (bool) $application->ticket;
                         $canPrint = $application->canPrint();
                         $canCancel = $application->isCancellable();
-
-                        // Review is always shown. With 3 or more buttons, desktop switches to icons only
-                        // (mobile always keeps labels because they are easier to tap).
-                        $actionCount = 1 + (int) $hasTicket + (int) $canPrint + (int) $canCancel;
-                        $iconOnly = $actionCount >= 3;
                     @endphp
 
                     <tr>
@@ -65,70 +61,32 @@
 
                         <td data-side="right">
                             <x-tables.badge :variant="$statuses[$application->status] ?? 'neutral'" labeled class="capitalize">
-                                {{ $application->status }}
+                                {{ str_replace('_', ' ', $application->status) }}
                             </x-tables.badge>
                         </td>
 
                         <x-tables.detail side="full" class="text-center">
                             <div class="flex flex-wrap items-start justify-center gap-2">
-                                @if ($iconOnly)
-                                    {{-- Desktop: compact icon buttons --}}
-                                    <span class="hidden sm:contents">
-                                        <x-tables.action label="Review" icon="file-search" icon-only :href="route('citizen.applications.show', $application)" />
+                                @if ($application->status === ServiceRequest::RESUBMISSION_REQUIRED)
+                                    <x-tables.action label="Resubmit" icon="pencil" :href="route('citizen.resubmissions.edit', $application)" />
+                                @endif
 
-                                        @if ($hasTicket)
-                                            <x-tables.action label="Messages" icon="message" icon-only :href="route('citizen.tickets.show', $application)" />
-                                        @endif
+                                <x-tables.action label="Review" icon="file-search" :href="route('citizen.applications.show', $application)" />
 
-                                        @if ($canPrint)
-                                            <x-tables.action label="Print" icon="printer" icon-only :href="route('citizen.applications.print', $application)" />
-                                        @endif
-                                    </span>
+                                @if ($hasTicket)
+                                    <x-tables.action label="Messages" icon="message" :href="route('citizen.tickets.show', $application)" />
+                                @endif
 
-                                    {{-- Mobile: labeled buttons, easier to tap --}}
-                                    <span class="contents sm:hidden">
-                                        <x-tables.action label="Review" icon="file-search" :href="route('citizen.applications.show', $application)" />
-
-                                        @if ($hasTicket)
-                                            <x-tables.action label="Messages" icon="message" :href="route('citizen.tickets.show', $application)" />
-                                        @endif
-
-                                        @if ($canPrint)
-                                            <x-tables.action label="Print" icon="printer" :href="route('citizen.applications.print', $application)" />
-                                        @endif
-                                    </span>
-                                @else
-                                    {{-- Fewer than 3 buttons: labels everywhere --}}
-                                    <x-tables.action label="Review" icon="file-search" :href="route('citizen.applications.show', $application)" />
-
-                                    @if ($hasTicket)
-                                        <x-tables.action label="Messages" icon="message" :href="route('citizen.tickets.show', $application)" />
-                                    @endif
-
-                                    @if ($canPrint)
-                                        <x-tables.action label="Print" icon="printer" :href="route('citizen.applications.print', $application)" />
-                                    @endif
+                                @if ($canPrint)
+                                    <x-tables.action label="Print" icon="printer" :href="route('citizen.applications.print', $application)" />
                                 @endif
 
                                 {{-- Cancel: opens the shared cancellation modal below --}}
                                 @if ($canCancel)
-                                    <button type="button" data-cancel-open
-                                        data-id="{{ $application->id }}"
+                                    <x-tables.action label="Cancel application {{ $application->reference_number }}" icon="x" variant="danger"
+                                        data-cancel-open data-id="{{ $application->id }}"
                                         data-ref="{{ $application->reference_number }}"
-                                        data-action="{{ route('citizen.applications.cancel', $application) }}"
-                                        @if ($iconOnly) title="Cancel" aria-label="Cancel application {{ $application->reference_number }}" @endif
-                                        @class([
-                                            'inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-red-200 text-xs font-semibold text-red-700 transition hover:bg-red-50 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 dark:border-red-500/40 dark:text-red-300 dark:hover:bg-red-500/10',
-                                            'px-3 py-1.5' => !$iconOnly,
-                                            'px-3 py-1.5 sm:size-8 sm:p-0' => $iconOnly,
-                                        ])>
-                                        <svg @class(['size-3.5', 'hidden sm:block' => $iconOnly, 'hidden' => !$iconOnly]) viewBox="0 0 24 24" fill="none"
-                                            stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
-                                            stroke-linejoin="round" aria-hidden="true">
-                                            <path d="M6 18 18 6M6 6l12 12" />
-                                        </svg>
-                                        <span @class(['sm:sr-only' => $iconOnly])>Cancel</span>
-                                    </button>
+                                        data-action="{{ route('citizen.applications.cancel', $application) }}" />
                                 @endif
                             </div>
                         </x-tables.detail>

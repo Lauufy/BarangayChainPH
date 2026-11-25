@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['ticket_id', 'user_id', 'body', 'is_system', 'read_at'])]
+#[Fillable(['ticket_id', 'user_id', 'body', 'is_system', 'read_at', 'attachment_path', 'attachment_name'])]
 class TicketMessage extends Model
 {
     protected $touches = ['ticket'];
@@ -15,6 +15,7 @@ class TicketMessage extends Model
     {
         return [
             'body' => 'encrypted',
+            'attachment_name' => 'encrypted',
             'is_system' => 'boolean',
             'read_at' => 'datetime',
         ];

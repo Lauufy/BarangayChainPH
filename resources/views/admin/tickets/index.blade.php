@@ -46,10 +46,10 @@
                         @foreach ($tickets as $ticket)
                             <tr>
                                 <td>
-                                    <x-tables.user-cell :name="$ticket->serviceRequest->applicant_name"
-                                        :sub="$ticket->serviceRequest->user->email" />
+                                    <x-tables.user-cell :name="$ticket->citizenName()"
+                                        :sub="$ticket->user->email" />
                                 </td>
-                                <td class="text-slate-600">{{ $ticket->serviceRequest->reference_number }}</td>
+                                <td class="text-slate-600">{{ $ticket->reference() }}</td>
                                 <td class="text-slate-600">
                                     {{ $ticket->updated_at->timezone(config('app.timezone'))->format('M j, Y g:i A') }}
                                 </td>

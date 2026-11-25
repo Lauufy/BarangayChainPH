@@ -12,7 +12,7 @@
 
         // Services the user already has an open request for
         $pendingServices = ServiceRequest::query()->whereBelongsTo($user)
-            ->whereIn('status', [ServiceRequest::PENDING, ServiceRequest::PROCESSING])
+            ->whereIn('status', [ServiceRequest::PENDING, ServiceRequest::PROCESSING, ServiceRequest::RESUBMISSION_REQUIRED])
             ->pluck('service_type')
             ->all();
 

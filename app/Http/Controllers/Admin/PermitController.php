@@ -16,6 +16,7 @@ use App\Notifications\ServiceRequestRejected;
 use App\Services\AuditLogger;
 use App\Services\BlockchainRegistry;
 use App\Services\DocumentIssuer;
+use App\Services\PermitCorrectionFields;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -76,7 +77,7 @@ class PermitController extends Controller
     {
         // The first time staff open a pending request, it becomes "processing"
         $serviceRequest = $this->markProcessing($serviceRequest);
-        $application = $serviceRequest->load(['user', 'issuedDocuments.blockchainRecord', 'documents']);
+        $application = $serviceRequest->load(['user', 'issuedDocuments.blockchainRecord', 'documents', 'revisions' => fn ($query) => $query->latest('id')]);
         $status = $application->status;
         $isApproved = $status === ServiceRequest::APPROVED;
         $isOpen = in_array($status, [ServiceRequest::PENDING, ServiceRequest::PROCESSING], true);
@@ -84,6 +85,7 @@ class PermitController extends Controller
         $currentRecord = $activeDocuments->sortByDesc('version')->first()?->blockchainRecord;
         [$statusLabel, $statusVariant] = [
             'pending' => ['Pending review', 'warning'],
+            ServiceRequest::RESUBMISSION_REQUIRED => ['Resubmission Required', 'warning'],
             'processing' => ['Processing', 'info'],
             'approved' => ['Approved', 'success'],
             'rejected' => ['Rejected', 'danger'],
@@ -120,6 +122,7 @@ class PermitController extends Controller
             'isOpen' => $isOpen,
             'activeDocuments' => $activeDocuments,
             'currentRecord' => $currentRecord,
+            'correctionFields' => PermitCorrectionFields::for($application),
             'statusLabel' => $statusLabel,
             'statusVariant' => $statusVariant,
             'details' => $details,

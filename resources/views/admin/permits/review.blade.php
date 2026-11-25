@@ -138,6 +138,10 @@
                             Approve
                         </button>
                     </div>
+                    <button type="button" id="open-corrections" aria-haspopup="dialog" aria-controls="correction-dialog"
+                        class="mt-3 w-full rounded-md border border-slate-300 px-4 py-2.5 text-sm font-semibold hover:bg-slate-50 dark:border-slate-600 dark:hover:bg-slate-800">
+                        Request Resubmission
+                    </button>
                 @elseif ($application->rejection_reason)
                     <div class="mt-4 rounded-md bg-red-50 p-3 dark:bg-red-500/10">
                         <p class="text-sm font-semibold text-red-800 dark:text-red-300">Application rejected</p>
@@ -153,6 +157,8 @@
                 @endif
             </section>
         </div>
+
+        @include('admin.permits.revisions')
 
         {{-- BOTTOM: certificate tools, only after approval (cards stretch to the same height) --}}
         @if ($hasTools)
@@ -281,6 +287,8 @@
     {{-- DECISION MODALS (native <dialog>)                            --}}
     {{-- ============================================================ --}}
     @if ($isOpen)
+        @include('admin.permits.request-corrections')
+
         {{-- Approve --}}
         <dialog id="approve-dialog"
             class="dark:text-(--celadon-500) m-auto w-[calc(100%-2rem)] max-w-md overflow-hidden rounded-lg bg-white p-0 text-slate-900 shadow-2xl backdrop:bg-slate-950/60 backdrop:backdrop-blur-sm dark:bg-slate-900 dark:ring-1 dark:ring-slate-800">
@@ -360,11 +368,34 @@
         </dialog>
     @endif
 
-    <script>
+    <script @if (app()->bound('csp-nonce')) nonce="{{ app('csp-nonce') }}" @endif>
         (function() {
             // Handlers live on `document`: the admin layout replaces page content every 5 seconds,
             // so handlers attached to individual elements would stop working.
             var backdropPress = null;
+
+            function updateCorrections(dialog) {
+                const flags = [...dialog.querySelectorAll('[name="flags[]"]')];
+                flags.forEach(flag => {
+                    const note = document.getElementById(flag.getAttribute('aria-controls'));
+                    note.closest('[data-note]').hidden = !flag.checked;
+                    note.disabled = !flag.checked;
+                    note.required = flag.checked;
+                });
+                dialog.querySelector('[type="submit"]').disabled = !flags.some(flag => flag.checked);
+            }
+
+            function openCorrections() {
+                const dialog = document.getElementById('correction-dialog');
+                updateCorrections(dialog);
+                dialog.showModal();
+            }
+
+            document.addEventListener('change', function(e) {
+                if (e.target.matches('#correction-dialog input[type="checkbox"]')) {
+                    updateCorrections(e.target.closest('dialog'));
+                }
+            });
 
             function setExpiry(button, months) {
                 var date = new Date();
@@ -410,7 +441,9 @@
                 var approveDialog = document.getElementById('approve-dialog');
                 var rejectDialog = document.getElementById('reject-dialog');
 
-                if (target.closest('#open-approve') && approveDialog) {
+                if (target.closest('#open-corrections')) {
+                    openCorrections();
+                } else if (target.closest('#open-approve') && approveDialog) {
                     if (!approveDialog.open) approveDialog.showModal();
                 } else if (target.closest('#open-reject') && rejectDialog) {
                     if (!rejectDialog.open) rejectDialog.showModal();
@@ -443,7 +476,9 @@
             });
 
             // Reopen the right dialog when the server refused the input
-            @if ($isOpen && $errors->has('rejection_reason'))
+            @if ($isOpen && $errors->hasAny(['flags', 'flags.*', 'notes.*', 'message']))
+                openCorrections();
+            @elseif ($isOpen && $errors->has('rejection_reason'))
                 document.getElementById('reject-dialog')?.showModal();
             @elseif ($isOpen && $errors->has('expires_at'))
                 document.getElementById('approve-dialog')?.showModal();

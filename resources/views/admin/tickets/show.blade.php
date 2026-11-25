@@ -4,7 +4,6 @@
 
 @section('content')
     @php
-        $request = $ticket->serviceRequest;
         $isOpen = $ticket->status === 'open';
         $lastDay = null;
         $initialsOf = fn ($name) => Str::of($name ?: '?')->trim()->explode(' ')->filter()->map(fn ($p) => Str::substr($p, 0, 1))->take(2)->join('');
@@ -50,7 +49,6 @@
                 class="min-h-0 flex-1 divide-y divide-slate-100 overflow-y-auto border-t border-slate-100 dark:divide-slate-800 dark:border-slate-800">
                 @forelse ($tickets as $item)
                     @php
-                        $itemRequest = $item->serviceRequest;
                         $itemOpen = $item->status === 'open';
                         $active = $item->is($ticket);
                         $last = $item->latestMessage;
@@ -58,7 +56,7 @@
                     @endphp
 
                     <a href="{{ route('admin.tickets.show', $item) }}"
-                        data-search="{{ Str::lower($itemRequest->reference_number . ' ' . $itemRequest->applicant_name) }}"
+                        data-search="{{ Str::lower($item->reference() . ' ' . $item->citizenName()) }}"
                         @if ($active) aria-current="page" @endif
                         @class([
                             'flex items-start gap-3 px-4 py-3 transition',
@@ -67,13 +65,13 @@
                         ])>
                         <span
                             class="grid size-10 shrink-0 place-items-center rounded-full bg-slate-200 text-xs font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-200">
-                            {{ $initialsOf($itemRequest->applicant_name) }}
+                            {{ $initialsOf($item->citizenName()) }}
                         </span>
 
                         <div class="min-w-0 flex-1">
                             <div class="flex items-center justify-between gap-2">
                                 <p class="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
-                                    {{ $itemRequest->applicant_name }}
+                                    {{ $item->citizenName() }}
                                 </p>
                                 <span class="shrink-0 text-[11px] text-slate-400 dark:text-slate-500">
                                     {{ $when?->diffForHumans(null, true, true) }}
@@ -81,12 +79,12 @@
                             </div>
 
                             <p class="truncate text-xs text-slate-500 dark:text-slate-400">
-                                {{ $last?->body ?? 'No messages yet' }}
+                                {{ $last?->body ?: ($last?->attachment_name ?? 'No messages yet') }}
                             </p>
 
                             <div class="mt-1 flex items-center gap-1.5 text-[11px]">
                                 <span class="truncate text-slate-400 dark:text-slate-500">
-                                    {{ $itemRequest->reference_number }}
+                                    {{ $item->reference() }}
                                 </span>
                                 <span @class([
                                     'ml-auto inline-flex shrink-0 items-center gap-1 font-medium',
@@ -128,15 +126,15 @@
 
                     <span
                         class="grid size-12 shrink-0 place-items-center rounded-full bg-blue-600 text-base font-semibold text-white">
-                        {{ $initialsOf($request->applicant_name) }}
+                        {{ $initialsOf($ticket->citizenName()) }}
                     </span>
 
                     <div class="min-w-0">
                         <h1 class="truncate text-base font-semibold text-slate-900 dark:text-slate-100">
-                            {{ $request->reference_number }}
+                            {{ $ticket->reference() }}
                         </h1>
                         <p class="truncate text-sm text-slate-500 dark:text-slate-400">
-                            {{ $request->applicant_name }} · {{ $request->user->email }}
+                            {{ $ticket->citizenName() }} · {{ $ticket->user->email }}
                             ·
                             <span @class([
                                 'inline-flex items-center gap-1.5 font-medium',
@@ -154,10 +152,12 @@
                     </div>
                 </div>
 
-                <a href="{{ route('admin.permits.show', $request) }}"
-                    class="inline-flex shrink-0 items-center rounded-sm border border-slate-200 px-3.5 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-white/5">
-                    View request
-                </a>
+                @if ($ticket->service_request_id)
+                    <a href="{{ route('admin.permits.show', $ticket->serviceRequest) }}"
+                        class="inline-flex shrink-0 items-center rounded-sm border border-slate-200 px-3.5 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-white/5">
+                        View request
+                    </a>
+                @endif
             </div>
 
             {{-- Messages. #messages is the polling target. --}}
@@ -194,7 +194,7 @@
                             @php
                                 $fromCitizen = $message->user_id === $ticket->user_id;
                                 $senderName = $fromCitizen
-                                    ? $request->applicant_name
+                                    ? $ticket->citizenName()
                                     : $message->user?->name ?? 'Former account';
                             @endphp
 
@@ -222,6 +222,11 @@
                                         'bg-blue-600 text-white' => !$fromCitizen,
                                     ])>
                                         <p class="wrap-break-word whitespace-pre-line">{{ $message->body }}</p>
+                                        @if ($message->attachment_path)
+                                            <a class="block break-all underline" href="{{ route('tickets.attachment', $message) }}">
+                                                Download {{ $message->attachment_name }}
+                                            </a>
+                                        @endif
                                     </div>
 
                                     <p class="mt-1 text-[11px] uppercase text-slate-400 dark:text-slate-500">
@@ -250,16 +255,17 @@
 
             {{-- Composer: rounded input + separate send button while open, closed notice otherwise. --}}
             @if ($isOpen)
-                <form method="POST" action="{{ route('admin.tickets.reply', $ticket) }}" id="reply-form"
+                <form method="POST" enctype="multipart/form-data" action="{{ route('admin.tickets.reply', $ticket) }}" id="reply-form"
                     class="border-t border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900 sm:p-4">
                     @csrf
+                    <x-tickets.attachment-input />
 
                     <div class="flex items-end gap-2">
                         {{-- Input pill --}}
                         <div
                             class="flex min-h-11 min-w-0 flex-1 items-center gap-1 rounded-md bg-slate-100 px-3.5 py-2 transition focus-within:ring-2 focus-within:ring-blue-600/20 dark:bg-slate-800 dark:focus-within:ring-blue-500/30">
                             <label for="body" class="sr-only">Reply</label>
-                            <textarea id="body" name="body" rows="1" maxlength="1000" required
+                            <textarea id="body" name="body" rows="1" maxlength="1000"
                                 placeholder="Type your message..."
                                 class="block max-h-32 min-h-6 w-full resize-none border-0 bg-transparent p-0 py-0.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-0 dark:text-slate-100 dark:placeholder:text-slate-500">{{ old('body') }}</textarea>
                         </div>

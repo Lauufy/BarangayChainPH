@@ -94,13 +94,13 @@
                         </td>
                         <td>
                             <x-tables.badge :variant="match ($request->status) {
-                                'pending' => 'warning',
+                                'pending', 'resubmission_required' => 'warning',
                                 'processing' => 'info',
                                 'approved' => 'success',
                                 'rejected' => 'danger',
                                 default => 'neutral',
                             }">
-                                {{ $request->status }}
+                                {{ str_replace('_', ' ', $request->status) }}
                             </x-tables.badge>
                         </td>
                         <td class="text-center">

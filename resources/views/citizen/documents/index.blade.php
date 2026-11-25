@@ -40,21 +40,7 @@
                         </x-tables.detail>
 
                         <x-tables.detail side="full" class="text-center">
-                            {{-- Desktop: compact icon buttons --}}
-                            <div class="hidden flex-wrap items-center justify-center gap-2 sm:flex">
-                                <x-tables.action label="View" icon="file-search" icon-only :href="route('citizen.applications.show', $document)" />
-
-                                @if ($document->ticket)
-                                    <x-tables.action label="Messages" icon="message" icon-only :href="route('citizen.tickets.show', $document)" />
-                                @endif
-
-                                @if ($document->canPrint())
-                                    <x-tables.action label="Print" icon="printer" icon-only :href="route('citizen.applications.print', $document)" />
-                                @endif
-                            </div>
-
-                            {{-- Mobile: labeled buttons, easier to tap --}}
-                            <div class="flex flex-wrap items-center justify-center gap-2 sm:hidden">
+                            <div class="flex flex-wrap items-center justify-center gap-2">
                                 <x-tables.action label="View" icon="file-search" :href="route('citizen.applications.show', $document)" />
 
                                 @if ($document->ticket)

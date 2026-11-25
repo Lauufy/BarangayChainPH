@@ -13,8 +13,8 @@
         {{-- Header --}}
         <header class="border-(--gray-200) dark:border-(--gray-700) space-y-2 border-b pb-4">
             <nav class="text-(--gray-500) dark:text-(--gray-400) flex items-center gap-2 text-xs" aria-label="Breadcrumb">
-                <a href="{{ route('citizen.applications') }}"
-                    class="hover:text-(--blue-700) dark:hover:text-(--blue-300)">Applications</a>
+                <a href="{{ route($application ? 'citizen.applications' : 'citizen.help.index') }}"
+                    class="hover:text-(--blue-700) dark:hover:text-(--blue-300)">{{ $application ? 'Applications' : 'Help Center' }}</a>
                 <span aria-hidden="true">›</span>
                 <span class="text-(--blue-700) dark:text-(--blue-300) font-semibold">Ticket</span>
             </nav>
@@ -22,9 +22,8 @@
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <h1 class="text-(--blue-900) dark:text-(--blue-300) text-2xl font-bold tracking-tight sm:text-3xl">
-                        {{ $application->reference_number }}</h1>
-                    <p class="text-(--gray-600) dark:text-(--gray-300) mt-1 text-sm">Send a message to the barangay about
-                        this application.</p>
+                        {{ $ticket->reference() }}</h1>
+                    <p class="text-(--gray-600) dark:text-(--gray-300) mt-1 text-sm">{{ $application ? 'Send a message to the barangay about this application.' : 'Your conversation with the barangay.' }}</p>
                 </div>
 
                 <div class="flex items-center gap-3">
@@ -43,7 +42,7 @@
                         {{ $ticket->status }}
                     </span>
 
-                    <a href="{{ route('citizen.applications') }}"
+                    <a href="{{ route($application ? 'citizen.applications' : 'citizen.help.index') }}"
                         class="border-(--gray-300) bg-(--white) text-(--gray-700) hover:bg-(--gray-50) focus-visible:ring-(--blue-300) dark:border-(--gray-600) dark:bg-(--gray-800) dark:text-(--gray-200) dark:hover:bg-(--gray-700) inline-flex items-center rounded-md border px-8 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2">Back</a>
                 </div>
             </div>
@@ -113,6 +112,11 @@
                                     <x-tickets.message-sender :message="$message" :ticket="$ticket" />
                                 @endunless
                                 <p class="wrap-anywhere whitespace-pre-line">{{ $message->body }}</p>
+                                @if ($message->attachment_path)
+                                    <a class="block break-all underline" href="{{ route('tickets.attachment', $message) }}">
+                                        Download {{ $message->attachment_name }}
+                                    </a>
+                                @endif
                                 <p class="mt-0.5 text-right text-[10px] opacity-60">{{ $date->format('g:i A') }}</p>
                             </div>
                         </div>
@@ -124,12 +128,13 @@
 
             {{-- Reply (only while the ticket is open) --}}
             @if ($ticket->status === 'open')
-                <form method="POST" action="{{ route('citizen.tickets.reply', $application) }}"
+                <form method="POST" enctype="multipart/form-data" action="{{ $application ? route('citizen.tickets.reply', $application) : route('citizen.help.reply', $ticket) }}"
                     class="border-(--gray-200) dark:border-(--gray-700) space-y-2 border-t p-3 sm:p-4">
                     @csrf
+                    <x-tickets.attachment-input />
                     <div
                         class="bg-(--gray-100) focus-within:bg-(--white) focus-within:ring-(--blue-600) dark:bg-(--gray-700) dark:focus-within:bg-(--gray-800) flex items-end gap-2 rounded-lg p-1.5 ring-1 ring-transparent transition">
-                        <textarea id="reply-body" name="body" required maxlength="1000" rows="1" placeholder="Type your message..."
+                        <textarea id="reply-body" name="body" maxlength="1000" rows="1" placeholder="Type your message..."
                             onkeydown="if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); this.form.requestSubmit(); }"
                             class="text-(--gray-900) placeholder:text-(--gray-400) dark:text-(--gray-50) max-h-32 min-h-10 flex-1 resize-none bg-transparent px-3 py-2 text-sm outline-none">{{ old('body') }}</textarea>
 
@@ -142,6 +147,9 @@
                         </button>
                     </div>
 
+                    @error('attachment')
+                        <p class="text-(--red-600) text-sm font-medium">{{ $message }}</p>
+                    @enderror
                     @error('body')
                         <p class="text-(--red-600) text-sm font-medium">{{ $message }}</p>
                     @enderror
@@ -166,8 +174,9 @@
             const sync = () => {
                 reply.style.height = 'auto';
                 reply.style.height = reply.scrollHeight + 'px';
-                send.disabled = !reply.value.trim();
+                send.disabled = !reply.value.trim() && !reply.form.elements.attachment.files.length;
             };
+            reply.form.elements.attachment.addEventListener('change', sync);
             reply.addEventListener('input', sync);
             sync();
         }

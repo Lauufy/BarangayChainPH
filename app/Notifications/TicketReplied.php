@@ -22,8 +22,8 @@ class TicketReplied extends Notification
         return [
             'status' => 'info',
             'title' => 'New message from the barangay',
-            'message' => 'The barangay replied to your request '.$this->ticket->serviceRequest->reference_number.'.',
-            'url' => route('citizen.tickets.show', $this->ticket->serviceRequest),
+            'message' => 'The barangay replied to '.$this->ticket->reference().'.',
+            'url' => $this->ticket->citizenUrl(),
         ];
     }
 }

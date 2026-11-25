@@ -12,6 +12,7 @@
             'rejected' => ['bg-red-50 text-red-800 ring-red-200 dark:bg-red-900/30 dark:text-red-300 dark:ring-red-800', 'bg-red-500'],
             'cancelled' => ['bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:ring-slate-600', 'bg-slate-400'],
         ];
+        $tones['resubmission_required'] = $tones['pending'];
         [$pill, $dot] = $tones[$application->status] ?? $tones['cancelled'];
 
         $details = [
@@ -49,12 +50,15 @@
                     <p class="mt-1 text-sm text-(--gray-600) dark:text-(--gray-300)">Review the details of your submitted application.</p>
                 </div>
 
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2">
                     <span class="{{ $box }} border-transparent capitalize ring-1 {{ $pill }}">
                         <span class="h-2 w-2 rounded-full {{ $dot }}" aria-hidden="true"></span>
-                        {{ $application->status }}
+                        {{ str_replace('_', ' ', $application->status) }}
                     </span>
 
+                    @if ($application->status === 'resubmission_required')
+                        <a class="{{ $box }} bg-blue-800 text-white" href="{{ route('citizen.resubmissions.edit', $application) }}">Resubmit</a>
+                    @endif
                     <a href="{{ route('citizen.applications') }}"
                         class="{{ $box }} border-(--gray-300) bg-(--white) text-(--gray-700) transition hover:bg-(--gray-50) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--blue-300) dark:border-(--gray-600) dark:bg-(--gray-800) dark:text-(--gray-200) dark:hover:bg-(--gray-700)">Back</a>
                 </div>

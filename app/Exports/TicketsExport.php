@@ -24,7 +24,7 @@ class TicketsExport implements AdminExport
     public function query(Request $request): Builder
     {
         return Ticket::query()
-            ->with(['serviceRequest.user', 'latestMessage'])
+            ->with(['serviceRequest.user', 'user', 'latestMessage'])
             ->latest('updated_at');
     }
 
@@ -35,9 +35,9 @@ class TicketsExport implements AdminExport
         }
 
         return [
-            $model->serviceRequest?->applicant_name,
-            $model->serviceRequest?->user?->email,
-            $model->serviceRequest?->reference_number,
+            $model->citizenName(),
+            $model->serviceRequest?->user?->email ?? $model->user->email,
+            $model->reference(),
             $model->updated_at?->timezone(config('app.timezone'))->format('Y-m-d H:i:s'),
             $model->status,
         ];
