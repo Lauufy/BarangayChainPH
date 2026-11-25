@@ -26,6 +26,7 @@ class HelpTicketTest extends TestCase
         ])->assertSessionHasNoErrors();
 
         $ticket = Ticket::sole();
+        $this->assertSame(route('admin.tickets.show', $ticket), $admin->unreadNotifications()->sole()->data['url']);
         $message = $ticket->messages()->sole();
         $this->assertNull($ticket->service_request_id);
         Storage::disk('supabase')->assertExists($message->attachment_path);

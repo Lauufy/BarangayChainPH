@@ -3,12 +3,12 @@
 @section('title', 'Permit & Clearance Processing')
 
 @section('content')
-    <div class="space-y-6">
+    <div class="admin-module space-y-5">
         {{-- Explain the permit queue and summarize request totals. --}}
-        <x-admin.page-header label="Citizen Services" title="Permit & Clearance Processing"
+        <x-admin.page-header title="Permit & Clearance Processing"
             text="Monitor applications and manage permit processing workflows." />
 
-        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <x-admin.stat-card label="Total Requests" subtitle="All submitted applications" :value="number_format($requestCounts['total'] ?? 0)"
                 :trend="$requestTrends['total'] ?? null" :latest="$requestLatest['total'] ?? null" latest-label="Last submitted">
                 <x-slot:icon>

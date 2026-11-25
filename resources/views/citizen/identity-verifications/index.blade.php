@@ -6,7 +6,7 @@
     @php
         $step = (int) $step;
         $editing = !in_array($status, ['pending', 'verified']);
-        $labels = [1 => 'Details', 2 => 'ID', 3 => 'Selfie', 4 => 'Review'];
+        $labels = [1 => 'Details', 2 => 'Identity verification', 3 => 'Face verification', 4 => 'Review'];
 
         // Same design tokens as the service application page.
         // @include passes these variables to every step partial.
@@ -404,13 +404,13 @@
                         return '';
                     }
 
-                    function startFaceCheck() {
+                    function startFaceCheck(session) {
                         clearInterval(faceTimer);
                         goodFrames = 0;
                         setFace(false, 'Loading face check...');
 
                         loadDetector().then((d) => {
-                            if (!cameraStream) return; // camera was closed while loading
+                            if (session !== cameraSession) return;
                             setFace(false, 'Fit your face inside the oval.');
 
                             faceTimer = setInterval(() => {
@@ -425,6 +425,7 @@
                                 else setFace(false, 'Hold still...');
                             }, 150);
                         }).catch(() => {
+                            if (session !== cameraSession) return;
                             // Detector could not load (offline, blocked). Do not block the user.
                             setFace(true, 'Face check unavailable. Make sure your face is inside the oval.');
                         });
@@ -442,7 +443,11 @@
                     }
 
                     // Turn the camera off and show the upload area again
+                    let cameraSession = 0;
                     function stopCamera() {
+                        cameraSession++;
+                        faceReady = false;
+                        video.srcObject = null;
                         clearInterval(faceTimer);
                         if (cameraStream) {
                             cameraStream.getTracks().forEach((track) => track.stop());
@@ -456,24 +461,33 @@
                     tabUpload.addEventListener('click', stopCamera);
 
                     // Open the camera (needs HTTPS or localhost)
-                    tabCamera.addEventListener('click', () => {
+                    async function openFaceCamera() {
+                        stopCamera();
+                        const session = cameraSession;
                         selfieError.textContent = '';
-                        navigator.mediaDevices.getUserMedia({
-                                video: {
-                                    facingMode: 'user'
-                                }
-                            })
-                            .then((stream) => {
-                                cameraStream = stream;
-                                video.srcObject = stream;
-                                selfieDrop.classList.add('hidden');
-                                cameraBox.classList.remove('hidden');
-                                setTab(true);
-                                startFaceCheck();
-                            })
-                            .catch(() => {
-                                selfieError.textContent = 'Camera not available. Please upload a photo instead.';
-                            });
+                        selfieDrop.classList.add('hidden');
+                        cameraBox.classList.remove('hidden');
+                        setTab(true);
+                        setFace(false, 'Opening camera…');
+                        try {
+                            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+                            if (session !== cameraSession) {
+                                stream.getTracks().forEach(track => track.stop());
+                                return;
+                            }
+                            cameraStream = stream;
+                            video.srcObject = stream;
+                            startFaceCheck(session);
+                        } catch {
+                            if (session !== cameraSession) return;
+                            setFace(false, 'Allow camera access and select Scan face to retry, or choose Upload photo.');
+                        }
+                    }
+
+                    tabCamera.addEventListener('click', openFaceCamera);
+                    window.addEventListener('pagehide', stopCamera);
+                    document.addEventListener('visibilitychange', () => {
+                        if (document.hidden) stopCamera();
                     });
 
                     // Take a photo (only when the face is in position) and put it in the selfie input
@@ -545,6 +559,7 @@
                         $('submit-wrap').classList.toggle('hidden', step !== 4);
                         updateContinueButton();
 
+                        if (step === 3 && !hasSavedSelfie && !selfieInput.files.length) openFaceCamera();
                         if (step === 4) fillReview();
                         window.scrollTo({
                             top: 0,
@@ -687,6 +702,20 @@
             <script @if (app()->bound('csp-nonce')) nonce="{{ app('csp-nonce') }}" @endif>
                 (() => {
                     const form = document.querySelector('#details-form, #document-form');
+                    if (form.id === 'details-form') {
+                        const dependents = form.querySelectorAll('[data-address-after]');
+                        const syncAddress = () => {
+                            for (const group of dependents) {
+                                const parent = form.elements.namedItem(group.dataset.addressAfter);
+                                group.hidden = parent.disabled || !parent.value.trim();
+                                group.querySelector('input').disabled = group.hidden;
+                            }
+                        };
+                        form.addEventListener('input', syncAddress);
+                        form.addEventListener('change', syncAddress);
+                        window.addEventListener('pageshow', syncAddress);
+                        syncAddress();
+                    }
                     const hintFor = field => field.closest('[data-upload]')?.querySelector('[data-error]')
                         || form.querySelector(`[data-error-for="${field.name}"]`)
                         || document.getElementById(field.name + '-error');

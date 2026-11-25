@@ -77,8 +77,10 @@
                     $title = $notification->data['title'] ?? 'Notification';
                 @endphp
 
-                <div
-                    class="{{ $isUnread ? 'bg-indigo-50/70 dark:bg-blue-500/10' : 'bg-slate-100 dark:bg-slate-800' }} {{ $loop->last ? '' : 'mb-2' }} flex items-start gap-3 rounded-xl px-4 py-3">
+                <form method="POST" action="{{ route('citizen.notifications.read', $notification->id) }}"
+                    class="{{ $isUnread ? 'bg-indigo-50/70 dark:bg-blue-500/10' : 'bg-slate-100 dark:bg-slate-800' }} {{ $loop->last ? '' : 'mb-2' }} relative flex items-start gap-3 rounded-xl px-4 py-3">
+                    @csrf
+                    <input type="hidden" name="open" value="1">
                     <span class="{{ $style['color'] }} flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
                         <svg class="h-4.5 w-4.5" fill="none" stroke="currentColor" stroke-width="1.6"
                             viewBox="0 0 24 24" aria-hidden="true">
@@ -87,12 +89,7 @@
                     </span>
 
                     <div class="min-w-0 flex-1">
-                        @if (!empty($notification->data['url']))
-                            <a href="{{ $notification->data['url'] }}"
-                                class="text-sm font-semibold text-slate-900 hover:underline dark:text-slate-50">{{ $title }}</a>
-                        @else
-                            <p class="text-sm font-semibold text-slate-900 dark:text-slate-50">{{ $title }}</p>
-                        @endif
+                        <button type="submit" class="cursor-pointer text-left after:absolute after:inset-0 text-sm font-semibold text-slate-900 hover:underline dark:text-slate-50">{{ $title }}</button>
                         <p class="mt-0.5 text-sm text-slate-600 dark:text-slate-300">{{ $notification->data['message'] ?? '' }}</p>
                         <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ $notification->created_at->format('d M Y, h:i A') }}</p>
                     </div>
@@ -101,7 +98,7 @@
                         <span class="mt-2 h-2 w-2 shrink-0 rounded-full bg-blue-600 dark:bg-blue-400" role="img"
                             aria-label="Unread"></span>
                     @endif
-                </div>
+                </form>
             @empty
                 <div class="py-12 text-center">
                     <p class="text-sm font-semibold text-slate-900 dark:text-slate-50">

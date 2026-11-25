@@ -50,7 +50,8 @@
         .tbl thead th:last-child { border-radius: 0 .5rem .5rem 0; }
 
         /* Mobile: stacked cards */
-        @media (max-width: 639.98px) {
+        .tbl-container { container: table-region / inline-size; min-width: 0; }
+        @container table-region (max-width: 39.99rem) {
             .tbl-cards { overflow-x: visible; }
             .tbl-cards table { display: block; width: 100%; min-width: 0 !important; font-size: .875rem; }
             .tbl-cards thead { display: none; }
@@ -136,13 +137,14 @@
     <script>
         document.addEventListener('click', function (e) {
             var tr = e.target.closest('.tbl-cards tbody > tr');
-            if (!tr || !window.matchMedia('(max-width: 639.98px)').matches) return;
+            if (!tr || getComputedStyle(tr).display !== 'grid') return;
             if (e.target.closest('a, button, input, select, textarea, label, form, summary, details')) return;
             if (tr.querySelector(':scope > [data-detail]')) tr.classList.toggle('is-open');
         });
     </script>
 @endonce
 
+<div class="tbl-container">
 <div class="tbl {{ $cards ? 'tbl-cards' : '' }} overflow-x-auto">
     <table class="w-full min-w-max text-left text-xs sm:text-sm">
         <thead>
@@ -179,4 +181,5 @@
             </tr>
         </tbody>
     </table>
+</div>
 </div>

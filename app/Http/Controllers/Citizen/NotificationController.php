@@ -27,11 +27,14 @@ class NotificationController extends Controller
         ]);
     }
 
-    // Mark one notification as read only after an explicit user action.
     public function read(Request $request, string $id): RedirectResponse|JsonResponse
     {
         $notification = $request->user()->notifications()->findOrFail($id);
         $notification->markAsRead();
+
+        if ($request->boolean('open')) {
+            return redirect()->to(($notification->data['url'] ?? null) ?: route('citizen.notifications'));
+        }
 
         return $request->expectsJson()
             ? response()->json([

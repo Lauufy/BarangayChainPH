@@ -15,7 +15,7 @@ class CitizenNotificationTest extends TestCase
         $citizen = User::factory()->create([
             'role' => 'citizen',
         ]);
-        $citizen->notifications()->create([
+        $notification = $citizen->notifications()->create([
             'id' => 'a4d1ba9c-1a0b-4d44-a87b-100001234568',
             'type' => 'App\\Notifications\\ServiceRequestApproved',
             'data' => [
@@ -31,9 +31,13 @@ class CitizenNotificationTest extends TestCase
         $response->assertOk()
             ->assertSee('Application approved')
             ->assertSee('Your application has been approved.')
-            ->assertSee('href="'.route('citizen.documents').'"', false)
+            ->assertSee('action="'.route('citizen.notifications.read', $notification->id).'"', false)
             ->assertDontSee('Mark as read')
             ->assertDontSee('data-notification-read-form', false);
+
+        $this->post(route('citizen.notifications.read', $notification->id), ['open' => 1])
+            ->assertRedirect(route('citizen.documents'));
+        $this->assertNotNull($notification->fresh()->read_at);
     }
 
     public function test_marking_one_notification_as_read_does_not_read_other_notifications(): void

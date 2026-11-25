@@ -27,11 +27,14 @@ class NotificationController extends Controller
         ]);
     }
 
-    // Mark ONE as read. Runs only when "Mark as read" (or the bell's
-    // dismiss button) is pressed. Opening a notification never calls this.
     public function read(Request $request, string $id): RedirectResponse|JsonResponse
     {
-        $request->user()->notifications()->findOrFail($id)->markAsRead();
+        $notification = $request->user()->notifications()->findOrFail($id);
+        $notification->markAsRead();
+
+        if ($request->boolean('open')) {
+            return redirect()->to(($notification->data['url'] ?? null) ?: route('admin.notifications.index'));
+        }
 
         return $request->expectsJson()
             ? response()->json(['ok' => true])

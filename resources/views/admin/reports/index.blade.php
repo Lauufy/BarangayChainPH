@@ -3,9 +3,9 @@
 @section('title', 'Reports & Analytics')
 
 @section('content')
-    <div class="space-y-4" data-reports-page>
+    <div class="admin-module space-y-5" data-reports-page>
         {{-- Page header with export actions (admins only). --}}
-        <x-admin.page-header label="Reports" title="Reports & Analytics"
+        <x-admin.page-header title="Reports & Analytics"
             text="A clear view of service delivery and document verification." export-label="CSV (opens in Excel)"
             :export-url="$isStaff
                 ? null

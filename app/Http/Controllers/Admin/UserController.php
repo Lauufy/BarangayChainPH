@@ -37,20 +37,19 @@ class UserController extends Controller
 
     public function index(Request $request): View
     {
-        $view = in_array($request->input('users_tab'), ['employees', 'citizens'], true)
-            ? $request->input('users_tab')
-            : 'all';
-        // All tab: everyone, newest first
-        $all = $this->usersExport->queryForTab('all')
-            ->paginate(10, ['*'], 'all_page')->appends($request->except('search'));
-
-        // Employees tab: staff + administrators
-        $users = $this->usersExport->queryForTab('employees')
-            ->paginate(10, ['*'], 'staff_page')->appends($request->except('search'));
-
-        // Citizens tab
-        $citizens = $this->usersExport->queryForTab('citizens')
-            ->paginate(10, ['*'], 'citizen_page')->appends($request->except('search'));
+        $view = $this->usersExport->tab($request);
+        $status = $request->query('users_status');
+        $status = is_string($status) && isset(self::STATUSES[$status]) ? $status : null;
+        $perPage = $request->integer('per_page', 10);
+        $perPage = in_array($perPage, [5, 10, 15, 25], true) ? $perPage : 10;
+        $pageName = match ($view) {
+            'employees' => 'staff_page',
+            'citizens' => 'citizen_page',
+            'administrators' => 'admin_page',
+            default => 'all_page',
+        };
+        $directoryQuery = array_filter(['users_tab' => $view, 'users_status' => $status, 'per_page' => $perPage]);
+        $paginator = $this->usersExport->query($request)->paginate($perPage, ['*'], $pageName)->appends($directoryQuery);
 
         // One grouped query for the stat cards
         $roleStats = User::query()
@@ -61,6 +60,7 @@ class UserController extends Controller
 
         $accountCounts = [
             'total' => $roleStats->sum('total'),
+            'citizen' => $roleStats['citizen']->total ?? 0,
             'staff' => $roleStats['staff']->total ?? 0,
             'admin' => $roleStats['admin']->total ?? 0,
         ];
@@ -71,31 +71,6 @@ class UserController extends Controller
             'admin' => $roleStats['admin']->last_created ?? null,
         ];
 
-        $paginator = match ($view) {
-            'employees' => $users,
-            'citizens' => $citizens,
-            default => $all,
-        };
-        $everyone = $users->getCollection()->concat($citizens->getCollection())->sortByDesc('created_at')->values();
-        $employeeTotal = $accountCounts['staff'] + $accountCounts['admin'];
-        $employeeLatest = collect([$accountLatest['staff'] ?? null, $accountLatest['admin'] ?? null])
-            ->filter()
-            ->max();
-        $identityVariants = [
-            'verified' => 'success',
-            'rejected' => 'danger',
-            'pending' => 'warning',
-        ];
-        $identityStatuses = $citizens->getCollection()->mapWithKeys(function (User $user) use ($identityVariants): array {
-            $status = $user->identityStatus();
-
-            return [
-                $user->id => [
-                    'status' => $status,
-                    'variant' => $identityVariants[$status] ?? 'neutral',
-                ],
-            ];
-        });
         $detailFields = [
             'status_label' => ['Account Status', null],
             'employee_id' => ['Employee ID', 'staff'],
@@ -116,7 +91,7 @@ class UserController extends Controller
             'created' => ['Account Created', null],
             'updated' => ['Last Updated', null],
         ];
-        $userRecords = $everyone->mapWithKeys(function (User $user) use ($request): array {
+        $userRecords = $paginator->getCollection()->mapWithKeys(function (User $user) use ($request): array {
             $employee = $user->employeeProfile;
             $citizen = $user->citizenProfile;
 
@@ -199,9 +174,8 @@ class UserController extends Controller
         $nextEmployeeId = $this->nextEmployeeId();
 
         return view('admin.users.index', compact(
-            'all',
-            'users',
-            'citizens',
+            'status',
+            'directoryQuery',
             'accountCounts',
             'accountLatest',
             'createFailed',
@@ -215,10 +189,6 @@ class UserController extends Controller
             'permissionsUserId',
             'view',
             'paginator',
-            'everyone',
-            'employeeTotal',
-            'employeeLatest',
-            'identityStatuses',
             'detailFields',
             'userRecords',
             'statuses',

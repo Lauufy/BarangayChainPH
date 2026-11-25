@@ -11,8 +11,8 @@
         $label = 'mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300';
     @endphp
 
-    <div class="space-y-4" data-table-key="audit-logs">
-        <x-admin.page-header label="Security & Accountability" title="Audit Logs"
+    <div class="admin-module space-y-5" data-table-key="audit-logs">
+        <x-admin.page-header title="Audit Logs"
             text="Review changes made to applications and issued documents." />
 
         <x-tables.card title="System Activity History"

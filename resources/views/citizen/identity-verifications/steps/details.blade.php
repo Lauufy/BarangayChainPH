@@ -59,26 +59,34 @@
         <h3 class="{{ $h3 }}">Address and contact</h3>
         <p class="{{ $sub }} mt-1">Use the address where you live now.</p>
         <div class="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <x-form.input light name="province" label="Province" required :value="old('province', $formDetails['province'] ?? null)" placeholder="e.g. Rizal"
+                maxlength="60" error-message="Enter your province." />
+
+            <div data-address-after="province">
+                <x-form.input light name="city_municipality" label="City / Municipality" required :value="old('city_municipality', $formDetails['city_municipality'] ?? null)"
+                    placeholder="e.g. Morong" maxlength="60" error-message="Enter your city or municipality." />
+            </div>
+
+            <div data-address-after="city_municipality">
+                <x-form.input light name="barangay" label="Barangay" required :value="old('barangay', $formDetails['barangay'] ?? null)" placeholder="e.g. San Juan"
+                    maxlength="60" error-message="Enter your barangay." />
+            </div>
+
+            <div data-address-after="barangay">
+                <x-form.input light name="house_number" label="House number (optional)" :value="old('house_number', $formDetails['house_number'] ?? null)"
+                    placeholder="e.g. 12-B, Purok 3" maxlength="40" />
+            </div>
+
+            <div data-address-after="barangay">
+                <x-form.input light name="zip_code" label="ZIP code" required :value="old('zip_code', $formDetails['zip_code'] ?? null)" placeholder="1960"
+                    inputmode="numeric" pattern="\d{4}" maxlength="4" oninput="this.value = this.value.replace(/\D/g, '')"
+                    error-message="Enter a 4-digit ZIP code, e.g. 1960." />
+            </div>
+
             {{-- prefix="+63": digits only, leading 0 stripped. Mobile numbers are 10 digits starting with 9 --}}
             <x-form.input light name="phone" label="Phone number" type="tel" required prefix="+63"
                 placeholder="9171234567" :use-old="false" :value="preg_replace('/^(\+?63|0)/', '', preg_replace('/[^\d+]/', '', (string) old('phone', $formDetails['phone'] ?? '')))" pattern="9\d{9}" maxlength="10"
                 error-message="Enter a 10-digit mobile number starting with 9, e.g. 9171234567." />
-
-            <x-form.input light name="province" label="Province" required :value="old('province', $formDetails['province'] ?? null)" placeholder="e.g. Rizal"
-                maxlength="60" error-message="Enter your province." />
-
-            <x-form.input light name="city_municipality" label="City / Municipality" required :value="old('city_municipality', $formDetails['city_municipality'] ?? null)"
-                placeholder="e.g. Morong" maxlength="60" error-message="Enter your city or municipality." />
-
-            <x-form.input light name="barangay" label="Barangay" required :value="old('barangay', $formDetails['barangay'] ?? null)" placeholder="e.g. San Juan"
-                maxlength="60" error-message="Enter your barangay." />
-
-            <x-form.input light name="house_number" label="House number (optional)" :value="old('house_number', $formDetails['house_number'] ?? null)"
-                placeholder="e.g. 12-B, Purok 3" maxlength="40" />
-
-            <x-form.input light name="zip_code" label="ZIP code" required :value="old('zip_code', $formDetails['zip_code'] ?? null)" placeholder="1960"
-                inputmode="numeric" pattern="\d{4}" maxlength="4" oninput="this.value = this.value.replace(/\D/g, '')"
-                error-message="Enter a 4-digit ZIP code, e.g. 1960." />
         </div>
     </section>
 </form>

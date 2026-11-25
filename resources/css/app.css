@@ -12,6 +12,69 @@
 /* Dark mode: add class "dark" to <html> (theme.css also supports data-theme="dark") */
 @custom-variant dark (&:where(.dark, .dark *, [data-theme='dark'], [data-theme='dark'] *));
 
+/* Admin module pages */
+#admin-page-content:has(> .admin-module) {
+    background-color: var(--white);
+    @variant dark { background-color: var(--blue-850); }
+}
+
+.admin-module h1 {
+    color: var(--blue-800);
+    @variant dark { color: var(--white); }
+}
+
+.admin-module nav:is([aria-label='Table views'], [aria-label='Communication types'], [aria-label='Filter notifications']) {
+    flex-wrap: wrap;
+    background: transparent;
+    padding-inline: 0;
+}
+
+.admin-module nav [aria-current='page'] {
+    background-color: var(--blue-50);
+    color: var(--blue-700);
+    box-shadow: none;
+    @variant dark {
+        background-color: var(--blue-700);
+        color: var(--white);
+    }
+}
+
+.admin-module :is([data-table-search], [data-audit-search]) {
+    background-color: var(--gray-50);
+    @variant dark { background-color: var(--blue-900); }
+}
+
+/* Adapt the account list to the available panel, including sidebar resizing. */
+.account-directory table {
+    table-layout: fixed;
+    min-width: 0;
+    font-size: clamp(.8125rem, 1.35cqi, .9375rem);
+}
+.account-directory :is(th, td) {
+    overflow-wrap: anywhere;
+    padding-inline: clamp(.375rem, 1cqi, 1rem);
+}
+.account-directory th {
+    white-space: normal;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    font-size: clamp(.6875rem, 1cqi, .75rem);
+}
+.account-directory td[data-title] p {
+    white-space: normal;
+    overflow: visible;
+    font-size: inherit;
+}
+.account-directory td[data-title] p + p { font-size: .875em; }
+@container table-region (min-width: 40rem) {
+    .account-directory th:first-child { width: 25%; }
+    .account-directory th:nth-child(3) { width: 19%; }
+    .account-directory th:last-child { width: 7.5rem; }
+}
+[data-table-key='users'] > div { min-width: 0; max-width: 100%; }
+[data-table-key='users'] > div:last-child { flex: 1 1 19rem; justify-content: flex-end; }
+[data-table-key='users'] > div:last-child > div { min-width: 0; flex: 1 1 9rem; max-width: 18rem; }
+
 /* ---------- Tailwind tokens (map to theme.css variables) ---------- */
 @theme inline {
     /* Surfaces */

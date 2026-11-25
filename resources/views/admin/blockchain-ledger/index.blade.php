@@ -5,13 +5,13 @@
 @section('title', 'Blockchain Transaction Ledger')
 
 @section('content')
-    <div class="space-y-6">
+    <div class="admin-module space-y-5">
         {{-- Explain the ledger and show its key transaction totals. --}}
-        <x-admin.page-header label="System Integrity" title="Blockchain Transaction Ledger"
+        <x-admin.page-header title="Blockchain Transaction Ledger"
             text="Inspect blockchain transaction references and recorded document hashes." />
 
         {{-- Summary of confirmed, failed, and total records. --}}
-        <div class="grid gap-4 sm:grid-cols-3">
+        <div class="grid gap-3 md:grid-cols-3">
             <x-admin.stat-card label="Total Transactions" subtitle="Confirmed and failed" :value="number_format($total ?? 0)" :latest="$totalLatest ?? null"
                 latest-label="Last activity">
                 <x-slot:icon>

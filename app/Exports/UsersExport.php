@@ -48,23 +48,28 @@ class UsersExport implements AdminExport
 
     public function query(Request $request): Builder
     {
-        return $this->queryForTab($this->tab($request));
+        $query = $this->queryForTab($this->tab($request));
+        $status = $request->query('users_status');
+
+        return $query->when(in_array($status, ['active', 'inactive', 'suspended'], true),
+            fn (Builder $query) => $query->where('status', $status));
     }
 
     public function queryForTab(string $tab): Builder
     {
         return User::query()
             ->with(['employeeProfile', 'citizenProfile'])
-            ->when($tab === 'employees', fn (Builder $query) => $query->whereIn('role', ['staff', 'admin']))
+            ->when($tab === 'employees', fn (Builder $query) => $query->where('role', 'staff'))
             ->when($tab === 'citizens', fn (Builder $query) => $query->where('role', 'citizen'))
-            ->latest();
+            ->when($tab === 'administrators', fn (Builder $query) => $query->where('role', 'admin'))
+            ->latest()->orderByDesc('id');
     }
 
     public function tab(Request $request): string
     {
         $tab = $request->query('users_tab');
 
-        return in_array($tab, ['employees', 'citizens'], true) ? $tab : 'all';
+        return in_array($tab, ['employees', 'citizens', 'administrators'], true) ? $tab : 'all';
     }
 
     public function row(Model $model): array

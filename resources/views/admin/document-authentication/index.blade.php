@@ -3,13 +3,13 @@
 @section('title', 'Document Authentication')
 
 @section('content')
-    <div class="space-y-6">
+    <div class="admin-module space-y-5">
         {{-- Explain the review queue and summarize the number of authentication records. --}}
-        <x-admin.page-header label="Document Security" title="Document Authentication"
+        <x-admin.page-header title="Document Authentication"
             text="Review document verification records and authentication results." />
 
         {{-- Totals for submitted, pending, and authenticated documents. --}}
-        <div class="grid gap-4 sm:grid-cols-3">
+        <div class="grid gap-3 md:grid-cols-3">
             <x-admin.stat-card label="Documents Submitted" subtitle="All issued documents" :value="number_format($submitted ?? 0)" :latest="$submittedLatest ?? null"
                 latest-label="Last issued">
                 <x-slot:icon>

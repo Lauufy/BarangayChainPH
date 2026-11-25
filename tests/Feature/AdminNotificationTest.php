@@ -27,9 +27,13 @@ class AdminNotificationTest extends TestCase
 
         $response->assertOk()
             ->assertSee('Application approved')
-            ->assertSee('href="'.route('admin.dashboard').'"', false)
+            ->assertSee('action="'.route('admin.notifications.read', $notification->id).'"', false)
             ->assertDontSee('Mark as read');
         $this->assertNull($notification->fresh()->read_at);
+
+        $this->post(route('admin.notifications.read', $notification->id), ['open' => 1])
+            ->assertRedirect(route('admin.dashboard'));
+        $this->assertNotNull($notification->fresh()->read_at);
     }
 
     public function test_explicit_admin_mark_as_read_action_only_reads_the_selected_notification(): void

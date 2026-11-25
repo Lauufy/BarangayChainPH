@@ -52,6 +52,7 @@
                             'citizen.certificate-of-indigency.preview',
                             'citizen.barangay-clearance.preview',
                             'citizen.certificate-of-residency.preview'))
+                        @php($unreadNotificationCount = auth()->user()->unreadNotifications()->count())
                         <details id="notification-menu" class="sm:relative">
                             <summary aria-label="Open notifications"
                                 class="hover:bg-(--blue-700)/10 dark:hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--blue-700) dark:focus-visible:outline-(--celadon-500) relative flex size-11 cursor-pointer list-none items-center justify-center rounded-sm [&::-webkit-details-marker]:hidden">
@@ -60,9 +61,9 @@
                                     <path stroke-linecap="round" stroke-linejoin="round"
                                         d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
                                 </svg>
-                                @if (auth()->user()->unreadNotifications()->count() > 0)
+                                @if ($unreadNotificationCount > 0)
                                     <span id="notification-count"
-                                        class="bg-(--red-600) text-(--white) absolute right-0.5 top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-bold leading-none">{{ auth()->user()->unreadNotifications()->count() > 9 ? '9+' : auth()->user()->unreadNotifications()->count() }}</span>
+                                        class="bg-(--red-600) text-(--white) absolute right-0.5 top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-bold leading-none">{{ $unreadNotificationCount > 9 ? '9+' : $unreadNotificationCount }}</span>
                                 @endif
                             </summary>
 
@@ -77,16 +78,16 @@
                                             Notifications</p>
                                         <p id="notification-subtitle"
                                             class="text-(--blue-700)/70 dark:text-(--off-white)/70 mt-0.5 text-xs">
-                                            @if (auth()->user()->unreadNotifications()->count() > 0)
-                                                You have {{ auth()->user()->unreadNotifications()->count() }} new
-                                                {{ str('notification')->plural(auth()->user()->unreadNotifications()->count()) }}.
+                                            @if ($unreadNotificationCount > 0)
+                                                You have {{ $unreadNotificationCount }} new
+                                                {{ str('notification')->plural($unreadNotificationCount) }}.
                                             @else
                                                 You're all caught up.
                                             @endif
                                         </p>
                                     </div>
 
-                                    @if (auth()->user()->unreadNotifications()->count() > 0)
+                                    @if ($unreadNotificationCount > 0)
                                         <form id="mark-all-form" method="POST"
                                             action="{{ route('citizen.notifications.read-all') }}">
                                             @csrf
@@ -119,8 +120,10 @@
                                 {{-- List --}}
                                 <div class="mt-2.5 max-h-80 space-y-1 overflow-y-auto">
                                     @forelse (auth()->user()->notifications()->latest()->limit(10)->get() as $n)
-                                        <div data-notification-item data-unread="{{ $n->read_at === null ? '1' : '0' }}"
+                                        <form method="POST" action="{{ route('citizen.notifications.read', $n->id) }}" data-notification-item data-unread="{{ $n->read_at === null ? '1' : '0' }}"
                                             class="relative flex items-start gap-2 rounded-lg border border-(--blue-700)/10 bg-white p-2.5 dark:border-white/10 dark:bg-white/5">
+                                            @csrf
+                                            <input type="hidden" name="open" value="1">
 
                                             @switch($n->data['status'] ?? 'info')
                                                 @case('verified')
@@ -159,8 +162,7 @@
                                             <div class="min-w-0 flex-1">
                                                 <div class="flex items-start justify-between gap-1">
                                                     <div class="flex min-w-0 items-center gap-1">
-                                                        <a href="{{ $n->data['url'] ?? route('citizen.notifications') }}"
-                                                            class="text-(--blue-700) dark:text-(--off-white) text-sm font-bold hover:underline">
+                                                        <button type="submit" class="cursor-pointer text-left after:absolute after:inset-0 text-(--blue-700) dark:text-(--off-white) text-sm font-bold hover:underline">
                                                             {{ $n->data['title'] ?? 'Notification' }}
                                                             @if ($n->read_at === null)
                                                                 <span data-unread-dot
@@ -168,7 +170,7 @@
                                                                     <span class="sr-only">Unread</span>
                                                                 </span>
                                                             @endif
-                                                        </a>
+                                                        </button>
                                                     </div>
                                                     <span
                                                         class="text-(--blue-700)/70 dark:text-(--off-white)/70 shrink-0 whitespace-nowrap text-xs">{{ $n->created_at->diffForHumans() }}</span>
@@ -176,7 +178,7 @@
                                                 <span
                                                     class="text-(--blue-700)/70 dark:text-(--off-white)/70 mt-0.5 block text-xs leading-snug">{{ $n->data['message'] ?? '' }}</span>
                                             </div>
-                                        </div>
+                                        </form>
                                     @empty
                                         <p
                                             class="text-(--blue-700)/70 dark:text-(--off-white)/70 px-2 py-8 text-center text-sm">

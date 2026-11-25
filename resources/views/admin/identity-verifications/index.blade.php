@@ -3,13 +3,13 @@
 @section('title', 'Digital Identity Verification')
 
 @section('content')
-    <div class="space-y-6">
+    <div class="admin-module space-y-5">
         {{-- Explain the review queue and summarize current identity-verification activity. --}}
-        <x-admin.page-header label="Citizen Services" title="Digital Identity Verification"
+        <x-admin.page-header title="Digital Identity Verification"
             text="Review citizen identity information and verification submissions." />
 
         {{-- Pending, verified, and rejected submission totals. --}}
-        <div class="grid gap-4 sm:grid-cols-3">
+        <div class="grid gap-3 md:grid-cols-3">
             <x-admin.stat-card label="Pending Reviews" subtitle="Awaiting a decision" :value="$counts['pending'] ?? 0" :latest="$latest['pending'] ?? null"
                 latest-label="Last submitted" empty-text="Nothing waiting for review" :invert="true">
                 <x-slot:icon>

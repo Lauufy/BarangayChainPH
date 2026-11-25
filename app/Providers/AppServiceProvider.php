@@ -2,7 +2,6 @@
 
 namespace App\Providers;
 
-use App\Models\ContactMessage;
 use App\Services\AuditLogger;
 use App\Support\SyncVersion;
 use Illuminate\Auth\Events\Login;
@@ -23,9 +22,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
-use Illuminate\Support\Facades\View as ViewFacade;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\View\View;
 use Symfony\Component\Mailer\Bridge\Brevo\Transport\BrevoTransportFactory;
 use Symfony\Component\Mailer\Transport\Dsn;
 
@@ -42,17 +39,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        ViewFacade::composer('layouts.admin', function (View $view): void {
-            $user = auth()->user();
-
-            $view->with(
-                'newContactMessagesCount',
-                $user?->hasPermission('tickets.reply')
-                    ? ContactMessage::query()->where('status', ContactMessage::NEW)->count()
-                    : 0
-            );
-        });
-
         RateLimiter::for('service-submissions', function (Request $request) {
             $key = $request->user()
                 ? 'user:'.$request->user()->getAuthIdentifier()

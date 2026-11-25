@@ -139,6 +139,19 @@ class UserControllerTest extends TestCase
             ->assertViewHas('paginator', fn ($paginator): bool => $paginator->getPageName() === 'citizen_page');
     }
 
+    public function test_administrator_tab_and_status_filter_select_only_matching_rows(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'status' => 'active']);
+        $inactive = User::factory()->create(['role' => 'admin', 'status' => 'inactive']);
+        User::factory()->create(['role' => 'staff', 'status' => 'inactive']);
+
+        $this->actingAs($admin)
+            ->get(route('admin.users.index', ['users_tab' => 'administrators', 'users_status' => 'inactive']))
+            ->assertOk()
+            ->assertViewHas('userRecords', fn (Collection $records): bool => $records->keys()->all() === [$inactive->id])
+            ->assertViewHas('accountCounts', fn (array $counts): bool => $counts['admin'] === 2 && $counts['staff'] === 1);
+    }
+
     public function test_invalid_user_tab_falls_back_to_all_accounts(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
@@ -163,7 +176,7 @@ class UserControllerTest extends TestCase
             ->assertViewHas('userRecords', fn (Collection $records): bool => $records->has($staff->id)
                 && $records->has($citizen->id))
             ->assertSee('data-table-key="users"', false)
-            ->assertSee('placeholder="Start searching..."', false)
+            ->assertSee('placeholder="Search by name, email, or phone"', false)
             ->assertDontSee('search=')
             ->assertDontSee('search=no-match');
     }

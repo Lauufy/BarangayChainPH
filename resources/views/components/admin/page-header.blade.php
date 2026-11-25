@@ -1,5 +1,5 @@
 @props([
-    'label',
+    'label' => null,
     'title',
     'text',
     'exportUrl' => null,
@@ -11,8 +11,9 @@
 
 <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
     <div class="min-w-0">
-        <p class="text-xs font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">{{ $label }}
-        </p>
+        @if ($label)
+            <p class="text-xs font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">{{ $label }}</p>
+        @endif
         <h1 class="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{{ $title }}</h1>
         <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ $text }}</p>
     </div>

@@ -3,9 +3,9 @@
 @section('title', 'Smart Contract Management')
 
 @section('content')
-    <div class="space-y-6">
+    <div class="admin-module space-y-5">
         {{-- Show contract health and provide processing control and ledger navigation. --}}
-        <x-admin.page-header label="Smart Contracts" title="Smart Contract Management"
+        <x-admin.page-header title="Smart Contract Management"
             text="Monitor the permit registry contract and its health.">
             @if ($isAdmin && $reachable && $supportsPause && $isOwner)
                 <form method="POST" action="{{ route('admin.smart-contracts.pause') }}" class="inline-flex"
@@ -22,14 +22,14 @@
             @endif
 
             <a href="{{ url('/admin/blockchain-ledger') }}"
-                class="inline-flex min-h-11 items-center rounded-lg bg-blue-700/70 px-4 text-sm font-semibold text-white hover:bg-blue-800">
+                class="inline-flex min-h-11 items-center rounded-lg bg-(--blue-50) px-4 text-sm font-semibold text-(--blue-700) hover:bg-(--blue-100) dark:bg-(--blue-800) dark:text-(--white)">
                 View ledger
             </a>
 
             @if ($isAdmin)
                 <button type="button" data-open-deployment-modal aria-haspopup="dialog"
                     title="Register a new deployment"
-                    class="inline-flex min-h-11 items-center gap-2 rounded-lg bg-emerald-700/70 px-4 text-sm font-semibold text-white hover:bg-emerald-800">
+                    class="inline-flex min-h-11 items-center gap-2 rounded-lg bg-(--blue-600) px-4 text-sm font-semibold text-(--white) hover:bg-(--blue-700)">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M5 12h14" />
@@ -74,7 +74,7 @@
         @endif
 
         {{-- Show contract, network, issuer-wallet, and processing status at a glance. --}}
-        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <div class="{{ $card }}">
                 <p class="text-xs text-slate-500">Permit contract</p>
                 <p class="my-2 text-xl font-bold text-slate-900 dark:text-slate-300">

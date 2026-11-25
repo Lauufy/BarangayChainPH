@@ -14,7 +14,7 @@
             </div>
             <div>
                 <dt class="{{ $muted }}">Email</dt>
-                <dd class="{{ $ink }} mt-1 font-medium">{{ $formDetails['email'] ?? '—' }}</dd>
+                <dd class="{{ $ink }} mt-1 font-medium">{{ auth()->user()->email ?? $formDetails['email'] ?? '—' }}</dd>
             </div>
             <div>
                 <dt class="{{ $muted }}">Phone</dt>
@@ -89,7 +89,7 @@
                     <img id="review-selfie" alt="Your selfie"
                         class="hidden h-full w-full object-contain">
                 </div>
-                <figcaption class="{{ $muted }} mt-2 text-xs">Selfie with ID</figcaption>
+                <figcaption class="{{ $muted }} mt-2 text-xs">Face photo</figcaption>
             </figure>
         </div>
     </section>

@@ -53,7 +53,7 @@
                     @foreach ($details as $label => $value)
                         <div @class(['min-w-0', 'sm:col-span-2' => $loop->first])>
                             <dt class="text-xs font-semibold text-slate-600 dark:text-slate-300">{{ $label }}</dt>
-                            <dd class="mt-1 break-words font-medium">{{ $value }}</dd>
+                            <dd class="mt-1 wrap-break-word font-medium">{{ $value }}</dd>
                         </div>
                     @endforeach
                 </dl>

@@ -1,8 +1,8 @@
 {{-- STEP 3: Selfie (upload or camera with face check) --}}
 <div data-panel="3" class="{{ $step === 3 ? '' : 'hidden' }} space-y-3">
     <div>
-        <h2 class="{{ $h2 }}">Take a selfie with your ID</h2>
-        <p class="{{ $sub }}">Hold your ID next to your face. Use the camera or upload a photo.
+        <h2 class="{{ $h2 }}">Face verification</h2>
+        <p class="{{ $sub }}">Center your face inside the oval and look straight at the camera.
         </p>
     </div>
 
@@ -12,27 +12,24 @@
     <section class="{{ $card }}">
         <ul
             class="bg-(--gray-50) text-(--gray-700) dark:bg-(--gray-900) dark:text-(--gray-200) space-y-1.5 rounded-lg p-4 text-sm">
-            <li>✓ Your face and your ID are both clearly visible.</li>
+            <li>✓ Keep only your face in the frame.</li>
             <li>✓ The lighting is good. No hat or sunglasses.</li>
-            <li>✓ The ID text is sharp and not covered.</li>
         </ul>
 
         <input type="hidden" name="selfie_source" id="selfie-source" value="{{ $draft['selfie_source'] ?? 'upload' }}">
 
         <div role="tablist" aria-label="Selfie method"
             class="bg-(--gray-100) dark:bg-(--gray-900) mt-4 inline-flex rounded-lg p-1 text-sm font-semibold">
-            <button type="button" role="tab" id="tab-upload" aria-selected="true"
-                class="bg-(--white) text-(--gray-900) dark:bg-(--gray-700) dark:text-(--gray-50) rounded-md px-4 py-2 shadow-sm transition">Upload
-                photo</button>
-            <button type="button" role="tab" id="open-camera" aria-selected="false"
-                class="text-(--gray-600) hover:text-(--gray-900) dark:text-(--gray-300) dark:hover:text-(--gray-50) rounded-md px-4 py-2 transition">Use
-                camera</button>
+            <button type="button" role="tab" id="open-camera" aria-selected="true"
+                class="rounded-md px-4 py-2 shadow-sm transition">Scan face</button>
+            <button type="button" role="tab" id="tab-upload" aria-selected="false"
+                class="rounded-md px-4 py-2 transition">Upload photo</button>
         </div>
 
         <div class="mt-4">
             <label for="selfie" id="selfie-drop" class="{{ $dropzone }}">
                 <input id="selfie" name="selfie" type="file" @required(blank($draft['selfie_path'] ?? null))
-                    accept="image/jpeg,image/png" data-error-message="Take or upload a selfie holding your ID." class="sr-only">
+                    accept="image/jpeg,image/png" data-error-message="Take or upload a clear photo of your face." class="sr-only">
 
                 <div data-empty class="{{ !empty($draft['selfie_path']) ? 'hidden' : 'flex' }} flex-col items-center">
                     <span class="{{ $iconBox }}">

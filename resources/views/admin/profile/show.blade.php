@@ -22,9 +22,9 @@
         $stored = fn(string $field) => $hasOld ? null : $profile?->{$field};
     @endphp
 
-    <div class="mx-auto max-w-4xl space-y-6">
+    <div class="admin-module mx-auto max-w-4xl space-y-5">
         {{-- Explain which profile details can be changed on this page. --}}
-        <x-admin.page-header label="Administration" title="My Profile"
+        <x-admin.page-header title="My Profile"
             text="Review your account details and update the information you are allowed to change." />
 
         {{-- Show successful profile updates. --}}

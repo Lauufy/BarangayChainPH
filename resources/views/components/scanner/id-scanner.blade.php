@@ -9,12 +9,10 @@
     class="border-(--gray-200) bg-(--white) dark:border-(--gray-700) dark:bg-(--gray-800) mt-4 rounded-md border p-4">
     <div role="tablist" aria-label="ID photo method"
         class="bg-(--gray-100) dark:bg-(--gray-900) inline-flex rounded-lg p-1 text-sm font-semibold">
-        <button type="button" role="tab" data-scan-upload aria-selected="true"
-            class="rounded-md bg-(--white) px-4 py-2 text-(--gray-900) shadow-sm transition dark:bg-(--gray-700) dark:text-(--gray-50)">Upload
-            photos</button>
-        <button type="button" role="tab" data-scan-camera aria-selected="false"
-            class="rounded-md px-4 py-2 text-(--gray-600) transition hover:text-(--gray-900) dark:text-(--gray-300) dark:hover:text-(--gray-50)">Use
-            camera</button>
+        <button type="button" role="tab" data-scan-camera aria-selected="true"
+            class="rounded-md px-4 py-2 shadow-sm transition">Scan photo</button>
+        <button type="button" role="tab" data-scan-upload aria-selected="false"
+            class="rounded-md px-4 py-2 transition">Upload photos</button>
     </div>
 
     <div data-scan-camera-panel class="mt-4 hidden">
@@ -445,9 +443,18 @@
 
                 const step = root.closest('[data-panel="2"]');
                 if (step) {
-                    new MutationObserver(() => {
-                        if (step.classList.contains('hidden')) close();
-                    }).observe(step, { attributes: true, attributeFilter: ['class'] });
+                    const syncStep = () => {
+                        if (step.classList.contains('hidden')) {
+                            close();
+                        } else if (![frontInput, backInput].every(input =>
+                            input.files.length || input.closest('[data-upload]')?.dataset.savedPreview)) {
+                            startCamera();
+                        } else {
+                            setMethod(false);
+                        }
+                    };
+                    syncStep();
+                    new MutationObserver(syncStep).observe(step, { attributes: true, attributeFilter: ['class'] });
                 }
 
                 window.addEventListener('pagehide', close);

@@ -15,7 +15,7 @@ return [
             'export' => UsersExport::class,
             'permission' => null,
             'role' => 'admin',
-            'filters' => ['users_tab'],
+            'filters' => ['users_tab', 'users_status'],
         ],
         'permits' => [
             'export' => PermitsExport::class,

@@ -1,14 +1,24 @@
 @extends('layouts.admin')
 
-@section('title', 'User & Role Management')
+@section('title', 'Access Management')
 
 @section('content')
-    <div class="space-y-6">
-        <x-admin.page-header label="Administration" title="User & Role Management"
-            text="Manage employee accounts, citizen accounts, and administrator access." />
+    <div class="admin-module space-y-5">
+        <x-admin.page-header title="Access Management"
+            text="Manage employee, citizen, and administrator accounts."
+            :export-url="route('admin.exports.show', ['module' => 'users', 'format' => 'csv', 'users_tab' => $view, 'users_status' => $status])">
+            <button type="button" aria-haspopup="dialog" aria-controls="createUserModal"
+                onclick="const modal = document.getElementById('createUserModal'); modal.classList.remove('hidden'); modal.classList.add('flex')"
+                class="inline-flex h-10 items-center gap-2 rounded-lg bg-(--blue-600) px-4 text-sm font-semibold text-(--white) hover:bg-(--blue-700) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--blue-500)">
+                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M12 5v14M5 12h14" />
+                </svg>
+                New User
+            </button>
+        </x-admin.page-header>
 
         {{-- Summary --}}
-        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div class="grid gap-3 md:grid-cols-3">
             <x-admin.stat-card label="Total Accounts" subtitle="All registered system accounts" :value="$accountCounts['total']"
                 :latest="$accountLatest['total'] ?? null" latest-label="Last created" empty-text="No accounts yet">
                 <x-slot:icon>
@@ -21,8 +31,8 @@
                 </x-slot:icon>
             </x-admin.stat-card>
 
-            <x-admin.stat-card label="Employee Accounts" subtitle="Barangay personnel and staff" :value="$employeeTotal"
-                :latest="$employeeLatest" latest-label="Last created" empty-text="No employee accounts yet">
+            <x-admin.stat-card label="Employee Accounts" subtitle="Barangay personnel and staff" :value="$accountCounts['staff']"
+                :latest="$accountLatest['staff']" latest-label="Last created" empty-text="No employee accounts yet">
                 <x-slot:icon>
                     <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -43,144 +53,41 @@
             </x-admin.stat-card>
         </div>
 
-        {{-- Accounts: one card, tabs + search + Add on one row --}}
+        {{-- Account directory --}}
         <x-tables.card :paginator="$paginator" :searchable="false" :per-page-options="[5, 10, 15, 25]">
-            <x-tables.toolbar key="users" :tabs="['all' => 'All', 'employees' => 'Employees', 'citizens' => 'Citizens']" :search="true" search-placeholder="Start searching..."
-                add-label="Add New"
-                add-onclick="document.getElementById('createUserModal').classList.remove('hidden'); document.getElementById('createUserModal').classList.add('flex')" />
+            @include('admin.users.directory-toolbar')
 
-            {{-- ALL --}}
-            @if ($view === 'all')
-                <x-tables.table :heads="['Account', 'Type', 'Details', 'Status', 'Date Created', ['label' => 'Actions', 'align' => 'center']]" :empty="$everyone->isEmpty()" message="No accounts found.">
-                    @foreach ($everyone as $account)
+            <div class="account-directory">
+                <x-tables.table :heads="['Account', 'Role / Type', 'Contact & Location', 'Status', 'Date Created', ['label' => 'Actions', 'align' => 'center']]"
+                    :empty="$paginator->isEmpty()" message="No accounts found.">
+                    @foreach ($paginator as $account)
                         <tr>
-                            <td>
+                            <td data-title>
                                 <x-tables.user-cell :name="$account->name" :sub="$account->email" :avatar="$account->avatar_url" />
                             </td>
-
-                            <td>
-                                <x-tables.badge :variant="$account->role === 'citizen' ? 'neutral' : 'info'">
-                                    {{ $account->role === 'citizen' ? 'Citizen' : 'Employee' }}
+                            <td data-label="Role">
+                                <x-tables.badge :variant="$account->role === 'admin' ? 'info' : 'neutral'">
+                                    {{ match ($account->role) { 'admin' => 'Admin', 'staff' => 'Employee', default => 'Citizen' } }}
                                 </x-tables.badge>
                             </td>
-
-                            <td>
-                                @if ($account->role === 'citizen')
-                                    <p class="text-sm text-slate-900 dark:text-slate-100">{{ $account->phone ?: '—' }}</p>
-                                    <p class="text-xs text-slate-500 dark:text-slate-400">
-                                        {{ $account->citizenProfile?->barangay ?: '—' }}</p>
-                                @else
-                                    <p class="text-sm text-slate-900 dark:text-slate-100">
-                                        {{ $account->employeeProfile?->position ?? '—' }}</p>
-                                    <p class="text-xs text-slate-500 dark:text-slate-400">
-                                        {{ $account->employeeProfile?->department ?? '—' }}</p>
-                                @endif
-                            </td>
-
-                            <td>
-                                <x-tables.badge :variant="$statusVariants[$account->status] ?? 'neutral'">
-                                    {{ $statuses[$account->status] ?? ucfirst($account->status) }}
-                                </x-tables.badge>
-                            </td>
-
-                            <td class="text-slate-500 dark:text-slate-400">{{ $account->created_at->format('M j, Y') }}</td>
-
-                            <td class="text-center">@include('admin.users.row-actions', ['account' => $account])</td>
-                        </tr>
-                    @endforeach
-                </x-tables.table>
-
-                {{-- EMPLOYEES --}}
-            @elseif ($view === 'employees')
-                <x-tables.table :heads="[
-                    'Employee',
-                    'Employee ID',
-                    'Position / Department',
-                    'Status',
-                    'Date Created',
-                    ['label' => 'Actions', 'align' => 'center'],
-                ]" :empty="$users->isEmpty()" message="No employee accounts found.">
-                    @foreach ($users as $account)
-                        <tr>
-                            <td>
-                                <x-tables.user-cell :name="$account->name" :sub="$account->email" :avatar="$account->avatar_url" />
-                            </td>
-
-                            <td>
-                                <p class="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
-                                    {{ $account->employeeProfile?->employee_id ?? '—' }}
-                                </p>
-                                <p class="text-xs text-slate-500 dark:text-slate-400">
-                                    {{ $account->role === 'admin' ? 'Administrator' : 'Staff' }}
-                                    @if ($account->employeeProfile?->employment_type)
-                                        · {{ $employmentTypes[$account->employeeProfile->employment_type] ?? '' }}
-                                    @endif
+                            <td data-label="Contact & location">
+                                <p>{{ $account->phone ?: '�' }}</p>
+                                <p class="text-xs text-(--gray-500) dark:text-(--gray-400)">
+                                    {{ $account->citizenProfile?->barangay ?: ($account->employeeProfile?->office ?: '�') }}
                                 </p>
                             </td>
-
-                            <td>
-                                <p class="text-sm text-slate-900 dark:text-slate-100">
-                                    {{ $account->employeeProfile?->position ?? '—' }}</p>
-                                <p class="text-xs text-slate-500 dark:text-slate-400">
-                                    {{ $account->employeeProfile?->department ?? '—' }}</p>
-                            </td>
-
-                            <td>
-                                <x-tables.badge :variant="$statusVariants[$account->status] ?? 'neutral'">
+                            <td data-side="right">
+                                <x-tables.badge :variant="$statusVariants[$account->status] ?? 'neutral'" class="gap-1.5 rounded-full!">
+                                    <span class="size-1.5 rounded-full bg-current" aria-hidden="true"></span>
                                     {{ $statuses[$account->status] ?? ucfirst($account->status) }}
                                 </x-tables.badge>
                             </td>
-
-                            <td class="text-slate-500 dark:text-slate-400">{{ $account->created_at->format('M j, Y') }}
-                            </td>
-
-                            <td class="text-center">@include('admin.users.row-actions', ['account' => $account])</td>
+                            <td data-label="Date created">{{ $account->created_at->format('M j, Y') }}</td>
+                            <td data-side="full">@include('admin.users.row-actions', ['account' => $account])</td>
                         </tr>
                     @endforeach
                 </x-tables.table>
-
-                {{-- CITIZENS --}}
-            @else
-                <x-tables.table :heads="[
-                    'Citizen',
-                    'Phone',
-                    'Barangay',
-                    'Identity',
-                    'Status',
-                    'Registered',
-                    ['label' => 'Actions', 'align' => 'center'],
-                ]" :empty="$citizens->isEmpty()" message="No citizen accounts found.">
-                    @foreach ($citizens as $account)
-                        <tr>
-                            <td>
-                                <x-tables.user-cell :name="$account->name" :sub="$account->email" :avatar="$account->avatar_url" />
-                            </td>
-
-                            <td class="text-slate-600 dark:text-slate-300">{{ $account->phone ?: '—' }}</td>
-
-                            <td class="text-slate-600 dark:text-slate-300">{{ $account->citizenProfile?->barangay ?: '—' }}
-                            </td>
-
-                            <td>
-                                <x-tables.badge :variant="$identityStatuses[$account->id]['variant']">
-                                    {{ $identityStatuses[$account->id]['status'] ?: 'none' }}
-                                </x-tables.badge>
-                            </td>
-
-                            <td>
-                                <x-tables.badge :variant="$statusVariants[$account->status] ?? 'neutral'">
-                                    {{ $statuses[$account->status] ?? ucfirst($account->status) }}
-                                </x-tables.badge>
-                            </td>
-
-                            <td class="text-slate-500 dark:text-slate-400">{{ $account->created_at->format('M j, Y') }}
-                            </td>
-
-                            <td class="text-center">@include('admin.users.row-actions', ['account' => $account])</td>
-                        </tr>
-                    @endforeach
-                </x-tables.table>
-            @endif
+            </div>
         </x-tables.card>
 
         <script>

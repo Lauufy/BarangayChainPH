@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Ticket;
+use App\Notifications\CitizenSubmissionReceived;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Throwable;
@@ -36,6 +37,14 @@ class PostTicketMessage
                     'attachment_path' => $path,
                     'attachment_name' => $file?->getClientOriginalName(),
                 ]);
+
+                if ($request->user()->isCitizen()) {
+                    (new CitizenSubmissionReceived(
+                        'New ticket message',
+                        $ticket->reference(),
+                        route('admin.tickets.show', $ticket),
+                    ))->sendToTicketInbox();
+                }
             });
         } catch (Throwable $exception) {
             $this->storage->delete($path);

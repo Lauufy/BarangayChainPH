@@ -3,8 +3,8 @@
 @section('title', 'Communications Management')
 
 @section('content')
-    <div class="space-y-6">
-        <x-admin.page-header label="Communication" title="Communications Management"
+    <div class="admin-module space-y-5">
+        <x-admin.page-header title="Communications Management"
             text="Manage citizen ticket messages and public website inquiries." />
 
         @php

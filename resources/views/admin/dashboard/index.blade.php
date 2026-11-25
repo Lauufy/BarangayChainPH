@@ -3,10 +3,10 @@
 @section('title', 'Dashboard')
 
 @section('content')
-    <div class="space-y-6" data-reports-page>
+    <div class="admin-module space-y-5" data-reports-page>
 
         {{-- Welcome the signed-in user and describe the dashboard. --}}
-        <x-admin.page-header label="Dashboard" :title="$greeting . ', ' . $firstName . '.'" text="Monitor citizen services and barangay transactions." />
+        <x-admin.page-header :title="$greeting . ', ' . $firstName . '.'" text="Monitor citizen services and barangay transactions." />
 
         {{-- Warning: approved permits not yet on the blockchain --}}
         @if (($unrecordedPermits ?? 0) > 0 && $can('permits.review'))
@@ -18,7 +18,7 @@
             </div>
         @endif
 
-        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <x-admin.stat-card label="Total Citizens" subtitle="Registered accounts" :value="number_format($totalCitizens ?? 0)" :trend="$citizensTrend ?? null"
                 :latest="$citizensLatest ?? null" latest-label="Last registered" :href="$isAdmin ? route('admin.users.index') : null">
                 <x-slot:icon>

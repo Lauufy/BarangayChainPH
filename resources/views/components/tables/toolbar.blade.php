@@ -83,6 +83,9 @@
 <div data-table-key="{{ $key }}" {{ $attributes->class('flex flex-wrap items-center justify-between gap-3 pb-2 sm:pb-3') }}>
     {{-- Left: tabs + filters --}}
     <div class="flex flex-wrap items-center gap-2">
+        @isset($navigation)
+            {{ $navigation }}
+        @endisset
         @if (count($tabs))
             <nav class="inline-flex items-center gap-0.5 rounded-lg bg-slate-100 p-1 dark:bg-slate-800" aria-label="Table views">
                 @foreach ($tabs as $value => $label)
@@ -142,6 +145,10 @@
                 </div>
             </div>
         @endif
+
+        @isset($searchActions)
+            {{ $searchActions }}
+        @endisset
 
         @if ($exportUrl)
             <a href="{{ $exportUrl }}" class="{{ $pill }}">Export</a>

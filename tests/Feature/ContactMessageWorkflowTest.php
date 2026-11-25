@@ -16,6 +16,9 @@ class ContactMessageWorkflowTest extends TestCase
 
     public function test_guest_submission_is_saved_for_the_website_inbox(): void
     {
+        $staff = User::factory()->create(['role' => 'staff', 'permissions' => ['tickets.reply']]);
+        $other = User::factory()->create(['role' => 'staff', 'permissions' => []]);
+
         $response = $this->followingRedirects()
             ->post(route('contact.store'), [
                 'first_name' => 'Juan',
@@ -28,6 +31,9 @@ class ContactMessageWorkflowTest extends TestCase
 
         $response->assertOk()
             ->assertSee('Thank you. Your message has been received, and we will reply by email.');
+
+        $this->assertSame(route('admin.contact-messages.show', ContactMessage::sole()), $staff->unreadNotifications()->sole()->data['url']);
+        $this->assertFalse($other->notifications()->exists());
 
         $this->assertDatabaseHas('contact_messages', [
             'first_name' => 'Juan',

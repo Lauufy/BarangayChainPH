@@ -241,8 +241,7 @@
                             class="sb-section-label mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-[#8b93b8]">
                             Communication</p>
                         <div class="space-y-0.5">
-                            <x-admin.nav-link :href="route('admin.tickets.index')" :match="['admin/tickets*', 'admin/contact-messages*']"
-                                :badge="$newContactMessagesCount > 9 ? '9+' : ($newContactMessagesCount ?: null)">
+                            <x-admin.nav-link :href="route('admin.tickets.index')" :match="['admin/tickets*', 'admin/contact-messages*']">
                                 <x-slot:icon><path d="M5 3h14a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3H10l-5 4v-4a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3z"/><path d="M8 8h8M8 12h5"/></x-slot:icon>
                                 Communications Management
                             </x-admin.nav-link>
@@ -292,6 +291,7 @@
                     <x-partials.theme-toggle />
 
                     {{-- Notifications --}}
+                    @php($unreadNotificationCount = auth()->user()->unreadNotifications()->count())
                     <details id="admin-notification-menu" class="relative">
                         <summary aria-label="Notifications"
                             class="list-none cursor-pointer rounded-lg outline-none transition-colors duration-200 focus-visible:bg-(--gray-100) dark:focus-visible:bg-white/10 [&::-webkit-details-marker]:hidden hover:bg-(--gray-100) hover:text-(--gray-900) dark:hover:bg-white/10 dark:hover:text-(--white) text-(--gray-500) dark:text-(--gray-400) relative flex p-2.5">
@@ -301,10 +301,10 @@
                                 <path
                                     d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" />
                             </svg>
-                            @if (auth()->user()->unreadNotifications()->count())
+                            @if ($unreadNotificationCount)
                                 <span id="admin-notification-count"
                                     class="bg-(--red-600) text-(--white) ring-(--white) dark:ring-(--gray-900) absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 font-mono text-[10px] font-bold leading-none ring-2">
-                                    {{ auth()->user()->unreadNotifications()->count() > 9 ? '9+' : auth()->user()->unreadNotifications()->count() }}
+                                    {{ $unreadNotificationCount > 9 ? '9+' : $unreadNotificationCount }}
                                 </span>
                             @endif
                         </summary>
@@ -319,16 +319,16 @@
                                         Notifications</p>
                                     <p id="admin-notification-subtitle"
                                         class="text-(--gray-500) dark:text-(--gray-400) mt-0.5 text-xs">
-                                        @if (auth()->user()->unreadNotifications()->count())
-                                            You have {{ auth()->user()->unreadNotifications()->count() }} new
-                                            {{ \Illuminate\Support\Str::plural('notification', auth()->user()->unreadNotifications()->count()) }}.
+                                        @if ($unreadNotificationCount)
+                                            You have {{ $unreadNotificationCount }} new
+                                            {{ \Illuminate\Support\Str::plural('notification', $unreadNotificationCount) }}.
                                         @else
                                             You're all caught up.
                                         @endif
                                     </p>
                                 </div>
 
-                                @if (auth()->user()->unreadNotifications()->count())
+                                @if ($unreadNotificationCount)
                                     <form id="admin-mark-all-form" method="POST"
                                         action="{{ route('admin.notifications.read-all') }}">
                                         @csrf
@@ -361,8 +361,10 @@
                             {{-- List --}}
                             <div class="mt-2.5 max-h-80 space-y-1 overflow-y-auto">
                                 @forelse (auth()->user()->notifications()->latest()->limit(10)->get() as $notification)
-                                    <div data-notif-item data-unread="{{ $notification->read_at ? '0' : '1' }}"
+                                    <form method="POST" action="{{ route('admin.notifications.read', $notification->id) }}" data-notif-item data-unread="{{ $notification->read_at ? '0' : '1' }}"
                                         class="relative flex gap-2 rounded-lg border border-(--gray-200) bg-(--white) p-2.5 dark:border-white/10 dark:bg-(--gray-800)">
+                                        @csrf
+                                        <input type="hidden" name="open" value="1">
 
                                         @switch($notification->data['status'] ?? 'info')
                                             @case('verified')
@@ -402,8 +404,7 @@
                                         <div class="min-w-0 flex-1">
                                             <div class="flex items-start justify-between gap-1">
                                                 <div class="flex min-w-0 items-center gap-1">
-                                                    <a href="{{ $notification->data['url'] ?? route('admin.notifications.index') }}"
-                                                        class="text-(--blue-900) dark:text-(--gray-50) text-sm font-bold hover:underline">
+                                                    <button type="submit" class="cursor-pointer text-left after:absolute after:inset-0 text-(--blue-900) dark:text-(--gray-50) text-sm font-bold hover:underline">
                                                         {{ $notification->data['title'] ?? 'Notification' }}
                                                         @unless ($notification->read_at)
                                                             <span data-admin-unread-dot
@@ -411,7 +412,7 @@
                                                                 <span class="sr-only">Unread</span>
                                                             </span>
                                                         @endunless
-                                                    </a>
+                                                    </button>
                                                 </div>
                                                 <span
                                                     class="text-(--gray-500) dark:text-(--gray-400) shrink-0 whitespace-nowrap text-xs">{{ $notification->created_at->diffForHumans() }}</span>
@@ -422,7 +423,7 @@
                                                 {{ $notification->data['message'] ?? '' }}
                                             </span>
                                         </div>
-                                    </div>
+                                    </form>
                                 @empty
                                     <p class="text-(--gray-500) dark:text-(--gray-400) px-2 py-8 text-center text-sm">
                                         No notifications yet.</p>
