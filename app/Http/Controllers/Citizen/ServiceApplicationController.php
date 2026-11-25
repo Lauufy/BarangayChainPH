@@ -20,7 +20,7 @@ use Illuminate\View\View;
 use RuntimeException;
 use Throwable;
 
-/** The 4-step application wizard. Each service is defined in config/barangay_services.php. */
+/** The citizen application wizard. Each service is defined in config/barangay_services.php. */
 class ServiceApplicationController extends Controller
 {
     private const DISK = 'supabase';
@@ -46,10 +46,26 @@ class ServiceApplicationController extends Controller
         return view('citizen.service-requests.create', [
             'slug' => $slug,
             'service' => $service,
-            'steps' => [1 => 'Applicant information', 2 => 'Application details', 3 => 'Supporting documents', 4 => 'Review'],
-            'startStep' => $this->startStep($errorKeys, $service),
-            'sections' => $applicant['display'],
-            'fields' => $this->formFields($service, $request->user()->name),
+            'steps' => ['Application form', 'Permit preview', 'Review and submit'],
+            'startStep' => $errorKeys === ['agree_truth'] ? 3 : 1,
+            'sections' => match ($service['type']) {
+                ServiceRequest::BUSINESS_CLEARANCE => [],
+                ServiceRequest::BARANGAY_CLEARANCE, ServiceRequest::CERTIFICATE_OF_INDIGENCY => [
+                    'Applicant' => [
+                        'Name' => $applicant['name'],
+                        'Address' => $applicant['address'],
+                        'Age' => $applicant['age'],
+                        'Nationality' => $request->user()->citizenProfile->nationality,
+                        ...($service['type'] === ServiceRequest::BARANGAY_CLEARANCE ? [
+                            'Birthdate' => $request->user()->citizenProfile->date_of_birth->toDateString(),
+                            'Birthplace' => $request->user()->citizenProfile->place_of_birth,
+                            'Civil status' => $applicant['civil_status'],
+                        ] : []),
+                    ],
+                ],
+                default => $applicant['display'],
+            },
+            'fields' => $this->formFields($service, $request->user()),
             'userName' => $request->user()->name,
             'address' => $applicant['address'],
             'maxMb' => self::MAX_FILE_KB / 1024,
@@ -82,6 +98,13 @@ class ServiceApplicationController extends Controller
         );
 
         [$details, $purpose] = $this->resolveDetails($service, $data);
+        if ($service['type'] === ServiceRequest::BARANGAY_CLEARANCE) {
+            $details['birthdate'] = $user->citizenProfile->date_of_birth->toDateString();
+            $details['birthplace'] = $user->citizenProfile->place_of_birth;
+        }
+        if (in_array($service['type'], [ServiceRequest::BARANGAY_CLEARANCE, ServiceRequest::CERTIFICATE_OF_INDIGENCY], true)) {
+            $details['nationality'] = $user->citizenProfile->nationality;
+        }
 
         $storedPaths = []; // so uploaded files can be removed if the save fails
 
@@ -100,7 +123,7 @@ class ServiceApplicationController extends Controller
                     'address' => $applicant['address'],
                     'age' => $applicant['age'],
                     'civil_status' => $applicant['civil_status'],
-                    'contact_number' => $applicant['contact_number'],
+                    'contact_number' => $details['contact_number'] ?? $details['business_contact_number'] ?? $applicant['contact_number'],
                     'purpose' => $purpose,
                     'details' => $details,
                     'status' => ServiceRequest::PENDING,
@@ -109,6 +132,10 @@ class ServiceApplicationController extends Controller
                 // Store each required upload in private storage
                 foreach ($service['requirements'] as $key => $label) {
                     $file = $request->file("requirements.{$key}");
+                    if (! $file) {
+                        continue;
+                    }
+
                     $path = $file->store("service-requirements/{$serviceRequest->id}", self::DISK);
 
                     if (! $path) {
@@ -231,9 +258,9 @@ class ServiceApplicationController extends Controller
     }
 
     /** Step 2 fields with their defaults and old input already resolved. */
-    private function formFields(array $service, string $userName): array
+    private function formFields(array $service, User $user): array
     {
-        return array_map(function (array $field) use ($userName) {
+        return array_map(function (array $field) use ($user) {
             $key = $field['key'];
             $other = $field['other'] ?? false;
 
@@ -244,35 +271,13 @@ class ServiceApplicationController extends Controller
                 'options' => array_merge($field['options'] ?? [], $other ? ['Others'] : []),
                 'required' => $field['required'] ?? true,
                 'other' => $other,
+                'when' => $field['when'] ?? null,
+                'step' => $field['step'] ?? null,
                 'wide' => $field['wide'] ?? false,
-                'value' => old($key, ($field['prefill'] ?? null) === 'name' ? $userName : null),
+                'value' => old($key, isset($field['prefill']) ? $user->getAttribute($field['prefill']) : null),
                 'otherValue' => old("{$key}_other"),
             ];
         }, $service['fields']);
-    }
-
-    /** After a failed submit, reopen on the step that has the first error. */
-    private function startStep(array $errorKeys, array $service): int
-    {
-        if ($errorKeys === []) {
-            return 1;
-        }
-
-        $fieldKeys = collect($service['fields'])->pluck('key')->flatMap(fn ($k) => [$k, "{$k}_other"])->all();
-
-        foreach ($errorKeys as $key) {
-            if (in_array($key, $fieldKeys, true)) {
-                return 2;
-            }
-        }
-
-        foreach ($errorKeys as $key) {
-            if (str_starts_with($key, 'requirements')) {
-                return 3;
-            }
-        }
-
-        return 4;
     }
 
     // Validation
@@ -312,6 +317,13 @@ class ServiceApplicationController extends Controller
                     array_push($rule, 'string', 'max:255');
             }
 
+            if (isset($field['rules'])) {
+                $rule = [$rule[0], ...$field['rules']];
+            }
+            if (isset($field['when'])) {
+                array_unshift($rule, 'exclude_unless:'.implode(',', $field['when']));
+            }
+
             $rules[$key] = $rule;
 
             // "Others" needs a short description
@@ -321,7 +333,7 @@ class ServiceApplicationController extends Controller
         }
 
         foreach (array_keys($service['requirements']) as $key) {
-            $rules["requirements.{$key}"] = ['required', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:'.self::MAX_FILE_KB];
+            $rules["requirements.{$key}"] = [$service['requirement_rules'][$key] ?? 'required', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:'.self::MAX_FILE_KB];
         }
 
         return $rules;

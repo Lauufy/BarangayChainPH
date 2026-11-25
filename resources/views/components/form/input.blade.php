@@ -48,7 +48,7 @@
         }
     }
 
-    $required = $attributes->has('required'); // shows the red asterisk
+    $required = $attributes->has('required') && $attributes->get('required') !== false; // shows the red asterisk
     $invalid = $errors->has($name); // Laravel validation error
 
     // ------------------------------------------------------------------

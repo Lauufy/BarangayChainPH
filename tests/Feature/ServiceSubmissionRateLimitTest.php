@@ -47,6 +47,70 @@ class ServiceSubmissionRateLimitTest extends TestCase
         $this->assertDatabaseCount('service_requests', 2);
     }
 
+    public function test_citizens_can_preview_each_reference_certificate(): void
+    {
+        $this->withoutVite();
+        $this->actingAs($this->verifiedCitizen('preview'));
+
+        foreach (['business-clearance', 'certificate-of-residency', 'barangay-clearance', 'certificate-of-indigency'] as $slug) {
+            $response = $this->get(route('citizen.'.$slug))->assertOk()
+                ->assertSeeInOrder(['data-panel="1"', 'data-panel="2"', 'Preview your document', 'data-panel="3"', 'Review and confirmation'], false)
+                ->assertDontSee('data-panel="4"', false);
+
+            if ($slug === 'business-clearance') {
+                $response->assertDontSee('Application details')
+                    ->assertSeeInOrder(['data-panel="1"', 'Applicant information', 'Supporting documents', 'data-panel="2"'], false);
+            }
+
+            if (in_array($slug, ['barangay-clearance', 'certificate-of-indigency'], true)) {
+                $response->assertDontSee('Supporting documents')->assertDontSee('type="file"', false);
+            } else {
+                $response->assertSee('Supporting documents')->assertSee('type="file"', false);
+            }
+
+            if ($slug !== 'certificate-of-residency') {
+                $response->assertSee('Draft certificate preview')->assertSee('header_permit.png');
+            }
+        }
+    }
+
+    public function test_business_clearance_checks_the_requirements_for_each_application_type(): void
+    {
+        Storage::fake('supabase');
+        $this->actingAs($this->verifiedCitizen('business'));
+        $url = route('citizen.business-clearance.store');
+        $fields = [
+            'business_name' => 'Sample Store',
+            'business_address' => '12 Main Street',
+            'business_owner_name' => 'Maria Reyes',
+            'business_type' => 'Single proprietor',
+            'nature_of_business' => 'Retailer',
+            'business_contact_number' => '09171234567',
+            'agree_truth' => '1',
+            'requirements' => ['business_registration' => UploadedFile::fake()->create('dti.pdf', 10, 'application/pdf')],
+        ];
+
+        $this->post($url, $fields + ['application_type' => 'Renewal'])
+            ->assertSessionHasErrors('requirements.old_clearance');
+        $this->post($url, $fields + ['application_type' => 'New application'])
+            ->assertSessionHasErrors('paid_up_capital');
+        $this->post($url, $fields + ['application_type' => 'New application', 'paid_up_capital' => '12500.50'])
+            ->assertRedirect(route('citizen.applications'))
+            ->assertSessionHas('success');
+    }
+
+    public function test_indigency_accepts_a_specified_purpose_without_uploads(): void
+    {
+        $this->actingAs($this->verifiedCitizen('indigency'));
+        $url = route('citizen.certificate-of-indigency.store');
+        $fields = ['purpose' => 'Others', 'agree_truth' => '1'];
+
+        $this->post($url, $fields)->assertSessionHasErrors('purpose_other');
+        $this->post($url, $fields + ['purpose_other' => 'School supplies'])
+            ->assertRedirect(route('citizen.applications'));
+        $this->assertDatabaseHas('service_requests', ['purpose' => 'School supplies']);
+    }
+
     private function verifiedCitizen(string $suffix): User
     {
         $citizen = User::factory()->create([
@@ -79,13 +143,11 @@ class ServiceSubmissionRateLimitTest extends TestCase
     private function validSubmission(): array
     {
         return [
-            'purpose' => 'Employment',
+            'purpose' => 'Proof of residency',
+            'resident_since' => 2015,
+            'contact_number' => '09171234567',
+            'id_presented' => 'SSS',
             'agree_truth' => '1',
-            'requirements' => [
-                'valid_id' => UploadedFile::fake()->create('valid-id.pdf', 10, 'application/pdf'),
-                'proof_of_residency' => UploadedFile::fake()->create('proof-of-residency.pdf', 10, 'application/pdf'),
-                'cedula' => UploadedFile::fake()->create('cedula.pdf', 10, 'application/pdf'),
-            ],
         ];
     }
 }

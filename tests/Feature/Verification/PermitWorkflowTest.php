@@ -52,7 +52,7 @@ class PermitWorkflowTest extends TestCase
         Pdf::shouldReceive('loadView')
             ->once()
             ->withArgs(function (string $view, array $data): bool {
-                $this->assertSame('permits.pdf', $view);
+                $this->assertSame('permits.san-luis', $view);
 
                 $verificationUrl = route('permits.verify.form', [
                     'ref' => $data['document']->document_uuid,

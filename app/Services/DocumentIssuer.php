@@ -9,6 +9,7 @@ use Carbon\CarbonInterface;
 use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\Writer\PngWriter;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -167,7 +168,20 @@ class DocumentIssuer
 
         $document->canonical_fields = PermitFields::snapshot($document, $application);
 
-        $pdfContent = Pdf::loadView('permits.pdf', [
+        $details = $application->details ?? [];
+        $template = in_array($application->service_type, [
+            ServiceRequest::BUSINESS_CLEARANCE, ServiceRequest::BARANGAY_CLEARANCE, ServiceRequest::CERTIFICATE_OF_INDIGENCY,
+        ], true) ? 'permits.san-luis' : 'permits.pdf';
+
+        File::ensureDirectoryExists(config('dompdf.options.temp_dir'));
+        $pdfContent = Pdf::loadView($template, [
+            'type' => $application->service_type,
+            'name' => $application->applicant_name,
+            'age' => $application->age,
+            'address' => $application->address,
+            'nationality' => $details['nationality'] ?? '________',
+            'purposeText' => $application->purpose,
+            'details' => $details,
             'application' => $application,
             'document' => $document,
             'documentTitle' => $application->serviceTitle(),

@@ -26,6 +26,8 @@
                 '</p></div>',
         );
 
+        $detailsHeading = $slug === 'business-clearance' ? 'Applicant information' : 'Application details';
+
         // Profile cards without the hidden labels, and the values shown on the preview
         $hide = ['privacy policy version', 'consent ip'];
         $profile = collect($sections)->map(
@@ -41,9 +43,6 @@
                 'key'
             ] ?? null;
 
-        // Steps: 1 Applicant, 2 Details, 3 Documents, 4 Preview, 5 Review
-        $given = array_values($steps);
-        $stepList = [$given[0], $given[1], $given[2], 'Preview', $given[3] ?? 'Review'];
     @endphp
 
     <div class="w-full space-y-4 pb-20 sm:pb-0">
@@ -84,7 +83,7 @@
             </div>
         </header>
 
-        <x-form.stepper id="apply-stepper" :steps="$stepList" :current="$startStep >= 4 ? 5 : $startStep" />
+        <x-form.stepper id="apply-stepper" :steps="$steps" :current="$startStep" />
 
         @if ($errors->any())
             <div role="alert"
@@ -95,7 +94,9 @@
                         <li>{{ $message }}</li>
                     @endforeach
                 </ul>
+                @if ($service['requirements'])
                 <p class="mt-2">For security, your browser clears chosen files. Please choose them again.</p>
+                @endif
             </div>
         @endif
 
@@ -103,11 +104,24 @@
             enctype="multipart/form-data" novalidate>
             @csrf
 
-            @include('citizen.service-requests.app-info')
-            @include('citizen.service-requests.app-details')
-            @include('citizen.service-requests.documents')
-            @include('citizen.service-requests.preview')
-            @include('citizen.service-requests.review')
+            <div data-panel="1" class="space-y-4">
+                @if ($profile->isNotEmpty())
+                    @include('citizen.service-requests.app-info')
+                @endif
+                @include('citizen.service-requests.app-details')
+                @if ($service['requirements'])
+                    @include('citizen.service-requests.documents')
+                @endif
+            </div>
+
+            <section data-panel="2" class="hidden space-y-3" aria-labelledby="document-preview-heading">
+                <h2 id="document-preview-heading" class="{{ $h3 }}">Preview your document</h2>
+                @include('citizen.service-requests.preview')
+            </section>
+
+            <div data-panel="{{ count($steps) }}" class="hidden">
+                @include('citizen.service-requests.review')
+            </div>
         </form>
     </div>
 
@@ -116,7 +130,7 @@
             const $ = (id) => document.getElementById(id);
             const all = (sel) => document.querySelectorAll(sel);
             const form = $('apply-form');
-            const LAST = 5;
+            const LAST = {{ count($steps) }};
             const MAX = {{ $maxMb }} * 1024 * 1024;
             const PURPOSE = @json($purpose);
             let step = 1;
@@ -124,6 +138,7 @@
             // Value of an application field ("Others" uses the description box)
             const answer = (key) => {
                 const field = $('f-' + key);
+                if (field.disabled) return '';
                 return field.dataset.other && field.value === 'Others' ? $('f-' + key + '_other').value : field
                     .value;
             };
@@ -139,6 +154,23 @@
                 sync();
             });
 
+            all('[data-depends-on]').forEach((wrapper) => {
+                const source = $('f-' + wrapper.dataset.dependsOn);
+                const field = wrapper.querySelector('input');
+                const sync = () => {
+                    field.disabled = source.value !== wrapper.dataset.when;
+                    wrapper.hidden = field.disabled;
+                };
+                source.addEventListener('change', sync);
+                sync();
+            });
+            all('[data-required-for-renewal]').forEach((file) => {
+                const source = $('f-application_type');
+                const sync = () => file.required = source.value === 'Renewal';
+                source.addEventListener('change', sync);
+                sync();
+            });
+
             // Check file type and size when a file is chosen
             all('[data-req]').forEach((input) => input.addEventListener('change', () => {
                 const file = input.files[0];
@@ -150,6 +182,33 @@
                 if (message) input.value = '';
             }));
 
+            const preview = $('certificate-preview');
+            function updatePreview() {
+                if (!preview) {
+                    $('preview-purpose').textContent = (PURPOSE && answer(PURPOSE)) || '—';
+                    return;
+                }
+
+                const page = preview.contentDocument;
+                if (!page?.querySelector('main')) return;
+                page.querySelectorAll('u, .line').forEach((element) => {
+                    const key = element.dataset.field ?? element.textContent.match(/^\[\[(\w+)\]\]$/)?.[1];
+                    if (!key) return;
+                    element.dataset.field = key;
+                    const value = key === 'other_purpose'
+                        ? ($('f-purpose').value === 'Others' ? answer('purpose') : '')
+                        : answer(key);
+                    element.textContent = value || '________';
+                });
+                const business = $('f-application_type');
+                const choice = business?.value ?? $('f-purpose')?.value;
+                page.querySelectorAll('[data-choice]').forEach((mark) => {
+                    const selected = choice === mark.dataset.choice;
+                    mark.textContent = business ? (selected ? '☒' : '□') : (selected ? '[ X ]' : '[   ]');
+                });
+            }
+            preview?.addEventListener('load', updatePreview);
+
             function goTo(next) {
                 step = next;
                 all('[data-panel]').forEach((p) => p.classList.toggle('hidden', Number(p.dataset.panel) !== step));
@@ -157,7 +216,7 @@
                 $('next-wrap').classList.toggle('hidden', step === LAST);
                 $('submit-wrap').classList.toggle('hidden', step !== LAST);
 
-                if (step === 4) $('preview-purpose').textContent = (PURPOSE && answer(PURPOSE)) || '—';
+                if (step === 2) updatePreview();
                 if (step === LAST) {
                     all('[data-review]').forEach((el) => el.value = answer(el.dataset.review));
                     all('[data-review-file]').forEach((el) => el.value = $('req-' + el.dataset.reviewFile).files[0]
@@ -198,7 +257,7 @@
                 }
             });
 
-            goTo({{ $startStep >= 4 ? 5 : $startStep }});
+            goTo({{ $startStep }});
         })();
     </script>
 @endsection

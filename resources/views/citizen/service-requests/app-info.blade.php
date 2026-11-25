@@ -3,8 +3,7 @@
     $hiddenProfileFields = ['two factor enabled', 'google password setup required'];
 @endphp
 
-{{-- 1: Applicant information (read-only x-form.input fields) --}}
-<div data-panel="1" class="space-y-3">
+<div class="space-y-3">
     {{ $head('Applicant information', 'These details come from your verified citizen profile.') }}
 
     @foreach ($profile as $title => $items)

@@ -1,7 +1,12 @@
-{{-- 4: Preview (the paper stays white with dark text in both modes, like the printed document) --}}
-<div data-panel="4" class="hidden space-y-3">
-    {{ $head('Preview of your document', 'This is how your ' . strtolower($service['title']) . ' will look. Go back if you need to change anything.') }}
+<div class="space-y-3">
 
+    @if ($slug !== 'certificate-of-residency')
+        <iframe id="certificate-preview" title="Draft certificate preview" class="h-[70vh] w-full border bg-white"
+            srcdoc="{{ view('permits.san-luis', [
+                'type' => $service['type'], 'name' => $userName, 'age' => $age, 'address' => $address,
+                'nationality' => $flat->get('nationality'), 'purposeText' => '[[purpose]]', 'details' => [],
+            ])->render() }}"></iframe>
+    @else
     <section class="{{ $card }}">
         <div class="mx-auto max-w-3xl rounded-md border border-(--gray-200) bg-(--white) p-6 text-(--gray-900) shadow-sm dark:border-(--gray-700) sm:p-10">
             <div class="text-center">
@@ -27,4 +32,5 @@
             </div>
         </div>
     </section>
+    @endif
 </div>

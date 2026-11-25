@@ -10,18 +10,16 @@
 |  title            Name shown to citizens, staff and on the PDF.
 |  description      Short text on the services page.
 |  icon             SVG path for the services page card.
-|  fields           Step 2 form fields. Types: text, number, tel, select, textarea.
+|  fields           Application form fields. Types: text, number, tel, select, textarea.
 |                   'required' => false makes a field optional.
 |                   'wide' => true makes it full width.
 |                   'other' => true (select only) adds an "Others" option with a text box.
 |                   'prefill' => 'name' prefills from the citizen's name.
 |  purpose_template The purpose printed on the certificate. {field_key} is replaced
 |                   with the citizen's answer.
-|  requirements     Documents the citizen must upload on step 3 (key => label).
-|                   Only list what is truly required. All listed files are required.
+|  requirements     Supporting document uploads (key => label).
+|  requirement_rules Optional or conditional upload rules. Other uploads are required.
 |
-| Fields, purposes and requirements are PLACEHOLDERS. Replace them when the
-| barangay confirms the real list. No other code needs to change.
 */
 
 return [
@@ -36,14 +34,15 @@ return [
             'purpose_template' => '{purpose}',
             'fields' => [
                 ['key' => 'purpose', 'label' => 'Purpose', 'type' => 'select', 'other' => true,
-                    'options' => ['Employment', 'Business', 'Travel or abroad', 'Government transaction', 'School requirement']],
-                ['key' => 'remarks', 'label' => 'Additional remarks', 'type' => 'textarea', 'required' => false, 'wide' => true],
+                    'options' => ['Proof of residency', 'Cedula / Resident Certificate', 'Indigency']],
+                ['key' => 'contact_number', 'label' => 'Contact number', 'type' => 'tel', 'prefill' => 'phone'],
+                ['key' => 'resident_since', 'label' => 'Year you began living in Barangay San Luis', 'type' => 'number',
+                    'rules' => ['integer', 'digits:4', 'min:1000', 'max:'.date('Y')]],
+                ['key' => 'id_presented', 'label' => 'ID presented', 'type' => 'select', 'other' => true,
+                    'options' => ['SSS', 'GSIS', 'TIN', 'Voter ID']],
+                ['key' => 'vrn', 'label' => 'Voter registration number (VRN)', 'type' => 'text', 'required' => false],
             ],
-            'requirements' => [
-                'valid_id' => 'Valid government ID',
-                'proof_of_residency' => 'Proof of residency (e.g., utility bill)',
-                'cedula' => 'Community Tax Certificate (Cedula)',
-            ],
+            'requirements' => [],
         ],
 
         'certificate-of-residency' => [
@@ -71,13 +70,9 @@ return [
             'purpose_template' => '{purpose}',
             'fields' => [
                 ['key' => 'purpose', 'label' => 'Purpose', 'type' => 'select', 'other' => true,
-                    'options' => ['Medical assistance', 'Educational assistance', 'Burial assistance', 'Legal assistance']],
-                ['key' => 'remarks', 'label' => 'Additional remarks', 'type' => 'textarea', 'required' => false, 'wide' => true],
+                    'options' => ['Scholarship', 'Medical Assistance', 'Financial Assistance']],
             ],
-            'requirements' => [
-                'valid_id' => 'Valid government ID',
-                'proof_of_income' => 'Proof of low or no income (e.g., certificate of unemployment)',
-            ],
+            'requirements' => [],
         ],
 
         'business-clearance' => [
@@ -87,28 +82,30 @@ return [
             'icon' => 'M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6M9 10h.01M15 10h.01',
             'purpose_template' => 'Business clearance for {business_name} ({application_type})',
             'fields' => [
-                ['key' => 'applicant_role', 'label' => 'Applicant role', 'type' => 'select',
-                    'options' => ['Owner', 'Authorized representative']],
-                ['key' => 'business_name', 'label' => 'Business name', 'type' => 'text'],
-                ['key' => 'business_type', 'label' => 'Business type', 'type' => 'select',
-                    'options' => ['Sole proprietorship', 'Partnership', 'Corporation', 'Cooperative']],
-                ['key' => 'nature_of_business', 'label' => 'Nature of business', 'type' => 'text'],
-                ['key' => 'business_address', 'label' => 'Business address', 'type' => 'text', 'wide' => true],
-                ['key' => 'business_contact_number', 'label' => 'Business contact number', 'type' => 'tel'],
-                ['key' => 'business_owner_name', 'label' => 'Business owner name', 'type' => 'text', 'prefill' => 'name'],
-                ['key' => 'number_of_employees', 'label' => 'Number of employees', 'type' => 'number', 'required' => false],
-                ['key' => 'business_area', 'label' => 'Business area (square meters)', 'type' => 'number', 'required' => false],
                 ['key' => 'application_type', 'label' => 'Application type', 'type' => 'select',
                     'options' => ['New application', 'Renewal']],
-                ['key' => 'remarks', 'label' => 'Additional remarks', 'type' => 'textarea', 'required' => false, 'wide' => true],
+                ['key' => 'business_name', 'label' => 'Business name', 'type' => 'text'],
+                ['key' => 'business_address', 'label' => 'Business address', 'type' => 'text', 'wide' => true],
+                ['key' => 'business_owner_name', 'label' => 'Name of owner', 'type' => 'text', 'prefill' => 'name'],
+                ['key' => 'business_type', 'label' => 'Type of ownership', 'type' => 'select',
+                    'options' => ['Single proprietor', 'Corporation']],
+                ['key' => 'nature_of_business', 'label' => 'Nature of business activity', 'type' => 'select', 'other' => true,
+                    'options' => ['Manufacturer', 'Wholesaler', 'Retailer', 'Contractor', 'Bank/Financial institution', 'Restaurant/Carinderia', 'Service']],
+                ['key' => 'business_contact_number', 'label' => 'Contact number', 'type' => 'tel', 'prefill' => 'phone'],
+                ['key' => 'paid_up_capital', 'label' => 'Paid-up capital (PHP)', 'type' => 'number',
+                    'when' => ['application_type', 'New application'], 'step' => '0.01', 'rules' => ['numeric', 'min:0', 'decimal:0,2']],
             ],
             'requirements' => [
-                'valid_id' => 'Valid government-issued ID',
-                'cedula' => 'Community Tax Certificate (Cedula)',
-                'business_registration' => 'Business registration certificate',
+                'business_registration' => 'DTI or SEC registration',
+                'old_clearance' => 'Previous barangay business clearance',
+                'health_permit' => 'Health / sanitation clearance or permit',
+                'other' => 'Other supporting document',
+            ],
+            'requirement_rules' => [
+                'old_clearance' => 'required_if:application_type,Renewal',
+                'health_permit' => 'nullable',
+                'other' => 'nullable',
             ],
         ],
-
     ],
-
 ];
