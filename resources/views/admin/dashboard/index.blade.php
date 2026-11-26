@@ -18,12 +18,12 @@
             </div>
         @endif
 
-        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="grid grid-cols-2 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 lg:grid-cols-4">
             <x-admin.stat-card label="Total Citizens" subtitle="Registered accounts" :value="number_format($totalCitizens ?? 0)" :trend="$citizensTrend ?? null"
                 :latest="$citizensLatest ?? null" latest-label="Last registered" :href="$isAdmin ? route('admin.users.index') : null">
                 <x-slot:icon>
                     {{-- Lucide: users --}}
-                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
                         <path d="M16 3.128a4 4 0 0 1 0 7.744" />
@@ -37,7 +37,7 @@
                 :invert="true" :latest="$permitsLatest ?? null" latest-label="Last submitted" :href="$can('permits.review') ? route('admin.permits.index') : null">
                 <x-slot:icon>
                     {{-- Lucide: clipboard-check --}}
-                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <rect width="8" height="4" x="8" y="2" rx="1" ry="1" />
                         <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
@@ -50,7 +50,7 @@
                 :trend="$verificationsTrend ?? null" :invert="true" :latest="$verificationsLatest ?? null" latest-label="Last submitted" :href="$can('identity.review') ? route('admin.identity-verification.index') : null">
                 <x-slot:icon>
                     {{-- Lucide: id-card --}}
-                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M16 10h2" />
                         <path d="M16 14h2" />
@@ -65,7 +65,7 @@
                 :trend="$verifiedTrend ?? null" :latest="$verifiedLatest ?? null" latest-label="Last verified" :href="$can('identity.review') ? route('admin.identity-verification.index') : null">
                 <x-slot:icon>
                     {{-- Lucide: shield-check --}}
-                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path
                             d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
@@ -102,32 +102,17 @@
                     @endif
                 </p>
 
-                <div class="mt-4 grid gap-3 sm:grid-cols-3">
+                <div class="mt-4 grid grid-cols-2 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 lg:grid-cols-3">
                     @if ($workload['can_review_permits'])
-                        <div class="{{ $miniCard }}">
-                            <p class="{{ $miniTitle }}">Requests awaiting action</p>
-                            <p class="{{ $miniNumber }}">{{ $workload['requests'] }}</p>
-                        </div>
+                        <x-admin.stat-card label="Requests awaiting action" subtitle="Open service requests" :value="$workload['requests']" />
                     @endif
 
                     @if ($workload['can_review_identity'])
-                        <div class="{{ $miniCard }}">
-                            <p class="{{ $miniTitle }}">Identity reviews in queue</p>
-                            <p class="{{ $miniNumber }}">{{ $workload['identity_reviews'] }}</p>
-                        </div>
+                        <x-admin.stat-card label="Identity reviews in queue" subtitle="Submissions awaiting review" :value="$workload['identity_reviews']" />
                     @endif
 
-                    <div class="{{ $miniCard }}">
-                        <p class="{{ $miniTitle }}">Oldest pending item</p>
-                        @if ($oldestItem)
-                            <p class="{{ $ink }} mt-1 font-semibold">{{ $oldestItem['label'] }}</p>
-                            @if ($oldestDays !== null)
-                                <p class="text-(--gray-500) dark:text-(--gray-400) mt-1 text-xs">{{ $oldestDays }} {{ $oldestDays === 1 ? 'day' : 'days' }} old</p>
-                            @endif
-                        @else
-                            <p class="{{ $muted }} mt-1 text-sm">No open items.</p>
-                        @endif
-                    </div>
+                    <x-admin.stat-card label="Oldest pending item" :value="$oldestItem['label'] ?? 'No open items.'"
+                        :subtitle="$oldestDays === null ? null : $oldestDays . ($oldestDays === 1 ? ' day old' : ' days old')" />
                 </div>
             </section>
         @endif
@@ -142,10 +127,7 @@
                         <h2 class="{{ $panelTitle }}">Permit Requests This Year</h2>
                         <p class="{{ $muted }} mt-0.5 text-xs">Requests from all services</p>
                     </div>
-                    <div class="text-right">
-                        <p class="{{ $ink }} text-2xl font-bold tabular-nums">{{ number_format($participationTotal) }}</p>
-                        <p class="{{ $muted }} text-xs">Last 12 months</p>
-                    </div>
+                    <x-admin.stat-card label="Last 12 months" subtitle="Permit requests submitted" :value="number_format($participationTotal)" />
                 </div>
 
                 <div class="mt-4 h-64">

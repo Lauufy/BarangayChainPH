@@ -22,54 +22,17 @@
 
         @if ($isStaff)
             {{-- Staff accounts see workload-only metrics. --}}
-            <section aria-label="My staff access metrics" class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-                @foreach ([['My workload', $staffAccess['my_workload']], ['Requests awaiting action', $staffAccess['awaiting_action']], ['Identity reviews in queue', $staffAccess['identity_reviews_in_queue']], ['Oldest pending request age', $staffAccess['oldest_pending_age_days'] === null ? '—' : $staffAccess['oldest_pending_age_days'] . ' days']] as [$metricLabel, $metricValue])
-                    <article class="{{ $metricCard }}">
-                        <p class="{{ $label }}">{{ $metricLabel }}</p>
-                        <p class="mt-2 text-3xl font-bold tabular-nums text-slate-950 dark:text-white">{{ $metricValue }}
-                        </p>
-                    </article>
+            <section aria-label="My staff access metrics" class="grid grid-cols-2 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 lg:grid-cols-4">
+                @foreach ([
+                    ['My workload', $staffAccess['my_workload'], 'Your cases opened in the last 30 days'],
+                    ['Requests awaiting action', $staffAccess['awaiting_action'], 'Pending or in progress'],
+                    ['Identity reviews in queue', $staffAccess['identity_reviews_in_queue'], 'Submissions awaiting a decision'],
+                    ['Oldest pending request age', $staffAccess['oldest_pending_age_days'] === null ? '—' : $staffAccess['oldest_pending_age_days'] . ' days', 'Time since submission'],
+                ] as [$metricLabel, $metricValue, $metricSubtitle])
+                    <x-admin.stat-card :label="$metricLabel" :value="$metricValue" :subtitle="$metricSubtitle" />
                 @endforeach
             </section>
         @else
-            @php
-                $reportTabs = [
-                    'service' => 'Service Requests',
-                    'citizens' => 'Citizens',
-                    'verification' => 'Verification',
-                ];
-                $activeTab = array_key_exists(request('report_tab'), $reportTabs) ? request('report_tab') : 'service';
-
-                // Shared styles.
-                $panel =
-                    'space-y-3 rounded-2xl ';
-                $primaryBtn =
-                    $focus .
-                    ' inline-flex h-10 items-center whitespace-nowrap rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700';
-                $statValue = 'font-bold tabular-nums text-slate-950 dark:text-white';
-
-                // Segments for the stacked progress bars: [label, value, color class].
-                $statusSegments = [
-                    ['Pending', $summary['pending'], 'bg-amber-500'],
-                    ['Processing', $summary['processing'], 'bg-blue-600'],
-                    ['Approved', $summary['approved'], 'bg-emerald-600'],
-                    ['Rejected', $summary['rejected'], 'bg-rose-600'],
-                    ['Cancelled', $summary['cancelled'], 'bg-slate-500'],
-                ];
-                $ledgerSegments = [
-                    ['Successful', $blockchain['successful'], 'bg-emerald-600'],
-                    ['Failed', $blockchain['failed'], 'bg-rose-600'],
-                    ['Pending', $blockchain['pending'], 'bg-amber-500'],
-                    ['Revoked', $blockchain['revoked'], 'bg-slate-500'],
-                ];
-                $scanSegments = [
-                    ['Valid', $documents['valid'], 'bg-emerald-600'],
-                    ['Invalid / Hash Mismatch', $documents['invalid'], 'bg-rose-600'],
-                    ['Revoked', $documents['revoked'], 'bg-slate-500'],
-                    ['Other', $documents['other'], 'bg-slate-300 dark:bg-slate-600'],
-                ];
-            @endphp
-
             {{-- Insights: only shown when there is something to act on. --}}
             @if (count($insights))
                 <section aria-label="Insights" class="space-y-2">
@@ -91,30 +54,29 @@
                 </section>
             @endif
 
-            <div class="bg-white p-4 shadow-sm dark:bg-slate-900 rounded-lg">
-                {{-- Tabs, filters and permit list shortcut (filters carry over between tabs). --}}
-                <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-                    <x-tables.toolbar key="report" :tabs="$reportTabs" class="pb-0! sm:pb-0!" />
-
-                    <div class="flex items-center gap-2">
+            <div class="rounded-lg bg-white p-4 shadow-sm dark:bg-slate-900">
+                {{-- Tabs on the left; filters and permit list shortcut on the right. --}}
+                <x-tables.toolbar key="report" class="mb-3"
+                    :tabs="['service' => 'Service Requests', 'citizens' => 'Citizens', 'verification' => 'Verification']">
+                    <x-slot:searchActions>
                         <details class="relative">
                             <summary
-                                class="{{ $focus }} inline-flex h-10 cursor-pointer list-none items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
-                                <svg class="size-4 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                class="{{ $focus }} inline-flex h-10 cursor-pointer list-none items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 transition marker:content-none hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 [&::-webkit-details-marker]:hidden">
+                                <svg class="size-4 text-slate-500" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" aria-hidden="true">
                                     <path d="M22 3H2l8 9.46V19l4 2v-8.54z" />
                                 </svg>
                                 Filters
                             </summary>
                             <div
-                                class="absolute right-0 z-30 mt-2 w-[min(90vw,40rem)] rounded-2xl border border-slate-200 bg-white p-5 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                                class="absolute right-0 z-30 mt-2 w-[min(90vw,40rem)] rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-xl dark:border-slate-700 dark:bg-slate-900">
                                 @if ($errors->any())
-                                    <p role="alert" class="mb-3 text-sm text-rose-700 dark:text-rose-300">Please correct
-                                        the
-                                        filters.</p>
+                                    <p role="alert" class="mb-3 text-sm text-rose-700 dark:text-rose-300">Please correct the filters.</p>
                                 @endif
                                 <form method="GET" action="{{ route('admin.reports.index') }}" class="space-y-4">
-                                    <input type="hidden" name="report_tab" value="{{ $activeTab }}">
+                                    <input type="hidden" name="report_tab"
+                                        value="{{ in_array(request('report_tab'), ['citizens', 'verification'], true) ? request('report_tab') : 'service' }}">
                                     <div class="grid gap-3 sm:grid-cols-2">
                                         <div>
                                             <label for="report-from"
@@ -137,8 +99,7 @@
                                         </div>
                                         <div>
                                             <label for="report-permit-type"
-                                                class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Permit
-                                                type</label>
+                                                class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Permit type</label>
                                             <select id="report-permit-type" name="permit_type" class="admin-field">
                                                 <option value="">All permit types</option>
                                                 @foreach (config('barangay_services.services', []) as $service)
@@ -167,39 +128,33 @@
                                     <div class="flex flex-wrap items-center justify-between gap-3">
                                         <div class="flex flex-wrap gap-2" role="group" aria-label="Date presets">
                                             <button type="button" data-report-preset="month"
-                                                class="{{ $focus }} rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800">This
-                                                Month</button>
+                                                class="{{ $focus }} rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800">This Month</button>
                                             <button type="button" data-report-preset="last30"
-                                                class="{{ $focus }} rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800">Last
-                                                30 Days</button>
+                                                class="{{ $focus }} rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800">Last 30 Days</button>
                                         </div>
-                                        <button type="submit" class="{{ $primaryBtn }}">Apply filters</button>
+                                        <button type="submit"
+                                            class="{{ $focus }} inline-flex h-10 items-center whitespace-nowrap rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">Apply filters</button>
                                     </div>
                                 </form>
                             </div>
                         </details>
 
-                        @if ($activeTab === 'service')
-                            <a href="{{ route('admin.permits.index') }}" class="{{ $primaryBtn }}">Permit request list</a>
+                        @if (! in_array(request('report_tab'), ['citizens', 'verification'], true))
+                            <a href="{{ route('admin.permits.index') }}"
+                                class="{{ $focus }} inline-flex h-10 items-center whitespace-nowrap rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">Permit request list</a>
                         @endif
-                    </div>
-                </div>
+                    </x-slot:searchActions>
+                </x-tables.toolbar>
 
                 {{-- ───────── Service Requests ───────── --}}
-                @if ($activeTab === 'service')
-                    <div class="{{ $panel }}">
+                @if (! in_array(request('report_tab'), ['citizens', 'verification'], true))
+                    <div class="space-y-3 rounded-2xl">
                         <h2 class="sr-only">Service Requests</h2>
 
-                        <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-                            @foreach ($metricCards as [$metricLabel, $metricValue, $comparisonLabel, $comparisonTone])
-                                <a href="{{ route('admin.permits.index') }}" class="{{ $metricCard }} group">
-                                    <div class="flex items-start justify-between gap-2">
-                                        <p class="{{ $label }}">{{ $metricLabel }}</p>
-                                        <span
-                                            class="{{ $comparisonTone }} rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium dark:bg-slate-800">{{ $comparisonLabel }}</span>
-                                    </div>
-                                    <p class="{{ $statValue }} mt-2 text-3xl">{{ $metricValue }}</p>
-                                </a>
+                        <div class="grid grid-cols-2 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 lg:grid-cols-4">
+                            @foreach ($metricCards as [$metricLabel, $metricValue, $comparisonLabel])
+                                <x-admin.stat-card :label="$metricLabel" :value="$metricValue" :subtitle="$comparisonLabel"
+                                    :href="route('admin.permits.index')" />
                             @endforeach
                         </div>
 
@@ -239,19 +194,15 @@
                 @endif
 
                 {{-- ───────── Citizens ───────── --}}
-                @if ($activeTab === 'citizens')
-                    <div class="{{ $panel }}">
+                @if (request('report_tab') === 'citizens')
+                    <div class="space-y-3 rounded-2xl">
                         <h2 class="sr-only">Citizen Verification</h2>
 
                         <div class="grid grid-cols-1 gap-3 lg:grid-cols-12">
                             <article class="{{ $card }} lg:col-span-7">
                                 <div class="flex flex-wrap items-baseline justify-between gap-2">
                                     <h3 class="{{ $heading }}">Identity Status</h3>
-                                    <p class="text-sm text-slate-600 dark:text-slate-300">
-                                        <span class="{{ $statValue }} text-xl">{{ $citizens['total'] }}</span>
-                                        registered
-                                        citizens
-                                    </p>
+                                    <x-admin.stat-card label="Registered citizens" subtitle="All citizen accounts" :value="$citizens['total']" />
                                 </div>
                                 @if ($citizens['total'] > 0)
                                     <div class="mx-auto mt-2 h-48 max-w-xs">
@@ -274,14 +225,8 @@
                                 </div>
                                 @foreach ([['Approval', $citizens['approval_rate'], 'bg-emerald-600'], ['Rejection', $citizens['rejection_rate'], 'bg-rose-600']] as [$rateLabel, $rate, $rateColor])
                                     <div>
-                                        <div class="flex items-baseline justify-between gap-2">
-                                            <span
-                                                class="text-sm text-slate-600 dark:text-slate-300">{{ $rateLabel }}</span>
-                                            <span
-                                                class="{{ $statValue }} text-2xl">{{ number_format($rate, 1) }}%</span>
-                                        </div>
-                                        <div
-                                            class="mt-1.5 h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                                        <x-admin.stat-card :label="$rateLabel" :value="$citizens['review_count'] ? number_format($rate, 1) . '%' : '—'" :subtitle="$citizens['review_count'] ? 'Share of identity decisions' : 'No decisions'" />
+                                        <div class="mt-1.5 h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
                                             <div class="{{ $rateColor }} h-full rounded-full"
                                                 style="width: {{ min(100, max(0, $rate)) }}%"></div>
                                         </div>
@@ -294,34 +239,27 @@
                         <article class="{{ $card }} space-y-3">
                             <div class="flex flex-wrap items-baseline justify-between gap-2">
                                 <h3 class="{{ $heading }}">Request status</h3>
-                                <p class="text-sm text-slate-600 dark:text-slate-300">
-                                    <span
-                                        class="{{ $statValue }}">{{ $summary['decisions'] > 0 ? number_format($summary['approval_rate'], 1) . '%' : '—' }}</span>
-                                    approved · based on {{ $summary['decisions'] }} approved or rejected requests
-                                </p>
+                                <x-admin.stat-card label="Approved"
+                                    :value="$summary['decisions'] > 0 ? number_format($summary['approval_rate'], 1) . '%' : '—'"
+                                    :subtitle="'Based on ' . $summary['decisions'] . ' approved or rejected requests'" />
                             </div>
-                            @php $statusTotal = array_sum(array_column($statusSegments, 1)); @endphp
-                            @if ($statusTotal > 0)
+
+                            @if ($summary['pending'] + $summary['processing'] + $summary['approved'] + $summary['rejected'] + $summary['cancelled'] > 0)
                                 <div class="flex h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"
                                     role="img" aria-label="Share of requests by status">
-                                    @foreach ($statusSegments as [$segLabel, $segValue, $segColor])
+                                    @foreach ([[$summary['pending'], 'bg-amber-500'], [$summary['processing'], 'bg-blue-600'], [$summary['approved'], 'bg-emerald-600'], [$summary['rejected'], 'bg-rose-600'], [$summary['cancelled'], 'bg-slate-500']] as [$segValue, $segColor])
                                         @if ($segValue > 0)
-                                            <span class="{{ $segColor }}"
-                                                style="width: {{ round(($segValue / $statusTotal) * 100, 2) }}%"></span>
+                                            <span class="{{ $segColor }}" style="flex: {{ $segValue }} 1 0%"></span>
                                         @endif
                                     @endforeach
                                 </div>
                             @endif
-                            <div class="grid grid-cols-2 gap-3 sm:grid-cols-5">
-                                @foreach ($statusSegments as [$statusLabel, $statusCount, $statusColor])
-                                    <div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-800">
-                                        <div class="flex items-center gap-2">
-                                            <span class="{{ $statusColor }} size-2 rounded-full"></span>
-                                            <span
-                                                class="text-xs text-slate-600 dark:text-slate-300">{{ $statusLabel }}</span>
-                                        </div>
-                                        <p class="{{ $statValue }} mt-1.5 text-xl">{{ $statusCount }}</p>
-                                    </div>
+
+                            <div class="grid grid-cols-2 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 lg:grid-cols-5">
+                                @foreach ([['Pending', $summary['pending'], 'bg-amber-500'], ['Processing', $summary['processing'], 'bg-blue-600'], ['Approved', $summary['approved'], 'bg-emerald-600'], ['Rejected', $summary['rejected'], 'bg-rose-600'], ['Cancelled', $summary['cancelled'], 'bg-slate-500']] as [$statusLabel, $statusCount, $statusColor])
+                                    <x-admin.stat-card :label="$statusLabel" :value="$statusCount" subtitle="Service requests">
+                                        <x-slot:icon><span class="{{ $statusColor }} size-2 rounded-full"></span></x-slot:icon>
+                                    </x-admin.stat-card>
                                 @endforeach
                             </div>
                         </article>
@@ -329,8 +267,8 @@
                 @endif
 
                 {{-- ───────── Verification ───────── --}}
-                @if ($activeTab === 'verification')
-                    <div class="{{ $panel }}">
+                @if (request('report_tab') === 'verification')
+                    <div class="space-y-3 rounded-2xl">
                         {{-- Blockchain --}}
                         <section aria-labelledby="ledger-heading">
                             <article class="{{ $card }} space-y-3">
@@ -340,45 +278,44 @@
                                         <p class="{{ $muted }}">Document records anchored on the ledger</p>
                                     </div>
                                     <a href="{{ route('admin.blockchain-ledger.index') }}"
-                                        class="{{ $primaryBtn }}">Open ledger</a>
+                                        class="{{ $focus }} inline-flex h-10 items-center whitespace-nowrap rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">Open ledger</a>
                                 </div>
 
-                                <div class="grid grid-cols-2 gap-2 sm:grid-cols-5">
-                                    <div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-800">
-                                        <p class="text-xs text-slate-500 dark:text-slate-400">Total</p>
-                                        <p class="{{ $statValue }} mt-1 text-xl">{{ $blockchain['total'] }}</p>
-                                    </div>
-                                    @foreach ($ledgerSegments as [$stateLabel, $stateCount, $stateColor])
-                                        <div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-800">
-                                            <div class="flex items-center gap-2">
-                                                <span class="{{ $stateColor }} size-2 rounded-full"></span>
-                                                <span
-                                                    class="text-xs text-slate-500 dark:text-slate-400">{{ $stateLabel }}</span>
-                                            </div>
-                                            <p class="{{ $statValue }} mt-1 text-xl">{{ $stateCount }}</p>
-                                        </div>
+                                <div class="grid grid-cols-2 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 lg:grid-cols-5">
+                                    <x-admin.stat-card label="Total" subtitle="All transaction statuses" :value="$blockchain['total']" />
+                                    @foreach ([['Successful', $blockchain['successful'], 'bg-emerald-600'], ['Failed', $blockchain['failed'], 'bg-rose-600'], ['Pending', $blockchain['pending'], 'bg-amber-500'], ['Revoked', $blockchain['revoked'], 'bg-slate-500']] as [$stateLabel, $stateCount, $stateColor])
+                                        <x-admin.stat-card :label="$stateLabel" :value="$stateCount" subtitle="Ledger transactions">
+                                            <x-slot:icon><span class="{{ $stateColor }} size-2 rounded-full"></span></x-slot:icon>
+                                        </x-admin.stat-card>
                                     @endforeach
                                 </div>
 
-                                <x-tables.card title="Five most recent transactions" :searchable="false" :per-page-options="[]">
-                                    <x-tables.table :heads="['Reference', 'Type', 'Status', 'Transaction', 'Date']" :empty="empty($blockchain['recent'])"
+                                {{-- Recent transactions --}}
+                                <x-tables.card :searchable="false" :per-page-options="[]">
+                                    <x-tables.toolbar key="report-transactions" :total="count($blockchain['recent'])"
+                                        total-label="Recent Transactions" />
+
+                                    <x-tables.table :heads="['Reference', 'Type', 'Status', 'Transaction', 'Date']"
+                                        :empty="empty($blockchain['recent'])"
                                         message="No transactions in this period.">
                                         @foreach ($blockchain['recent'] as $transaction)
                                             <tr>
-                                                <td>{{ $transaction['reference_number'] }}</td>
-                                                <td>{{ $transaction['document_type'] }}</td>
-                                                <td>
-                                                    <x-tables.badge :variant="match ($transaction['status']) {
-                                                        'Successful' => 'success',
-                                                        'Failed' => 'danger',
-                                                        'Pending' => 'warning',
-                                                        'Revoked' => 'neutral',
-                                                        default => 'info',
-                                                    }">
+                                                <td data-title>{{ $transaction['reference_number'] }}</td>
+                                                <td data-label="Type">{{ $transaction['document_type'] }}</td>
+                                                <td data-side="right">
+                                                    <x-tables.badge class="gap-1.5 rounded-full!"
+                                                        :variant="match ($transaction['status']) {
+                                                            'Successful' => 'success',
+                                                            'Failed' => 'danger',
+                                                            'Pending' => 'warning',
+                                                            'Revoked' => 'neutral',
+                                                            default => 'info',
+                                                        }">
+                                                        <span class="size-1.5 rounded-full bg-current" aria-hidden="true"></span>
                                                         {{ $transaction['status'] }}
                                                     </x-tables.badge>
                                                 </td>
-                                                <td>
+                                                <td data-label="Transaction">
                                                     @if ($transaction['explorer_url'])
                                                         <a href="{{ $transaction['explorer_url'] }}" target="_blank"
                                                             rel="noopener noreferrer"
@@ -387,7 +324,7 @@
                                                         {{ $transaction['transaction_hash'] ?? '—' }}
                                                     @endif
                                                 </td>
-                                                <td>{{ $transaction['date']?->format('M j, Y') ?? '—' }}</td>
+                                                <td data-label="Date">{{ $transaction['date']?->format('M j, Y') ?? '—' }}</td>
                                             </tr>
                                         @endforeach
                                     </x-tables.table>
@@ -400,43 +337,24 @@
                             <article class="{{ $card }} space-y-4">
                                 <div>
                                     <h2 id="documents-heading" class="{{ $heading }}">Document Verification</h2>
-                                    <p class="{{ $muted }}">QR scans of issued documents</p>
+                                    <p class="{{ $muted }}">Document activity and verification outcomes</p>
                                 </div>
 
-                                <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                                    <div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-800">
-                                        <p class="{{ $label }}">Documents Issued</p>
-                                        <p class="{{ $statValue }} mt-1 text-2xl">
-                                            {{ $documents['documents_issued'] }}</p>
-                                    </div>
-                                    <div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-800">
-                                        <p class="{{ $label }}">QR Verification Scans</p>
-                                        <p class="{{ $statValue }} mt-1 text-2xl">
-                                            {{ $documents['verification_attempts'] }}
-                                        </p>
-                                    </div>
-                                    <div class="rounded-xl bg-blue-50 p-3 dark:bg-blue-950/30">
-                                        <p class="{{ $label }}">Valid rate</p>
-                                        <p class="{{ $statValue }} mt-1 text-2xl">
-                                            {{ number_format($documents['valid_rate'], 1) }}%</p>
-                                    </div>
-                                    <div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-800">
-                                        <p class="{{ $label }}">Documents Revoked</p>
-                                        <p class="{{ $statValue }} mt-1 text-2xl">
-                                            {{ $documents['documents_revoked'] }}</p>
-                                    </div>
+                                <div class="grid grid-cols-2 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 lg:grid-cols-4">
+                                    <x-admin.stat-card label="Documents Issued" subtitle="Issued in the selected period" :value="$documents['documents_issued']" />
+                                    <x-admin.stat-card label="Verification attempts" subtitle="Logged submissions in the period" :value="$documents['verification_attempts']" />
+                                    <x-admin.stat-card label="Valid rate" :subtitle="$documents['verification_attempts'] ? 'Share of attempts that passed' : 'No attempts'" :value="$documents['verification_attempts'] ? number_format($documents['valid_rate'], 1) . '%' : '—'" />
+                                    <x-admin.stat-card label="Documents Revoked" subtitle="Revoked in the selected period" :value="$documents['documents_revoked']" />
                                 </div>
 
                                 {{-- Scan results: proportional bar + legend. --}}
-                                @php $scanTotal = array_sum(array_column($scanSegments, 1)); @endphp
                                 <div class="space-y-2">
-                                    @if ($scanTotal > 0)
+                                    @if ($documents['valid'] + $documents['invalid'] + $documents['revoked'] + $documents['other'] > 0)
                                         <div class="flex h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"
-                                            role="img" aria-label="Verification scans by result">
-                                            @foreach ($scanSegments as [$segLabel, $segValue, $segColor])
+                                            role="img" aria-label="Verification attempts by result">
+                                            @foreach ([[$documents['valid'], 'bg-emerald-600'], [$documents['invalid'], 'bg-rose-600'], [$documents['revoked'], 'bg-slate-500'], [$documents['other'], 'bg-slate-300 dark:bg-slate-600']] as [$segValue, $segColor])
                                                 @if ($segValue > 0)
-                                                    <span class="{{ $segColor }}"
-                                                        style="width: {{ round(($segValue / $scanTotal) * 100, 2) }}%"></span>
+                                                    <span class="{{ $segColor }}" style="flex: {{ $segValue }} 1 0%"></span>
                                                 @endif
                                             @endforeach
                                         </div>
@@ -444,58 +362,48 @@
                                         <p class="{{ $muted }}">No data in this period.</p>
                                     @endif
                                     <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600 dark:text-slate-300">
-                                        @foreach ($scanSegments as [$segLabel, $segValue, $segColor])
+                                        @foreach ([['Valid', $documents['valid'], 'bg-emerald-600'], ['Invalid results', $documents['invalid'], 'bg-rose-600'], ['Revoked', $documents['revoked'], 'bg-slate-500'], ['Other', $documents['other'], 'bg-slate-300 dark:bg-slate-600']] as [$segLabel, $segValue, $segColor])
                                             <span class="inline-flex items-center gap-1.5">
                                                 <span class="{{ $segColor }} size-2 rounded-full"></span>
-                                                {{ $segLabel }} · <strong
-                                                    class="font-semibold tabular-nums text-slate-900 dark:text-white">{{ $segValue }}</strong>
+                                                {{ $segLabel }} · <strong class="font-semibold tabular-nums text-slate-900 dark:text-white">{{ $segValue }}</strong>
                                             </span>
                                         @endforeach
                                     </div>
                                 </div>
 
                                 <div class="rounded-xl border border-slate-200 p-3 dark:border-slate-700">
-                                    <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">Latest result per
-                                        issued request</p>
-                                    <div class="mt-2 flex flex-wrap gap-1.5 text-xs">
+                                    <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">Latest result per issued request</p>
+                                    <div class="mt-2 grid grid-cols-2 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 lg:grid-cols-6">
                                         @foreach (['valid' => 'Valid', 'invalid' => 'Invalid', 'revoked' => 'Revoked', 'pending' => 'Pending', 'unavailable' => 'Unavailable', 'not_found' => 'Not found'] as $resultKey => $resultLabel)
-                                            <span
-                                                class="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700 dark:bg-slate-800 dark:text-slate-300">{{ $resultLabel }}
-                                                <strong
-                                                    class="ml-0.5 font-semibold tabular-nums">{{ $latestResults[$resultKey] }}</strong></span>
+                                            <x-admin.stat-card :label="$resultLabel" :value="$latestResults[$resultKey]" subtitle="Latest logged result" />
                                         @endforeach
                                     </div>
-                                    <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Based on the latest logged result for each request. Invalid / Hash Mismatch refers to issued-document hash validation, not tampered scanned copies. Scans are counted from the date logging began.</p>
+                                    <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">For documents issued in the selected period, these counts use the most recent logged verification, including later attempts. Requests without a logged result are excluded.</p>
                                 </div>
                             </article>
                         </section>
 
                         {{-- Staff performance (admin only) --}}
                         <section aria-labelledby="staff-performance-heading" class="space-y-3">
-                            <div class="flex flex-wrap items-center justify-between gap-3">
-                                <h2 id="staff-performance-heading"
-                                    class="text-lg font-bold text-slate-950 dark:text-white">
-                                    Staff Performance</h2>
-                                <x-tables.toolbar key="report-staff-performance" :search="true"
-                                    search-placeholder="Search staff..." class="pb-0! sm:pb-0!" />
-                            </div>
+                            <h2 id="staff-performance-heading" class="text-lg font-bold text-slate-950 dark:text-white">Staff Performance</h2>
+                            <p class="{{ $muted }}">Top 10 staff by approvals and rejections completed in the selected period.</p>
+
                             <x-tables.card :searchable="false" :per-page-options="[]">
-                                <x-tables.table :heads="[
-                                    'Staff member',
-                                    'Processed',
-                                    'Approved',
-                                    'Rejected',
-                                    'Avg. processing time',
-                                ]" :empty="empty($staff_performance['staff'])"
+                                <x-tables.toolbar key="report-staff-performance"
+                                    :total="count($staff_performance['staff'])" total-label="Staff shown"
+                                    :search="true" search-placeholder="Search staff..." />
+
+                                <x-tables.table
+                                    :heads="['Staff member', 'Processed', 'Approved', 'Rejected', 'Avg. processing time']"
+                                    :empty="empty($staff_performance['staff'])"
                                     message="No staff data in this period.">
                                     @foreach ($staff_performance['staff'] as $staff)
                                         <tr>
-                                            <td><x-tables.user-cell :name="$staff['staff_name']" /></td>
-                                            <td>{{ $staff['processed'] }}</td>
-                                            <td>{{ $staff['approved'] }}</td>
-                                            <td>{{ $staff['rejected'] }}</td>
-                                            <td>{{ $staff['average_processing_hours'] === null ? '—' : number_format($staff['average_processing_hours'], 2) . ' hrs' }}
-                                            </td>
+                                            <td data-title><x-tables.user-cell :name="$staff['staff_name']" /></td>
+                                            <td data-label="Processed">{{ $staff['processed'] }}</td>
+                                            <td data-label="Approved">{{ $staff['approved'] }}</td>
+                                            <td data-label="Rejected">{{ $staff['rejected'] }}</td>
+                                            <td data-label="Avg. processing time">{{ $staff['average_processing_hours'] === null ? '—' : number_format($staff['average_processing_hours'], 2) . ' hrs' }}</td>
                                         </tr>
                                     @endforeach
                                 </x-tables.table>
@@ -503,7 +411,7 @@
                         </section>
                     </div>
                 @endif
+            </div>
         @endif
-    </div>
     </div>
 @endsection

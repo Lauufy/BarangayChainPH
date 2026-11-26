@@ -7,8 +7,8 @@ use App\Http\Controllers\Controller;
 use App\Models\IssuedDocument;
 use App\Models\ServiceRequest;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
 use Illuminate\Support\Carbon;
+use Illuminate\View\View;
 
 /** Lists the documents issued after a request is approved. */
 class DocumentAuthenticationController extends Controller
@@ -17,15 +17,31 @@ class DocumentAuthenticationController extends Controller
     {
         $perPage = min(max($request->integer('per_page', 10), 5), 50);
 
-        $documents = $export->query($request)->paginate($perPage)->appends($request->except('search'));
+        $status = $request->query('document-authentication_status');
+
+        $from = match ($request->query('document-authentication_date')) {
+            'today' => now()->startOfDay(),
+            '7days' => now()->subDays(6)->startOfDay(),
+            '30days' => now()->subDays(29)->startOfDay(),
+            'year' => now()->startOfYear(),
+            default => null,
+        };
+
+        $documents = $export->query($request)
+            ->when($status === 'active', fn ($query) => $query->whereNull('revoked_at'))
+            ->when($status === 'replaced', fn ($query) => $query->whereNotNull('revoked_at'))
+            ->when($from, fn ($query) => $query->where('issued_at', '>=', $from))
+            ->paginate($perPage)
+            ->appends($request->except('search'));
 
         $open = ServiceRequest::whereIn('status', [ServiceRequest::PENDING, ServiceRequest::PROCESSING]);
         $active = IssuedDocument::whereNull('revoked_at');
 
-        $toDate = fn($value) => $value ? Carbon::parse($value) : null;
+        $toDate = fn ($value) => $value ? Carbon::parse($value) : null;
 
         return view('admin.document-authentication.index', [
             'documents' => $documents,
+            'totalDocuments' => IssuedDocument::count(),
             'submitted' => ServiceRequest::count(),
             'pending' => (clone $open)->count(),
             'authenticated' => (clone $active)->count(),

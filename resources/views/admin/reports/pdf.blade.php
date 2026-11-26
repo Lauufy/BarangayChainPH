@@ -40,8 +40,8 @@
                 <tr><td>Approved</td><td>{{ $summary['approved'] }}</td><td>{{ $previous_summary['approved'] }}</td></tr>
                 <tr><td>Rejected</td><td>{{ $summary['rejected'] }}</td><td>—</td></tr>
                 <tr><td>Cancelled</td><td>{{ $summary['cancelled'] }}</td><td>—</td></tr>
-                <tr><td>Approval rate of decisions</td><td>{{ number_format($summary['approval_rate'], 1) }}%</td><td>—</td></tr>
-                <tr><td>Rejection rate of decisions</td><td>{{ number_format($summary['rejection_rate'], 1) }}%</td><td>—</td></tr>
+                <tr><td>Approval rate of decisions</td><td>{{ $summary['decisions'] ? number_format($summary['approval_rate'], 1).'%' : 'No decisions' }}</td><td>—</td></tr>
+                <tr><td>Rejection rate of decisions</td><td>{{ $summary['decisions'] ? number_format($summary['rejection_rate'], 1).'%' : 'No decisions' }}</td><td>—</td></tr>
                 <tr><td>Average processing time</td><td>{{ $summary['average_processing_hours'] === null ? 'No data' : number_format($summary['average_processing_hours'], 2).' hours' }}</td><td>{{ $previous_summary['average_processing_hours'] === null ? 'No data' : number_format($previous_summary['average_processing_hours'], 2).' hours' }}</td></tr>
             </tbody>
         </table>
@@ -66,16 +66,16 @@
                 <tr><td>Pending</td><td>{{ $citizens['pending'] }}</td></tr>
                 <tr><td>Rejected</td><td>{{ $citizens['rejected'] }}</td></tr>
                 <tr><td>Unverified</td><td>{{ $citizens['unverified'] }}</td></tr>
-                <tr><td>Identity approval rate ({{ $citizens['review_period_label'] }})</td><td>{{ number_format($citizens['approval_rate'], 1) }}%</td></tr>
-                <tr><td>Identity rejection rate ({{ $citizens['review_period_label'] }})</td><td>{{ number_format($citizens['rejection_rate'], 1) }}%</td></tr>
+                <tr><td>Identity approval rate ({{ $citizens['review_period_label'] }})</td><td>{{ $citizens['review_count'] ? number_format($citizens['approval_rate'], 1).'%' : 'No decisions' }}</td></tr>
+                <tr><td>Identity rejection rate ({{ $citizens['review_period_label'] }})</td><td>{{ $citizens['review_count'] ? number_format($citizens['rejection_rate'], 1).'%' : 'No decisions' }}</td></tr>
             </tbody>
         </table>
     </section>
 
     {{-- Report processing volume and outcomes by staff member. --}}
     <section class="page-break">
-        <h2>Staff Performance (Admin only)</h2>
-        <p>Unattributed requests: {{ $staff_performance['unattributed'] }}</p>
+        <h2>Staff Performance (Top 10 by decisions completed in the period)</h2>
+        <p>Completed decisions without a recorded processor: {{ $staff_performance['unattributed'] }}</p>
         <table>
             <thead><tr><th>Staff member</th><th>Processed</th><th>Approved</th><th>Rejected</th><th>Average processing time</th></tr></thead>
             <tbody>
@@ -116,14 +116,14 @@
                 <tr><td>Documents issued</td><td>{{ $documents['documents_issued'] }}</td></tr>
                 <tr><td>Verification attempts</td><td>{{ $documents['verification_attempts'] }}</td></tr>
                 <tr><td>Valid</td><td>{{ $documents['valid'] }}</td></tr>
-                <tr><td>Invalid / Hash Mismatch</td><td>{{ $documents['invalid'] }}</td></tr>
+                <tr><td>Invalid results</td><td>{{ $documents['invalid'] }}</td></tr>
                 <tr><td>Revoked</td><td>{{ $documents['revoked'] }}</td></tr>
                 <tr><td>Other results</td><td>{{ $documents['other'] }}</td></tr>
-                <tr><td>Valid verification rate</td><td>{{ number_format($documents['valid_rate'], 1) }}%</td></tr>
+                <tr><td>Valid verification rate</td><td>{{ $documents['verification_attempts'] ? number_format($documents['valid_rate'], 1).'%' : 'No attempts' }}</td></tr>
                 <tr><td>Documents revoked during period</td><td>{{ $documents['documents_revoked'] }}</td></tr>
             </tbody>
         </table>
-        <p class="meta">Verification attempts are counted from the date logging began. Latest result is per issued request because logs do not identify document versions. Invalid / Hash Mismatch refers to issued-document hash validation, not tampered scanned copies.</p>
+        <p class="meta">Verification attempts are counted from the date logging began. Latest result is per issued request because logs do not identify document versions.</p>
         <table>
             <thead><tr><th>Latest result by issued request</th><th>Requests</th></tr></thead>
             <tbody>@foreach ($documents['latest_results'] as $status => $count)<tr><td>{{ $status }}</td><td>{{ $count }}</td></tr>@endforeach</tbody>

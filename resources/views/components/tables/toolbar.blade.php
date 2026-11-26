@@ -1,12 +1,10 @@
-{{--
-    One row: tabs (+ filters) on the left, live table search + Export + Add on the right.
-    Put it inside <x-tables.card :searchable="false"> above <x-tables.table>.
-
-    :search="true"   adds a search box that filters the rows on screen (no page reload, no database)
---}}
 @props([
     'key' => 'tbl',
     'tabs' => [],
+    'active' => null,
+    'total' => null,
+    'totalLabel' => 'All',
+    'totalIcon' => 'M3 7l9-5 9 5-9 5-9-5Zm0 5 9 5 9-5M3 17l9 5 9-5',
     'filters' => [],
     'search' => false,
     'searchPlaceholder' => 'Start searching...',
@@ -19,132 +17,75 @@
 @php
     $tabParam = "{$key}_tab";
     $pageParam = "{$key}_page";
-    $activeTab = request($tabParam, array_key_first($tabs));
 
-    $own = array_merge([$tabParam, $pageParam], collect($filters)->map(fn($f) => "{$key}_{$f['name']}")->all());
-    $keep = collect(request()->except([...$own, 'search']))->filter(fn($v) => is_scalar($v));
+    // A single tab is shown the same way as a total.
+    if (count($tabs) === 1) {
+        $only = reset($tabs);
+        $only = is_array($only) ? $only : ['label' => $only];
+        $totalLabel = $only['label'];
+        $total = $only['count'] ?? $total;
+        $totalIcon = $only['icon'] ?? $totalIcon;
+        $tabs = [];
+    }
+    $activeTab = $active ?? request($tabParam, array_key_first($tabs));
 
     $accent = 'bg-(--blue-600) hover:bg-(--blue-700) dark:bg-(--blue-500) dark:hover:bg-(--blue-400)';
-    $accentText = 'text-(--blue-700) dark:text-(--blue-300)';
-    $accentBorder = 'border-(--blue-600) dark:border-(--blue-400)';
 
     $pill = 'inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 text-sm font-medium text-slate-800 dark:text-slate-200 transition hover:bg-slate-50 dark:hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-(--blue-500)';
-    $chevron = '<svg class="size-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
     $plus = '<svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>';
     $add = "inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-lg px-5 text-sm font-medium text-white shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-(--blue-500) focus-visible:ring-offset-1 {$accent}";
 @endphp
 
-@once
-    <script>
-        (function () {
-            function runSearch(input) {
-                var q = input.value.trim().toLowerCase();
-                var scope = input.closest('section') || document;
-                var clear = input.parentElement.querySelector('[data-table-search-clear]');
-                if (clear) clear.style.display = q ? '' : 'none';
-
-                var real = 0;
-                var shown = 0;
-                scope.querySelectorAll('.tbl tbody > tr').forEach(function (tr) {
-                    if (tr.hasAttribute('data-search-empty')) return;
-                    real++;
-                    var match = !q || tr.textContent.toLowerCase().indexOf(q) !== -1;
-                    tr.style.display = match ? '' : 'none';
-                    if (match) shown++;
-                });
-
-                var empty = scope.querySelector('.tbl tbody > tr[data-search-empty]');
-                if (empty) {
-                    var noMatches = real > 0 && q && shown === 0;
-                    var message = empty.querySelector('[data-empty-message]');
-                    var hint = empty.querySelector('[data-empty-hint]');
-                    message.textContent = noMatches ? 'No records found.' : message.dataset.defaultMessage;
-                    hint.textContent = noMatches ? 'Try changing your search or filters.' : hint.dataset.defaultHint;
-                    empty.style.display = real === 0 || noMatches ? '' : 'none';
-                }
-            }
-
-            document.addEventListener('input', function (e) {
-                if (e.target.matches('[data-table-search]')) runSearch(e.target);
-            });
-
-            document.addEventListener('click', function (e) {
-                var btn = e.target.closest('[data-table-search-clear]');
-                if (!btn) return;
-                var input = btn.parentElement.querySelector('[data-table-search]');
-                input.value = '';
-                runSearch(input);
-                input.focus();
-            });
-        })();
-    </script>
-@endonce
-
 <div data-table-key="{{ $key }}" {{ $attributes->class('flex flex-wrap items-center justify-between gap-3 pb-2 sm:pb-3') }}>
-    {{-- Left: tabs + filters --}}
+    {{-- Left: tabs or total --}}
     <div class="flex flex-wrap items-center gap-2">
         @isset($navigation)
             {{ $navigation }}
         @endisset
         @if (count($tabs))
-            <nav class="inline-flex items-center gap-0.5 rounded-lg bg-slate-100 p-1 dark:bg-slate-800" aria-label="Table views">
-                @foreach ($tabs as $value => $label)
-                    @php $isActive = (string) $activeTab === (string) $value; @endphp
-                    <a href="{{ request()->fullUrlWithQuery([$tabParam => $value, $pageParam => null, 'search' => null]) }}"
+            <nav class="inline-flex flex-wrap items-center gap-0.5 rounded-lg bg-slate-100 p-1 dark:bg-slate-800" aria-label="Table views">
+                @foreach ($tabs as $value => $tab)
+                    @php
+                        $isActive = (string) $activeTab === (string) $value;
+                        $tab = is_array($tab) ? $tab : ['label' => $tab];
+                    @endphp
+                    <a href="{{ request()->fullUrlWithQuery([$tabParam => $value, $pageParam => null, 'page' => null, 'search' => null]) }}"
                         @if ($isActive) aria-current="page" @endif
-                        class="rounded-md px-4 py-1.5 text-sm transition {{ $isActive ? 'bg-white font-semibold text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white' }}">
-                        {{ $label }}
+                        class="inline-flex items-center gap-2 rounded-md px-4 py-1.5 text-sm transition {{ $isActive ? 'bg-white font-semibold text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white' }}">
+                        @if (!empty($tab['icon']))
+                            <svg aria-hidden="true" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="{{ $tab['icon'] }}" /></svg>
+                        @endif
+                        {{ $tab['label'] }}
+                        @isset($tab['count'])
+                            <span class="rounded-md bg-slate-200 px-1.5 py-0.5 text-xs tabular-nums text-slate-700 dark:bg-slate-600 dark:text-slate-100">{{ $tab['count'] }}</span>
+                        @endisset
                     </a>
                 @endforeach
             </nav>
         @endif
 
-        @if (count($filters))
-            <form method="GET" class="flex flex-wrap items-center gap-2">
-                @foreach ($keep as $k => $v)
-                    <input type="hidden" name="{{ $k }}" value="{{ $v }}">
-                @endforeach
-                <input type="hidden" name="{{ $tabParam }}" value="{{ $activeTab }}">
-
-                @foreach ($filters as $f)
-                    @php
-                        $param = "{$key}_{$f['name']}";
-                        $current = (string) request($param);
-                    @endphp
-                    <label class="relative">
-                        <span class="sr-only">{{ $f['label'] }}</span>
-                        <select name="{{ $param }}" onchange="this.form.submit()"
-                            class="{{ $pill }} appearance-none pr-9 {{ $current !== '' ? "{$accentBorder} {$accentText}" : '' }}">
-                            <option value="">{{ $f['label'] }}</option>
-                            @foreach ($f['options'] as $value => $text)
-                                <option value="{{ $value }}" @selected($current === (string) $value)>{{ $text }}</option>
-                            @endforeach
-                        </select>
-                        <span class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2">{!! $chevron !!}</span>
-                    </label>
-                @endforeach
-            </form>
+        @if (!count($tabs) && $total !== null)
+            {{-- Only one view, so it is always shown as active. --}}
+            <span aria-current="page" class="inline-flex min-h-10 items-center gap-2 rounded-lg bg-(--gray-100) px-3 text-sm font-semibold text-(--blue-800) dark:bg-(--blue-800) dark:text-(--blue-100)">
+                <svg aria-hidden="true" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="{{ $totalIcon }}" /></svg>
+                {{ $totalLabel }}
+                <span class="rounded-md bg-(--gray-200) px-1.5 py-0.5 text-xs tabular-nums dark:bg-(--blue-900)">{{ $total }}</span>
+            </span>
         @endif
     </div>
 
-    {{-- Right: search + export + add --}}
+    {{-- Right: search + filters + export + add --}}
     <div class="flex flex-wrap items-center gap-2">
         @if ($search)
-            <div class="w-full sm:w-72">
-                <div class="relative">
-                    <span class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500">
-                        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                    </span>
-                    <input type="text" data-table-search autocomplete="off" placeholder="{{ $searchPlaceholder }}"
-                        aria-label="Search this table"
-                        class="h-10 w-full rounded-lg border border-slate-200 bg-white pl-10 pr-10 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-(--blue-850) dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:ring-1 dark:focus:ring-(--blue-600)">
-                    <button type="button" data-table-search-clear aria-label="Clear search" style="display: none"
-                        class="absolute right-2.5 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
-                        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-                    </button>
-                </div>
-            </div>
+            <x-tables.search :placeholder="$searchPlaceholder" />
         @endif
+
+        @foreach ($filters as $filter)
+            <x-tables.filter :param="$key . '_' . $filter['name']" :options="$filter['options']"
+                :selected="$filter['selected'] ?? request($key . '_' . $filter['name'])"
+                :label="$filter['label'] ?? 'Filter'" :title="$filter['title'] ?? null"
+                :all-label="$filter['allLabel'] ?? 'All'" :reset="[$pageParam]" />
+        @endforeach
 
         @isset($searchActions)
             {{ $searchActions }}

@@ -389,7 +389,9 @@ class ReportService
      */
     public function staffPerformance(array $filters): array
     {
-        $staff = $this->requestQuery($filters)
+        $decisions = $this->requestQuery($filters, 'processed_at')
+            ->whereIn('service_requests.status', [ServiceRequest::APPROVED, ServiceRequest::REJECTED]);
+        $staff = (clone $decisions)
             ->join('users as processors', 'processors.id', '=', 'service_requests.processed_by')
             ->whereNotNull('service_requests.processed_by')
             ->select('service_requests.processed_by', 'processors.name')
@@ -398,6 +400,7 @@ class ReportService
             ->selectRaw('SUM(CASE WHEN service_requests.status = ? THEN 1 ELSE 0 END) AS rejected_count', [ServiceRequest::REJECTED])
             ->groupBy('service_requests.processed_by', 'processors.name')
             ->orderByDesc('processed_count')
+            ->orderBy('service_requests.processed_by')
             ->limit(10)
             ->get();
         $processorIds = $staff->pluck('processed_by');
@@ -405,9 +408,8 @@ class ReportService
 
         if ($processorIds->isNotEmpty()) {
             foreach (
-                $this->requestQuery($filters)
+                (clone $decisions)
                     ->whereIn('processed_by', $processorIds)
-                    ->whereIn('status', [ServiceRequest::APPROVED, ServiceRequest::REJECTED])
                     ->whereNotNull('created_at')
                     ->whereNotNull('processed_at')
                     ->select(['processed_by', 'created_at', 'processed_at'])
@@ -441,8 +443,7 @@ class ReportService
                     : round($processorTotals['hours'] / $processorTotals['count'], 2),
             ];
         })->all();
-        $unattributed = $this->requestQuery($filters)
-            ->whereIn('status', [ServiceRequest::PROCESSING, ServiceRequest::APPROVED, ServiceRequest::REJECTED])
+        $unattributed = $decisions
             ->whereNull('processed_by')
             ->count();
 
@@ -494,12 +495,12 @@ class ReportService
     /**
      * @param  array<string, mixed>  $filters
      */
-    public function requestQuery(array $filters): Builder
+    public function requestQuery(array $filters, string $dateColumn = 'created_at'): Builder
     {
         $query = ServiceRequest::query();
 
         if (isset($filters['from'], $filters['to'])) {
-            $query->whereBetween('service_requests.created_at', [
+            $query->whereBetween('service_requests.'.$dateColumn, [
                 $this->from($filters)->startOfDay(),
                 $this->to($filters)->endOfDay(),
             ]);

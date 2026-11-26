@@ -17,25 +17,33 @@ use Throwable;
 
 class SmartContractController extends Controller
 {
+    /** States an operator can act on with the recovery controls. */
+    private const ATTENTION_STATES = ['pending', 'submitted', 'failed', 'paused'];
+
     public function index(Request $request, BlockchainRegistry $registry): View
     {
-        $filters = $request->validate(['q' => 'nullable|string|max:100', 'state' => 'nullable|in:pending,submitted,confirmed,failed,paused,revoked']);
         if ($request->boolean('refresh')) {
             Cache::forget('blockchain.info');
         }
+
         $active = ContractDeployment::active();
         $info = $registry->contractInfo();
         $problem = $this->configurationError($active, $info);
-        $transactions = BlockchainRecord::with('issuedDocument')
-            ->when($filters['q'] ?? '', fn ($q, $term) => $q->where(fn ($rows) => $rows
-                ->whereLike('tx_hash', '%'.$term.'%')->orWhereLike('revoke_tx_hash', '%'.$term.'%')
-                ->orWhereHas('issuedDocument', fn ($docs) => $docs->whereLike('document_number', '%'.$term.'%'))))
-            ->when($filters['state'] ?? '', fn ($q, $state) => $q->whereRaw(BlockchainRecord::STATE_SQL.' = ?', [$state]))
-            ->latest('id')->paginate(15, ['*'], 'transactions')->withQueryString();
+
+        // Record counts per actionable state; the ledger handles browsing.
+        $counts = BlockchainRecord::query()
+            ->selectRaw(BlockchainRecord::STATE_SQL.' as state, count(*) as total')
+            ->groupBy('state')
+            ->pluck('total', 'state');
+        $attention = collect(self::ATTENTION_STATES)
+            ->mapWithKeys(fn ($state) => [$state => (int) ($counts[$state] ?? 0)])
+            ->all();
+
         $deployments = ContractDeployment::latest('deployed_at')->paginate(8, ['*'], 'deployments')->withQueryString();
 
-        return view('admin.smart-contracts.index', compact('info', 'active', 'problem', 'transactions', 'deployments') + [
-            'network' => ContractDeployment::network(), 'isAdmin' => $request->user()->role === 'admin',
+        return view('admin.smart-contracts.index', compact('info', 'active', 'problem', 'attention', 'deployments') + [
+            'network' => ContractDeployment::network(),
+            'isAdmin' => $request->user()->role === 'admin',
         ]);
     }
 

@@ -14,7 +14,7 @@
 
 @php
     $aligns = ['left' => 'text-left', 'right' => 'text-right', 'center' => 'text-center'];
-    $th = 'whitespace-nowrap bg-slate-50 px-3 py-2 text-xs font-medium text-slate-500 dark:bg-slate-800/60 dark:text-slate-400 sm:px-4 sm:py-3';
+    $th = ($cards ? '' : 'whitespace-nowrap ') . 'bg-slate-50 px-3 py-2 text-xs font-medium text-slate-500 dark:bg-slate-800/60 dark:text-slate-400 sm:px-4 sm:py-3';
 @endphp
 
 @once
@@ -49,8 +49,23 @@
         .tbl thead th:first-child { border-radius: .5rem 0 0 .5rem; }
         .tbl thead th:last-child { border-radius: 0 .5rem .5rem 0; }
 
-        /* Mobile: stacked cards */
         .tbl-container { container: table-region / inline-size; min-width: 0; }
+
+        /* Narrow table: wrap text and scale down everything inside (text, avatars, badges, buttons, spacing) */
+        @container table-region (min-width: 40rem) and (max-width: 63.99rem) {
+            .tbl-cards table { zoom: .9; }
+            .tbl-cards th, .tbl-cards td { white-space: normal !important; overflow-wrap: break-word; padding-inline: .625rem !important; }
+            .tbl-cards td * { min-width: 0; white-space: normal; }
+            .tbl-cards td .truncate { overflow: visible; text-overflow: clip; }
+            .tbl-cards td p { overflow-wrap: anywhere; }
+            .tbl-cards th, .tbl-cards td :where(a, button) { white-space: nowrap !important; overflow-wrap: normal; }
+        }
+        @container table-region (min-width: 40rem) and (max-width: 51.99rem) {
+            .tbl-cards table { zoom: .8; }
+            .tbl-cards th, .tbl-cards td { padding-inline: .375rem !important; }
+        }
+
+        /* Mobile: stacked cards */
         @container table-region (max-width: 39.99rem) {
             .tbl-cards { overflow-x: visible; }
             .tbl-cards table { display: block; width: 100%; min-width: 0 !important; font-size: .875rem; }
@@ -146,7 +161,7 @@
 
 <div class="tbl-container">
 <div class="tbl {{ $cards ? 'tbl-cards' : '' }} overflow-x-auto">
-    <table class="w-full min-w-max text-left text-xs sm:text-sm">
+    <table class="w-full {{ $cards ? '' : 'min-w-max' }} text-left text-xs sm:text-sm">
         <thead>
             <tr>
                 @if ($selectable)

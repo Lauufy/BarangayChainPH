@@ -235,7 +235,8 @@ class ReportServiceTest extends TestCase
         ServiceRequest::factory()->create([
             'status' => ServiceRequest::REJECTED,
             'processed_by' => null,
-            'created_at' => Carbon::parse('2026-11-12'),
+            'created_at' => Carbon::parse('2026-10-31'),
+            'processed_at' => Carbon::parse('2026-11-12'),
         ]);
         ServiceRequest::factory()->create([
             'status' => ServiceRequest::PENDING,
@@ -252,7 +253,7 @@ class ReportServiceTest extends TestCase
         $this->assertSame([
             [
                 'staff_name' => $staff->name,
-                'processed' => 2,
+                'processed' => 1,
                 'approved' => 1,
                 'rejected' => 0,
                 'average_processing_hours' => 6.0,

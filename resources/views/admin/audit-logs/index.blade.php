@@ -3,49 +3,28 @@
 @section('title', 'Audit Logs')
 
 @section('content')
-    @php
-        $hasFilters = filled($userFilter) || filled($actionFilter) || filled($dateFilter);
-        $activeCount = collect([$userFilter, $actionFilter, $dateFilter])->filter(fn ($v) => filled($v))->count();
-        $field =
-            'block h-9 w-full rounded-sm border border-slate-300 bg-white px-2.5 text-sm text-slate-900 placeholder:text-slate-400 transition focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-blue-500 dark:focus:ring-blue-500/30 dark:[color-scheme:dark]';
-        $label = 'mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300';
-    @endphp
-
-    <div class="admin-module space-y-5" data-table-key="audit-logs">
+    <div class="admin-module space-y-5">
         <x-admin.page-header title="Audit Logs"
             text="Review changes made to applications and issued documents." />
 
-        <x-tables.card title="System Activity History"
-            description="Changes to service requests and issued documents." :paginator="$logs" :searchable="false"
-            item-label="audit records" :per-page-options="[10, 15, 20, 25, 50]">
-            <x-slot:toolbar>
-                <div class="flex items-center justify-end gap-2">
-                    {{-- Quick search (filters the rows on this page as you type). --}}
-                    <div class="relative">
-                        <label class="sr-only" for="audit-search">Search audit logs</label>
-                        <svg class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400"
-                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <circle cx="11" cy="11" r="8" />
-                            <path d="m21 21-4.3-4.3" />
-                        </svg>
-                        <input id="audit-search" type="search" data-audit-search placeholder="Search user, action, or record"
-                            class="h-9 w-48 rounded-sm border border-slate-300 bg-white pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 transition focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 sm:w-64 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-blue-500 dark:focus:ring-blue-500/30">
-                    </div>
-
-                    {{-- Filters menu --}}
+        {{-- Audit directory --}}
+        <x-tables.card :paginator="$logs" :searchable="false" item-label="audit records"
+            :per-page-options="[10, 15, 20, 25, 50]">
+            <x-tables.toolbar key="audit-logs" :total="$logs->total()" total-label="All Records" :search="true"
+                search-placeholder="Search user, action, or record">
+                <x-slot:searchActions>
                     <details id="audit-filters" class="relative">
                         <summary
-                            class="inline-flex h-9 cursor-pointer list-none items-center gap-2 rounded-sm border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition marker:content-none hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-white/5 [&::-webkit-details-marker]:hidden">
+                            class="inline-flex h-10 cursor-pointer list-none items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 transition marker:content-none hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 [&::-webkit-details-marker]:hidden">
                             <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3Z" />
                             </svg>
                             Filters
-                            @if ($activeCount)
+                            @if (collect([$userFilter, $actionFilter, $dateFilter])->filter(fn ($v) => filled($v))->count())
                                 <span
                                     class="grid size-5 place-items-center rounded-full bg-blue-600 text-[11px] font-semibold text-white">
-                                    {{ $activeCount }}
+                                    {{ collect([$userFilter, $actionFilter, $dateFilter])->filter(fn ($v) => filled($v))->count() }}
                                 </span>
                             @endif
                         </summary>
@@ -55,25 +34,30 @@
                             <input type="hidden" name="per_page" value="{{ request('per_page') }}">
 
                             <div>
-                                <label class="{{ $label }}" for="f-user">User ID</label>
+                                <label class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300"
+                                    for="f-user">User ID</label>
                                 <input id="f-user" name="user_id" type="number" min="1"
-                                    value="{{ $userFilter }}" placeholder="e.g. 12" class="{{ $field }}">
+                                    value="{{ $userFilter }}" placeholder="e.g. 12"
+                                    class="block h-9 w-full rounded-sm border border-slate-300 bg-white px-2.5 text-sm text-slate-900 placeholder:text-slate-400 transition focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:scheme-dark">
                             </div>
 
                             <div>
-                                <label class="{{ $label }}" for="f-action">Action key</label>
+                                <label class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300"
+                                    for="f-action">Action key</label>
                                 <input id="f-action" name="action" type="text" value="{{ $actionFilter }}"
-                                    placeholder="e.g. service_request.approved" class="{{ $field }}">
+                                    placeholder="e.g. service_request.approved"
+                                    class="block h-9 w-full rounded-sm border border-slate-300 bg-white px-2.5 text-sm text-slate-900 placeholder:text-slate-400 transition focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:scheme-dark">
                             </div>
 
                             <div>
-                                <label class="{{ $label }}" for="f-date">Date</label>
+                                <label class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300"
+                                    for="f-date">Date</label>
                                 <input id="f-date" name="date" type="date" value="{{ $dateFilter }}"
-                                    class="{{ $field }}">
+                                    class="block h-9 w-full rounded-sm border border-slate-300 bg-white px-2.5 text-sm text-slate-900 placeholder:text-slate-400 transition focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:scheme-dark">
                             </div>
 
                             <div class="flex items-center justify-end gap-2 pt-1">
-                                @if ($hasFilters)
+                                @if (filled($userFilter) || filled($actionFilter) || filled($dateFilter))
                                     <a href="{{ route('admin.audit-logs.index', request()->only('per_page')) }}"
                                         class="inline-flex h-9 items-center rounded-sm border border-slate-300 px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-white/5">
                                         Clear
@@ -86,33 +70,30 @@
                             </div>
                         </form>
                     </details>
-                </div>
-            </x-slot:toolbar>
+                </x-slot:searchActions>
+            </x-tables.toolbar>
 
-            <x-tables.table :heads="['User', 'Action', 'Record', 'Changes', 'Date & Time']" :empty="$isEmpty"
-                message="No audit records match these filters."
+            <x-tables.table
+                :heads="['User', 'Action', 'Record', 'Changes', 'Date & Time']"
+                :empty="$isEmpty" message="No audit records match these filters."
                 hint="Try removing a filter or changing the date.">
                 @foreach ($logs as $log)
-                    @php
-                        $verb = Str::lower(Str::afterLast($log['action'], '.'));
-                        $variant = match (true) {
-                            Str::contains($verb, ['create', 'issue', 'approve', 'verif', 'add']) => 'success',
-                            Str::contains($verb, ['delete', 'reject', 'revoke', 'fail', 'remove']) => 'danger',
-                            Str::contains($verb, ['update', 'edit', 'change']) => 'info',
-                            Str::contains($verb, ['pending', 'cancel']) => 'warning',
-                            default => 'neutral',
-                        };
-                        $changes = trim((string) $log['changes']);
-                    @endphp
-
                     <tr>
                         <td data-title>
                             <x-tables.user-cell :name="$log['user']" />
                         </td>
 
-                        <td data-label="Action">
-                            <x-tables.badge :variant="$variant">
-                                {{ Str::headline($verb ?: $log['action']) }}
+                        <td data-side="right">
+                            <x-tables.badge class="gap-1.5 rounded-full!"
+                                :variant="match (true) {
+                                    Str::contains(Str::lower(Str::afterLast($log['action'], '.')), ['create', 'issue', 'approve', 'verif', 'add']) => 'success',
+                                    Str::contains(Str::lower(Str::afterLast($log['action'], '.')), ['delete', 'reject', 'revoke', 'fail', 'remove']) => 'danger',
+                                    Str::contains(Str::lower(Str::afterLast($log['action'], '.')), ['update', 'edit', 'change']) => 'info',
+                                    Str::contains(Str::lower(Str::afterLast($log['action'], '.')), ['pending', 'cancel']) => 'warning',
+                                    default => 'neutral',
+                                }">
+                                <span class="size-1.5 rounded-full bg-current" aria-hidden="true"></span>
+                                {{ Str::headline(Str::afterLast($log['action'], '.') ?: $log['action']) }}
                             </x-tables.badge>
                         </td>
 
@@ -120,8 +101,8 @@
                             {{ $log['record'] }}
                         </td>
 
-                        <td data-side="full" class="whitespace-nowrap">
-                            @if ($changes === '')
+                        <td data-label="Changes">
+                            @if (trim((string) $log['changes']) === '')
                                 <span class="text-slate-400 dark:text-slate-500">—</span>
                             @else
                                 <button type="button" data-audit-open
@@ -129,14 +110,14 @@
                                     data-action="{{ $log['action'] }}"
                                     data-record="{{ $log['record'] }}"
                                     data-date="{{ $log['date'] }}"
-                                    data-changes="{{ $changes }}"
+                                    data-changes="{{ trim((string) $log['changes']) }}"
                                     class="cursor-pointer text-sm font-medium text-blue-600 underline-offset-2 transition hover:text-blue-700 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:text-blue-400 dark:hover:text-blue-300">
                                     View changes
                                 </button>
                             @endif
                         </td>
 
-                        <td data-side="right" class="whitespace-nowrap text-slate-500 dark:text-slate-400">
+                        <td data-label="Date & time" class="whitespace-nowrap text-slate-500 dark:text-slate-400">
                             {{ $log['date'] }}
                         </td>
                     </tr>
@@ -177,11 +158,9 @@
 
     <script>
         (function () {
-            // The page content may be re-rendered and this script re-run; only bind once.
             if (window.__auditLogsBound) return;
             window.__auditLogsBound = true;
 
-            // Uses textContent, so values are never parsed as HTML.
             function el(tag, cls, text) {
                 var node = document.createElement(tag);
                 if (cls) node.className = cls;
@@ -192,7 +171,6 @@
             var ARROW =
                 '<svg class="size-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
 
-            // Turn "Field: a -> b; Field2: c -> d" into rows.
             function parseChanges(text) {
                 return String(text || '')
                     .split(';')
@@ -259,38 +237,26 @@
                 });
             }
 
-           function openDialog(d) {
-    var modal = document.getElementById('audit-dialog');
+            function openDialog(d) {
+                var modal = document.getElementById('audit-dialog');
 
-    // Move it to <body> so a page-content swap can't remove it.
-    if (modal.parentElement !== document.body) document.body.appendChild(modal);
+                if (modal.parentElement !== document.body) document.body.appendChild(modal);
 
-    // Remove stale copies that a swap re-renders inside the page content.
-    document.querySelectorAll('#audit-dialog').forEach(function (m) {
-        if (m !== modal) m.remove();
-    });
-
-    document.getElementById('audit-user').textContent = d.user || '—';
-    document.getElementById('audit-action').textContent = d.action || '—';
-    document.getElementById('audit-record').textContent = d.record || '—';
-    document.getElementById('audit-date').textContent = d.date || '—';
-    renderChanges(document.getElementById('audit-changes'), d.changes);
-
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-}
-            // Quick search on the rows of this page.
-            document.addEventListener('input', function (event) {
-                if (!event.target.matches('[data-audit-search]')) return;
-
-                var query = event.target.value.trim().toLowerCase();
-                document.querySelectorAll('.tbl tbody tr').forEach(function (row) {
-                    row.hidden = query !== '' && !row.textContent.toLowerCase().includes(query);
+                document.querySelectorAll('#audit-dialog').forEach(function (m) {
+                    if (m !== modal) m.remove();
                 });
-            });
+
+                document.getElementById('audit-user').textContent = d.user || '—';
+                document.getElementById('audit-action').textContent = d.action || '—';
+                document.getElementById('audit-record').textContent = d.record || '—';
+                document.getElementById('audit-date').textContent = d.date || '—';
+                renderChanges(document.getElementById('audit-changes'), d.changes);
+
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
 
             document.addEventListener('click', function (e) {
-                // Close the Filters menu when clicking anywhere outside it.
                 var filters = document.getElementById('audit-filters');
                 if (filters && filters.open && !filters.contains(e.target)) {
                     filters.open = false;
@@ -300,7 +266,6 @@
                 if (opener) openDialog(opener.dataset);
             });
 
-            // Escape closes the Filters menu (the modal component handles its own Escape).
             document.addEventListener('keydown', function (e) {
                 if (e.key !== 'Escape') return;
                 var filters = document.getElementById('audit-filters');

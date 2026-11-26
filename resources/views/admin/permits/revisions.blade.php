@@ -15,11 +15,11 @@
                             <dt class="font-semibold">{{ $item['label'] }}</dt>
                             <dd class="mb-2 whitespace-pre-line">{{ $item['note'] }}</dd>
                             <dd class="grid gap-2 sm:grid-cols-2">
-                                <div class="break-words rounded bg-slate-100 p-2 dark:bg-slate-800"><span class="block text-xs font-semibold">Previous</span>{{ $item['old'] ?? 'Not provided' }}
+                                <div class="wrap-break-word rounded bg-slate-100 p-2 dark:bg-slate-800"><span class="block text-xs font-semibold">Previous</span>{{ $item['old'] ?? 'Not provided' }}
                                     @isset($item['old_hash'])<small class="block">File fingerprint {{ substr($item['old_hash'], 0, 12) }}</small>@endisset
                                 </div>
                                 @if ($revision->submitted_at)
-                                    <div class="break-words rounded bg-emerald-50 p-2 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200"><span class="block text-xs font-semibold">Resubmitted</span>{{ $item['new'] ?? 'Not provided' }}
+                                    <div class="wrap-break-word rounded bg-emerald-50 p-2 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200"><span class="block text-xs font-semibold">Resubmitted</span>{{ $item['new'] ?? 'Not provided' }}
                                         @isset($item['new_hash'])<small class="block">File fingerprint {{ substr($item['new_hash'], 0, 12) }}</small>@endisset
                                     </div>
                                 @endif

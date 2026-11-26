@@ -57,8 +57,8 @@ class ReportsExport implements AdminReportExport
             ['Approved', $data['summary']['approved']],
             ['Rejected', $data['summary']['rejected']],
             ['Cancelled', $data['summary']['cancelled']],
-            ['Approval rate of decisions', $data['summary']['approval_rate'].'%'],
-            ['Rejection rate of decisions', $data['summary']['rejection_rate'].'%'],
+            ['Approval rate of decisions', $data['summary']['decisions'] ? $data['summary']['approval_rate'].'%' : 'No decisions'],
+            ['Rejection rate of decisions', $data['summary']['decisions'] ? $data['summary']['rejection_rate'].'%' : 'No decisions'],
             ['Average processing time (hours)', $data['summary']['average_processing_hours'] ?? 'No data'],
             ['Previous period total', $data['previous_summary']['total']],
             ['Previous period in progress', $data['previous_summary']['in_progress']],
@@ -88,13 +88,14 @@ class ReportsExport implements AdminReportExport
             ['Pending', $data['citizens']['pending']],
             ['Rejected', $data['citizens']['rejected']],
             ['Unverified', $data['citizens']['unverified']],
-            ['Identity approval rate', $data['citizens']['approval_rate'].'%'],
-            ['Identity rejection rate', $data['citizens']['rejection_rate'].'%'],
+            ['Identity approval rate', $data['citizens']['review_count'] ? $data['citizens']['approval_rate'].'%' : 'No decisions'],
+            ['Identity rejection rate', $data['citizens']['review_count'] ? $data['citizens']['rejection_rate'].'%' : 'No decisions'],
             ['Rate period', $data['citizens']['review_period_label']],
             ['Reviews in rate calculation', $data['citizens']['review_count']],
         ]);
         $this->section($rows, 'Staff Performance', [
-            ['Unattributed requests', $data['staff_performance']['unattributed']],
+            ['Ranking', 'Top 10 by decisions completed in the period'],
+            ['Completed decisions without a recorded processor', $data['staff_performance']['unattributed']],
         ]);
         $rows[] = ['Staff member', 'Processed', 'Approved', 'Rejected', 'Average processing hours'];
 
@@ -132,10 +133,10 @@ class ReportsExport implements AdminReportExport
             ['Documents issued', $data['documents']['documents_issued']],
             ['Verification attempts', $data['documents']['verification_attempts']],
             ['Valid', $data['documents']['valid']],
-            ['Invalid / Hash Mismatch', $data['documents']['invalid']],
+            ['Invalid results', $data['documents']['invalid']],
             ['Revoked', $data['documents']['revoked']],
             ['Other results', $data['documents']['other']],
-            ['Valid verification rate', $data['documents']['valid_rate'].'%'],
+            ['Valid verification rate', $data['documents']['verification_attempts'] ? $data['documents']['valid_rate'].'%' : 'No attempts'],
             ['Documents revoked during period', $data['documents']['documents_revoked']],
             ['Verification attempts note', 'Verification attempts are counted from the date logging began.'],
         ]);

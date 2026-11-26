@@ -163,7 +163,8 @@ class ReportAccessExportTest extends TestCase
             ->assertSee('Open ledger')
             ->assertSee('REPORT-TABLE-0001')
             ->assertSee('Successful')
-            ->assertSee('Scans are counted from the date logging began.');
+            ->assertSee('Verification attempts')
+            ->assertSee('Top 10 staff');
     }
 
     public function test_report_tables_show_shared_empty_states_when_the_period_has_no_rows(): void
@@ -176,11 +177,17 @@ class ReportAccessExportTest extends TestCase
             ->assertOk()
             ->assertSee('No data in this period.');
 
+        $this->actingAs($admin)
+            ->get(route('admin.reports.index', ['report_tab' => 'citizens']))
+            ->assertOk()
+            ->assertSee('No decisions');
+
         // Verification tab: tables show their empty states
         $this->actingAs($admin)
             ->get(route('admin.reports.index', ['report_tab' => 'verification']))
             ->assertOk()
             ->assertSee('No transactions in this period.')
+            ->assertSee('No attempts')
             ->assertSee('No staff data in this period.')
             ->assertSee('data-table-search', false)
             ->assertSee('data-table-key="report-staff-performance"', false)

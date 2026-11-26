@@ -1,6 +1,6 @@
 @props([
     'label',
-    'subtitle' => null,          // small text under the title
+    'subtitle' => null,          // small text under the value
     'value' => '—',
     'trend' => null,             // percent, e.g. 3.1 or -2.1
     'latest' => null,            // Carbon/DateTime or date string
@@ -11,6 +11,7 @@
     'href' => null,              // makes the whole card a link
     'invert' => false,           // true when "down" is good (e.g. pending counts)
     'mono' => false,
+    'valueClass' => null,        // overrides the value color (e.g. status text)
 ])
 
 @php
@@ -38,45 +39,42 @@
 <{{ $tag }}
     @if ($href) href="{{ $href }}" @endif
     {{ $attributes->class([
-        'block min-w-0 rounded-2xl border p-4 shadow-sm sm:p-5',
-        'border-(--gray-200) bg-(--gray-50)',
-        'dark:border-white/10 dark:bg-(--blue-900)',
-        'transition-all duration-200 hover:-translate-y-0.5 hover:border-(--blue-300) hover:shadow-md dark:hover:border-white/25' => $href,
-        'transition-colors duration-300' => ! $href,
+        'relative block min-w-0 bg-white px-4 py-3 dark:bg-slate-900',
+        // Inset divider on the left edge (hidden on the first card and on the first card of each mobile row)
+        'before:absolute before:inset-y-3 before:left-0 before:w-px before:bg-slate-200 dark:before:bg-slate-700',
+        'first:before:hidden max-lg:odd:before:hidden',
+        'transition-colors hover:bg-slate-50 dark:hover:bg-slate-800' => $href,
     ]) }}>
 
-    {{-- Header --}}
-    <div class="flex items-start justify-between gap-2 sm:gap-3">
-        <div class="min-w-0">
-            <p class="truncate text-[clamp(0.6875rem,0.66rem+0.1vw,0.8125rem)] font-bold uppercase tracking-wide text-(--gray-900) dark:text-(--white)">
-                {{ $label }}
-            </p>
-            @if ($subtitle)
-                <p class="truncate text-[clamp(0.625rem,0.6rem+0.1vw,0.75rem)] text-(--gray-500) dark:text-(--blue-200)">
-                    {{ $subtitle }}
-                </p>
-            @endif
-        </div>
-
+    {{-- Header: icon + label --}}
+    <div class="flex items-center gap-2">
         @isset($icon)
-            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-(--gray-200) bg-(--white) text-(--blue-700) sm:h-10 sm:w-10 dark:border-white/10 dark:bg-white/10 dark:text-(--white)">
+            <span class="grid size-7 shrink-0 place-items-center rounded-md bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300">
                 {{ $icon }}
             </span>
         @endisset
+        <span class="truncate text-sm font-medium text-slate-700 dark:text-slate-300">{{ $label }}</span>
     </div>
 
     {{-- Value --}}
     <p title="{{ $value }}" @class([
-        'mt-2 truncate text-stat tabular-nums text-(--gray-900) xl:text-[clamp(2rem,1.2rem+1.4vw,2.75rem)] dark:text-(--white)',
+        'mt-2 truncate text-xl font-bold tabular-nums',
+        'text-slate-900 dark:text-slate-100' => ! $valueClass,
+        $valueClass => $valueClass,
         'font-mono' => $mono,
     ])>
         {{ $value }}
     </p>
 
-    {{-- Footer --}}
+    {{-- Subtitle --}}
+    @if ($subtitle)
+        <p class="truncate text-xs text-slate-500 dark:text-slate-400">{{ $subtitle }}</p>
+    @endif
+
+    {{-- Footer: latest date, note, or trend --}}
     @if ($showFooter)
-        <div class="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-            <p class="min-w-0 truncate text-caption text-(--gray-500) dark:text-(--blue-200)">
+        <div class="mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+            <p class="min-w-0 truncate text-xs text-slate-500 dark:text-slate-400">
                 @if ($isEmpty)
                     {{ $emptyText }}
                 @elseif ($latestText)
@@ -88,12 +86,12 @@
 
             @if ($hasTrend)
                 <span @class([
-                    'inline-flex shrink-0 items-center gap-1 rounded-full bg-(--gray-100) px-2 py-0.5 text-caption font-semibold dark:bg-white/10',
-                    'text-(--green-600) dark:text-(--green-300)' => $isGood,
-                    'text-(--red-600) dark:text-(--red-500)' => ! $isGood,
+                    'inline-flex shrink-0 items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold dark:bg-white/10',
+                    'text-green-600 dark:text-green-300' => $isGood,
+                    'text-red-600 dark:text-red-500' => ! $isGood,
                 ])>
-                    <svg @class(['h-2.5 w-2.5', 'rotate-180' => ! $isUp]) viewBox="0 0 10 10" fill="currentColor" aria-hidden="true">
-                        <path d="M5 1.5 9 8H1l4-6.5Z" />
+                    <svg @class(['h-2.5 w-2.5', 'rotate-180' => ! $isUp]) viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M12 4 22 20H2L12 4Z" />
                     </svg>
                     {{ $isUp ? '+' : '-' }}{{ number_format(abs($trend), 1) }}%
                 </span>
