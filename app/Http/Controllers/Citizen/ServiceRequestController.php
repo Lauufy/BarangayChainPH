@@ -32,7 +32,7 @@ class ServiceRequestController extends Controller
     public function documents(Request $request): View
     {
         $documents = $this->ownedRequests($request)
-            ->with('ticket')
+            ->with(['ticket', 'issuedDocuments.blockchainRecord'])
             ->where('status', ServiceRequest::APPROVED)
             ->paginate(10);
 
@@ -200,6 +200,9 @@ class ServiceRequestController extends Controller
             409,
             'The document failed its integrity check. Please contact the barangay office.'
         );
+
+        abort_unless($document->blockchainRecord?->recorded_at && ! $document->blockchainRecord->revoked_at,
+            423, 'This permit is awaiting blockchain confirmation.');
 
         return [
             'document' => $document,

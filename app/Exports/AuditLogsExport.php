@@ -49,7 +49,10 @@ class AuditLogsExport implements AdminExport
         return AuditLog::query()
             ->with('user')
             ->when($filters['user_id'] ?? null, fn (Builder $query, int|string $userId) => $query->where('user_id', $userId))
-            ->when($filters['action'] ?? null, fn (Builder $query, string $action) => $query->where('action', $action))
+            ->when($filters['action'] ?? null, fn (Builder $query, string $action) => $action === 'registry_operations'
+                ? $query->whereIn('action', ['contract_paused', 'contract_resumed', 'contract_retry', 'contract_recover',
+                    'contract_operation_failed', 'deployment_synchronized', 'deployment_sync_failed', 'contract_activated', 'permit_blockchain_retry'])
+                : $query->where('action', $action))
             ->when($filters['date'] ?? null, fn (Builder $query, string $date) => $query->whereDate('created_at', $date))
             ->latest('created_at');
     }

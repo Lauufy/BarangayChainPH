@@ -22,7 +22,7 @@ class ServiceRequestApproved extends Notification implements ShouldQueue
     public function toArray(object $notifiable): array
     {
         return [
-            'status' => 'verified',
+            'status' => 'approved',
             'title' => 'Application approved',
             'message' => "Your application {$this->serviceRequest->reference_number} has been approved.",
             'url' => route('citizen.documents'),

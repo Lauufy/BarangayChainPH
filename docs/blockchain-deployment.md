@@ -29,6 +29,21 @@ Contract source in this repository: `blockchain/contracts/PermitRegistry.sol` (S
 - If an issuer key is lost or compromised, pause issuance, remove the issuer with `setIssuer`, and have the owner revoke affected records where needed. A revoked document cannot be un-revoked or issued again under the same document ID in this contract.
 - If the owner key is lost before transferring ownership to a multisig, recovery still requires deploying a new registry and re-anchoring active documents. Once a multisig owns the registry, apply its documented signer-recovery process.
 
+## Synchronize the application registry
+
+Use a maintainer shell with access to the application and database. The web dashboard reads deployment history. The configured network and contract select the issuance target, and a validated deployment row must match before the application can sign a new issuance.
+
+1. Apply the Laravel migrations. Keep the existing deployment and permit rows.
+2. Supply the selected network's RPC endpoint, registry address and issuer key through the application's secret configuration. Refresh cached configuration and restart long-running workers after changing these settings.
+3. Make the Hardhat artifact from the reviewed deployment build available at `blockchain/artifacts/contracts/PermitRegistry.sol/PermitRegistry.json`. Runtime bytecode must match exactly, including compiler metadata.
+4. Obtain the contract creation transaction and independently confirm the expected current owner. Run the command below with those public values. The version is a maintainer-supplied release label. Synchronization reads the chain and updates local deployment history.
+
+```sh
+php artisan blockchain:sync-deployment <creation-transaction-hash> <release-version> <expected-owner-address>
+```
+
+Use a shared atomic-lock cache and an asynchronous queue in production. Keep the application encryption key available to workers. Interrupted submissions reuse the encrypted signed transaction. A low balance, a missing artifact, an incompatible historical registry, or a configuration mismatch requires maintainer attention. Drain outstanding transactions before changing the network, registry, or signer. Historical verification uses the original anchor. An independently controlled owner can authorize an operational issuer with the existing Solidity interface. Dashboard pause and resume require the configured signer to own the registry. For multisig ownership, use the owner's approved transaction process, refresh status and retry eligible held permits.
+
 ## Read-only deployment check
 
 Set `RPC_URL`, `REGISTRY_ADDRESS`, and `ISSUER_ADDRESS` in the process environment, then run `npm run check-deployment` from the `blockchain` folder. The checker reads the configured address, verifies contract code, and reads the chain ID, owner, and configured issuer's authorization. It never sends a transaction and redacts RPC URLs from errors.
@@ -107,9 +122,8 @@ Mainnet is chain ID 1 and Sepolia is chain ID 11155111.
    `BLOCKCHAIN_MAINNET_WRITES_ENABLED=true`, refresh cached config, and restart
    the web and queue processes together. Use one writing worker per signer and
    a queue visibility or retry timeout greater than the 120-second job timeout.
-6. Issue a controlled permit and confirm its Mainnet receipt, QR result, ledger
-   link, and revocation. Register the Mainnet deployment in Smart Contract
-   Management and mark it active. Check an existing Sepolia QR and ledger link. Monitor
+6. Synchronize the configured Mainnet registry using the maintainer command above.
+   With explicit approval, issue a controlled permit and confirm its Mainnet receipt, QR result, ledger link, and revocation. Check an existing Sepolia QR and ledger link. Monitor
    failed jobs, RPC errors, and issuer balance before reopening approvals.
 
 Each permit keeps its original network and registry. Switching the default

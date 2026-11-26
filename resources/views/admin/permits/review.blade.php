@@ -3,6 +3,7 @@
 @section('title', 'Review Permit Application')
 
 @section('content')
+    @if (session('registry_notice')) <p role="status" class="mb-3 text-sm">{{ session('registry_notice') }}</p> @endif
     @php
         $isApproved = $isApproved ?? false;
         $canPrintLimit = $isApproved && auth()->user()->hasPermission('permits.print-limit');
@@ -246,13 +247,17 @@
                                     The permit is valid on-chain, but its transaction hash still needs recovery.
                                 </p>
 
-                                <form method="POST" action="{{ route('admin.permits.blockchain-retry', $application) }}"
-                                    class="mt-auto">
-                                    @csrf
-                                    <x-form.button type="submit" color="blue" class="w-full">
-                                        Retry transaction lookup
-                                    </x-form.button>
-                                </form>
+                                @if (auth()->user()->role === 'admin')
+                                    <form method="POST"
+                                        action="{{ route('admin.permits.blockchain-retry', $application) }}"
+                                        class="mt-auto"
+                                        onsubmit="event.preventDefault(); const form=this; tConfirmation({title:'Retry blockchain recording?',confirmLabel:'Retry'}).then(ok => { if(ok) form.submit(); });">
+                                        @csrf
+                                        <x-form.button type="submit" color="blue" class="w-full">
+                                            Retry transaction lookup
+                                        </x-form.button>
+                                    </form>
+                                @endif
                             @elseif ($currentRecord?->recorded_at)
                                 <p
                                     class="rounded-md bg-emerald-50 p-3 text-sm text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-300">
@@ -268,13 +273,17 @@
                                     @endif
                                 </p>
 
-                                <form method="POST" action="{{ route('admin.permits.blockchain-retry', $application) }}"
-                                    class="mt-auto">
-                                    @csrf
-                                    <x-form.button type="submit" color="blue" class="w-full">
-                                        Record on blockchain
-                                    </x-form.button>
-                                </form>
+                                @if (auth()->user()->role === 'admin')
+                                    <form method="POST"
+                                        action="{{ route('admin.permits.blockchain-retry', $application) }}"
+                                        class="mt-auto"
+                                        onsubmit="event.preventDefault(); const form=this; tConfirmation({title:'Retry blockchain recording?',confirmLabel:'Retry'}).then(ok => { if(ok) form.submit(); });">
+                                        @csrf
+                                        <x-form.button type="submit" color="blue" class="w-full">
+                                            Record on blockchain
+                                        </x-form.button>
+                                    </form>
+                                @endif
                             @endif
                         </div>
                     </section>

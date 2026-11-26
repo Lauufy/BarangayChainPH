@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import dotenv from "dotenv";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -93,13 +94,19 @@ function assertWritesAllowed(chainId) {
 // Prints the issuer's ADDRESS only, never the private key.
 async function info() {
     const provider = new ethers.JsonRpcProvider(need("RPC_URL"));
-    const address = need("REGISTRY_ADDRESS");
-    const wallet = new ethers.Wallet(need("PRIVATE_KEY"));
+    const configured = process.env.REGISTRY_ADDRESS;
+    const address = configured && ethers.isAddress(configured) ? ethers.getAddress(configured) : null;
+    let wallet = null;
+    try {
+        wallet = new ethers.Wallet(need("PRIVATE_KEY"));
+    } catch {
+        // Keep read-only monitoring available when the signer is missing.
+    }
     const network = await provider.getNetwork();
     const expected = process.env.EXPECTED_CHAIN_ID || "11155111";
     const [balance, code] = await Promise.all([
-        provider.getBalance(wallet.address),
-        provider.getCode(address),
+        wallet ? provider.getBalance(wallet.address) : null,
+        address ? provider.getCode(address) : "0x",
     ]);
     const hasCode = code !== "0x";
 
@@ -112,16 +119,19 @@ async function info() {
         }
     };
 
+    let compatible = false;
     let owner = null;
     let paused = null;
     let issuerAuthorized = null;
 
     if (hasCode) {
         const reader = new ethers.Contract(address, ABI, provider);
+        const probe = await attempt(() => reader.getVersionedRecord(ethers.ZeroHash));
+        compatible = probe?.exists === false;
         [owner, paused, issuerAuthorized] = await Promise.all([
             attempt(() => reader.owner()),
             attempt(() => reader.paused()),
-            attempt(() => reader.isIssuer(wallet.address)),
+            wallet ? attempt(() => reader.isIssuer(wallet.address)) : null,
         ]);
     }
 
@@ -132,15 +142,16 @@ async function info() {
         chainMatches: expected
             ? Number(network.chainId) === Number(expected)
             : true,
-        issuer: wallet.address,
-        balance: ethers.formatEther(balance),
+        issuer: wallet?.address ?? null,
+        balance: balance === null ? null : ethers.formatEther(balance),
         hasCode,
         owner,
-        isOwner: owner
+        isOwner: owner && wallet
             ? owner.toLowerCase() === wallet.address.toLowerCase()
             : null,
         issuerAuthorized,
         paused,
+        compatible,
         supportsPause: paused !== null,
     };
 }
@@ -154,12 +165,20 @@ async function setPaused(state) {
     assertWritesAllowed(network.chainId);
     const wallet = new ethers.Wallet(need("PRIVATE_KEY"), provider);
     const writer = new ethers.Contract(address, ABI, wallet);
+    if ((await writer.owner()) !== wallet.address || (await writer.paused()) === state) {
+        throw new Error("Owner or recording state changed.");
+    }
+    if (process.env.REGISTRY_MANAGED_CONFIG === "1") {
+        const request = await writer.setPaused.populateTransaction(state);
+        const signed = await wallet.signTransaction(await wallet.populateTransaction(request));
+        return {ok: true, signed, txHash: ethers.keccak256(signed)};
+    }
     const tx = await writer.setPaused(state);
     const receipt = await tx.wait(network.chainId === 1n ? 3 : 1);
 
     return {
         ok: true,
-        paused: state,
+        paused: await writer.paused({ blockTag: receipt.blockNumber }),
         txHash: receipt.hash,
         blockNumber: receipt.blockNumber,
         chainId: Number(network.chainId),
@@ -168,6 +187,22 @@ async function setPaused(state) {
 }
 
 async function run([command, uuid, hash, version, fieldsHash]) {
+    if (command === "deployment") {
+        const provider = new ethers.JsonRpcProvider(need("RPC_URL"));
+        const address = ethers.getAddress(need("REGISTRY_ADDRESS"));
+        await assertChain(provider, address);
+        const snapshot = await info();
+        const receipt = await provider.getTransactionReceipt(uuid);
+        const artifact = JSON.parse(readFileSync(new URL("../artifacts/contracts/PermitRegistry.sol/PermitRegistry.json", import.meta.url)));
+        if (!receipt || receipt.status !== 1 || receipt.to !== null || receipt.contractAddress !== address ||
+            await receipt.confirmations() < (snapshot.chainId === 1 ? 3 : 1) ||
+            (await provider.getCode(address)).toLowerCase() !== artifact.deployedBytecode.toLowerCase() ||
+            !snapshot.compatible || !snapshot.supportsPause || !snapshot.issuerAuthorized ||
+            snapshot.owner !== ethers.getAddress(hash)) {
+            throw new Error("Deployment evidence, registry interface, issuer authorization or owner did not match.");
+        }
+        return { ...snapshot, deployedAt: (await provider.getBlock(receipt.blockNumber)).timestamp };
+    }
     if (command === "info") {
         return info();
     }
@@ -177,7 +212,7 @@ async function run([command, uuid, hash, version, fieldsHash]) {
     }
 
     if (
-        !["issue", "issue-versioned", "revoke", "verify", "get", "get-versioned", "find-issuance-tx"].includes(
+        !["prepare-revoke", "submit-revocation", "prepare-issue", "prepare-versioned", "submit-signed", "issue", "issue-versioned", "revoke", "verify", "get", "get-versioned", "find-issuance-tx"].includes(
             command
         ) ||
         !uuid
@@ -240,6 +275,12 @@ async function run([command, uuid, hash, version, fieldsHash]) {
         const reader = new ethers.Contract(address, ABI, provider);
         const status = await reader.verify(documentId, toFileHash(hash));
 
+        if (network.chainId === 1n && Number(status) === 1) {
+            const blockTag = Math.max(0, await provider.getBlockNumber() - 2);
+            if (Number(await reader.verify(documentId, toFileHash(hash), {blockTag})) !== 1) {
+                throw new Error("Issuance is awaiting confirmations.");
+            }
+        }
         return { ok: true, status: STATUS[Number(status)] };
     }
 
@@ -247,6 +288,12 @@ async function run([command, uuid, hash, version, fieldsHash]) {
         const reader = new ethers.Contract(address, ABI, provider);
         try {
             const record = await reader.getVersionedRecord(documentId);
+            if (network.chainId === 1n && record.exists && record.revokedAt === 0n) {
+                const blockTag = Math.max(0, await provider.getBlockNumber() - 2);
+                if (!(await reader.getVersionedRecord(documentId, {blockTag})).exists) {
+                    throw new Error("Issuance is awaiting confirmations.");
+                }
+            }
             return {
                 ok: true,
                 exists: record.exists,
@@ -298,7 +345,49 @@ async function run([command, uuid, hash, version, fieldsHash]) {
     assertWritesAllowed(network.chainId);
     const wallet = new ethers.Wallet(need("PRIVATE_KEY"), provider);
     const writer = new ethers.Contract(address, ABI, wallet);
+    if (command === "prepare-versioned" || command === "prepare-issue") {
+        if ((await writer.owner()).toLowerCase() !== need("REGISTRY_OWNER").toLowerCase() ||
+            !(await writer.isIssuer(wallet.address))) throw new Error("Issuer or owner validation failed.");
+        if (await writer.paused()) throw new Error("ContractPaused");
+        await writer.getVersionedRecord(ethers.ZeroHash);
+    }
 
+    if (command === "submit-signed" || command === "submit-revocation") {
+        const signed = readFileSync(0, "utf8");
+        const parsed = ethers.Transaction.from(signed);
+        if (parsed.chainId !== network.chainId || parsed.to !== ethers.getAddress(address) ||
+            parsed.from !== wallet.address || parsed.hash !== uuid) {
+            throw new Error("Saved transaction does not match the configured signer or target.");
+        }
+        const method = writer.interface.parseTransaction({ data: parsed.data })?.name;
+        const allowed = command === "submit-revocation" ? ["revoke"] : ["issue", "issueVersioned", "setPaused"];
+        if (!allowed.includes(method) || parsed.value !== 0n) throw new Error("Unexpected signed operation.");
+        let receipt = await provider.getTransactionReceipt(uuid);
+        if (!receipt && !await provider.getTransaction(uuid)) {
+            const stableBlock = Math.max(0, await provider.getBlockNumber() - (network.chainId === 1n ? 2 : 0));
+            if (await provider.getTransactionCount(wallet.address, stableBlock) > parsed.nonce) {
+                return {ok: false, replaced: true, txHash: uuid, error: "Signed transaction nonce already consumed."};
+            }
+            await provider.broadcastTransaction(signed);
+        }
+        receipt = await provider.waitForTransaction(uuid, network.chainId === 1n ? 3 : 1, 60000);
+        if (!receipt) throw new Error("Transaction awaiting confirmation.");
+        return { ok: receipt.status === 1, reverted: receipt.status === 0, txHash: uuid,
+            error: receipt.status === 0 ? "Transaction reverted." : null, contract: address,
+            chainId: Number(network.chainId), paused: method === "setPaused" ? await writer.paused({blockTag: receipt.blockNumber}) : undefined };
+    }
+    if (command === "prepare-revoke") {
+        const request = await writer.revoke.populateTransaction(documentId);
+        const signed = await wallet.signTransaction(await wallet.populateTransaction(request));
+        return { ok: true, signed, txHash: ethers.keccak256(signed) };
+    }
+    if (command === "prepare-issue" || command === "prepare-versioned") {
+        const request = command === "prepare-versioned"
+            ? await writer.issueVersioned.populateTransaction(documentId, toFileHash(hash), version, toFileHash(fieldsHash))
+            : await writer.issue.populateTransaction(documentId, toFileHash(hash));
+        const signed = await wallet.signTransaction(await wallet.populateTransaction(request));
+        return { ok: true, signed, txHash: ethers.keccak256(signed) };
+    }
     let tx;
     if (command === "issue-versioned") {
         tx = await writer.issueVersioned(documentId, toFileHash(hash), version, toFileHash(fieldsHash));
@@ -340,7 +429,9 @@ run(args)
             {
                 ok: false,
                 error:
-                    error.revert?.name || (error.code ? "RPC request failed (" + error.code + ")" : error.message),
+                    error.revert?.name || (error.code ? "RPC request failed (" + error.code + ")" :
+                        /https?:\/\/|(?:0x)?[\da-f]{64}/i.test(String(error.message)) ?
+                            "Registry request failed." : String(error.message).slice(0, 250)),
             },
             1
         )

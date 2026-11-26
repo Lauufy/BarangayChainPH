@@ -96,16 +96,11 @@
                         </td>
 
                         <td>
-                            @if ($record->recorded_at && !$record->tx_hash)
+                            @php($state = $record->issuanceState())
+                            @if ($state === 'confirmed' && !$record->tx_hash)
                                 <x-tables.badge variant="warning">Hash recovery needed</x-tables.badge>
-                            @elseif ($record->revoked_at)
-                                <x-tables.badge variant="neutral">Revoked</x-tables.badge>
-                            @elseif ($record->recorded_at)
-                                <x-tables.badge variant="success">Confirmed</x-tables.badge>
-                            @elseif ($record->error)
-                                <x-tables.badge variant="danger">Failed</x-tables.badge>
                             @else
-                                <x-tables.badge variant="warning">Pending</x-tables.badge>
+                                <x-tables.badge :variant="match ($state) { 'confirmed' => 'success', 'failed' => 'danger', 'revoked' => 'neutral', default => 'warning' }">{{ ucfirst($state) }}</x-tables.badge>
                             @endif
                         </td>
 

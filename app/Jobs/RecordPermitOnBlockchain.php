@@ -6,14 +6,16 @@ use App\Models\BlockchainRecord;
 use App\Models\IssuedDocument;
 use App\Services\BlockchainRegistry;
 use App\Services\PermitFields;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 use Throwable;
 
 /** Writes an issued permit's ID and SHA-256 hash to the blockchain. */
-class RecordPermitOnBlockchain implements ShouldQueue
+class RecordPermitOnBlockchain implements ShouldBeUnique, ShouldQueue
 {
     use Queueable;
 
@@ -26,7 +28,19 @@ class RecordPermitOnBlockchain implements ShouldQueue
     // We pass only the row's ID. The job loads fresh data when it runs.
     public function __construct(public int $issuedDocumentId) {}
 
+    public int $uniqueFor = 900;
+
+    public function uniqueId(): string
+    {
+        return (string) $this->issuedDocumentId;
+    }
+
     public function handle(BlockchainRegistry $registry): void
+    {
+        Cache::lock('permit-issuance:'.$this->issuedDocumentId, 300)->get(fn () => $this->record($registry));
+    }
+
+    private function record(BlockchainRegistry $registry): void
     {
         $document = IssuedDocument::with('blockchainRecord')->find($this->issuedDocumentId);
 
@@ -43,7 +57,7 @@ class RecordPermitOnBlockchain implements ShouldQueue
         // even though its answer never reached us.
         $record = $document->blockchainRecord;
         $network = $record?->anchorNetwork();
-        $contract = $record?->contract ?? ($network
+        $contract = $record?->contract ?: ($network
             ? config('blockchain.networks.'.$network.'.contract')
             : config('blockchain.contract'));
         $target = $record ? [$contract, $network] : [];
@@ -87,6 +101,7 @@ class RecordPermitOnBlockchain implements ShouldQueue
         if (($existing['status'] ?? null) === 'valid') {
             $values = [
                 'contract' => $contract,
+                'signed_transaction' => null,
                 'recorded_at' => $document->blockchainRecord?->recorded_at ?? now(),
             ];
 
@@ -158,6 +173,7 @@ class RecordPermitOnBlockchain implements ShouldQueue
             'contract' => $result['contract'] ?? $contract,
             'tx_hash' => $result['txHash'],
             'recorded_at' => now(),
+            'signed_transaction' => null,
         ]);
 
         if ($document->fresh()->revoked_at) {
@@ -181,7 +197,7 @@ class RecordPermitOnBlockchain implements ShouldQueue
         if (IssuedDocument::whereKey($this->issuedDocumentId)->exists()) {
             BlockchainRecord::updateOrCreate(
                 ['issued_document_id' => $this->issuedDocumentId],
-                ['error' => mb_substr($e->getMessage(), 0, 1000)]
+                ['error' => $e instanceof RuntimeException && ! str_contains($e->getMessage(), '://') ? mb_substr($e->getMessage(), 0, 500) : 'Blockchain processing failed. Check the worker and RPC connection.']
             );
         }
     }

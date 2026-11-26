@@ -190,7 +190,7 @@ class PermitController extends Controller
             $this->notify($approved, new ServiceRequestApproved($approved));
 
             $approved->ticket?->postSystemMessage(
-                'Your request was approved. Your authenticated PDF is now available on the Documents page.',
+                'Your request was approved. Your PDF will be available on the Documents page after blockchain confirmation.',
                 close: true
             );
         }
@@ -242,14 +242,34 @@ class PermitController extends Controller
             ->first();
 
         if (! $document) {
+            app(AuditLogger::class)->log('contract_operation_failed', $serviceRequest, newValues: [
+                'operation' => 'retry', 'network' => config('blockchain.network'), 'contract' => config('blockchain.contract'),
+                'result' => 'No eligible document.',
+            ]);
+
             return $this->back($serviceRequest, 'error', 'This permit is already recorded on the blockchain, or has no active document.');
         }
 
-        $this->recordOnBlockchain($document);
+        app(AuditLogger::class)->log('permit_blockchain_retry', $document, newValues: [
+            'network' => $document->blockchainRecord?->anchorNetwork() ?? config('blockchain.network'),
+            'contract' => $document->blockchainRecord?->contract ?? config('blockchain.contract'),
+            'transaction' => $document->blockchainRecord?->tx_hash, 'result' => 'requested',
+        ]);
+        $dispatched = $this->recordOnBlockchain($document);
+        if (! $dispatched) {
+            $record = $document->fresh()->blockchainRecord;
+            app(AuditLogger::class)->log('contract_operation_failed', $document, newValues: [
+                'operation' => 'retry', 'network' => $record?->anchorNetwork() ?? config('blockchain.network'),
+                'contract' => $record?->contract ?? config('blockchain.contract'), 'transaction' => $record?->tx_hash,
+                'result' => 'Dispatch or processing failed.',
+            ]);
+
+            return $this->back($serviceRequest, 'error', 'Recording could not be completed. Check the transaction status.');
+        }
 
         // With a real queue the job has not run yet, so we cannot know the result
         if (config('queue.default') !== 'sync') {
-            return $this->back($serviceRequest, 'success', 'The recording was queued. Refresh this page in a moment to see the result.');
+            return $this->back($serviceRequest, 'registry_notice', 'Recording requested. Refresh this page to see the result.');
         }
 
         $record = $document->fresh()->blockchainRecord;
@@ -397,10 +417,10 @@ class PermitController extends Controller
     }
 
     // Record a pending or known paused result before queuing the blockchain write.
-    private function recordOnBlockchain(IssuedDocument $document, bool $contractIsPaused = false): void
+    private function recordOnBlockchain(IssuedDocument $document, bool $contractIsPaused = false): bool
     {
         try {
-            $record = BlockchainRecord::firstOrCreate(
+            BlockchainRecord::firstOrCreate(
                 ['issued_document_id' => $document->id],
                 [
                     'network' => config('blockchain.network'),
@@ -408,22 +428,26 @@ class PermitController extends Controller
                     'error' => $contractIsPaused ? 'Blockchain issue failed: ContractPaused' : null,
                 ]
             );
-            $record->update(['error' => $contractIsPaused ? 'Blockchain issue failed: ContractPaused' : null]);
+
         } catch (Throwable $e) {
             report($e);
 
-            return;
+            return false;
         }
 
         if ($contractIsPaused) {
-            return;
+            return false;
         }
 
         try {
             RecordPermitOnBlockchain::dispatch($document->id)->afterCommit();
         } catch (Throwable $e) {
             report($e);
+
+            return false;
         }
+
+        return true;
     }
 
     private function revokeOnBlockchain(IssuedDocument $document): void

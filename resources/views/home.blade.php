@@ -66,7 +66,7 @@
                             to Dashboard</a>
                     @else
                         <a href="{{ route('login') }}"
-                            class="focus-visible:outline-(--blue-700) dark:focus-visible:outline-(--celadon-500) max-xl:hover:bg-(--blue-700)/10 relative rounded-sm px-3 py-3 text-center text-sm font-semibold transition-colors focus-visible:outline-2 dark:max-xl:hover:bg-white/10">
+                            class="bg-(--blue-700) text-(--off-white) hover:bg-(--celadon-500) hover:text-(--blue-850) dark:bg-(--celadon-500) dark:text-(--blue-850) focus-visible:outline-(--blue-700) dark:focus-visible:outline-(--celadon-500) flex items-center justify-center rounded-sm px-5 py-3 text-sm font-semibold transition hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 motion-reduce:hover:translate-y-0 dark:hover:bg-white">
                             Sign in
                         </a>
                         <a href="{{ route('register') }}"

@@ -1,281 +1,181 @@
 @extends('layouts.admin')
-
 @section('title', 'Smart Contract Management')
-
 @section('content')
-    <div class="admin-module space-y-5">
-        {{-- Show contract health and provide processing control and ledger navigation. --}}
-        <x-admin.page-header title="Smart Contract Management"
-            text="Monitor the permit registry contract and its health.">
-            @if ($isAdmin && $reachable && $supportsPause && $isOwner)
-                <form method="POST" action="{{ route('admin.smart-contracts.pause') }}" class="inline-flex"
-                    data-confirm-label="{{ $isPaused ? 'Resume recording' : 'Pause recording' }}"
-                    data-confirm-text="{{ $isPaused ? 'Resume recording new permits on the blockchain?' : 'Pause recording of new permits on the blockchain? Approvals still work, but new permits will not be recorded until you resume.' }}"
-                    onsubmit="event.preventDefault(); var form = this; tConfirmation({ title: 'Confirm processing change', text: form.dataset.confirmText, confirmLabel: form.dataset.confirmLabel }).then(function (ok) { if (ok) form.submit(); }); return false;">
-                    @csrf
-                    <input type="hidden" name="paused" value="{{ $isPaused ? 0 : 1 }}">
-                    <button type="submit"
-                        class="{{ $isPaused ? 'bg-amber-600/60 hover:bg-amber-700' : 'bg-red-700/60 hover:bg-red-800' }} inline-flex min-h-11 items-center rounded-lg px-4 text-sm font-semibold text-white">
-                        {{ $isPaused ? 'Resume processing' : 'Pause processing' }}
-                    </button>
-                </form>
-            @endif
-
-            <a href="{{ url('/admin/blockchain-ledger') }}"
-                class="inline-flex min-h-11 items-center rounded-lg bg-(--blue-50) px-4 text-sm font-semibold text-(--blue-700) hover:bg-(--blue-100) dark:bg-(--blue-800) dark:text-(--white)">
-                View ledger
-            </a>
-
-            @if ($isAdmin)
-                <button type="button" data-open-deployment-modal aria-haspopup="dialog"
-                    title="Register a new deployment"
-                    class="inline-flex min-h-11 items-center gap-2 rounded-lg bg-(--blue-600) px-4 text-sm font-semibold text-(--white) hover:bg-(--blue-700)">
-                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M5 12h14" />
-                        <path d="M12 5v14" />
-                    </svg>
-                    Add
-                </button>
-            @endif
+    @php
+        $section = 'border-t border-slate-200 pt-5 dark:border-slate-700';
+        $button =
+            'inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 px-4 text-sm font-semibold hover:bg-slate-100 disabled:opacity-50 dark:border-slate-600 dark:hover:bg-slate-800';
+        $heading = 'mb-4 text-lg font-semibold';
+        $address = $info['contract'] ?? config('blockchain.contract');
+        $address = preg_match('/^0x[0-9a-f]{40}$/iD', $address ?? '') ? $address : null;
+        $explorer = fn($net) => config('blockchain.networks.' . ($net === 'live' ? 'sepolia' : $net) . '.explorer_url');
+        $link = fn($net, $kind, $value) => $explorer($net) &&
+        preg_match($kind === 'tx' ? '/^0x[0-9a-f]{64}$/iD' : '/^0x[0-9a-f]{40}$/iD', $value ?? '')
+            ? rtrim($explorer($net), '/') . '/' . $kind . '/' . $value
+            : null;
+        $paused = $info['paused'] ?? null;
+        $pendingControl = $active?->pending_control['paused'] ?? null;
+        $requestPause = $pendingControl ?? !$paused;
+    @endphp
+    <div class="admin-module space-y-7 text-slate-900 dark:text-slate-100">
+        <x-admin.page-header title="Smart Contract Management" text="Manage permit recording and inspect deployment history.">
+            <form method="GET" action="{{ route('admin.smart-contracts.index') }}"
+                onsubmit="this.querySelector('button').textContent='Refreshing…'">
+                <input type="hidden" name="refresh" value="1">
+                <button class="{{ $button }}">Refresh blockchain status</button>
+            </form>
         </x-admin.page-header>
 
-        {{-- Surface connectivity, deployment, and processing warnings. --}}
-        @if (!$reachable)
-            <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-                The blockchain could not be reached. Check the RPC URL, issuer key, and BLOCKCHAIN_NODE_PATH.
-            </div>
-        @else
-            @if (!$chainOk)
-                <div class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-                    Connected to the wrong network. Check BLOCKCHAIN_NETWORK and the RPC URL for that network.
-                </div>
-            @endif
-            @if (!$hasCode)
-                <div class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-                    No contract was found at this address on this network. Check the contract address and RPC URL for the active network.
-                </div>
-            @endif
-            @if ($mismatch)
-                <div class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-                    The active deployment recorded below ({{ $short($active->contract_address) }}) is not the contract the
-                    system
-                    is using ({{ $short($info['contract']) }}). Check the registered deployment and the contract address for the active network, then run
-                    <span class="font-mono">php artisan config:clear</span>.
-                </div>
-            @endif
-            @if ($isPaused)
-                <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-                    <b>Recording of new permits is paused.</b> Approvals and PDFs still work, but new fingerprints are not
-                    written to the blockchain until an admin resumes processing. Revoking and QR verification are not
-                    affected.
-                </div>
-            @endif
+        @if (session('registry_notice'))
+            <p role="status">{{ session('registry_notice') }}</p>
         @endif
-
-        {{-- Show contract, network, issuer-wallet, and processing status at a glance. --}}
-        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <div class="{{ $card }}">
-                <p class="text-xs text-slate-500">Permit contract</p>
-                <p class="my-2 text-xl font-bold text-slate-900 dark:text-slate-300">
-                    PermitRegistry{{ $active ? ' v' . $active->version : '' }}
-                </p>
-                @if (!$reachable)
-                    <x-tables.badge variant="danger">Unreachable</x-tables.badge>
-                @elseif (!$hasCode)
-                    <x-tables.badge variant="danger">Not found</x-tables.badge>
-                @elseif ($isPaused)
-                    <x-tables.badge variant="warning">Paused</x-tables.badge>
-                @else
-                    <x-tables.badge variant="success">Active</x-tables.badge>
-                @endif
-            </div>
-
-            <div class="{{ $card }}">
-                <p class="text-xs text-slate-500">Network</p>
-                <p class="my-2 text-xl font-bold capitalize text-slate-900 dark:text-slate-300">
-                    {{ $networkName ?? 'Unknown' }}
-                </p>
-                @if (!$reachable)
-                    <x-tables.badge variant="warning">Unknown</x-tables.badge>
-                @elseif ($chainOk)
-                    <x-tables.badge variant="success">Connected, chain {{ $info['chainId'] }}</x-tables.badge>
-                @else
-                    <x-tables.badge variant="danger">Wrong network</x-tables.badge>
-                @endif
-            </div>
-
-            <div class="{{ $card }}">
-                <p class="text-xs text-slate-500">Issuer wallet gas balance</p>
-                <p class="my-2 text-xl font-bold text-slate-900 dark:text-slate-300">
-                    {{ $balance !== null ? number_format($balance, 4) : 'N/A' }}
-                </p>
-                @if ($balance === null)
-                    <x-tables.badge>No data</x-tables.badge>
-                @elseif ($balance < 0.01)
-                    <x-tables.badge variant="warning">Low balance</x-tables.badge>
-                @else
-                    <x-tables.badge variant="success">Sufficient</x-tables.badge>
-                @endif
-            </div>
-
-            <div class="{{ $card }}">
-                <p class="text-xs text-slate-500">Processing control</p>
-                <p class="my-2 text-xl font-bold text-slate-900 dark:text-slate-300">
-                    @if (!$reachable)
-                        Unknown
-                    @elseif (!$supportsPause)
-                        Unavailable
-                    @elseif ($isPaused)
-                        Paused
-                    @else
-                        Running
-                    @endif
-                </p>
-                @if (!$reachable)
-                    <x-tables.badge variant="warning">Blockchain unreachable</x-tables.badge>
-                @elseif (!$supportsPause)
-                    <x-tables.badge variant="warning">No pause function</x-tables.badge>
-                @elseif (!$isOwner)
-                    <x-tables.badge>Read only, wallet is not owner</x-tables.badge>
-                @elseif ($isPaused)
-                    <x-tables.badge variant="warning">New recordings on hold</x-tables.badge>
-                @else
-                    <x-tables.badge variant="success">Accepting new recordings</x-tables.badge>
-                @endif
-            </div>
-        </div>
-
-        {{-- List registered contract deployments and their current status. --}}
-        <x-tables.card title="Deployed contracts" description="The rulebooks that live on the blockchain." :searchable="false"
-            :per-page-options="[]">
-            <x-slot:toolbar>
-                <x-tables.toolbar key="contract-deployments" :search="true" search-placeholder="Search deployments..."
-                    class="gap-0! pb-0! sm:pb-0! justify-end" />
-            </x-slot:toolbar>
-
-            <x-tables.table :heads="['Contract', 'Purpose', 'Address', 'Version', 'Status']">
-                @forelse ($deployments as $d)
-                    <tr>
-                        <td>PermitRegistry</td>
-                        <td>
-                            Permit hashes, status, history
-                            @if ($d->notes)
-                                <span class="block text-xs text-slate-500">{{ $d->notes }}</span>
-                            @endif
-                        </td>
-                        <td class="font-mono text-xs">
-                            @if ($deploymentExplorer = config('blockchain.networks.'.($d->network === 'live' ? 'sepolia' : $d->network).'.explorer_url'))
-                                <a class="text-blue-700 underline" target="_blank" rel="noopener"
-                                    href="{{ rtrim($deploymentExplorer, '/') }}/address/{{ $d->contract_address }}">{{ $short($d->contract_address) }}</a>
-                            @else
-                                {{ $short($d->contract_address) }}
-                            @endif
-                        </td>
-                        <td>{{ $d->version }}</td>
-                        <td>
-                            <x-tables.badge :variant="$d->is_active ? 'success' : 'neutral'">
-                                {{ $d->is_active ? 'Active' : 'Retired' }}
-                            </x-tables.badge>
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td>PermitRegistry</td>
-                        <td>Permit hashes, status, history</td>
-                        <td class="font-mono text-xs">{{ $short($info['contract'] ?? null) }}</td>
-                        <td>N/A</td>
-                        <td>
-                            <x-tables.badge :variant="$hasCode ? 'success' : 'neutral'">
-                                {{ $hasCode ? 'Active' : 'Unknown' }}
-                            </x-tables.badge>
-                        </td>
-                    </tr>
-                @endforelse
-            </x-tables.table>
-        </x-tables.card>
-
-        {{-- List permit-review officials and provide permission management to administrators. --}}
-        <x-tables.card title="Authorized officials" :description="'Staff who can approve permits. Every on-chain action is signed by the system issuer wallet (' .
-            $short($info['issuer'] ?? null) .
-            ').'" :searchable="false" :per-page-options="[]">
-            <x-slot:toolbar>
-                <x-tables.toolbar key="authorized-officials" :search="true" search-placeholder="Search officials..."
-                    class="gap-0! pb-0! sm:pb-0! justify-end" />
-            </x-slot:toolbar>
-
-            <x-tables.table :heads="$isAdmin
-                ? ['Name', 'Role', 'Email', 'Can do', ['label' => 'Action', 'align' => 'center']]
-                : ['Name', 'Role', 'Email', 'Can do']" :empty="$officials->isEmpty()" message="No officials found."
-                hint="No staff currently have permit review access.">
-                @foreach ($officials as $official)
-                    <tr>
-                        <td><x-tables.user-cell :name="$official->name" /></td>
-                        <td>
-                            <x-tables.badge :variant="$official->role === 'admin' ? 'info' : 'neutral'">
-                                {{ ucfirst($official->role) }}
-                            </x-tables.badge>
-                        </td>
-                        <td>{{ $official->email ?? 'N/A' }}</td>
-                        <td>Approve, Reject, Reissue</td>
-                        @if ($isAdmin)
-                            <td class="text-center">
-                                @if ($official->role === 'staff')
-                                    <x-tables.action label="Manage" icon="shield" :href="url('/admin/users/' . $official->id . '/permissions')" />
-                                @else
-                                    <span class="text-slate-500 dark:text-slate-400">N/A</span>
-                                @endif
-                            </td>
-                        @endif
-                    </tr>
+        @if ($problem)
+            <p role="alert"
+                class="rounded-lg border border-amber-400 bg-amber-50 p-4 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100">
+                {{ $problem }}</p>
+        @endif
+        <section class="{{ $section }}">
+            <h2 class="{{ $heading }}">Blockchain Overview</h2>
+            <dl class="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
+                @foreach (['Network' => ucfirst($network), 'RPC connection' => $info ? 'Connected' : 'Unavailable', 'Observed chain ID' => $info['chainId'] ?? 'Unknown', 'Last status check' => $info['checkedAt'] ?? 'Unavailable'] as $label => $value)
+                    <div>
+                        <dt class="text-slate-500 dark:text-slate-400">{{ $label }}</dt>
+                        <dd class="mt-1 font-medium">{{ $value }}</dd>
+                    </div>
                 @endforeach
-            </x-tables.table>
-        </x-tables.card>
-
-        {{-- Show recent blockchain actions with status, timestamps, and transaction hashes. --}}
-        <x-tables.card title="Contract activity log" description="Latest actions recorded by the system." :searchable="false"
-            :per-page-options="[]">
-            <x-slot:toolbar>
-                <x-tables.toolbar key="contract-activity" :search="true" search-placeholder="Search activity..."
-                    class="gap-0! pb-0! sm:pb-0! justify-end" />
-            </x-slot:toolbar>
-
-            <x-tables.table :heads="['Time', 'Function called', 'Document no.', 'Result', 'Transaction hash']" :empty="$recent->isEmpty()" message="No blockchain activity yet.">
-                @foreach ($recent as [$record, $isRevoked, $isRecorded, $time, $tx])
-                    <tr>
-                        <td class="whitespace-nowrap">
-                            {{ $time?->timezone(config('app.timezone'))->format('M j, Y g:i A') }}
-                        </td>
-                        <td class="font-mono text-xs">{{ $isRevoked ? 'revoke()' : 'issue()' }}</td>
-                        <td class="font-mono text-xs">{{ $record->issuedDocument?->document_number ?? 'N/A' }}</td>
-                        <td>
-                            @if ($record->error && !$isRecorded)
-                                <x-tables.badge variant="danger">Failed</x-tables.badge>
-                                <p class="mt-1 break-all text-xs text-red-700">{{ $record->error }}</p>
-                            @elseif ($isRecorded)
-                                <x-tables.badge :variant="$isRevoked ? 'neutral' : 'success'">
-                                    {{ $isRevoked ? 'Revoked' : 'Recorded' }}
-                                </x-tables.badge>
+            </dl>
+        </section>
+        <section class="{{ $section }}">
+            <h2 class="{{ $heading }}">Active Smart Contract Details</h2>
+            <dl class="grid gap-x-8 gap-y-4 text-sm md:grid-cols-2">
+                @foreach (['Registry' => $active ? 'PermitRegistry · ' . $active->version : 'Awaiting synchronization', 'Last deployment synchronization' => $active?->synced_at ?? 'Unavailable', 'Configured contract' => $address, 'Contract owner' => $info['owner'] ?? null, 'System issuer wallet' => $info['issuer'] ?? null, 'Issuer balance' => isset($info['balance']) ? $info['balance'] . ' ETH' : null, 'Issuer authorization' => isset($info['issuerAuthorized']) ? ($info['issuerAuthorized'] ? 'Authorized' : 'Unauthorized') : null, 'Recording state' => is_bool($paused) && !$problem ? ($paused ? 'Paused' : 'Enabled') : null] as $label => $value)
+                    <div>
+                        <dt class="text-slate-500 dark:text-slate-400">{{ $label }}</dt>
+                        <dd class="mt-1 break-all">
+                            @if ($url = $link($network, 'address', (string) $value))
+                                <a class="font-mono underline" href="{{ $url }}">{{ $value }}</a>
                             @else
-                                <x-tables.badge variant="warning">Pending</x-tables.badge>
+                                {{ $value ?? 'Unknown' }}
                             @endif
-                        </td>
-                        <td class="font-mono text-xs">
-                            @if ($transactionUrl = $record->transactionUrl($tx))
-                                <a class="text-blue-700 underline" target="_blank" rel="noopener"
-                                    href="{{ $transactionUrl }}">{{ $short($tx) }}</a>
-                            @else
-                                {{ $short($tx) }}
-                            @endif
-                        </td>
-                    </tr>
+                        </dd>
+                    </div>
                 @endforeach
-            </x-tables.table>
-        </x-tables.card>
+            </dl>
+        </section>
+        <section class="{{ $section }}">
+            <h2 class="{{ $heading }}">Operational Controls</h2>
+            @if ($isAdmin)
+                <div class="flex flex-wrap gap-3">
+                    @foreach (['pause' => isset($pendingControl) ? 'Recover ' . ($requestPause ? 'pause' : 'resume') . ' confirmation' : ($requestPause ? 'Pause blockchain recording' : 'Resume blockchain recording'), 'retry' => 'Retry failed transactions', 'recover' => 'Recover pending transactions'] as $operation => $label)
+                        <form method="POST"
+                            action="{{ $operation === 'pause' ? route('admin.smart-contracts.pause') : route('admin.smart-contracts.recovery', $operation) }}"
+                            data-confirm-label="{{ $label }}"
+                            onsubmit="event.preventDefault(); const form=this; tConfirmation({ title: form.dataset.confirmLabel, text: form.dataset.message, confirmLabel: 'Confirm' }).then(ok => { if(ok){ form.querySelector('button').disabled=true; form.querySelector('button').textContent='Processing…'; form.submit(); } });"
+                            data-message="{{ $operation === 'pause' ? (!$requestPause ? 'Resume issuance and queue permits held during the pause?' : 'Pause new issuance? Existing permits can still be verified and revoked.') : 'Reconcile eligible permits with the registry and retry unconfirmed issuance?' }}">
+                            @csrf
+                            @if ($operation === 'pause')
+                                <input type="hidden" name="paused" value="{{ $requestPause ? 1 : 0 }}">
+                            @endif
+                            <button class="{{ $button }}" @disabled(
+                                $problem ||
+                                    ($operation === 'pause' ? empty($info['isOwner']) : (empty($info['issuerAuthorized']) && empty($info['isOwner']))))>{{ $label }}</button>
+                        </form>
+                    @endforeach
+                </div>
+                @if (!$problem && empty($info['isOwner']))
+                    <p class="mt-2 text-sm">The contract owner controls pause and resume.</p>
+                @endif
+            @else
+                <p class="text-sm">Your role has monitoring access.</p>
+            @endif
+            @if (auth()->user()->hasPermission('audit.view'))
+                <a class="mt-3 inline-block text-sm underline" href="{{ route('admin.audit-logs.index', ['action' => 'registry_operations']) }}">View audit
+                    logs</a>
+            @endif
+        </section>
+        <section class="{{ $section }}">
+            <h2 class="{{ $heading }}">Contract Deployment History</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead>
+                        <tr>
+                            @foreach (['Version', 'Network', 'Contract', 'Creation transaction', 'Deployed'] as $col)
+                                <th class="p-2">{{ $col }}</th>
+                            @endforeach
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($deployments as $row)
+                            <tr class="border-t border-slate-200 dark:border-slate-700">
+                                <td class="p-2">{{ $row->version }}</td>
+                                <td class="p-2">{{ $row->network }}</td>
+                                @foreach (['address' => $row->contract_address, 'tx' => $row->deploy_tx_hash] as $kind => $value)
+                                    <td class="p-2 font-mono">
+                                        @if ($url = $link($row->network, $kind, $value))
+                                            <a class="underline" title="{{ $value }}"
+                                                href="{{ $url }}">{{ substr($value, 0, 8) }}…{{ substr($value, -6) }}</a>
+                                        @else
+                                            {{ $value ?? 'Unavailable' }}
+                                        @endif
+                                    </td>
+                                @endforeach
+                                <td class="p-2">{{ $row->deployed_at?->toDateString() ?? 'Unknown' }}</td>
+                            </tr>
+                        @empty <tr>
+                                <td class="p-3" colspan="5">No deployments recorded.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>{{ $deployments->links() }}
+        </section>
+        <section class="{{ $section }}">
+            <h2 class="{{ $heading }}">Blockchain Transaction Management</h2>
+            <form method="GET" class="mb-4 flex flex-wrap items-end gap-3">
+                <label class="grid gap-1 text-sm">Permit number or transaction hash<input name="q" maxlength="100"
+                        value="{{ request('q') }}" class="rounded border border-slate-400 bg-transparent p-2"></label>
+                <label class="grid gap-1 text-sm">Recording state<select name="state"
+                        class="rounded border border-slate-400 bg-white p-2 dark:bg-slate-900">
+                        <option value="">All states</option>
+                        @foreach (['pending', 'submitted', 'confirmed', 'failed', 'paused', 'revoked'] as $state)
+                            <option @selected(request('state') === $state) value="{{ $state }}">{{ ucfirst($state) }}
+                            </option>
+                        @endforeach
+                    </select></label><button class="{{ $button }}">Filter</button>
+            </form>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead>
+                        <tr>
+                            @foreach (['Permit', 'State', 'Network', 'Transaction', 'Last update'] as $col)
+                                <th class="p-2">{{ $col }}</th>
+                            @endforeach
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($transactions as $record)
+                            @php($hash = $record->revoke_tx_hash ?? $record->tx_hash)
+                            <tr class="border-t border-slate-200 dark:border-slate-700">
+                                <td class="p-2">{{ $record->issuedDocument?->document_number }}</td>
+                                <td class="p-2">{{ ucfirst($record->issuanceState()) }} @if ($message = $record->operationMessage())<small class="block">{{ $message }}</small>@endif</td>
+                                <td class="p-2">{{ $record->anchorNetwork() }}</td>
+                                <td class="p-2">
+                                    @if ($url = $link($record->anchorNetwork(), 'tx', $hash))
+                                        <a class="font-mono underline" href="{{ $url }}"
+                                            title="{{ $hash }}">{{ substr($hash, 0, 8) }}…{{ substr($hash, -6) }}</a>
+                                    @else
+                                        Unavailable
+                                    @endif
+                                </td>
+                                <td class="p-2">{{ $record->updated_at }}</td>
+                            </tr>
+                        @empty <tr>
+                                <td class="p-3" colspan="5">No matching transactions.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>{{ $transactions->links() }}
+        </section>
     </div>
-
-    {{-- Register-deployment modal, opened by the "Add" button in the header. --}}
-    @if ($isAdmin)
-        @include('admin.smart-contracts.deployment')
-    @endif
 @endsection

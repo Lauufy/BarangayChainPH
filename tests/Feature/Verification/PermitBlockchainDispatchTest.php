@@ -167,8 +167,8 @@ class PermitBlockchainDispatchTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.smart-contracts.index'))
             ->assertOk()
-            ->assertSee('Failed')
-            ->assertSee('ContractPaused');
+            ->assertSee('Paused')
+            ->assertSee($record->issuedDocument->document_number);
     }
 
     public function test_approving_without_an_expiry_date_is_rejected(): void

@@ -4,6 +4,9 @@ return [
     // Any field whose name matches one of these is saved as [redacted] in the audit log.
     'redacted_fields' => [
         // Secrets and login data
+        'pending_control',
+        'signed_transaction',
+        'signed_revocation',
         '*password*',
         '*remember_token*',
         '*token*',

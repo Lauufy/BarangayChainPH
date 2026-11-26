@@ -43,13 +43,8 @@ class BlockchainLedgerExport implements AdminExport
         }
 
         $document = $model->issuedDocument;
-        $status = match (true) {
-            $model->recorded_at !== null && $model->tx_hash === null => 'Hash recovery needed',
-            $model->revoked_at !== null => 'Revoked',
-            $model->recorded_at !== null => 'Confirmed',
-            $model->error !== null => 'Failed',
-            default => 'Pending',
-        };
+        $status = $model->issuanceState() === 'confirmed' && ! $model->tx_hash
+            ? 'Hash recovery needed' : ucfirst($model->issuanceState());
 
         return [
             $document?->document_number.' v'.$document?->version,

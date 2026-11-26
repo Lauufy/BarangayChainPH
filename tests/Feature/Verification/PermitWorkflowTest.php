@@ -126,6 +126,10 @@ class PermitWorkflowTest extends TestCase
         );
 
         $this->assertStringContainsString('/Subtype /Image', $pdfContent);
+        $this->actingAs($user)->get(route('citizen.applications.print', $application))->assertStatus(423);
+        $this->assertSame(0, $application->fresh()->print_count);
+        $document->blockchainRecord()->create(['recorded_at' => now(), 'tx_hash' => '0x'.str_repeat('a', 64)]);
+        $this->get(route('citizen.applications.print', $application))->assertOk();
         $this->assertNotNull($document->qr_code_generated_at);
         $this->assertNull($document->revoked_at);
     }

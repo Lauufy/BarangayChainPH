@@ -17,11 +17,18 @@ class PermitBlockchainRetryTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_permit_review_permission_cannot_retry_a_transaction(): void
+    {
+        [, $application] = $this->makeApprovedApplication();
+        $staff = User::factory()->create(['role' => 'staff', 'permissions' => ['permits.review']]);
+        $this->actingAs($staff)->post(route('admin.permits.blockchain-retry', $application))->assertForbidden();
+    }
+
     public function test_retry_records_a_permit_that_is_not_recorded_yet(): void
     {
-        [$staff, $application] = $this->makeApprovedApplication();
+        [$admin, $application] = $this->makeApprovedApplication();
 
-        $this->actingAs($staff)
+        $this->actingAs($admin)
             ->post(route('admin.permits.blockchain-retry', $application))
             ->assertRedirect(route('admin.permits.show', $application))
             ->assertSessionHas('success');
@@ -33,7 +40,7 @@ class PermitBlockchainRetryTest extends TestCase
 
     public function test_retry_says_so_when_the_permit_is_already_recorded(): void
     {
-        [$staff, $application] = $this->makeApprovedApplication();
+        [$admin, $application] = $this->makeApprovedApplication();
 
         BlockchainRecord::create([
             'issued_document_id' => $application->issuedDocuments()->firstOrFail()->id,
@@ -41,14 +48,14 @@ class PermitBlockchainRetryTest extends TestCase
             'tx_hash' => '0xexisting',
         ]);
 
-        $this->actingAs($staff)
+        $this->actingAs($admin)
             ->post(route('admin.permits.blockchain-retry', $application))
             ->assertSessionHas('error');
     }
 
     public function test_admin_can_recover_a_sepolia_transaction_after_mainnet_cutover(): void
     {
-        [$staff, $application] = $this->makeApprovedApplication();
+        [$admin, $application] = $this->makeApprovedApplication();
         $document = $application->issuedDocuments()->firstOrFail();
         config(['blockchain.network' => 'mainnet', 'blockchain.contract' => '0xmainnet']);
         BlockchainRecord::create([
@@ -69,7 +76,7 @@ class PermitBlockchainRetryTest extends TestCase
             ->with($document->document_uuid, '0xsepolia', 'sepolia')
             ->andReturn(['ok' => true, 'found' => true, 'txHash' => '0xrecovered']);
 
-        $this->actingAs($staff)
+        $this->actingAs($admin)
             ->post(route('admin.permits.blockchain-retry', $application))
             ->assertSessionHas('success', 'The permit is now recorded on the blockchain.');
 
@@ -84,7 +91,7 @@ class PermitBlockchainRetryTest extends TestCase
 
     public function test_admin_is_told_when_transaction_hash_recovery_still_needs_backfill(): void
     {
-        [$staff, $application] = $this->makeApprovedApplication();
+        [$admin, $application] = $this->makeApprovedApplication();
         $document = $application->issuedDocuments()->firstOrFail();
         config(['blockchain.network' => 'mainnet', 'blockchain.contract' => '0xmainnet']);
         BlockchainRecord::create([
@@ -104,7 +111,7 @@ class PermitBlockchainRetryTest extends TestCase
             ->once()
             ->andReturn(['ok' => true, 'found' => false]);
 
-        $this->actingAs($staff)
+        $this->actingAs($admin)
             ->post(route('admin.permits.blockchain-retry', $application))
             ->assertSessionHas(
                 'error',
@@ -119,12 +126,12 @@ class PermitBlockchainRetryTest extends TestCase
 
     public function test_retry_reports_a_failure_when_the_blockchain_is_down(): void
     {
-        [$staff, $application] = $this->makeApprovedApplication();
+        [$admin, $application] = $this->makeApprovedApplication();
 
         $registry = $this->mock(BlockchainRegistry::class);
         $registry->shouldReceive('verify')->andReturn(['ok' => false, 'error' => 'RPC down']);
 
-        $this->actingAs($staff)
+        $this->actingAs($admin)
             ->post(route('admin.permits.blockchain-retry', $application))
             ->assertSessionHas('error');
 
@@ -134,8 +141,8 @@ class PermitBlockchainRetryTest extends TestCase
     /** @return array{0: User, 1: ServiceRequest} */
     private function makeApprovedApplication(): array
     {
-        $staff = User::factory()->create([
-            'role' => 'staff',
+        $admin = User::factory()->create([
+            'role' => 'admin',
             'permissions' => ['permits.review'],
         ]);
         $citizen = User::factory()->create(['role' => 'citizen']);
@@ -163,7 +170,7 @@ class PermitBlockchainRetryTest extends TestCase
             'issued_at' => now(),
         ]);
 
-        return [$staff, $application];
+        return [$admin, $application];
     }
 
     public function test_retry_says_queued_when_a_real_queue_is_used(): void
@@ -171,11 +178,11 @@ class PermitBlockchainRetryTest extends TestCase
         Queue::fake();
         config(['queue.default' => 'database']);
 
-        [$staff, $application] = $this->makeApprovedApplication();
+        [$admin, $application] = $this->makeApprovedApplication();
 
-        $this->actingAs($staff)
+        $this->actingAs($admin)
             ->post(route('admin.permits.blockchain-retry', $application))
-            ->assertSessionHas('success');
+            ->assertSessionHas('registry_notice');
 
         Queue::assertPushed(RecordPermitOnBlockchain::class);
     }

@@ -3,174 +3,161 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\RecordPermitOnBlockchain;
+use App\Jobs\RevokePermitOnBlockchain;
 use App\Models\BlockchainRecord;
 use App\Models\ContractDeployment;
-use App\Models\User;
 use App\Services\AuditLogger;
 use App\Services\BlockchainRegistry;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Throwable;
 
 class SmartContractController extends Controller
 {
-    public function index(Request $request, BlockchainRegistry $registry): View|RedirectResponse
+    public function index(Request $request, BlockchainRegistry $registry): View
     {
+        $filters = $request->validate(['q' => 'nullable|string|max:100', 'state' => 'nullable|in:pending,submitted,confirmed,failed,paused,revoked']);
         if ($request->boolean('refresh')) {
             Cache::forget('blockchain.info');
-
-            return redirect()->route('admin.smart-contracts.index');
         }
-
-        $deployments = ContractDeployment::latest('deployed_at')->get();
-
-        $officials = User::whereIn('role', ['admin', 'staff'])
-            ->orderBy('name')
-            ->get()
-            ->filter(fn (User $user) => $user->hasPermission('permits.review'))
-            ->values();
-
+        $active = ContractDeployment::active();
         $info = $registry->contractInfo();
-        $active = $deployments->firstWhere('is_active', true);
-        $recent = BlockchainRecord::with('issuedDocument')->latest('id')->take(8)->get()
-            ->map(function (BlockchainRecord $record): array {
-                $isRevoked = (bool) $record->revoked_at;
-                $isRecorded = (bool) $record->recorded_at;
+        $problem = $this->configurationError($active, $info);
+        $transactions = BlockchainRecord::with('issuedDocument')
+            ->when($filters['q'] ?? '', fn ($q, $term) => $q->where(fn ($rows) => $rows
+                ->whereLike('tx_hash', '%'.$term.'%')->orWhereLike('revoke_tx_hash', '%'.$term.'%')
+                ->orWhereHas('issuedDocument', fn ($docs) => $docs->whereLike('document_number', '%'.$term.'%'))))
+            ->when($filters['state'] ?? '', fn ($q, $state) => $q->whereRaw(BlockchainRecord::STATE_SQL.' = ?', [$state]))
+            ->latest('id')->paginate(15, ['*'], 'transactions')->withQueryString();
+        $deployments = ContractDeployment::latest('deployed_at')->paginate(8, ['*'], 'deployments')->withQueryString();
 
-                return [
-                    $record,
-                    $isRevoked,
-                    $isRecorded,
-                    $record->revoked_at ?? $record->recorded_at ?? $record->created_at,
-                    $isRevoked ? $record->revoke_tx_hash : $record->tx_hash,
-                ];
-            });
-
-        return view('admin.smart-contracts.index', [
-            'info' => $info,
-            'deployments' => $deployments,
-            'active' => $active,
-            'officials' => $officials,
-            'recent' => $recent,
-            'networkName' => config('blockchain.network'),
-            'isAdmin' => $request->user()->role === 'admin',
-            'reachable' => (bool) $info,
-            'hasCode' => $info['hasCode'] ?? false,
-            'chainOk' => $info['chainMatches'] ?? false,
-            'balance' => isset($info['balance']) ? (float) $info['balance'] : null,
-            'supportsPause' => $info['supportsPause'] ?? false,
-            'isPaused' => ($info['supportsPause'] ?? false) && ($info['paused'] ?? false) === true,
-            'isOwner' => ($info['isOwner'] ?? false) === true,
-            'mismatch' => $active && $info && ! empty($info['contract'])
-                && strcasecmp($active->contract_address, $info['contract']) !== 0,
-            'short' => fn (?string $value): string => $this->shortAddress($value),
-            'card' => 'rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900',
+        return view('admin.smart-contracts.index', compact('info', 'active', 'problem', 'transactions', 'deployments') + [
+            'network' => ContractDeployment::network(), 'isAdmin' => $request->user()->role === 'admin',
         ]);
     }
 
-    private function shortAddress(?string $value): string
-    {
-        return $value ? substr($value, 0, 6).'…'.substr($value, -4) : 'N/A';
-    }
-
-    // Pause or resume recording of NEW permits on the blockchain (admin only, owner wallet only).
     public function togglePause(Request $request, BlockchainRegistry $registry): RedirectResponse
     {
-        set_time_limit(120); // the transaction waits for a block
+        $request->validate(['paused' => 'required|boolean']);
 
-        $data = $request->validate(['paused' => ['required', 'boolean']]);
-        $pause = (bool) $data['paused'];
-
-        Cache::forget('blockchain.info');
-        $info = $registry->contractInfo();
-
-        if (! $info) {
-            return back()->with('error', 'The blockchain could not be reached. Nothing was changed.');
-        }
-
-        if (! ($info['supportsPause'] ?? false)) {
-            return back()->with('error', 'This contract version has no pause function. Deploy the newer version first.');
-        }
-
-        if (($info['isOwner'] ?? false) !== true) {
-            return back()->with('error', 'The system wallet is not the contract owner, so it cannot pause the contract.');
-        }
-
-        if (($info['paused'] ?? null) === $pause) {
-            return back()->with('success', 'The contract is already in that state.');
-        }
-
-        try {
-            $result = $registry->setPaused($pause);
-        } catch (Throwable $e) {
-            report($e);
-
-            return back()->with('error', 'The change could not be sent to the blockchain. Please try again.');
-        }
-
-        Cache::forget('blockchain.info');
-
-        if (($result['ok'] ?? false) !== true) {
-            return back()->with('error', 'The blockchain rejected the change: '.($result['error'] ?? 'unknown error'));
-        }
-
-        $subject = ContractDeployment::where('is_active', true)->first() ?? $request->user();
-
-        app(AuditLogger::class)->log(
-            $pause ? 'contract_paused' : 'contract_resumed',
-            $subject,
-            note: ($pause ? 'Paused' : 'Resumed').' new permit recording. Transaction '.($result['txHash'] ?? 'unknown').'.'
-        );
-
-        return back()->with(
-            'success',
-            $pause
-                ? 'Recording of new permits is paused. Revoking and verification still work.'
-                : 'Recording of new permits is resumed. Retry any permits that failed while paused.'
-        );
+        return $this->operate($registry, $request->boolean('paused') ? 'pause' : 'resume');
     }
 
-    // Records a contract version you deployed with Hardhat. It never touches the blockchain.
-    public function storeDeployment(Request $request): RedirectResponse
+    public function recover(string $operation, BlockchainRegistry $registry): RedirectResponse
     {
-        $data = $request->validate([
-            'version' => ['required', 'string', 'max:20'],
-            'network' => ['required', 'string', 'max:40'],
-            'contract_address' => ['required', 'regex:/^0x[a-fA-F0-9]{40}$/', 'unique:contract_deployments,contract_address'],
-            'deploy_tx_hash' => ['nullable', 'regex:/^0x[a-fA-F0-9]{64}$/'],
-            'deployed_at' => ['nullable', 'date', 'before_or_equal:today'],
-            'notes' => ['nullable', 'string', 'max:500'],
-            'make_active' => ['nullable', 'boolean'],
-        ], [
-            'contract_address.regex' => 'The contract address must start with 0x followed by 40 hex characters.',
-            'deploy_tx_hash.regex' => 'The transaction hash must start with 0x followed by 64 hex characters.',
-        ]);
+        return $this->operate($registry, $operation);
+    }
 
-        DB::transaction(function () use ($data, $request) {
-            $makeActive = $request->boolean('make_active');
+    private function configurationError(?ContractDeployment $active, ?array $info): ?string
+    {
+        return match (true) {
+            ! $info => 'Blockchain status unavailable. Check the RPC connection and registry configuration.',
+            empty($info['chainMatches']), ($info['chainId'] ?? null) !== config('blockchain.chain_id') => 'Connected to the wrong chain.',
+            ! preg_match('/^0x[0-9a-f]{40}$/iD', config('blockchain.contract') ?? '') => 'Registry address missing or invalid.',
+            empty($info['hasCode']) => 'No contract bytecode at the configured address.',
+            empty($info['issuer']) => 'Issuer wallet missing or invalid. Check the signer configuration.',
+            ! $active => 'The configured deployment requires maintainer synchronization.',
+            strcasecmp($active->contract_address, $info['contract'] ?? '') !== 0,
+            strcasecmp($active->contract_address, config('blockchain.contract') ?? '') !== 0 => 'The configured address differs from the synchronized deployment.',
+            empty($info['compatible']), empty($info['supportsPause']) => 'The registry interface could not be verified.',
+            strcasecmp($active->owner_address, $info['owner'] ?? '') !== 0 => 'Registry ownership differs from the synchronized owner.',
+            default => null,
+        };
+    }
 
-            if ($makeActive) {
-                // one by one so each change reaches the audit log
-                ContractDeployment::where('is_active', true)->get()
-                    ->each(fn (ContractDeployment $d) => $d->update(['is_active' => false]));
+    private function operate(BlockchainRegistry $registry, string $action): RedirectResponse
+    {
+        set_time_limit(180);
+        $network = ContractDeployment::network();
+        $audit = app(AuditLogger::class);
+        $active = null;
+        $context = ['network' => $network, 'contract' => config('blockchain.contract'), 'operation' => $action];
+        $lock = Cache::lock('registry-management:'.$network, 300);
+        $acquired = $lock->get();
+        try {
+            if (! $acquired) {
+                throw new \DomainException('Another registry operation is in progress.');
             }
+            $active = ContractDeployment::active();
+            Cache::forget('blockchain.info');
+            $info = $registry->contractInfo();
+            if ($error = $this->configurationError($active, $info)) {
+                throw new \DomainException($error);
+            }
+            if ($network === 'mainnet' && ! config('blockchain.mainnet_writes_enabled')) {
+                throw new \DomainException('Ethereum mainnet writes are disabled.');
+            }
+            if (in_array($action, ['pause', 'resume'], true)) {
+                $paused = $action === 'pause';
+                if (empty($info['isOwner']) || ! is_bool($info['paused'] ?? null) || ($info['paused'] === $paused && ($active->pending_control['paused'] ?? null) !== $paused)) {
+                    throw new \DomainException('Owner authorization and a change in recording state are required.');
+                }
+                $result = $registry->setPaused($paused);
+                if (preg_match('/^0x[0-9a-f]{64}$/iD', $result['txHash'] ?? '')) {
+                    $context['transaction'] = $result['txHash'];
+                }
+                if (empty($result['ok']) || ($result['paused'] ?? null) !== $paused
+                    || ! preg_match('/^0x[0-9a-f]{64}$/iD', $result['txHash'] ?? '')
+                    || ($result['chainId'] ?? null) !== $info['chainId']
+                    || strcasecmp($result['contract'] ?? '', $active->contract_address)) {
+                    throw new \DomainException('No matching confirmation was received. Refresh status before trying again.');
+                }
+                $audit->log($paused ? 'contract_paused' : 'contract_resumed', $active, newValues: $context + ['result' => 'confirmed']);
+                if (! $paused) {
+                    $this->queueRecords($active, 'resume');
+                }
 
-            ContractDeployment::create([
-                'version' => $data['version'],
-                'network' => $data['network'],
-                'contract_address' => $data['contract_address'],
-                'deploy_tx_hash' => $data['deploy_tx_hash'] ?? null,
-                'deployed_at' => $data['deployed_at'] ?? now(),
-                'notes' => $data['notes'] ?? null,
-                'is_active' => $makeActive,
-            ]);
-        });
+                $active->refresh()->forceFill(['pending_control' => null])->saveQuietly();
 
-        return redirect()
-            ->route('admin.smart-contracts.index')
-            ->with('success', 'Deployment recorded. If it is the active one, update BLOCKCHAIN_CONTRACT in .env too.');
+                return back()->with('success', $paused ? 'Blockchain recording paused.' : 'Blockchain recording resumed. Eligible paused permits were queued.');
+            }
+            if (empty($info['issuerAuthorized']) && empty($info['isOwner'])) {
+                throw new \DomainException('Recovery requires an authorized signer.');
+            }
+            $count = $this->queueRecords($active, $action, ($info['paused'] ?? null) !== false || empty($info['issuerAuthorized']));
+            $audit->log('contract_'.$action, $active, newValues: $context + ['result' => 'dispatched', 'count' => $count]);
+
+            return back()->with('registry_notice', "Requested reconciliation for {$count} eligible permits.");
+        } catch (Throwable $e) {
+            $message = $e instanceof \DomainException ? $e->getMessage() : 'The operation could not be completed. Refresh the registry status.';
+            $audit->log('contract_operation_failed', $active, newValues: $context + ['result' => $message]);
+
+            return back()->with('error', $message);
+        } finally {
+            if ($acquired) {
+                $lock->release();
+                Cache::forget('blockchain.info');
+            }
+        }
+    }
+
+    private function queueRecords(ContractDeployment $active, string $action, bool $revocationsOnly = false): int
+    {
+        $states = match ($action) {
+            'retry' => ['failed', 'paused'], 'resume' => ['paused'], default => ['pending', 'submitted'],
+        };
+        $count = 0;
+        BlockchainRecord::whereIn('network', $active->active_network === 'sepolia' ? ['live', 'sepolia'] : [$active->active_network])
+            ->where(fn ($q) => $q->whereRaw('lower(contract) = ?', [strtolower($active->contract_address)])->orWhereNull('contract'))
+            ->whereRaw(BlockchainRecord::STATE_SQL.' in ('.implode(',', array_fill(0, count($states), '?')).')', $states)
+            ->when($revocationsOnly, fn ($q) => $q->whereHas('issuedDocument', fn ($docs) => $docs->whereNotNull('revoked_at')))
+            ->with('issuedDocument')
+            ->whereHas('issuedDocument', fn ($docs) => $docs->whereNull('revoked_at')
+                ->orWhere(fn ($q) => $q->whereNotNull('revoked_at')->whereHas('blockchainRecord', fn ($record) => $record->whereNotNull('recorded_at'))))
+            ->chunkById(100, function ($records) use (&$count) {
+                foreach ($records as $record) {
+                    if ($record->issuedDocument->revoked_at) {
+                        RevokePermitOnBlockchain::dispatch($record->issued_document_id);
+                    } else {
+                        RecordPermitOnBlockchain::dispatch($record->issued_document_id);
+                    }
+                    $count++;
+                }
+            });
+
+        return $count;
     }
 }

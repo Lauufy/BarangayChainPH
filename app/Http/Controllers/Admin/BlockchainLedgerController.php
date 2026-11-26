@@ -21,16 +21,16 @@ class BlockchainLedgerController extends Controller
         // Each recorded or revoked permit is one confirmed transaction
         $confirmed = BlockchainRecord::whereNotNull('recorded_at')->count()
             + BlockchainRecord::whereNotNull('revoked_at')->count();
-        $failed = BlockchainRecord::whereNotNull('error')->count();
+        $failed = BlockchainRecord::whereRaw(BlockchainRecord::STATE_SQL.' = ?', ['failed'])->count();
 
-        $toDate = fn($value) => $value ? Carbon::parse($value) : null;
+        $toDate = fn ($value) => $value ? Carbon::parse($value) : null;
 
         $confirmedLatest = collect([
             $toDate(BlockchainRecord::max('recorded_at')),
             $toDate(BlockchainRecord::max('revoked_at')),
         ])->filter()->max();
 
-        $failedLatest = $toDate(BlockchainRecord::whereNotNull('error')->max('updated_at'));
+        $failedLatest = $toDate(BlockchainRecord::whereRaw(BlockchainRecord::STATE_SQL.' = ?', ['failed'])->max('updated_at'));
 
         return view('admin.blockchain-ledger.index', [
             'records' => $records,

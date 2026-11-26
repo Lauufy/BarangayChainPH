@@ -6,13 +6,14 @@ use App\Models\BlockchainRecord;
 use App\Models\IssuedDocument;
 use App\Services\BlockchainRegistry;
 use App\Support\PermitStatusCache;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use RuntimeException;
 use Throwable;
 
 /** Revokes a permit's blockchain record after its local document is revoked. */
-class RevokePermitOnBlockchain implements ShouldQueue
+class RevokePermitOnBlockchain implements ShouldBeUnique, ShouldQueue
 {
     use Queueable;
 
@@ -23,6 +24,13 @@ class RevokePermitOnBlockchain implements ShouldQueue
     public array $backoff = [30, 120];
 
     public function __construct(public int $issuedDocumentId) {}
+
+    public int $uniqueFor = 900;
+
+    public function uniqueId(): string
+    {
+        return (string) $this->issuedDocumentId;
+    }
 
     public function handle(BlockchainRegistry $registry): void
     {
@@ -44,14 +52,14 @@ class RevokePermitOnBlockchain implements ShouldQueue
 
         // Never recorded on the chain, so there is nothing to revoke. Just clear the old error.
         if (($existing['status'] ?? null) === 'not_found') {
-            BlockchainRecord::where('issued_document_id', $document->id)->update(['error' => null]);
+            $document->blockchainRecord?->update(['error' => null]);
 
             return;
         }
 
         // Already revoked on the chain: just remember it
         if (($existing['status'] ?? null) === 'revoked') {
-            $this->save($document, ['revoked_at' => now()]);
+            $this->save($document, ['revoked_at' => now(), 'signed_revocation' => null]);
             PermitStatusCache::forget($document->document_uuid);
 
             return;
@@ -73,6 +81,7 @@ class RevokePermitOnBlockchain implements ShouldQueue
 
         $this->save($document, [
             'revoke_tx_hash' => $result['txHash'],
+            'signed_revocation' => null,
             'revoked_at' => now(),
         ]);
         PermitStatusCache::forget($document->document_uuid);
@@ -93,7 +102,7 @@ class RevokePermitOnBlockchain implements ShouldQueue
         if (IssuedDocument::whereKey($this->issuedDocumentId)->exists()) {
             BlockchainRecord::updateOrCreate(
                 ['issued_document_id' => $this->issuedDocumentId],
-                ['error' => mb_substr($e->getMessage(), 0, 1000)]
+                ['error' => 'Blockchain revoke failed: '.($e instanceof RuntimeException && ! str_contains($e->getMessage(), '://') ? mb_substr($e->getMessage(), 0, 400) : 'RPC unavailable.')]
             );
         }
     }

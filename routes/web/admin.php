@@ -102,7 +102,7 @@ Route::middleware(['auth', 'nocache', 'role:admin,staff'])
                 Route::post('/permits/{serviceRequest}/reject', 'reject')->name('permits.reject');
                 // Retry the failed blockchain record, limited to 10 per minute.
                 Route::post('/permits/{serviceRequest}/blockchain-retry', 'retryBlockchain')
-                    ->middleware('throttle:10,1')
+                    ->middleware(['role:admin', 'throttle:10,1'])
                     ->name('permits.blockchain-retry');
 
                 // Change the print limit (needs the permits.print-limit permission).
@@ -155,7 +155,7 @@ Route::middleware(['auth', 'nocache', 'role:admin,staff'])
 
         // Smart contracts page (needs the contracts.view permission).
         Route::get('/smart-contracts', [SmartContractController::class, 'index'])
-            ->middleware('permission:contracts.view')
+            ->middleware(['permission:contracts.view', 'throttle:30,1'])
             ->name('smart-contracts.index');
 
         // Pause or resume the smart contract (admin only, limited to 5 per minute).
@@ -163,10 +163,10 @@ Route::middleware(['auth', 'nocache', 'role:admin,staff'])
             ->middleware(['role:admin', 'throttle:5,1'])
             ->name('smart-contracts.pause');
 
-        // Record a new smart contract deployment (admin only, limited to 10 per minute).
-        Route::post('/smart-contracts/deployments', [SmartContractController::class, 'storeDeployment'])
-            ->middleware(['role:admin', 'throttle:10,1'])
-            ->name('smart-contracts.deployments.store');
+        Route::post('/smart-contracts/recovery/{operation}', [SmartContractController::class, 'recover'])
+            ->whereIn('operation', ['retry', 'recover'])
+            ->middleware(['role:admin', 'throttle:5,1'])
+            ->name('smart-contracts.recovery');
 
         // Reports (needs the reports.view permission).
         Route::middleware('permission:reports.view')

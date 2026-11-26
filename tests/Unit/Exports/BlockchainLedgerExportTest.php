@@ -35,7 +35,9 @@ class BlockchainLedgerExportTest extends TestCase
             'revoke-hash',
             'sha256-hash',
             Carbon::parse('2026-11-16 13:15:00')->timezone(config('app.timezone'))->format('Y-m-d H:i:s'),
-            'Confirmed',
+            'Submitted',
         ], $export->row($record));
+        $record->revoke_tx_hash = null;
+        $this->assertSame('Confirmed', $export->row($record)[5]);
     }
 }
