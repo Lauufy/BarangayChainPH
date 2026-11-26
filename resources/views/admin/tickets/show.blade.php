@@ -196,6 +196,8 @@
                                 $senderName = $fromCitizen
                                     ? $ticket->citizenName()
                                     : $message->user?->name ?? 'Former account';
+                                // Image with no text: show it without a colored bubble
+                                $imageOnly = $message->attachment_path && $message->imageContentType() && blank($message->body);
                             @endphp
 
                             <div @class(['flex items-start gap-2.5', 'justify-end' => !$fromCitizen])>
@@ -217,16 +219,15 @@
                                     @endif
 
                                     <div @class([
-                                        'rounded-lg px-3.5 py-2.5 text-sm',
-                                        'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100' => $fromCitizen,
-                                        'bg-blue-600 text-white' => !$fromCitizen,
+                                        'rounded-lg text-sm',
+                                        'px-3.5 py-2.5' => !$imageOnly,
+                                        'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100' => $fromCitizen && !$imageOnly,
+                                        'bg-blue-600 text-white' => !$fromCitizen && !$imageOnly,
                                     ])>
-                                        <p class="wrap-break-word whitespace-pre-line">{{ $message->body }}</p>
-                                        @if ($message->attachment_path)
-                                            <a class="block break-all underline" href="{{ route('tickets.attachment', $message) }}">
-                                                Download {{ $message->attachment_name }}
-                                            </a>
+                                        @if (filled($message->body))
+                                            <p class="wrap-break-word whitespace-pre-line">{{ $message->body }}</p>
                                         @endif
+                                        <x-tickets.attachment :message="$message" />
                                     </div>
 
                                     <p class="mt-1 text-[11px] uppercase text-slate-400 dark:text-slate-500">
@@ -255,40 +256,9 @@
 
             {{-- Composer: rounded input + separate send button while open, closed notice otherwise. --}}
             @if ($isOpen)
-                <form method="POST" enctype="multipart/form-data" action="{{ route('admin.tickets.reply', $ticket) }}" id="reply-form"
-                    class="border-t border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900 sm:p-4">
-                    @csrf
-                    <x-tickets.attachment-input />
-
-                    <div class="flex items-end gap-2">
-                        {{-- Input pill --}}
-                        <div
-                            class="flex min-h-11 min-w-0 flex-1 items-center gap-1 rounded-md bg-slate-100 px-3.5 py-2 transition focus-within:ring-2 focus-within:ring-blue-600/20 dark:bg-slate-800 dark:focus-within:ring-blue-500/30">
-                            <label for="body" class="sr-only">Reply</label>
-                            <textarea id="body" name="body" rows="1" maxlength="1000"
-                                placeholder="Type your message..."
-                                class="block max-h-32 min-h-6 w-full resize-none border-0 bg-transparent p-0 py-0.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-0 dark:text-slate-100 dark:placeholder:text-slate-500">{{ old('body') }}</textarea>
-                        </div>
-
-                        {{-- Send --}}
-                        <button type="submit" id="reply-submit" aria-label="Send reply"
-                            class="grid size-11 shrink-0 place-items-center rounded-md bg-slate-900 text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white">
-                            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="m22 2-7 20-4-9-9-4Z" />
-                                <path d="M22 2 11 13" />
-                            </svg>
-                        </button>
-                    </div>
-
-                    {{-- Character counter: only shown when nearing the limit. --}}
-                    <p id="body-count" hidden
-                        class="mt-1.5 text-right text-[11px] tabular-nums text-slate-400 dark:text-slate-500"></p>
-
-                    <div class="mt-2">
-                        <x-feedbacks.form-errors />
-                    </div>
-                </form>
+                <div class="border-t border-slate-200 p-3 dark:border-slate-700">
+                    <x-tickets.composer :action="route('admin.tickets.reply', $ticket)" />
+                </div>
             @else
                 <p
                     class="border-t border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400">
@@ -304,7 +274,6 @@
             const pill = document.getElementById('new-messages');
             const list = document.getElementById('ticket-list');
             const search = document.getElementById('ticket-search');
-            const noMatch = document.getElementById('ticket-no-match');
 
             const isAtBottom = () => box.scrollHeight - box.scrollTop - box.clientHeight < 60;
             const toBottom = (smooth = false) => box.scrollTo({
@@ -379,39 +348,6 @@
                     // network problem: try again on the next round
                 }
             }, 5000);
-
-            // Composer: auto-grow, counter near the limit, Enter to send, prevent double submit.
-            const form = document.getElementById('reply-form');
-            if (!form) return;
-
-            const body = document.getElementById('body');
-            const count = document.getElementById('body-count');
-
-            const update = () => {
-                // Auto-grow up to the max-h-32 cap.
-                body.style.height = 'auto';
-                body.style.height = body.scrollHeight + 'px';
-
-                // Only show the counter when nearing the limit.
-                const len = body.value.length;
-                count.hidden = len < body.maxLength * 0.8;
-                count.textContent = len + ' / ' + body.maxLength;
-            };
-            body.addEventListener('input', update);
-            update();
-
-            // Enter sends, Shift+Enter adds a new line.
-            body.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
-                    e.preventDefault();
-                    form.requestSubmit();
-                }
-            });
-
-            form.addEventListener('submit', () => {
-                const btn = document.getElementById('reply-submit');
-                if (btn) btn.disabled = true;
-            });
         })();
     </script>
 @endsection

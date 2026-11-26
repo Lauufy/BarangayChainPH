@@ -15,7 +15,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        $this->call(HelpCenterSeeder::class);
 
         if (app()->environment(['local', 'testing'])) {
             User::factory()->create([

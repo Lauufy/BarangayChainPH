@@ -7,7 +7,6 @@
         ['citizen.dashboard', 'citizen.dashboard', 'Home'],
         ['citizen.services', 'citizen.services', 'Services'],
         ['citizen.applications', 'citizen.applications*', 'Applications'],
-        ['citizen.help.index', 'citizen.help.*', 'Help Center'],
         ['citizen.documents', 'citizen.documents*', 'Documents'],
     ];
 @endphp

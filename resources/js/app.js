@@ -4,6 +4,8 @@ import './global/password-strength';
 import './global/password-toggle';
 import './global/theme';
 import './reveal';
+import './help-search';
+import './ticket-composer';
 
 if (document.querySelector('[data-reports-page]')) {
     import('./reports');

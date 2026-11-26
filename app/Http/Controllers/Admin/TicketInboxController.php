@@ -6,8 +6,8 @@ use App\Exports\TicketsExport;
 use App\Http\Controllers\Controller;
 use App\Models\ContactMessage;
 use App\Models\Ticket;
-use App\Notifications\TicketReplied;
 use App\Services\PostTicketMessage;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -33,7 +33,7 @@ class TicketInboxController extends Controller
     {
         return view('admin.tickets.show', [
             'ticket' => $ticket->load(['serviceRequest', 'user']),
-            'messages' => $ticket->messages()->with('user')->oldest()->get(),
+            'messages' => $ticket->messages()->with('user')->oldest()->orderBy('id')->get(),
             'tickets' => Ticket::with(['serviceRequest', 'user', 'latestMessage'])
                 ->withMax('messages', 'created_at')
                 ->orderByDesc('messages_max_created_at')
@@ -43,14 +43,14 @@ class TicketInboxController extends Controller
         ]);
     }
 
-    public function reply(Request $request, Ticket $ticket): RedirectResponse
+    public function reply(Request $request, Ticket $ticket): RedirectResponse|JsonResponse
     {
         abort_unless($ticket->status === Ticket::OPEN, 403, 'This ticket is closed.');
 
         $this->postMessage->handle($request, $ticket);
 
-        $ticket->user->notify(new TicketReplied($ticket));
-
-        return redirect()->route('admin.tickets.show', $ticket);
+        return $request->expectsJson()
+            ? response()->json(['url' => route('admin.tickets.show', $ticket)])
+            : redirect()->route('admin.tickets.show', $ticket);
     }
 }

@@ -17,10 +17,12 @@ class TicketAttachmentController extends Controller
         abort_if($viewer->isCitizen() && $viewer->id !== $message->ticket->user_id, 404);
         abort_unless($message->attachment_path, 404);
 
-        return Storage::disk('supabase')->download($message->attachment_path, $message->attachment_name, [
-            'Content-Type' => 'application/octet-stream',
+        $imageType = $request->boolean('preview') ? $message->imageContentType() : null;
+
+        return Storage::disk('supabase')->response($message->attachment_path, $message->attachment_name, [
+            'Content-Type' => $imageType ?? 'application/octet-stream',
             'X-Content-Type-Options' => 'nosniff',
             'Cache-Control' => 'private, no-store',
-        ]);
+        ], $imageType ? 'inline' : 'attachment');
     }
 }

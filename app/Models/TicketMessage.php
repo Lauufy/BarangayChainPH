@@ -26,6 +26,16 @@ class TicketMessage extends Model
         return $this->belongsTo(Ticket::class);
     }
 
+    public function imageContentType(): ?string
+    {
+        return match (strtolower(pathinfo($this->attachment_path ?? '', PATHINFO_EXTENSION))) {
+            'jpg', 'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'webp' => 'image/webp',
+            default => null,
+        };
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

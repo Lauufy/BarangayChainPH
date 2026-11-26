@@ -13,8 +13,8 @@
         {{-- Header --}}
         <header class="border-(--gray-200) dark:border-(--gray-700) space-y-2 border-b pb-4">
             <nav class="text-(--gray-500) dark:text-(--gray-400) flex items-center gap-2 text-xs" aria-label="Breadcrumb">
-                <a href="{{ route($application ? 'citizen.applications' : 'citizen.help.index') }}"
-                    class="hover:text-(--blue-700) dark:hover:text-(--blue-300)">{{ $application ? 'Applications' : 'Help Center' }}</a>
+                <a href="{{ route($application ? 'citizen.applications' : 'citizen.help.tickets') }}"
+                    class="hover:text-(--blue-700) dark:hover:text-(--blue-300)">{{ $application ? 'Applications' : 'My tickets' }}</a>
                 <span aria-hidden="true">›</span>
                 <span class="text-(--blue-700) dark:text-(--blue-300) font-semibold">Ticket</span>
             </nav>
@@ -42,7 +42,7 @@
                         {{ $ticket->status }}
                     </span>
 
-                    <a href="{{ route($application ? 'citizen.applications' : 'citizen.help.index') }}"
+                    <a href="{{ route($application ? 'citizen.applications' : 'citizen.help.tickets') }}"
                         class="border-(--gray-300) bg-(--white) text-(--gray-700) hover:bg-(--gray-50) focus-visible:ring-(--blue-300) dark:border-(--gray-600) dark:bg-(--gray-800) dark:text-(--gray-200) dark:hover:bg-(--gray-700) inline-flex items-center rounded-md border px-8 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2">Back</a>
                 </div>
             </div>
@@ -67,6 +67,8 @@
                             $next->user_id === $message->user_id &&
                             $at($next)->isSameDay($date)
                         );
+                        // Image with no text: show it without a colored bubble
+                        $imageOnly = $message->attachment_path && $message->imageContentType() && blank($message->body);
                     @endphp
 
                     @if ($newDay)
@@ -102,21 +104,21 @@
                             @endunless
 
                             <div @class([
-                                'max-w-[80%] rounded-2xl px-3.5 py-2 text-sm',
-                                'bg-(--blue-600) text-(--white)' => $mine,
-                                'bg-(--white) text-(--gray-900) ring-1 ring-(--gray-200) dark:bg-(--gray-700) dark:text-(--gray-50) dark:ring-(--gray-600)' => !$mine,
+                                'max-w-[80%] rounded-2xl text-sm',
+                                'px-3.5 py-2' => !$imageOnly,
+                                'bg-(--blue-600) text-(--white)' => $mine && !$imageOnly,
+                                'bg-(--white) text-(--gray-900) ring-1 ring-(--gray-200) dark:bg-(--gray-700) dark:text-(--gray-50) dark:ring-(--gray-600)' => !$mine && !$imageOnly,
+                                'text-(--gray-500) dark:text-(--gray-400)' => $imageOnly,
                                 'rounded-br-md' => $mine && $last,
                                 'rounded-bl-md' => !$mine && $last,
                             ])>
                                 @unless ($first)
                                     <x-tickets.message-sender :message="$message" :ticket="$ticket" />
                                 @endunless
-                                <p class="wrap-anywhere whitespace-pre-line">{{ $message->body }}</p>
-                                @if ($message->attachment_path)
-                                    <a class="block break-all underline" href="{{ route('tickets.attachment', $message) }}">
-                                        Download {{ $message->attachment_name }}
-                                    </a>
+                                @if (filled($message->body))
+                                    <p class="wrap-anywhere whitespace-pre-line">{{ $message->body }}</p>
                                 @endif
+                                <x-tickets.attachment :message="$message" />
                                 <p class="mt-0.5 text-right text-[10px] opacity-60">{{ $date->format('g:i A') }}</p>
                             </div>
                         </div>
@@ -128,32 +130,9 @@
 
             {{-- Reply (only while the ticket is open) --}}
             @if ($ticket->status === 'open')
-                <form method="POST" enctype="multipart/form-data" action="{{ $application ? route('citizen.tickets.reply', $application) : route('citizen.help.reply', $ticket) }}"
-                    class="border-(--gray-200) dark:border-(--gray-700) space-y-2 border-t p-3 sm:p-4">
-                    @csrf
-                    <x-tickets.attachment-input />
-                    <div
-                        class="bg-(--gray-100) focus-within:bg-(--white) focus-within:ring-(--blue-600) dark:bg-(--gray-700) dark:focus-within:bg-(--gray-800) flex items-end gap-2 rounded-lg p-1.5 ring-1 ring-transparent transition">
-                        <textarea id="reply-body" name="body" maxlength="1000" rows="1" placeholder="Type your message..."
-                            onkeydown="if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); this.form.requestSubmit(); }"
-                            class="text-(--gray-900) placeholder:text-(--gray-400) dark:text-(--gray-50) max-h-32 min-h-10 flex-1 resize-none bg-transparent px-3 py-2 text-sm outline-none">{{ old('body') }}</textarea>
-
-                        <button id="reply-send" aria-label="Send message" title="Send message"
-                            class="bg-(--blue-600) text-(--white) hover:bg-(--blue-700) disabled:bg-(--gray-300) dark:disabled:bg-(--gray-600) flex h-10 w-10 shrink-0 items-center justify-center rounded-md transition disabled:cursor-not-allowed">
-                            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-                                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z" />
-                            </svg>
-                        </button>
-                    </div>
-
-                    @error('attachment')
-                        <p class="text-(--red-600) text-sm font-medium">{{ $message }}</p>
-                    @enderror
-                    @error('body')
-                        <p class="text-(--red-600) text-sm font-medium">{{ $message }}</p>
-                    @enderror
-                </form>
+                <div class="border-t border-slate-200 p-3 dark:border-slate-700">
+                    <x-tickets.composer :action="$application ? route('citizen.tickets.reply', $application) : route('citizen.help.reply', $ticket)" />
+                </div>
             @else
                 <p
                     class="border-(--gray-200) bg-(--gray-50) text-(--gray-500) dark:border-(--gray-700) dark:bg-(--gray-900) border-t px-4 py-3 text-center text-sm">
@@ -167,20 +146,6 @@
         const box = document.getElementById('messages');
         box.scrollTop = box.scrollHeight; // start at the latest message
 
-        // Reply box: grows with the text, send button is off while empty
-        const reply = document.getElementById('reply-body');
-        if (reply) {
-            const send = document.getElementById('reply-send');
-            const sync = () => {
-                reply.style.height = 'auto';
-                reply.style.height = reply.scrollHeight + 'px';
-                send.disabled = !reply.value.trim() && !reply.form.elements.attachment.files.length;
-            };
-            reply.form.elements.attachment.addEventListener('change', sync);
-            reply.addEventListener('input', sync);
-            sync();
-        }
-
         // Every 5 seconds, fetch this page again and swap only the message list
         setInterval(async () => {
             if (document.hidden) return; // skip while the tab is in the background
@@ -192,8 +157,7 @@
 
                 if (fresh && fresh.innerHTML !== box.innerHTML) {
                     box.innerHTML = fresh.innerHTML;
-                    if (atBottom) box.scrollTop = box
-                    .scrollHeight; // follow new messages only if already at the bottom
+                    if (atBottom) box.scrollTop = box.scrollHeight; // follow new messages only if already at the bottom
                 }
             } catch (e) {
                 // network problem: try again on the next round

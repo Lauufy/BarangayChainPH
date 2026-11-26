@@ -269,5 +269,3 @@
         </script>
     @endif
 @endsection
-
-@include('citizen.partials.privacy-request')

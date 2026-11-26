@@ -9,6 +9,7 @@ use App\Http\Controllers\Citizen\ServiceApplicationController;
 use App\Http\Controllers\Citizen\ServiceRequestController;
 use App\Http\Controllers\Citizen\TicketController;
 use App\Http\Controllers\Shared\PermitResubmissionController;
+use App\Http\Controllers\Citizen\HelpArticleController;
 use Illuminate\Support\Facades\Route;
 
 // ===== Citizen routes (logged-in citizens only) =====
@@ -45,10 +46,16 @@ Route::middleware(['auth', 'nocache', 'role:citizen'])
 
         Route::controller(TicketController::class)->prefix('help-center')->name('help.')->group(function () {
             Route::get('/', 'index')->name('index');
-            Route::post('/', 'store')->middleware('throttle:5,1')->name('store');
+            Route::post('/', 'store')->middleware('throttle:5,1,help-request:')->name('store');
+            Route::get('/tickets/create', 'create')->name('create');
+            Route::get('/tickets', 'tickets')->name('tickets');
             Route::get('/{ticket}', 'showHelp')->name('show');
             Route::post('/{ticket}', 'replyHelp')->middleware('throttle:20,1')->name('reply');
         });
+        Route::get('/help/categories/{category:slug}', [HelpArticleController::class, 'category'])
+            ->name('help.category');
+        Route::get('/help/articles/{article:slug}', [HelpArticleController::class, 'show'])
+            ->name('help.article');
 
         // Show the support ticket of an application.
         Route::get('/applications/{serviceRequest}/ticket', [TicketController::class, 'show'])
