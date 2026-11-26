@@ -50,7 +50,7 @@
         {{-- Permit directory --}}
         <x-tables.card :paginator="$requests" :searchable="false" item-label="requests" :per-page-options="[10, 15, 25, 50]">
             <x-tables.toolbar key="permits" total-label="All Requests" :total="number_format($requestCounts['total'] ?? 0)" :search="true"
-                search-placeholder="Search applicant or type" :filters="[
+                search-placeholder="Search applicant, reference, type, or status" :filters="[
                     [
                         'name' => 'status',
                         'title' => 'Request status',

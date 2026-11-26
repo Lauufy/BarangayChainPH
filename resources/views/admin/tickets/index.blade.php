@@ -27,7 +27,7 @@
 
         <x-tables.card :paginator="$showingTickets ? $tickets : $contactMessages" :searchable="false"
             :item-label="$showingTickets ? 'tickets' : 'inquiries'" :per-page-options="[10, 15, 25, 50]">
-            <x-tables.toolbar key="communications" :tabs="$tabs" :active="$activeCommunication" :search="true"
+            <x-tables.toolbar :key="$showingTickets ? 'ticket-messages' : 'website-inquiries'" :tabs="$tabs" :active="$activeCommunication" :search="true"
                 :search-placeholder="$showingTickets
                     ? 'Search citizen, reference, or message'
                     : 'Search name, email, subject, or message'" />

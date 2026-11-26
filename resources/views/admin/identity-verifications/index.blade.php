@@ -49,7 +49,7 @@
             :per-page-options="[10, 15, 25, 50]">
             <x-tables.toolbar key="identity-verifications" total-label="All Requests"
                 :total="($counts['pending'] ?? 0) + ($counts['verified'] ?? 0) + ($counts['rejected'] ?? 0)"
-                :search="true" search-placeholder="Search by name or email" :filters="[[
+                :search="true" search-placeholder="Search citizen, email, or status" :filters="[[
                     'name' => 'status',
                     'title' => 'Verification status',
                     'allLabel' => 'All statuses',
