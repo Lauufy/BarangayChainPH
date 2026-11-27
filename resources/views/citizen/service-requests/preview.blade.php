@@ -65,7 +65,7 @@
                         </h4>
                     </div>
 
-                    <div class="mt-6 space-y-4 break-words text-xs leading-6 text-(--gray-700) sm:mt-10 sm:space-y-6 sm:text-sm sm:leading-7">
+                    <div class="mt-6 space-y-4 wrap-break-word text-xs leading-6 text-(--gray-700) sm:mt-10 sm:space-y-6 sm:text-sm sm:leading-7">
                         <p>To whom it may concern:</p>
 
                         <p>
