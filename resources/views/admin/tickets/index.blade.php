@@ -71,7 +71,7 @@
                                     :sub="$contactMessage->email" />
                             </td>
                             <td class="max-w-xs">
-                                <p class="truncate font-semibold text-slate-900 dark:text-slate-100">
+                                <p class="truncate text-slate-600 dark:text-slate-100">
                                     {{ $contactMessage->subject }}
                                 </p>
                             </td>
