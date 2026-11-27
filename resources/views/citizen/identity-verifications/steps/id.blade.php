@@ -1,9 +1,5 @@
 {{-- STEP 2: ID --}}
 <div data-panel="2" class="{{ $step === 2 ? '' : 'hidden' }} space-y-3">
-    <div>
-        <h2 class="{{ $h2 }}">Identity verification</h2>
-        <p class="{{ $sub }}">Choose your ID type and scan the front and back. Keep all four corners inside the frame.</p>
-    </div>
 
     <div id="id-server-errors" role="alert"
         class="border-(--red-600) bg-(--white) text-(--red-600) dark:bg-(--gray-800) hidden rounded-md border p-3 text-sm"></div>
@@ -12,11 +8,6 @@
         <x-form.input light raised name="document_type" label="Type of ID" type="select" required
             placeholder="Select" error-message="Choose the type of ID you are scanning." :options="array_combine($documentTypes, $documentTypes)" :value="$draft['document_type'] ?? null" />
 
-        <ul class="bg-(--gray-50) text-(--gray-700) dark:bg-(--gray-900) dark:text-(--gray-200) space-y-1.5 rounded-lg p-4 text-sm">
-            <li>✓ Keep all four corners visible.</li>
-            <li>✓ Use even lighting and avoid reflections.</li>
-            <li>✓ Hold the camera steady and keep the ID straight.</li>
-        </ul>
 
         <x-scanner.id-scanner target="document" target-back="document_back" upload-target="id-uploads" />
 

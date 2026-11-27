@@ -1,20 +1,9 @@
 {{-- STEP 3: Selfie (upload or camera with face check) --}}
 <div data-panel="3" class="{{ $step === 3 ? '' : 'hidden' }} space-y-3">
-    <div>
-        <h2 class="{{ $h2 }}">Face verification</h2>
-        <p class="{{ $sub }}">Center your face inside the oval and look straight at the camera.
-        </p>
-    </div>
-
     <div id="selfie-server-errors" role="alert"
         class="border-(--red-600) bg-(--white) text-(--red-600) dark:bg-(--gray-800) hidden rounded-md border p-3 text-sm"></div>
 
     <section class="{{ $card }}">
-        <ul
-            class="bg-(--gray-50) text-(--gray-700) dark:bg-(--gray-900) dark:text-(--gray-200) space-y-1.5 rounded-lg p-4 text-sm">
-            <li>✓ Keep only your face in the frame.</li>
-            <li>✓ The lighting is good. No hat or sunglasses.</li>
-        </ul>
 
         <input type="hidden" name="selfie_source" id="selfie-source" value="{{ $draft['selfie_source'] ?? 'upload' }}">
 

@@ -71,7 +71,7 @@ Route::middleware(['auth', 'nocache', 'role:admin,staff'])
                 ->name('users.permissions.update');
 
             // Legacy users export URL, forwards to the shared export route as CSV.
-            Route::get('/users/export', fn (Request $request) => redirect()->route(
+            Route::get('/users/export', fn(Request $request) => redirect()->route(
                 'admin.exports.show',
                 ['module' => 'users', 'format' => 'csv'] + $request->query()
             ))->name('users.export');
@@ -117,19 +117,20 @@ Route::middleware(['auth', 'nocache', 'role:admin,staff'])
             });
 
         // Citizen ticket inbox (needs the tickets.reply permission).
-        Route::middleware('permission:tickets.reply')
-            ->controller(TicketInboxController::class)
-            ->group(function () {
-                // List citizen tickets.
-                Route::get('/tickets', 'index')->name('tickets.index');
-                // Show one ticket.
-                Route::get('/tickets/{ticket}', 'show')->name('tickets.show');
+        Route::middleware('permission:tickets.reply')->group(function () {
+            // Old tickets list URL now forwards to the combined Communications page.
+            Route::get('/tickets', fn(Request $request) => redirect()->route(
+                'admin.contact-messages.index',
+                $request->query()
+            ))->name('tickets.index');
 
-                // Reply to a ticket, limited to 30 per minute.
+            Route::controller(TicketInboxController::class)->group(function () {
+                Route::get('/tickets/{ticket}', 'show')->name('tickets.show');
                 Route::post('/tickets/{ticket}', 'reply')
                     ->middleware('throttle:30,1')
                     ->name('tickets.reply');
             });
+        });
 
         Route::middleware('permission:tickets.reply')
             ->prefix('contact-messages')
@@ -178,12 +179,12 @@ Route::middleware(['auth', 'nocache', 'role:admin,staff'])
                 // Report exports (admin only).
                 Route::middleware('role:admin')->group(function () {
                     // Legacy CSV export URL, forwards to the shared export route.
-                    Route::get('/reports/export.csv', fn (Request $request) => redirect()->route(
+                    Route::get('/reports/export.csv', fn(Request $request) => redirect()->route(
                         'admin.exports.show',
                         ['module' => 'reports', 'format' => 'csv'] + $request->query()
                     ))->name('reports.export.csv');
                     // Legacy PDF export URL, forwards to the shared export route.
-                    Route::get('/reports/export.pdf', fn (Request $request) => redirect()->route(
+                    Route::get('/reports/export.pdf', fn(Request $request) => redirect()->route(
                         'admin.exports.show',
                         ['module' => 'reports', 'format' => 'pdf'] + $request->query()
                     ))->name('reports.export.pdf');

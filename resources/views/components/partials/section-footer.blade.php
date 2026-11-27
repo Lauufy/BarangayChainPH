@@ -11,21 +11,21 @@
 @endphp
 
 <footer class="mt-auto border-t border-(--gray-200) dark:border-(--gray-700)">
-    <div class="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-6 text-sm sm:px-8 md:flex-row md:items-center md:justify-between">
+    <div class="mx-auto flex max-w-7xl flex-col items-center gap-4 px-5 py-6 text-center text-sm sm:px-8 md:flex-row md:items-center md:justify-between md:text-left">
 
         {{-- Logo, name and copyright --}}
-        <a href="{{ route('citizen.dashboard') }}" class="flex items-center gap-3 rounded-sm {{ $ring }}">
+        <a href="{{ route('citizen.dashboard') }}" class="flex items-center justify-center gap-3 rounded-sm md:justify-start {{ $ring }}">
             <img src="{{ asset('img/branding/barangaychain-lg1.png') }}" alt="BarangayChain PH" loading="lazy"
                 class="h-8 w-8 shrink-0 object-contain">
             <span class="min-w-0">
-                <span class="mt-1 block text-xs text-(--gray-500) dark:text-(--gray-400)">
+                <span class="block text-xs text-(--gray-500) dark:text-(--gray-400)">
                     &copy; {{ now()->year }} Barangay San Luis, Antipolo City. All rights reserved.
                 </span>
             </span>
         </a>
 
         {{-- Important links --}}
-        <nav aria-label="Footer" class="flex flex-wrap items-center gap-x-5 gap-y-2">
+        <nav aria-label="Footer" class="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs md:justify-start">
             @foreach ($links as [$href, $text, $external])
                 <a href="{{ $href }}" class="{{ $link }}"
                     @if ($external) target="_blank" rel="noopener noreferrer" @endif>{{ $text }}</a>

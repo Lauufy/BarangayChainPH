@@ -311,7 +311,7 @@
 
         @hasSection('footer')
             @yield('footer')
-        @else
+        @elseif (!View::hasSection('hide_footer'))
             @include('components.partials.section-footer')
         @endif
 

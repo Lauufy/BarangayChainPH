@@ -19,11 +19,30 @@ class ContactMessageController extends Controller
     {
         $perPage = $request->integer('per_page', 15);
         $perPage = in_array($perPage, [10, 15, 25, 50], true) ? $perPage : 15;
-        $tickets = $export->query($request)->paginate($perPage)->appends($request->except('search'));
+
+        $onInquiries = $request->query('communications_tab') === 'inquiries';
+        $search = trim((string) $request->query('search', ''));
+
+        $tickets = $export->query($request)
+            ->paginate($perPage)
+            ->appends($request->except('search'));
+
         $contactMessages = ContactMessage::query()
             ->withCount('replies')
+            ->when($onInquiries && $search !== '', function ($query) use ($search) {
+                $like = '%'.$search.'%';
+
+                $query->where(function ($q) use ($like) {
+                    $q->where('first_name', 'like', $like)
+                        ->orWhere('last_name', 'like', $like)
+                        ->orWhere('email', 'like', $like)
+                        ->orWhere('subject', 'like', $like)
+                        ->orWhere('body', 'like', $like);
+                });
+            })
             ->latest('updated_at')
-            ->paginate(15, ['*'], 'inquiries_page');
+            ->paginate($perPage, ['*'], 'communications_page')
+            ->appends($request->except('communications_page'));
 
         return view('admin.tickets.index', compact('tickets', 'contactMessages'));
     }
@@ -46,6 +65,7 @@ class ContactMessageController extends Controller
                 $contactMessage,
                 $request->user()->name,
                 $data['body'],
+                $request->user()->email,
             ));
         } catch (TransportExceptionInterface $exception) {
             report($exception);
