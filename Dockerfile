@@ -158,7 +158,7 @@ RUN printf '%s\n' \
     'php artisan storage:link' \
     'php artisan migrate --force' \
     'if [ -n "${BLOCKCHAIN_DEPLOY_TX:-}${BLOCKCHAIN_DEPLOY_VERSION:-}${BLOCKCHAIN_DEPLOY_OWNER:-}" ]; then' \
-    '  php artisan blockchain:sync-deployment "${BLOCKCHAIN_DEPLOY_TX:?Missing creation transaction hash}" "${BLOCKCHAIN_DEPLOY_VERSION:?Missing release version}" "${BLOCKCHAIN_DEPLOY_OWNER:?Missing expected owner address}"' \
+    '  runuser -u www-data -- php artisan blockchain:sync-deployment "${BLOCKCHAIN_DEPLOY_TX:?Missing creation transaction hash}" "${BLOCKCHAIN_DEPLOY_VERSION:?Missing release version}" "${BLOCKCHAIN_DEPLOY_OWNER:?Missing expected owner address}"' \
     'fi' \
     '(while true; do su -s /bin/sh www-data -c "php artisan queue:work --sleep=3 --tries=2 --max-time=3600"; sleep 2; done) &' \
     'su -s /bin/sh www-data -c "php artisan schedule:work" &' \
