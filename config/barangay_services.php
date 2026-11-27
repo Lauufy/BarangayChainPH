@@ -36,13 +36,15 @@ return [
                 ['key' => 'purpose', 'label' => 'Purpose', 'type' => 'select', 'other' => true,
                     'options' => ['Proof of residency', 'Cedula / Resident Certificate', 'Indigency']],
                 ['key' => 'contact_number', 'label' => 'Contact number', 'type' => 'tel', 'prefill' => 'phone'],
-                ['key' => 'resident_since', 'label' => 'Year you began living in Barangay San Luis', 'type' => 'number',
+                ['key' => 'resident_since', 'label' => 'Resident since (year)', 'type' => 'number',
                     'rules' => ['integer', 'digits:4', 'min:1000', 'max:'.date('Y')]],
                 ['key' => 'id_presented', 'label' => 'ID presented', 'type' => 'select', 'other' => true,
                     'options' => ['SSS', 'GSIS', 'TIN', 'Voter ID']],
                 ['key' => 'vrn', 'label' => 'Voter registration number (VRN)', 'type' => 'text', 'required' => false],
             ],
-            'requirements' => [],
+            'requirements' => [
+                'valid_id' => 'Valid government ID',
+            ],
         ],
 
         'certificate-of-residency' => [

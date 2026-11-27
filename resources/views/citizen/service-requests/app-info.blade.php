@@ -1,37 +1,54 @@
 @php
-    // Account/security flags that should not appear in the applicant information
-    $hiddenProfileFields = ['two factor enabled', 'google password setup required'];
+    $hiddenFields = [
+        'privacy policy version',
+        'consent ip',
+        'two factor enabled',
+        'google password setup required',
+    ];
+
+    // Display order. Labels not listed here go to the end.
+    $order = ['name', 'civil status', 'address', 'age', 'nationality', 'birthdate', 'birthplace'];
 @endphp
 
-<div class="space-y-3">
-    {{ $head('Applicant information', 'These details come from your verified citizen profile.') }}
-
-    @foreach ($profile as $title => $items)
+<div class="space-y-4">
+    @foreach ($sections as $title => $items)
         @php
-            $visibleItems = collect($items)->reject(
-                fn ($value, $label) => in_array(strtolower(trim($label)), $hiddenProfileFields, true),
-            );
+            $visibleItems = collect($items)
+                ->reject(fn ($value, $label) => in_array(strtolower(trim($label)), $hiddenFields, true))
+                ->sortBy(function ($value, $label) use ($order) {
+                    $i = array_search(strtolower(trim($label)), $order, true);
+                    return $i === false ? 99 : $i;
+                });
+            $hasMultipleItems = $visibleItems->count() > 1;
         @endphp
 
-        @continue($visibleItems->isEmpty())
+        @if ($visibleItems->isNotEmpty())
+            <section class="rounded-lg border border-gray-200/80 bg-white p-5 shadow-xs dark:border-gray-800 dark:bg-gray-900/50">
+                <h3 class="border-b border-gray-100 pb-2.5 text-base font-bold text-(--blue-900) dark:border-gray-800 dark:text-(--blue-300)">
+                    Personal Information
+                </h3>
 
-        <section class="{{ $card }}">
-            <h3 class="{{ $h3 }}">{{ $title }}</h3>
-
-            <div class="{{ $grid }}">
-                @foreach ($visibleItems as $label => $value)
-                    <div @class([$span => str_contains(strtolower($label), 'address')])>
-                        <x-form.input :label="$label" :name="'profile_' . Str::slug($label, '_')" :value="$value"
-                            :use-old="false" light raised readonly />
-                    </div>
-                @endforeach
-            </div>
-        </section>
+                <div @class([
+                    'mt-4 grid gap-4',
+                    'sm:grid-cols-2' => $hasMultipleItems,
+                ])>
+                    @foreach ($visibleItems as $label => $value)
+                        <div @class([
+                            'sm:col-span-2' => $hasMultipleItems && str_contains(strtolower($label), 'address'),
+                        ])>
+                            <x-form.input
+                                :label="$label"
+                                :name="'profile_' . Str::slug($label, '_')"
+                                :value="$value"
+                                :use-old="false"
+                                light
+                                raised
+                                readonly
+                            />
+                        </div>
+                    @endforeach
+                </div>
+            </section>
+        @endif
     @endforeach
-
-    <div class="rounded-md border border-(--blue-200) bg-(--blue-50) px-4 py-3 text-sm text-(--gray-800) dark:border-(--blue-800) dark:bg-[color-mix(in_srgb,var(--blue-900)_40%,transparent)] dark:text-(--gray-200)">
-        Need to correct your profile? Update it through your
-        <a href="{{ route('citizen.profile') }}" class="font-semibold text-(--blue-700) underline hover:text-(--blue-800) dark:text-(--blue-300) dark:hover:text-(--blue-200)">verified profile page</a>
-        before applying.
-    </div>
 </div>
