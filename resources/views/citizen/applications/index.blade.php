@@ -47,15 +47,13 @@
                         $canCancel = $application->isCancellable();
                     @endphp
 
-                    <tr>
-                        {{-- Summary: always visible on mobile --}}
-                        <td data-title class="whitespace-nowrap font-semibold text-slate-900 dark:text-slate-100">
+                    <x-tables.row :reference="$application->reference_number" :person="$application->applicant_name" :note="$application->purpose">
+                        <td data-reference class="whitespace-nowrap font-semibold text-slate-900 dark:text-slate-100">
                             {{ $application->reference_number }}
                         </td>
-                        <td class="text-slate-600 dark:text-slate-300">{{ $application->serviceTitle() }}</td>
+                        <td data-title class="text-slate-600 dark:text-slate-300">{{ $application->serviceTitle() }}</td>
 
-                        {{-- Details: revealed when the card is tapped on mobile --}}
-                        <x-tables.detail label="Date submitted" class="whitespace-nowrap text-slate-600 dark:text-slate-300">
+                        <x-tables.detail data-date label="Date submitted" class="whitespace-nowrap text-slate-600 dark:text-slate-300">
                             {{ $application->created_at->timezone(config('app.timezone'))->format('M j, Y g:i A') }}
                         </x-tables.detail>
 
@@ -90,7 +88,7 @@
                                 @endif
                             </div>
                         </x-tables.detail>
-                    </tr>
+                    </x-tables.row>
                 @endforeach
             </x-tables.table>
         </x-tables.card>

@@ -37,27 +37,27 @@
                 <x-tables.table :heads="['Citizen', 'Reference', 'Last activity', 'Status', ['label' => 'Action', 'align' => 'center']]"
                     :empty="$tickets->isEmpty()" message="No tickets yet.">
                     @foreach ($tickets as $ticket)
-                        <tr>
-                            <td>
+                        <x-tables.row :reference="$ticket->reference()">
+                            <td data-title>
                                 <x-tables.user-cell :name="$ticket->citizenName()"
                                     :sub="$ticket->user?->email" />
                             </td>
-                            <td class="text-slate-600">{{ $ticket->reference() }}</td>
-                            <td class="text-slate-600">
+                            <td data-reference class="text-slate-600">{{ $ticket->reference() }}</td>
+                            <td data-date class="text-slate-600">
                                 {{ $ticket->updated_at->timezone(config('app.timezone'))->format('M j, Y g:i A') }}
                             </td>
-                            <td>
+                            <td data-side="right">
                                 <x-tables.badge :variant="$ticket->status === 'open' ? 'success' : 'neutral'">
                                     {{ $ticket->status }}
                                 </x-tables.badge>
                             </td>
-                            <td class="text-center">
+                            <td data-side="full" class="text-center">
                                 <div class="flex justify-center">
                                     <x-tables.action label="Open" icon="file-search"
                                         :href="route('admin.tickets.show', $ticket)" />
                                 </div>
                             </td>
-                        </tr>
+                        </x-tables.row>
                     @endforeach
                 </x-tables.table>
             @else
@@ -65,12 +65,12 @@
                     :empty="$contactMessages->isEmpty()" message="No website inquiries yet.">
                     @foreach ($contactMessages as $contactMessage)
                         @php($awaitingReply = $contactMessage->status === \App\Models\ContactMessage::NEW)
-                        <tr>
-                            <td>
+                        <x-tables.row>
+                            <td data-person>
                                 <x-tables.user-cell :name="trim($contactMessage->first_name . ' ' . $contactMessage->last_name)"
                                     :sub="$contactMessage->email" />
                             </td>
-                            <td class="max-w-xs">
+                            <td data-title class="max-w-xs">
                                 <p class="truncate text-slate-600 dark:text-slate-100">
                                     {{ $contactMessage->subject }}
                                 </p>
@@ -78,21 +78,21 @@
                             <td class="text-slate-600">
                                 {{ $contactMessage->service }}
                             </td>
-                            <td class="text-slate-600 sm:whitespace-nowrap">
+                            <td data-date class="text-slate-600 sm:whitespace-nowrap">
                                 {{ $contactMessage->updated_at->timezone(config('app.timezone'))->format('M j, Y g:i A') }}
                             </td>
-                            <td>
+                            <td data-side="right">
                                 <x-tables.badge :variant="$awaitingReply ? 'warning' : 'success'">
                                     {{ $awaitingReply ? 'Awaiting reply' : 'Replied' }}
                                 </x-tables.badge>
                             </td>
-                            <td class="text-center">
+                            <td data-side="full" class="text-center">
                                 <div class="flex justify-center">
                                     <x-tables.action label="Open" icon="file-search"
                                         :href="route('admin.contact-messages.show', $contactMessage)" />
                                 </div>
                             </td>
-                        </tr>
+                        </x-tables.row>
                     @endforeach
                 </x-tables.table>
             @endif

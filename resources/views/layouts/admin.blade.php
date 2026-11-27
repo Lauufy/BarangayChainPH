@@ -70,39 +70,56 @@
             display: none;
         }
 
-        html[data-sidebar="collapsed"] .sb-logo {
-            display: block;
+        @media (min-width: 768px) {
+            html[data-sidebar="collapsed"] .sb-logo {
+                display: block;
+            }
+
+            /* Collapsed icon rail */
+            html[data-sidebar="collapsed"] .sb-label {
+                display: none;
+            }
+
+            html[data-sidebar="collapsed"] .sb-head {
+                flex-direction: column;
+                justify-content: center;
+                gap: .75rem;
+                padding-inline: 0;
+            }
+
+            html[data-sidebar="collapsed"] .sb-link {
+                justify-content: center;
+                gap: 0;
+                padding-inline: 0;
+            }
+
+            html[data-sidebar="collapsed"] .sb-section-label {
+                font-size: 0;
+                line-height: 0;
+                height: 1px;
+                padding: 0;
+                margin: 0 .75rem 1rem;
+                background: rgba(255, 255, 255, .08);
+            }
+
+            html[data-sidebar="collapsed"] .sb-toggle-icon {
+                transform: scaleX(-1);
+            }
         }
 
-        /* Collapsed icon rail */
-        html[data-sidebar="collapsed"] .sb-label {
-            display: none;
-        }
+        @media (width < 768px) {
+            .admin-sidebar:popover-open {
+                display: block;
+                inset: 0 auto 0 0;
+                margin: 0;
+                width: min(19rem, calc(100vw - 3rem));
+                height: 100%;
+                max-height: none;
+            }
 
-        html[data-sidebar="collapsed"] .sb-head {
-            flex-direction: column;
-            justify-content: center;
-            gap: .75rem;
-            padding-inline: 0;
-        }
-
-        html[data-sidebar="collapsed"] .sb-link {
-            justify-content: center;
-            gap: 0;
-            padding-inline: 0;
-        }
-
-        html[data-sidebar="collapsed"] .sb-section-label {
-            font-size: 0;
-            line-height: 0;
-            height: 1px;
-            padding: 0;
-            margin: 0 .75rem 1rem;
-            background: rgba(255, 255, 255, .08);
-        }
-
-        html[data-sidebar="collapsed"] .sb-toggle-icon {
-            transform: scaleX(-1);
+            .admin-sidebar::backdrop {
+                background: rgb(2 6 23 / .5);
+            }
         }
     </style>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -116,7 +133,7 @@
     <div class="flex h-screen overflow-hidden">
 
         {{-- ========== Sidebar ========== --}}
-        <aside
+        <aside id="admin-sidebar" aria-label="Admin navigation"
             class="admin-sidebar text-(--white) fixed inset-y-0 left-0 z-50 hidden overflow-y-auto overflow-x-hidden border-r border-white/5 md:block">
 
             {{-- Brand + toggle --}}
@@ -283,6 +300,16 @@
                 class="border-(--gray-200) bg-(--white) dark:bg-(--blue-850) relative z-40 flex h-20 shrink-0 items-center justify-between border-b px-3 sm:px-6 dark:border-white/10">
 
                 <div class="min-w-0">
+                    <button type="button" id="admin-mobile-sidebar-toggle" popovertarget="admin-sidebar"
+                        aria-label="Open sidebar" aria-controls="admin-sidebar" aria-expanded="false"
+                        class="grid size-11 place-items-center rounded-lg bg-[#070b24] text-[#a4accd] focus-visible:outline-2 focus-visible:outline-indigo-500 md:hidden">
+                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
+                        <rect x="3" y="3" width="18" height="18" rx="2" />
+                        <path d="M9 3v18" />
+                    </svg>
+                    </button>
                     <x-partials.live-date class="hidden lg:flex" timezone="Asia/Manila" />
                 </div>
 
@@ -292,7 +319,7 @@
 
                     {{-- Notifications --}}
                     @php($unreadNotificationCount = auth()->user()->unreadNotifications()->count())
-                    <details id="admin-notification-menu" class="relative">
+                    <details id="admin-notification-menu" class="md:relative">
                         <summary aria-label="Notifications"
                             class="list-none cursor-pointer rounded-lg outline-none transition-colors duration-200 focus-visible:bg-(--gray-100) dark:focus-visible:bg-white/10 [&::-webkit-details-marker]:hidden hover:bg-(--gray-100) hover:text-(--gray-900) dark:hover:bg-white/10 dark:hover:text-(--white) text-(--gray-500) dark:text-(--gray-400) relative flex p-2.5">
                             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -310,7 +337,7 @@
                         </summary>
 
                         <div
-                            class="absolute right-0 z-50 mt-3 w-104 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-(--gray-200) bg-(--gray-50) p-3 shadow-xl shadow-black/10 dark:border-white/10 dark:bg-(--gray-900)">
+                            class="absolute inset-x-3 top-full z-50 mt-1 grid max-h-[calc(100dvh-6rem)] grid-rows-[auto_auto_minmax(0,1fr)_auto] overflow-y-auto rounded-xl border border-(--gray-200) bg-(--gray-50) p-3 shadow-xl shadow-black/10 md:inset-x-auto md:right-0 md:mt-3 md:w-104 dark:border-white/10 dark:bg-(--gray-900)">
 
                             {{-- Header --}}
                             <div class="flex items-start justify-between gap-3">
@@ -543,6 +570,29 @@
         const userMenu = $('admin-user-menu');
         const sidebarToggle = $('admin-sidebar-toggle');
 
+        const sidebar = $('admin-sidebar');
+        const mobileOpener = $('admin-mobile-sidebar-toggle');
+        const mobileViewport = window.matchMedia('(width < 768px)');
+
+        function syncSidebarMode() {
+            if (mobileViewport.matches) {
+                sidebar.setAttribute('popover', 'auto');
+                sidebarToggle.setAttribute('aria-label', 'Close sidebar');
+                sidebarToggle.removeAttribute('aria-expanded');
+            } else {
+                if (sidebar.matches(':popover-open')) sidebar.hidePopover();
+                sidebar.removeAttribute('popover');
+                sidebarToggle.setAttribute('aria-label', 'Toggle sidebar');
+                sidebarToggle.setAttribute('aria-expanded', String(root.dataset.sidebar !== 'collapsed'));
+            }
+        }
+
+        sidebar.addEventListener('toggle', () => {
+            const open = sidebar.matches(':popover-open');
+            mobileOpener.setAttribute('aria-expanded', String(open));
+            if (open) sidebarToggle.focus();
+        });
+
         // ---------- Sidebar (collapsed state is remembered) ----------
         function setSidebar(collapsed) {
             if (collapsed) {
@@ -565,7 +615,14 @@
 
         setSidebar(root.dataset.sidebar === 'collapsed');
 
+        syncSidebarMode();
+        mobileViewport.addEventListener('change', syncSidebarMode);
         sidebarToggle?.addEventListener('click', () => {
+            if (mobileViewport.matches) {
+                sidebar.hidePopover();
+                mobileOpener.focus();
+                return;
+            }
             const collapsed = root.dataset.sidebar !== 'collapsed';
             setSidebar(collapsed);
             try {

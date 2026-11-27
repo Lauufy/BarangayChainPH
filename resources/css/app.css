@@ -5,6 +5,7 @@
 @import './theme.css';
 @import './typography.css';
 @import './reveal.css';
+@import './mobile-tables.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
@@ -27,6 +28,29 @@
     flex-wrap: wrap;
     background: transparent;
     padding-inline: 0;
+}
+
+@media (width < 40rem) {
+    [data-table-key]:has(nav[aria-label="Table views"]) > div {
+        width: 100%;
+    }
+
+    :is(nav[aria-label="Table views"], nav[aria-label="Filter notifications"], [role="tablist"]) {
+        display: grid;
+        width: 100%;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 5.5rem), 1fr));
+        align-items: stretch;
+    }
+
+    nav[aria-label="Table views"] {
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
+    }
+
+    :is(nav[aria-label="Table views"], nav[aria-label="Filter notifications"], [role="tablist"]) > :is(a, button) {
+        justify-content: center;
+        text-align: center;
+        padding-inline: .5rem;
+    }
 }
 
 .admin-module nav [aria-current='page'] {

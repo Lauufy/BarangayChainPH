@@ -1,3 +1,4 @@
+import './global/table-details';
 import './global/form-validation';
 import './global/data-loading';
 import './global/password-strength';

@@ -60,12 +60,12 @@
                 <x-tables.table :heads="['Citizen', 'Submitted', 'Status', ['label' => 'Actions', 'align' => 'center']]"
                     :empty="$verifications->isEmpty()" message="No identity verification requests found.">
                     @foreach ($verifications as $verification)
-                        <tr>
+                        <x-tables.row>
                             <td data-title>
                                 <x-tables.user-cell :name="$verification->user->name" :sub="$verification->user->email"
                                     :avatar="$verification->user->avatar_url" />
                             </td>
-                            <td data-label="Submitted">
+                            <td data-date data-label="Submitted">
                                 {{ $verification->submitted_at?->format('M j, Y g:i A') ?? 'N/A' }}
                             </td>
                             <td data-side="right">
@@ -84,7 +84,7 @@
                                         :href="route('admin.identity-verification.show', $verification)" />
                                 </div>
                             </td>
-                        </tr>
+                        </x-tables.row>
                     @endforeach
                 </x-tables.table>
             </div>

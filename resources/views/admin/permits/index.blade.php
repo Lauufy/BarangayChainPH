@@ -74,11 +74,11 @@
                     ['label' => 'Actions', 'align' => 'center'],
                 ]" :empty="$requests->isEmpty()" message="No permit applications found.">
                     @foreach ($requests as $request)
-                        <tr>
-                            <td data-title>
+                        <x-tables.row :reference="$request->reference_number" :note="$request->purpose">
+                            <td data-person>
                                 <x-tables.user-cell :name="$request->applicant_name" :sub="$request->user->email" :avatar="$request->user->avatar_url" />
                             </td>
-                            <td data-label="Document type">{{ $request->serviceTitle() }}</td>
+                            <td data-title data-label="Document type">{{ $request->serviceTitle() }}</td>
                             <td data-side="right">
                                 <x-tables.badge class="rounded-full! gap-1.5" :variant="match ($request->status) {
                                     'pending', 'resubmission_required' => 'warning',
@@ -91,7 +91,7 @@
                                     {{ ucfirst(str_replace('_', ' ', $request->status)) }}
                                 </x-tables.badge>
                             </td>
-                            <td data-label="Date submitted" class="whitespace-nowrap">
+                            <td data-date data-label="Date submitted" class="whitespace-nowrap">
                                 {{ $request->created_at?->timezone(config('app.timezone'))->format('M j, Y g:i A') ?? 'N/A' }}
                             </td>
                             <td data-side="full">
@@ -99,7 +99,7 @@
                                     <x-tables.action label="Review" icon="file-search" :href="route('admin.permits.show', $request)" />
                                 </div>
                             </td>
-                        </tr>
+                        </x-tables.row>
                     @endforeach
                 </x-tables.table>
             </div>

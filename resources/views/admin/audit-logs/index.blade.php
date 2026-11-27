@@ -78,7 +78,7 @@
                 :empty="$isEmpty" message="No audit records match these filters."
                 hint="Try removing a filter or changing the date.">
                 @foreach ($logs as $log)
-                    <tr>
+                    <x-tables.row>
                         <td data-title>
                             <x-tables.user-cell :name="$log['user']" />
                         </td>
@@ -101,7 +101,7 @@
                             {{ $log['record'] }}
                         </td>
 
-                        <td data-label="Changes">
+                        <td data-label="Changes" @if (trim((string) $log['changes']) !== '') data-sheet-action-cell @endif>
                             @if (trim((string) $log['changes']) === '')
                                 <span class="text-slate-400 dark:text-slate-500">—</span>
                             @else
@@ -117,10 +117,10 @@
                             @endif
                         </td>
 
-                        <td data-label="Date & time" class="whitespace-nowrap text-slate-500 dark:text-slate-400">
+                        <td data-date data-label="Date & time" class="whitespace-nowrap text-slate-500 dark:text-slate-400">
                             {{ $log['date'] }}
                         </td>
-                    </tr>
+                    </x-tables.row>
                 @endforeach
             </x-tables.table>
         </x-tables.card>

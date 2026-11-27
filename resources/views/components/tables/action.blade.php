@@ -66,12 +66,12 @@
     $color = $colors[$variant !== 'default' ? $variant : $icon] ?? $colors['default'];
 
     $btn =
-        ($slot->isEmpty() ? 'grid size-10 place-items-center sm:size-8' : 'inline-flex min-h-11 items-center gap-2 px-3 text-sm font-semibold') . ' rounded-md' .
+        'grid size-10 place-items-center sm:size-8' . ' rounded-md' .
         ' transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 ' .
         $color;
 @endphp
 
-<div class="group relative inline-flex">
+<div class="tbl-row-action group relative inline-flex">
     @if ($action)
         <form action="{{ $action }}" method="POST"
             @if ($confirm)
@@ -87,16 +87,19 @@
                 @method($method)
             @endif
             <button type="submit" aria-label="{{ $label }}" {{ $attributes->class($btn) }}>
-                {!! $svg !!} {{ $slot }}
+                {!! $svg !!}
+            <span class="tbl-action-label">{{ $label }}</span>
             </button>
         </form>
     @elseif ($href)
         <a href="{{ $href }}" aria-label="{{ $label }}" {{ $attributes->class($btn) }}>
             {!! $svg !!}
+            <span class="tbl-action-label">{{ $label }}</span>
         </a>
     @else
         <button type="button" aria-label="{{ $label }}" {{ $attributes->class($btn) }}>
             {!! $svg !!}
+            <span class="tbl-action-label">{{ $label }}</span>
         </button>
     @endif
 

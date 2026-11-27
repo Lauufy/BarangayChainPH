@@ -16,11 +16,11 @@
         ->implode('');
 @endphp
 
-<div class="flex min-w-0 items-center gap-3">
+<div data-user-cell class="flex min-w-0 items-center gap-3">
     @if ($avatar)
         <img src="{{ $avatar }}" alt="" class="size-10 shrink-0 rounded-full object-cover">
     @else
-        <span class="grid size-10 shrink-0 place-items-center rounded-full text-xs font-semibold {{ $tone }}">{{ $initials }}</span>
+        <span aria-hidden="true" class="grid size-10 shrink-0 place-items-center rounded-full text-xs font-semibold {{ $tone }}">{{ $initials }}</span>
     @endif
 
     <div class="min-w-0">

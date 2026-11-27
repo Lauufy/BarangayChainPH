@@ -81,7 +81,7 @@
                 :empty="$records->isEmpty()" message="No blockchain records yet."
                 hint="Records appear here once a permit is written to the blockchain.">
                 @foreach ($records as $record)
-                    <tr>
+                    <x-tables.row>
                         {{-- Card title on mobile --}}
                         <td data-title>
                             {{ $record->issuedDocument->document_number }}
@@ -99,7 +99,6 @@
                             @endif
                         </td>
 
-                        {{-- Tap-to-expand on mobile --}}
                         <td data-label="Revoke transaction" data-detail>
                             @if ($url = $record->transactionUrl($record->revoke_tx_hash))
                                 <a href="{{ $url }}" target="_blank" rel="noopener"
@@ -137,10 +136,10 @@
                             @endif
                         </td>
 
-                        <td data-label="Recorded" class="sm:whitespace-nowrap">
+                        <td data-date data-label="Recorded" class="sm:whitespace-nowrap">
                             {{ $record->recorded_at?->timezone(config('app.timezone'))->format('M j, Y g:i A') ?? 'N/A' }}
                         </td>
-                    </tr>
+                    </x-tables.row>
                 @endforeach
             </x-tables.table>
         </x-tables.card>

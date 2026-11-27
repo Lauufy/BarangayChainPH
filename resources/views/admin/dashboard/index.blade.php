@@ -206,17 +206,17 @@
                     <x-tables.table :heads="['Reference', 'Citizen', 'Permit Type', 'Date', 'Status']" :empty="$recentPermits->isEmpty()" message="No recent permit requests to display."
                         hint="">
                         @foreach ($recentPermits as $permit)
-                            <tr>
-                                <td
+                            <x-tables.row :reference="$permit->reference_number ?? 'REQ-' . $permit->id" :note="$permit->purpose">
+                                <td data-reference
                                     class="text-(--gray-900) dark:text-(--gray-50) whitespace-nowrap font-mono text-xs font-medium">
                                     {{ $permit->reference_number ?? 'REQ-' . $permit->id }}
                                 </td>
-                                <td>
+                                <td data-person>
                                     <x-tables.user-cell :name="$permit->user->name ?? ($permit->citizen_name ?? '—')" :avatar="$permit->user->avatar_url ?? null" />
                                 </td>
-                                <td>{{ $permit->serviceTitle() }}</td>
-                                <td class="whitespace-nowrap">{{ $permit->created_at?->format('j M Y') }}</td>
-                                <td>
+                                <td data-title>{{ $permit->serviceTitle() }}</td>
+                                <td data-date class="whitespace-nowrap">{{ $permit->created_at?->format('j M Y') }}</td>
+                                <td data-side="right">
                                     <x-tables.badge :variant="match (strtolower($permit->status ?? 'pending')) {
                                         'approved', 'completed', 'authenticated' => 'success',
                                         'rejected', 'denied' => 'danger',
@@ -227,7 +227,7 @@
                                         {{ str_replace('_', ' ', strtolower($permit->status ?? 'pending')) }}
                                     </x-tables.badge>
                                 </td>
-                            </tr>
+                            </x-tables.row>
                         @endforeach
                     </x-tables.table>
                 </section>

@@ -1,0 +1,77 @@
+.tbl [data-mobile-only], .tbl-action-label { display: none; }
+
+.record-sheet {
+    position: fixed;
+    inset: auto 0 0;
+    width: min(100%, 36rem);
+    max-width: 100%;
+    max-height: 88dvh;
+    margin: 0 auto;
+    padding: .5rem 1rem max(1rem, env(safe-area-inset-bottom));
+    border-radius: 1rem 1rem 0 0;
+    overflow: auto;
+    overflow-wrap: anywhere;
+}
+.record-sheet::backdrop { background: rgb(15 23 42 / .5); }
+.record-sheet dl > div { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+.record-sheet dt { color: var(--tbl-sub, #64748b); }
+.record-sheet dd { min-width: 0; text-align: right; white-space: pre-line; font-weight: 500; }
+.record-sheet dd a { text-decoration: underline; }
+.record-sheet dl:empty { display: none; }
+.record-done, [data-record-open] {
+    display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+    min-height: 44px; padding: .5rem .95rem; border-radius: .55rem;
+    background: #090e26; color: white; font-size: .8125rem; font-weight: 600; cursor: pointer;
+}
+.record-done { width: 100%; }
+.dark :is(.record-done, [data-record-open]) { background: #e2e8f0; color: #0f172a; }
+
+@media screen and (width < 40rem) {
+    .tbl-cards table, .tbl-cards tbody { display: block; width: 100%; }
+    .tbl-cards thead { display: none; }
+    .tbl-cards tbody { display: grid; gap: .75rem; }
+    .tbl-cards tbody > tr {
+        display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: start;
+        gap: .45rem .65rem; padding: .875rem; border: 1px solid var(--tbl-border);
+        border-radius: .75rem; background: var(--tbl-card);
+    }
+    .tbl-cards tbody > tr > td {
+        display: block; grid-column: 1 / -1; min-width: 0; padding: 0 !important;
+        white-space: normal; overflow-wrap: anywhere; font-size: .8125rem;
+    }
+    .tbl-cards td[data-label]:not([data-title],[data-date],[data-person])::before {
+        content: attr(data-label) " "; color: var(--tbl-sub); margin-right: .35rem;
+    }
+    .tbl-cards tbody td[data-title] { grid-row: 1; font-weight: 650; font-size: .95rem; }
+    .tbl-cards tr:has([data-side="right"]) > td[data-title] { grid-column: 1; }
+    .tbl-cards tbody td[data-side="right"] { grid-area: 1 / 2; justify-self: end; max-width: 9rem; }
+    .tbl-cards td[data-side="right"] > span { white-space: normal; }
+    .tbl-cards tbody td:is([data-reference],[data-hide-mobile],[data-detail]:not([data-side="full"],[data-date])) { display: none; }
+    .tbl-cards [data-user-cell] > :first-child, .tbl-cards [data-user-cell] p + p { display: none; }
+    .tbl-cards [data-user-cell] p { white-space: normal; }
+    .tbl-cards tbody td:is([data-person],[data-date]) { display: flex; align-items: center; gap: .5rem; }
+    .tbl-cards :is([data-person],[data-date])::before {
+        content: ''; flex: none; width: 1rem; height: 1rem; background: var(--tbl-sub);
+        mask: var(--meta-icon) center / contain no-repeat;
+    }
+    .tbl-cards [data-person] { order: 1; --meta-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' stroke='black' stroke-width='1.6' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='7' r='3.5'/%3E%3Cpath d='M4 21v-3a5 5 0 0 1 5-5h6a5 5 0 0 1 5 5v3'/%3E%3C/svg%3E"); }
+    .tbl-cards [data-date] { order: 2; color: var(--tbl-sub); --meta-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' stroke='black' stroke-width='1.6' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 6v6l4 2'/%3E%3C/svg%3E"); }
+    .tbl-cards tbody td[data-card-footer] {
+        order: 3; display: flex; align-items: center; gap: .5rem; justify-content: space-between;
+        margin-top: .3rem; padding-top: .65rem !important; border-top: 1px solid var(--tbl-border);
+    }
+    [data-card-reference] { font: .7rem ui-monospace, monospace; color: var(--tbl-sub); }
+    [data-record-open] { flex-shrink: 0; margin-left: auto; }
+    [data-card-footer] > [data-record-open]:only-child { width: 100%; }
+    .tbl-cards tbody td:is([data-side="full"]:not([data-empty]), [data-sheet-action-cell]) { display: none; }
+}
+
+[data-sheet-actions]:not(:empty) { display: grid; gap: .5rem; margin-bottom: .75rem; }
+[data-sheet-actions] > div { display: grid; justify-content: stretch; gap: .5rem; }
+[data-sheet-actions] :is(button, a) {
+    display: flex; justify-content: center; align-items: center; width: 100%;
+    min-height: 44px; height: auto; padding: .5rem; font-size: .875rem; font-weight: 600;
+}
+[data-sheet-actions] .tbl-row-action { display: block; }
+[data-sheet-actions] .tbl-action-label { display: inline; }
+[data-sheet-actions] .tbl-row-action :is(svg, [aria-hidden="true"]) { display: none; }

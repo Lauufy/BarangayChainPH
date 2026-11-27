@@ -319,7 +319,7 @@
             <x-tables.table :heads="$deploymentHeads" :empty="$deployments->isEmpty()" message="No deployments recorded."
                 hint="Deployments appear here once the registry is deployed.">
                 @foreach ($deployments as $row)
-                    <tr>
+                    <x-tables.row>
                         <td data-title>{{ $row->version }}</td>
                         <td data-side="right">
                             <x-tables.badge variant="neutral">{{ ucfirst($row->network) }}</x-tables.badge>
@@ -336,10 +336,10 @@
                             </td>
                         @endforeach
 
-                        <td data-label="Deployed" class="sm:whitespace-nowrap">
+                        <td data-date data-label="Deployed" class="sm:whitespace-nowrap">
                             {{ $row->deployed_at?->format('M j, Y') ?? 'Unknown' }}
                         </td>
-                    </tr>
+                    </x-tables.row>
                 @endforeach
             </x-tables.table>
         </x-tables.card>

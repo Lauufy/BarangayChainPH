@@ -80,11 +80,11 @@
             <div class="document-directory">
                 <x-tables.table :heads="['Submitted By', 'Document Type', 'Authentication Status', 'Date Issued', 'Actions']" :empty="$documents->isEmpty()" message="No documents found.">
                     @foreach ($documents as $document)
-                        <tr>
-                            <td data-title>
+                        <x-tables.row :reference="$document->document_number">
+                            <td data-person>
                                 <x-tables.user-cell :name="$document->serviceRequest->applicant_name" :sub="$document->document_number . ' · v' . $document->version" />
                             </td>
-                            <td data-label="Document type">
+                            <td data-title data-label="Document type">
                                 {{ $document->serviceRequest->serviceTitle() }}
                             </td>
                             <td data-side="right">
@@ -93,7 +93,7 @@
                                     {{ $document->revoked_at ? 'Replaced' : 'Active' }}
                                 </x-tables.badge>
                             </td>
-                            <td data-label="Date issued">
+                            <td data-date data-label="Date issued">
                                 {{ $document->issued_at?->timezone(config('app.timezone'))->format('M j, Y g:i A') ?? 'N/A' }}
                             </td>
                             <td data-side="full">
@@ -103,7 +103,7 @@
                                         data-document-title="{{ $document->document_number }} · v{{ $document->version }}" />
                                 </div>
                             </td>
-                        </tr>
+                        </x-tables.row>
                     @endforeach
                 </x-tables.table>
             </div>

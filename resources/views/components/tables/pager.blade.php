@@ -15,7 +15,7 @@
 @endphp
 
 @if ($paginator)
-    <div class="flex flex-col gap-3 px-4 py-3 text-sm text-slate-500 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between border-t border-slate-200 dark:border-slate-700">
+    <div class="flex items-center justify-between gap-1 px-2 py-3 text-sm text-slate-500 dark:text-slate-400 sm:gap-3 sm:px-4 border-t border-slate-200 dark:border-slate-700">
         {{-- Left: Showing [n] items per page --}}
         <div>
             @if (count($perPageOptions))
@@ -39,7 +39,6 @@
                         </select>
                         <span class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400">{!! $iChevron !!}</span>
                     </span>
-                    <span>items per page</span>
                 </form>
             @endif
         </div>
@@ -58,22 +57,22 @@
                 $num = 'grid size-8 place-items-center rounded-md text-sm transition';
             @endphp
 
-            <nav class="flex flex-wrap items-center gap-1.5" aria-label="Pagination">
+            <nav class="flex shrink-0 items-center gap-1 sm:flex-wrap sm:gap-1.5" aria-label="Pagination">
                 @if ($paginator->onFirstPage())
                     <span class="{{ $nav }} {{ $off }}">{!! $iPrev !!}</span>
                 @else
                     <a href="{{ $paginator->previousPageUrl() }}" aria-label="Previous page" class="{{ $nav }} {{ $on }}">{!! $iPrev !!}</a>
                 @endif
 
-                <div class="mx-1 flex items-center gap-1">
+                <div class="flex items-center gap-1 sm:mx-1">
                     @foreach ($show as $i => $n)
                         @if ($i > 0 && $n - $show[$i - 1] > 1)
-                            <span class="px-1 text-slate-400 dark:text-slate-500" aria-hidden="true">...</span>
+                            <span class="hidden px-1 sm:inline text-slate-400 dark:text-slate-500" aria-hidden="true">...</span>
                         @endif
                         @if ($n === $current)
                             <span aria-current="page" class="{{ $num }} bg-blue-600 font-semibold text-white">{{ $n }}</span>
                         @else
-                            <a href="{{ $paginator->url($n) }}" class="{{ $num }} text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">{{ $n }}</a>
+                            <a href="{{ $paginator->url($n) }}" class="max-sm:hidden {{ $num }} text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">{{ $n }}</a>
                         @endif
                     @endforeach
                 </div>

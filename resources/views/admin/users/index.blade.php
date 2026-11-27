@@ -65,13 +65,13 @@
 
         {{-- Account directory --}}
         <x-tables.card :paginator="$paginator" :searchable="false" :per-page-options="[5, 10, 15, 25]">
-            <x-tables.toolbar key="users" :total="$accountCounts['total']" total-label="All Accounts" :search="true"
+            <x-tables.toolbar key="users" class="max-sm:hidden" :total="$accountCounts['total']" total-label="All Accounts" :search="true"
                 search-placeholder="Search by name, email, or phone" :filters="$directoryFilters" />
 
             <div class="account-directory">
                 <x-tables.table :heads="$tableHeads" :empty="$paginator->isEmpty()" message="No accounts found.">
                     @foreach ($paginator as $account)
-                        <tr>
+                        <x-tables.row>
                             <td data-title>
                                 <x-tables.user-cell :name="$account->name" :sub="$account->email" :avatar="$account->avatar_url" />
                             </td>
@@ -89,9 +89,9 @@
                                     {{ $statuses[$account->status] ?? ucfirst($account->status) }}
                                 </x-tables.badge>
                             </td>
-                            <td data-label="Date created">{{ $account->created_at?->format('M j, Y') ?? 'N/A' }}</td>
+                            <td data-date data-label="Date created">{{ $account->created_at?->format('M j, Y') ?? 'N/A' }}</td>
                             <td data-side="full">@include('admin.users.row-actions', ['account' => $account])</td>
-                        </tr>
+                        </x-tables.row>
                     @endforeach
                 </x-tables.table>
             </div>

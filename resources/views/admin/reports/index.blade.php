@@ -391,9 +391,9 @@
                                         :empty="empty($blockchain['recent'])"
                                         message="No transactions in this period.">
                                         @foreach ($blockchain['recent'] as $transaction)
-                                            <tr>
-                                                <td data-title>{{ $transaction['reference_number'] }}</td>
-                                                <td data-label="Type">{{ $transaction['document_type'] }}</td>
+                                            <x-tables.row :reference="$transaction['reference_number']">
+                                                <td data-reference>{{ $transaction['reference_number'] }}</td>
+                                                <td data-title data-label="Type">{{ $transaction['document_type'] }}</td>
                                                 <td data-side="right">
                                                     <x-tables.badge class="gap-1.5 rounded-full!"
                                                         :variant="match ($transaction['status']) {
@@ -416,8 +416,8 @@
                                                         {{ $transaction['transaction_hash'] ?? '—' }}
                                                     @endif
                                                 </td>
-                                                <td data-label="Date">{{ $transaction['date']?->format('M j, Y') ?? '—' }}</td>
-                                            </tr>
+                                                <td data-date data-label="Date">{{ $transaction['date']?->format('M j, Y') ?? '—' }}</td>
+                                            </x-tables.row>
                                         @endforeach
                                     </x-tables.table>
                                 </x-tables.card>
@@ -531,13 +531,13 @@
                                     :empty="empty($staff_performance['staff'])"
                                     message="No staff data in this period.">
                                     @foreach ($staff_performance['staff'] as $staff)
-                                        <tr>
+                                        <x-tables.row>
                                             <td data-title><x-tables.user-cell :name="$staff['staff_name']" /></td>
                                             <td data-label="Processed">{{ $staff['processed'] }}</td>
                                             <td data-label="Approved">{{ $staff['approved'] }}</td>
                                             <td data-label="Rejected">{{ $staff['rejected'] }}</td>
                                             <td data-label="Avg. processing time">{{ $staff['average_processing_hours'] === null ? '—' : number_format($staff['average_processing_hours'], 2) . ' hrs' }}</td>
-                                        </tr>
+                                        </x-tables.row>
                                     @endforeach
                                 </x-tables.table>
                             </x-tables.card>
