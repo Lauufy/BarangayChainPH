@@ -52,23 +52,22 @@ class ServiceSubmissionRateLimitTest extends TestCase
         $this->withoutVite();
         $this->actingAs($this->verifiedCitizen('preview'));
 
-        foreach (['business-clearance', 'certificate-of-residency', 'barangay-clearance', 'certificate-of-indigency'] as $slug) {
+        foreach (array_keys(config('barangay_services.services')) as $slug) {
             $response = $this->get(route('citizen.'.$slug))->assertOk()
                 ->assertSeeInOrder(['data-panel="1"', 'data-panel="2"', 'Preview your document', 'data-panel="3"', 'Review and confirmation'], false)
                 ->assertDontSee('data-panel="4"', false);
 
-            if ($slug === 'business-clearance') {
-                $response->assertDontSee('Application details')
-                    ->assertSeeInOrder(['data-panel="1"', 'Applicant information', 'Supporting documents', 'data-panel="2"'], false);
-            }
+            $response->assertSee('profile_email')->assertSee('profile_date_of_birth')
+                ->assertDontSee('profile_status')->assertDontSee('profile_consent_ip');
+            $this->assertSame(2, substr_count($response->getContent(), 'Personal Information'));
 
-            if (in_array($slug, ['barangay-clearance', 'certificate-of-indigency'], true)) {
+            if ($slug === 'certificate-of-indigency') {
                 $response->assertDontSee('Supporting documents')->assertDontSee('type="file"', false);
             } else {
                 $response->assertSee('Supporting documents')->assertSee('type="file"', false);
             }
 
-            if ($slug !== 'certificate-of-residency') {
+            if (in_array($slug, ['business-clearance', 'barangay-clearance', 'certificate-of-indigency'], true)) {
                 $response->assertSee('Draft certificate preview')->assertSee('header_permit.png');
             }
         }
@@ -111,6 +110,33 @@ class ServiceSubmissionRateLimitTest extends TestCase
         $this->assertDatabaseHas('service_requests', ['purpose' => 'School supplies']);
     }
 
+    public function test_cedula_validates_contact_number_and_saves_application(): void
+    {
+        Storage::fake('supabase');
+        $this->actingAs($this->verifiedCitizen('cedula'));
+        $url = route('citizen.cedula.store');
+        $fields = [
+            'occupation' => 'Teacher',
+            'annual_income' => '350000.50',
+            'agree_truth' => '1',
+            'requirements' => ['valid_id' => UploadedFile::fake()->create('id.pdf', 10, 'application/pdf')],
+        ];
+
+        $this->post($url, $fields + ['contact_number' => 'invalid'])
+            ->assertSessionHasErrors('contact_number');
+
+        $this->get(route('citizen.cedula'))->assertOk()->assertSee('autocomplete="tel-national"', false);
+
+        $this->post($url, $fields + ['contact_number' => '9171234567'])
+            ->assertRedirect(route('citizen.applications'))
+            ->assertSessionHas('success');
+        $this->assertDatabaseHas('service_requests', [
+            'service_type' => 'community_tax_certificate',
+            'purpose' => 'Community tax certificate for Teacher',
+            'contact_number' => '+639171234567',
+        ]);
+    }
+
     private function verifiedCitizen(string $suffix): User
     {
         $citizen = User::factory()->create([
@@ -143,7 +169,8 @@ class ServiceSubmissionRateLimitTest extends TestCase
     private function validSubmission(): array
     {
         return [
-            'purpose' => 'Proof of residency',
+            'purpose' => 'Employment',
+            'requirements' => ['valid_id' => UploadedFile::fake()->create('id.pdf', 10, 'application/pdf')],
             'resident_since' => 2015,
             'contact_number' => '09171234567',
             'id_presented' => 'SSS',

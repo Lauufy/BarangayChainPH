@@ -55,6 +55,8 @@ class ServiceRequest extends Model
 
     public const BUSINESS_CLEARANCE = 'business_clearance';
 
+    public const COMMUNITY_TAX_CERTIFICATE = 'community_tax_certificate';
+
     // Statuses
     public const PENDING = 'pending';
 

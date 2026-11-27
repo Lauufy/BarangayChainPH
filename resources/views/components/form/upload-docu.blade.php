@@ -33,7 +33,7 @@
     {{-- Drop box + photo preview --}}
     <div data-dropzone
         @class([
-            'relative overflow-hidden border-dashed border-(--gray-300) transition focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-(--blue-600) hover:border-(--blue-600) hover:bg-(--gray-50) data-[dragging=true]:border-(--blue-600) data-[dragging=true]:bg-(--blue-50) dark:border-(--gray-600) dark:hover:bg-(--gray-700) dark:data-[dragging=true]:bg-(--gray-700)',
+            'relative overflow-hidden has-[input[aria-invalid=true]]:border-(--red-600) border-dashed border-(--gray-300) transition focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-(--blue-600) hover:border-(--blue-600) hover:bg-(--gray-50) data-[dragging=true]:border-(--blue-600) data-[dragging=true]:bg-(--blue-50) dark:border-(--gray-600) dark:hover:bg-(--gray-700) dark:data-[dragging=true]:bg-(--gray-700)',
             'h-56 rounded-xl border-2' => ! $compact,
             'h-36 rounded-md border bg-slate-50 dark:bg-slate-900' => $compact,
             'data-[pdf-preview=true]:h-96' => $previewPdf,
@@ -80,7 +80,7 @@
         </button>
     </div>
 
-    <p data-error role="alert" class="text-sm text-(--red-600) empty:hidden dark:text-(--red-500)"></p>
+    <p data-error data-error-for="{{ $name }}" role="alert" class="text-sm text-(--red-600) empty:hidden dark:text-(--red-500)"></p>
 </div>
 
 @once
@@ -103,7 +103,12 @@
                 const savedName = box.dataset.savedName;
                 const error = !f ? '' : !allowed(f, box.dataset.accept) ? 'Allowed file types: ' + box.dataset.accept.replaceAll(',', ', ')
                     : f.size > box.dataset.max * 1048576 ? 'The file must not be larger than ' + box.dataset.max + ' MB.' : '';
-                if (error) input.value = '';
+                if (error) {
+                    input.value = '';
+                    input.setAttribute('aria-invalid', 'true');
+                } else if (f) {
+                    input.removeAttribute('aria-invalid');
+                }
 
                 const file = error ? null : f;
                 const isImage = (!!file && file.type.startsWith('image/')) || (!file && !!savedUrl && box.dataset.savedIsImage === 'true');

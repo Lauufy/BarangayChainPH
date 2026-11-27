@@ -1,14 +1,4 @@
 @php
-    $hiddenFields = [
-        'privacy policy version',
-        'consent ip',
-        'two factor enabled',
-        'google password setup required',
-    ];
-
-    // Same display order as app-info. Labels not listed go to the end.
-    $order = ['name', 'civil status', 'address', 'age', 'nationality', 'birthdate', 'birthplace'];
-
     $card = 'rounded-lg border border-gray-200/80 bg-white p-3 shadow-xs sm:p-5 dark:border-gray-800 dark:bg-gray-900/50';
     $h3 = 'border-b border-gray-100 pb-2.5 text-base font-bold text-(--blue-900) dark:border-gray-800 dark:text-(--blue-300)';
     $h4 = 'text-sm font-bold text-(--blue-900) dark:text-(--blue-300)';
@@ -110,41 +100,7 @@
         </div>
 
         {{-- Verified profile --}}
-        @foreach ($sections as $title => $items)
-            @php
-                $visibleItems = collect($items)
-                    ->reject(fn ($value, $label) => in_array(strtolower(trim($label)), $hiddenFields, true))
-                    ->sortBy(function ($value, $label) use ($order) {
-                        $i = array_search(strtolower(trim($label)), $order, true);
-                        return $i === false ? 99 : $i;
-                    });
-                $multiple = $visibleItems->count() > 1;
-            @endphp
-
-            @if ($visibleItems->isNotEmpty())
-                <section class="{{ $card }}">
-                    <h3 class="{{ $h3 }}">{{ $title }}</h3>
-
-                    <div @class(['mt-4 grid gap-4', 'sm:grid-cols-2' => $multiple])>
-                        @foreach ($visibleItems as $label => $value)
-                            <div @class([
-                                'sm:col-span-2' => $multiple && str_contains(strtolower($label), 'address'),
-                            ])>
-                                <x-form.input
-                                    :label="$label"
-                                    :name="'review_profile_' . Str::slug($label, '_')"
-                                    :value="$value"
-                                    :use-old="false"
-                                    light
-                                    raised
-                                    disabled
-                                />
-                            </div>
-                        @endforeach
-                    </div>
-                </section>
-            @endif
-        @endforeach
+        @include('citizen.service-requests.app-info', ['prefix' => 'review_profile_'])
 
         {{-- Application details (filled in by the page script from data-review) --}}
         <section class="{{ $card }}">
@@ -152,10 +108,11 @@
                 {{ $slug === 'business-clearance' ? 'Applicant information' : 'Application details' }}
             </h3>
 
-            <div @class(['mt-4 grid gap-4', 'sm:grid-cols-2' => $fields->count() > 1])>
+            <div class="mt-4 flex flex-wrap gap-4">
                 @foreach ($fields as $f)
                     <div @class([
-                        'sm:col-span-2' => $fields->count() > 1 && ! empty($f['wide']),
+                        'min-w-0 grow basis-full',
+                        'sm:basis-[calc(50%-0.5rem)]' => empty($f['wide']),
                     ])>
                         <x-form.input
                             :id="'rv-f-' . $f['key']"
@@ -210,11 +167,11 @@
             </p>
 
             <div class="text-(--gray-700) dark:text-(--gray-200) mt-3 space-y-3 text-sm">
-                <x-form.checkbox name="agree_truth" required
+                <x-form.checkbox name="agree_truth" required class="aria-invalid:border-(--red-600)"
                     data-error-message="Confirm that the application details and supporting documents are accurate and valid.">
                     I confirm that all information and supporting documents submitted for this permit request are true, accurate, and valid.
                 </x-form.checkbox>
-                <p id="agree_truth-error" class="text-(--red-600) text-sm empty:hidden"></p>
+                <p id="agree_truth-error" data-error-for="agree_truth" class="text-(--red-600) text-sm empty:hidden"></p>
 
                 {{-- Set to 1 when the user presses "I accept" on the privacy notice. Validate with the "accepted" rule on the server. --}}
                 <input type="hidden" name="agree_privacy" id="agree_privacy" value="">

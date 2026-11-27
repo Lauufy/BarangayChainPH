@@ -1,11 +1,3 @@
-@php
-    $residentName = $flat->first(fn ($v, $l) => str_contains($l, 'full name'))
-        ?? $flat->first(fn ($v, $l) => str_contains($l, 'name'))
-        ?? '—';
-
-    $residentAddress = $flat->first(fn ($v, $l) => str_contains($l, 'address')) ?? '—';
-@endphp
-
 <div class="space-y-4">
     <section class="rounded-lg border border-gray-200/80 bg-white p-3 shadow-xs sm:p-5 dark:border-gray-800 dark:bg-gray-900/50">
         <h3 class="border-b border-gray-100 pb-2.5 text-base font-bold text-(--blue-900) dark:border-gray-800 dark:text-(--blue-300)">
@@ -13,7 +5,7 @@
         </h3>
 
         <div class="mt-4">
-            @if ($slug !== 'certificate-of-residency')
+            @if (in_array($slug, ['barangay-clearance', 'business-clearance', 'certificate-of-indigency'], true))
                 {{-- Holder is as wide as the screen; the scaler shrinks the full-size page to fit it and centers it --}}
                 <div id="preview-holder"
                     class="w-full overflow-hidden rounded-md border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-800">
@@ -26,10 +18,10 @@
                             style="height: 1056px;"
                             srcdoc="{{ view('permits.san-luis', [
                                 'type' => $service['type'],
-                                'name' => $userName,
-                                'age' => $age,
-                                'address' => $address,
-                                'nationality' => $flat->get('nationality'),
+                                'name' => $personalInfo['Name'],
+                                'age' => $personalInfo['Age'],
+                                'address' => $personalInfo['Address'],
+                                'nationality' => $personalInfo['Nationality'],
                                 'purposeText' => '[[purpose]]',
                                 'details' => [],
                             ])->render() }}"
@@ -78,10 +70,10 @@
 
                         <p>
                             This is to certify that
-                            <strong>{{ $residentName }}</strong>,
-                            {{ $age ?? '—' }} years old,
+                            <strong>{{ $personalInfo['Name'] }}</strong>,
+                            {{ $personalInfo['Age'] ?? '—' }} years old,
                             and a resident of
-                            <strong>{{ $residentAddress }}</strong>,
+                            <strong>{{ $personalInfo['Address'] }}</strong>,
                             is requesting a {{ $service['title'] }}
                             for the following purpose:
                         </p>

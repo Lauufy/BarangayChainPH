@@ -4,6 +4,8 @@ namespace App\Support;
 
 class Phone
 {
+    public const MOBILE_PATTERN = '^(?:0|\+63)?9[0-9]{9}$';
+
     /**
      * Turns 9171234567, 09171234567 or +639171234567 into +639171234567.
      * Returns null when it is not a valid Philippine mobile number.

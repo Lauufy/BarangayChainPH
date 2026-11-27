@@ -15,10 +15,16 @@
 |                   'wide' => true makes it full width.
 |                   'other' => true (select only) adds an "Others" option with a text box.
 |                   'prefill' => 'name' prefills from the citizen's name.
+|                   'rules' => extra Laravel validation rules for the field.
+|                   'when' => [field_key, value] shows the field only when that field has that value.
+|                   'step' => number input step (e.g. '0.01').
 |  purpose_template The purpose printed on the certificate. {field_key} is replaced
 |                   with the citizen's answer.
 |  requirements     Supporting document uploads (key => label).
 |  requirement_rules Optional or conditional upload rules. Other uploads are required.
+|
+| Purposes that match another service (residency, indigency) are not listed under
+| Barangay Clearance. Citizens request those as their own service.
 |
 */
 
@@ -34,7 +40,7 @@ return [
             'purpose_template' => '{purpose}',
             'fields' => [
                 ['key' => 'purpose', 'label' => 'Purpose', 'type' => 'select', 'other' => true,
-                    'options' => ['Proof of residency', 'Cedula / Resident Certificate', 'Indigency']],
+                    'options' => ['Employment', 'Business', 'Travel / Abroad', 'Loan application', 'School requirement', 'ID application']],
                 ['key' => 'contact_number', 'label' => 'Contact number', 'type' => 'tel', 'prefill' => 'phone'],
                 ['key' => 'resident_since', 'label' => 'Resident since (year)', 'type' => 'number',
                     'rules' => ['integer', 'digits:4', 'min:1000', 'max:'.date('Y')]],
@@ -75,6 +81,24 @@ return [
                     'options' => ['Scholarship', 'Medical Assistance', 'Financial Assistance']],
             ],
             'requirements' => [],
+        ],
+
+        'cedula' => [
+            'type' => 'community_tax_certificate',
+            'title' => 'Cedula / Resident Certificate',
+            'description' => 'Request a community tax certificate, also called a resident certificate.',
+            'icon' => 'M5 4h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1ZM8 9h8M8 13h8M8 17h5',
+            'purpose_template' => 'Community tax certificate for {occupation}',
+            'fields' => [
+                ['key' => 'occupation', 'label' => 'Occupation', 'type' => 'text', 'prefill' => 'citizenProfile.occupation'],
+                ['key' => 'tin', 'label' => 'TIN', 'type' => 'text', 'required' => false],
+                ['key' => 'contact_number', 'label' => 'Contact number', 'type' => 'tel', 'prefill' => 'phone'],
+                ['key' => 'annual_income', 'label' => 'Gross annual income (PHP)', 'type' => 'number',
+                    'required' => false, 'step' => '0.01', 'rules' => ['numeric', 'min:0', 'decimal:0,2']],
+            ],
+            'requirements' => [
+                'valid_id' => 'Valid government ID',
+            ],
         ],
 
         'business-clearance' => [

@@ -83,7 +83,7 @@ function needsStrengthCheck(input, form) {
 
 // Show or clear the red border (aria-invalid) and the message under the field.
 function showError(input, form, message) {
-    const hint = form.querySelector(`[data-error-for="${input.name}"]`);
+    const hint = form.querySelector(`[data-error-for="${CSS.escape(input.name)}"]`);
 
     // The main password field keeps the red border but shows no text.
     const hideText = needsStrengthCheck(input, form);
@@ -95,8 +95,15 @@ function showError(input, form, message) {
     }
 
     if (hint) {
+        if (message && !hideText) {
+            hint.id ||= input.id + "-error";
+            input.setAttribute("aria-errormessage", hint.id);
+        } else {
+            input.removeAttribute("aria-errormessage");
+        }
         hint.textContent = hideText ? "" : message;
-        hint.classList.toggle("hidden", hideText || !message);
+        // Upload errors use empty:hidden so the upload component can also show file errors.
+        if (!hint.hasAttribute("data-error")) hint.classList.toggle("hidden", hideText || !message);
     }
 }
 
@@ -132,25 +139,44 @@ function getError(input, form) {
 }
 
 // Validate one field; empty fields stay neutral. Returns true when valid.
-function validateInput(input, form) {
-    if (input.disabled) return true;
+function validateInput(input, form, checkRequired = false) {
+    if (!input.willValidate) return true;
 
-    const message = input.value.trim() ? getError(input, form) : "";
+    const empty = !input.value.trim();
+    let message = "";
+    if (checkRequired && (input.validity.badInput || (input.required && empty))) {
+        message = input.dataset.errorMessage || input.validationMessage || "Complete this field.";
+    } else if (!empty) {
+        message = getError(input, form);
+    }
 
     showError(input, form, message);
 
     return message === "";
 }
 
+// The wizard checks a whole panel before focusing its first invalid field.
+window.FormValidation = {
+    validatePanel(panel) {
+        let firstInvalid = null;
+        for (const input of panel.querySelectorAll("input, select, textarea")) {
+            if (!validateInput(input, input.form, true)) firstInvalid ??= input;
+        }
+        firstInvalid?.focus();
+        return !firstInvalid;
+    },
+};
+
 // Enable validation for forms marked with data-validate.
 document.querySelectorAll("form[data-validate]").forEach((form) => {
-    const fields = form.querySelectorAll(VALIDATABLE_FIELDS);
+    const wizard = form.hasAttribute("data-validation-steps");
+    const fields = form.querySelectorAll(wizard ? "input, select, textarea" : VALIDATABLE_FIELDS);
     const password = form.querySelector('[name="password"]');
     const confirmation = form.querySelector('[name="password_confirmation"]');
 
     // Validate a field, and recheck the confirmation when the password changes.
     const validate = (input) => {
-        validateInput(input, form);
+        validateInput(input, form, wizard);
 
         if (input === password && confirmation && confirmation.value) {
             validateInput(confirmation, form);
@@ -179,6 +205,7 @@ document.querySelectorAll("form[data-validate]").forEach((form) => {
     });
 
     // Recheck all fields when the form is submitted.
+    if (wizard) return;
     form.addEventListener("submit", () => {
         fields.forEach((input) => validateInput(input, form));
     });

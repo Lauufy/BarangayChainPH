@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ServiceRequest;
+use App\Support\Phone;
 use Illuminate\Validation\Rule;
 
 class PermitCorrectionFields
@@ -29,14 +30,15 @@ class PermitCorrectionFields
                 'rules' => $field['rules'] ?? match (true) {
                     ($field['other'] ?? false) => ['string', 'min:3', 'max:200'],
                     $field['type'] === 'select' => ['string', Rule::in($field['options'])],
-                    $field['type'] === 'tel' => ['string', 'max:30'],
+                    $field['type'] === 'tel' => ['string', 'regex:/'.Phone::MOBILE_PATTERN.'/D'],
+                    $field['type'] === 'email' => ['email', 'max:255'],
                     $field['type'] === 'textarea' => ['string', 'max:1000'],
                     default => ['string', 'max:255'],
                 },
             ];
         }
         if (! isset($fields['contact_number']) && ! isset($fields['business_contact_number'])) {
-            $fields['contact_number'] = ['label' => 'Contact number', 'type' => 'tel', 'value' => $application->contact_number, 'rules' => ['string', 'max:30']];
+            $fields['contact_number'] = ['label' => 'Contact number', 'type' => 'tel', 'value' => $application->contact_number, 'rules' => ['string', 'regex:/'.Phone::MOBILE_PATTERN.'/D']];
         }
         foreach (['birthdate' => 'Date of birth', 'birthplace' => 'Place of birth', 'nationality' => 'Nationality'] as $key => $label) {
             if (array_key_exists($key, $application->details ?? [])) {

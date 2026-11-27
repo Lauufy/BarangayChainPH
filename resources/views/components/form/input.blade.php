@@ -39,6 +39,11 @@
     $fieldId = $id ?? $name;
     $current = $useOld ? old($name, $value) : $value;
 
+    $isPhilippineMobile = $isPrefixedPhone && $prefix === '+63';
+    if ($isPhilippineMobile && is_string($current)) {
+        $current = preg_replace('/^(?:\+?63|0)/', '', $current);
+    }
+
     // datetime-local needs "Y-m-d\TH:i"; convert Carbon/DateTime values or "Y-m-d H:i:s" strings
     if ($type === 'datetime-local' && filled($current) && !($useOld && old($name) !== null)) {
         try {
@@ -148,9 +153,10 @@
             $type === 'url' => 'url',
             default => null,
         },
+        'pattern' => $isPhilippineMobile ? '9[0-9]{9}' : null,
         'autocomplete' => match ($type) {
             'email' => 'email',
-            'tel' => 'tel',
+            'tel' => $isPhilippineMobile ? 'tel-national' : 'tel',
             'url' => 'url',
             'password' => 'current-password',
             default => null,
@@ -159,10 +165,12 @@
         'style' => $prefix
             ? 'padding-left: calc(0.875rem + ' . mb_strlen($prefix) . 'ch + 0.625rem)'
             : null,
-        // Prefixed phone: keep digits only and drop leading zeros
-        'oninput' => $isPrefixedPhone
-            ? "this.value = this.value.replace(/\\D/g, '').replace(/^0+/, '')"
-            : null,
+        // Accept pasted local and international numbers as national digits.
+        'oninput' => match (true) {
+            $isPhilippineMobile => "this.value = this.value.replace(/\\D/g, '').replace(/^(?:63|0)/, '').slice(0, 10)",
+            $isPrefixedPhone => "this.value = this.value.replace(/\\D/g, '').replace(/^0+/, '')",
+            default => null,
+        },
     ];
 
     // ------------------------------------------------------------------

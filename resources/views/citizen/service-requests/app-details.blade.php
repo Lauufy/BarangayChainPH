@@ -4,7 +4,7 @@
             Application Details
         </h3>
 
-        <div class="mt-4 grid gap-4 sm:grid-cols-2">
+        <div class="mt-4 flex flex-wrap gap-4">
             @foreach ($fields as $f)
                 @php
                     $label = $f['label'] . ($f['required'] ? ' (required)' : ' (optional)');
@@ -19,7 +19,8 @@
                         data-when="{{ $f['when'][1] }}"
                     @endif
                     @class([
-                        'sm:col-span-2' => ! empty($f['wide']),
+                        'min-w-0 grow basis-full',
+                        'sm:basis-[calc(50%-0.5rem)]' => empty($f['wide']),
                     ])
                 >
                     <x-form.input
@@ -28,12 +29,26 @@
                         :label="$label"
                         :type="$f['type']"
                         :value="$f['value']"
+                        :error-message="match (true) {
+                            $f['type'] === 'tel' => 'Enter 10 digits starting with 9, for example 9171234567.',
+                            $f['type'] === 'email' => 'Enter a valid email address.',
+                            $f['type'] === 'select' => 'Choose an option for '.strtolower($f['label']).'.',
+                            $f['key'] === 'resident_since' => 'Enter a four-digit year between 1000 and '.date('Y').'.',
+                            $f['type'] === 'number' => 'Enter a nonnegative amount with up to two decimal places.',
+                            $f['type'] === 'textarea' => 'Use up to 1,000 characters.',
+                            default => 'Enter '.strtolower($f['label']).' using up to 255 characters.',
+                        }"
+                        :min="$f['type'] === 'number' ? ($f['key'] === 'resident_since' ? 1000 : 0) : null"
+                        :max="$f['key'] === 'resident_since' ? date('Y') : null"
                         :step="$f['step']"
+                        :prefix="$f['type'] === 'tel' ? '+63' : null"
+                        :placeholder="match ($f['type']) { 'tel' => '9171234567', 'select' => 'Select an option', default => ' ' }"
+                        :hint="$f['type'] === 'tel' ? '' : null"
+                        :maxlength="match ($f['type']) { 'text', 'email' => 255, 'textarea' => 1000, default => null }"
                         :required="$f['required']"
                         :options="$options"
                         :data-other="! empty($f['other']) ? $f['key'] : null"
                         light
-                        raised
                     />
 
                     @if (! empty($f['other']))
@@ -49,7 +64,8 @@
                                 :name="$f['key'] . '_other'"
                                 label="Please describe (required)"
                                 :value="$f['otherValue'] ?? null"
-                                maxlength="200"
+                                error-message="Describe your answer in 3 to 200 characters."
+                                minlength="3" maxlength="200"
                                 light
                                 raised
                             />

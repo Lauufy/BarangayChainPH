@@ -24,8 +24,14 @@
                     $control = 'block w-full rounded-md border border-red-500 px-3 py-2 dark:bg-slate-900 dark:border-red-400';
                 @endphp
                 <div class="space-y-1.5" data-original="{{ $field['value'] }}">
-                    <label for="field-{{ $key }}" class="font-semibold">{{ $item['label'] }}</label>
-                    @if ($field['type'] === 'file')
+                    @if ($field['type'] !== 'tel')
+                        <label for="field-{{ $key }}" class="font-semibold">{{ $item['label'] }}</label>
+                    @endif
+                    @if ($field['type'] === 'tel')
+                        <x-form.input light raised type="tel" prefix="+63" :label="$item['label']"
+                            :id="'field-'.$key" :name="'corrections['.$key.']'" :value="$value" :use-old="false"
+                            placeholder="9171234567" :required="$field['required'] ?? true" aria-describedby="note-{{ $key }}" />
+                    @elseif ($field['type'] === 'file')
                         <p class="text-sm">Previous upload · {{ $item['old'] ?? 'None' }}</p>
                         <input class="{{ $control }}" id="field-{{ $key }}" name="corrections[{{ $key }}]" type="file" accept=".pdf,.jpg,.jpeg,.png" required aria-describedby="note-{{ $key }}">
                         <small>JPG, PNG or PDF · Up to 10 MB</small>
@@ -64,7 +70,8 @@
                     if (input.type === 'file') return;
                     const validate = () => {
                         const value = input.value.trim();
-                        const previous = group.dataset.original.trim();
+                        const original = group.dataset.original.trim();
+                        const previous = input.type === 'tel' ? original.replace(/^(?:\+?63|0)/, '') : original;
                         const unchanged = value === previous ||
                             (input.type === 'number' && previous !== '' && value !== '' && Number(value) === Number(previous));
                         input.setCustomValidity(unchanged ? 'Enter a value different from the previous answer.' : '');

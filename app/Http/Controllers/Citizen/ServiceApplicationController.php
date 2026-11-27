@@ -6,15 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\ServiceRequest;
 use App\Models\User;
 use App\Notifications\CitizenSubmissionReceived;
-use Carbon\CarbonInterface;
+use App\Support\Phone;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use RuntimeException;
@@ -35,7 +33,9 @@ class ServiceApplicationController extends Controller
             return $this->pendingBlocked();
         }
 
-        $applicant = $this->applicant($request->user());
+        $user = $request->user();
+        $profile = $user->citizenProfile;
+        $applicant = $this->applicant($user);
 
         if ($applicant === null) {
             return $this->profileIncomplete();
@@ -48,26 +48,27 @@ class ServiceApplicationController extends Controller
             'service' => $service,
             'steps' => ['Application form', 'Permit preview', 'Review and submit'],
             'startStep' => $errorKeys === ['agree_truth'] ? 3 : 1,
-            'sections' => match ($service['type']) {
-                ServiceRequest::BUSINESS_CLEARANCE => [],
-                ServiceRequest::BARANGAY_CLEARANCE, ServiceRequest::CERTIFICATE_OF_INDIGENCY => [
-                    'Applicant' => [
-                        'Name' => $applicant['name'],
-                        'Address' => $applicant['address'],
-                        'Age' => $applicant['age'],
-                        'Nationality' => $request->user()->citizenProfile->nationality,
-                        ...($service['type'] === ServiceRequest::BARANGAY_CLEARANCE ? [
-                            'Birthdate' => $request->user()->citizenProfile->date_of_birth->toDateString(),
-                            'Birthplace' => $request->user()->citizenProfile->place_of_birth,
-                            'Civil status' => $applicant['civil_status'],
-                        ] : []),
-                    ],
-                ],
-                default => $applicant['display'],
-            },
-            'fields' => $this->formFields($service, $request->user()),
-            'userName' => $request->user()->name,
-            'address' => $applicant['address'],
+            'personalInfo' => array_filter([
+                'Name' => $applicant['name'],
+                'Date of birth' => $profile->date_of_birth->format('M j, Y'),
+                'Age' => $applicant['age'],
+                'Place of birth' => $profile->place_of_birth,
+                'Civil status' => $profile->civil_status,
+                'Gender' => $profile->gender,
+                'Nationality' => $profile->nationality,
+                'Religion' => $profile->religion,
+                'Occupation' => $profile->occupation,
+                'Email' => $user->email,
+                'Phone' => $user->phone,
+                'Address' => $applicant['address'],
+                'House number' => $profile->house_number,
+                'Street' => $profile->street,
+                'Barangay' => $profile->barangay,
+                'City / Municipality' => $profile->city_municipality,
+                'Province' => $profile->province,
+                'ZIP code' => $profile->zip_code,
+            ], filled(...)),
+            'fields' => $this->formFields($service, $user),
             'maxMb' => self::MAX_FILE_KB / 1024,
         ]);
     }
@@ -186,7 +187,7 @@ class ServiceApplicationController extends Controller
 
     // Applicant (from the verified profile)
 
-    /** @return array{name:string,age:int,address:string,civil_status:?string,contact_number:?string,display:array}|null */
+    /** @return array{name:string,age:int,address:string,civil_status:?string,contact_number:?string}|null */
     private function applicant(User $user): ?array
     {
         $profile = $user->citizenProfile;
@@ -203,58 +204,7 @@ class ServiceApplicationController extends Controller
             'address' => $address,
             'civil_status' => $profile->civil_status,
             'contact_number' => $user->phone,
-            // Read-only summary shown on step 1: everything on the user and the profile, grouped
-            'display' => $this->infoSections($user, $profile),
         ];
-    }
-
-
-    /**
-     * Every visible column of the user and profile, grouped for display.
-     * Hidden, internal and empty fields are skipped.
-     *
-     * @return array<string, array<string, string>> section title => label => value
-     */
-    private function infoSections(User $user, Model $profile): array
-    {
-        $skip = ['id', 'role', 'remember_token'];
-        $sections = ['Personal information' => [], 'Contact information' => [], 'Address' => []];
-
-        foreach ([$user, $profile] as $model) {
-            foreach (array_keys($model->getAttributes()) as $key) {
-                $value = $model->getAttribute($key);
-
-                $internal = in_array($key, $skip, true)
-                    || in_array($key, $model->getHidden(), true)
-                    || preg_match('/(_id|_at|_path|_hash|_token)$/', $key);
-
-                if ($internal || blank($value) || is_array($value) || is_object($value) && ! $value instanceof CarbonInterface) {
-                    continue;
-                }
-
-                $text = match (true) {
-                    $value instanceof CarbonInterface => $value->format('M j, Y'),
-                    is_bool($value) => $value ? 'Yes' : 'No',
-                    default => (string) $value,
-                };
-
-                $sections[$this->sectionFor($key)][Str::headline($key)] = $text;
-            }
-        }
-
-        $sections['Personal information']['Age'] = (string) $profile->age();
-
-        return array_filter($sections);
-    }
-
-    /** Which section a column belongs to, by its name. Anything else is personal. */
-    private function sectionFor(string $key): string
-    {
-        return match (true) {
-            (bool) preg_match('/phone|mobile|contact|email|tel/i', $key) => 'Contact information',
-            (bool) preg_match('/address|street|barangay|purok|city|municipality|province|region|zip|postal/i', $key) => 'Address',
-            default => 'Personal information',
-        };
     }
 
     /** Step 2 fields with their defaults and old input already resolved. */
@@ -274,7 +224,7 @@ class ServiceApplicationController extends Controller
                 'when' => $field['when'] ?? null,
                 'step' => $field['step'] ?? null,
                 'wide' => $field['wide'] ?? false,
-                'value' => old($key, isset($field['prefill']) ? $user->getAttribute($field['prefill']) : null),
+                'value' => old($key, isset($field['prefill']) ? data_get($user, $field['prefill']) : null),
                 'otherValue' => old("{$key}_other"),
             ];
         }, $service['fields']);
@@ -301,7 +251,10 @@ class ServiceApplicationController extends Controller
                     array_push($rule, 'integer', 'min:0', 'max:1000000');
                     break;
                 case 'tel':
-                    array_push($rule, 'string', 'max:30');
+                    array_push($rule, 'string', 'regex:/'.Phone::MOBILE_PATTERN.'/D');
+                    break;
+                case 'email':
+                    array_push($rule, 'email', 'max:255');
                     break;
                 case 'textarea':
                     array_push($rule, 'string', 'max:1000');
@@ -359,6 +312,12 @@ class ServiceApplicationController extends Controller
             '*_other.required_if' => 'Please describe your answer.',
         ];
 
+        foreach ($service['fields'] as $field) {
+            if ($field['type'] === 'tel') {
+                $messages[$field['key'].'.regex'] = 'Enter a Philippine mobile number such as 09171234567 or +639171234567.';
+            }
+        }
+
         foreach ($service['requirements'] as $key => $label) {
             $messages["requirements.{$key}.required"] = "Please upload: {$label}.";
             $messages["requirements.{$key}.mimes"] = "{$label} must be a JPG, PNG, or PDF file.";
@@ -376,6 +335,10 @@ class ServiceApplicationController extends Controller
         foreach ($service['fields'] as $field) {
             $key = $field['key'];
             $value = $data[$key] ?? null;
+
+            if ($field['type'] === 'tel') {
+                $value = Phone::normalize($value);
+            }
 
             // Use the typed answer when "Others" was chosen
             if (($field['other'] ?? false) && $value === 'Others') {

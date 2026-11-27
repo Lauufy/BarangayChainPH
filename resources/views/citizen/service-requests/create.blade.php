@@ -12,37 +12,8 @@
         $sub = 'text-sm text-(--gray-600) dark:text-(--gray-300)';
         $muted = 'text-(--gray-500) dark:text-(--gray-400)';
         $line = 'border-(--gray-200) dark:border-(--gray-700)';
-        $grid = 'mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3';
-        $span = 'sm:col-span-2 lg:col-span-3';
         $btn =
             'inline-flex items-center justify-center rounded-md px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 sm:py-2';
-        $head = fn($title, $text) => new \Illuminate\Support\HtmlString(
-            '<div><h2 class="text-(--blue-900) dark:text-(--blue-300) text-lg font-bold">' .
-                e($title) .
-                '</h2><p class="' .
-                $sub .
-                '">' .
-                e($text) .
-                '</p></div>',
-        );
-
-        $detailsHeading = $slug === 'business-clearance' ? 'Applicant information' : 'Application details';
-
-        // Profile cards without the hidden labels, and the values shown on the preview
-        $hide = ['privacy policy version', 'consent ip'];
-        $profile = collect($sections)->map(
-            fn($items) => collect((array) $items)->reject(fn($v, $l) => in_array(strtolower($l), $hide)),
-        );
-        $flat = $profile->flatMap(fn($items) => $items->mapWithKeys(fn($v, $l) => [strtolower($l) => $v]));
-        $pick = fn($word) => $flat->first(fn($v, $l) => str_contains($l, $word));
-        $age =
-            $flat->get('age') ??
-            (($born = $pick('birth')) ? rescue(fn() => \Carbon\Carbon::parse($born)->age, null, false) : null);
-        $purpose =
-            collect($fields)->first(fn($f) => str_contains(strtolower($f['key'] . ' ' . $f['label']), 'purpose'))[
-                'key'
-            ] ?? null;
-
     @endphp
 
     <div class="w-full px-4 sm:px-6 pt-10 sm:pt-15 pb-6 rounded-md bg-(--white) ring-1 ring-(--gray-200) dark:bg-(--gray-800) dark:ring-(--gray-700)">
@@ -75,14 +46,12 @@
             <x-form.stepper id="apply-stepper" :steps="$steps" :current="$startStep" :title="$service['title']" />
         </div>
 
-        <form id="apply-form" method="POST" action="{{ route('citizen.' . $slug . '.store') }}"
+        <form id="apply-form" data-validate data-validation-steps method="POST" action="{{ route('citizen.' . $slug . '.store') }}"
             enctype="multipart/form-data" novalidate>
             @csrf
 
             <div data-panel="1" class="space-y-4">
-                @if (collect($sections)->isNotEmpty())
-                    @include('citizen.service-requests.app-info')
-                @endif
+                @include('citizen.service-requests.app-info', ['prefix' => 'profile_'])
                 @include('citizen.service-requests.app-details')
                 @if ($service['requirements'])
                     @include('citizen.service-requests.documents')
@@ -92,19 +61,7 @@
             <section data-panel="2" class="hidden space-y-3" aria-labelledby="document-preview-heading">
                 <h2 id="document-preview-heading" class="text-base font-bold text-(--blue-900) dark:text-(--blue-300)">
                     Preview your document</h2>
-                @include('citizen.service-requests.preview', [
-                    'flat' => collect($sections)->flatMap(
-                        fn($items) => collect((array) $items)->mapWithKeys(fn($v, $l) => [strtolower($l) => $v]),
-                    ),
-                    'age' => collect($sections)
-                        ->flatMap(fn($items) => collect((array) $items)->mapWithKeys(fn($v, $l) => [strtolower($l) => $v]))
-                        ->pipe(
-                            fn($flat) => $flat->get('age') ??
-                                (($born = $flat->first(fn($v, $l) => str_contains($l, 'birth')))
-                                    ? rescue(fn() => \Carbon\Carbon::parse($born)->age, null, false)
-                                    : null),
-                        ),
-                ])
+                @include('citizen.service-requests.preview')
             </section>
 
             <div data-panel="{{ count($steps) }}" class="hidden">
@@ -142,8 +99,7 @@
             const all = (sel) => document.querySelectorAll(sel);
             const form = $('apply-form');
             const LAST = {{ count($steps) }};
-            const MAX = {{ $maxMb }} * 1024 * 1024;
-            const PURPOSE = @json($purpose);
+            const purposeTemplate = @json($service['purpose_template']);
             let step = 1;
 
             // Privacy notice gate on the last step.
@@ -170,6 +126,7 @@
             const answer = (key) => {
                 const field = $('f-' + key);
                 if (field.disabled) return '';
+                if (field.type === 'tel' && field.value) return '+63' + field.value;
                 return field.dataset.other && field.value === 'Others' ? $('f-' + key + '_other').value : field
                     .value;
             };
@@ -179,7 +136,9 @@
                 const sync = () => {
                     const on = select.value === 'Others';
                     $('other-' + select.dataset.other).classList.toggle('hidden', !on);
-                    $('f-' + select.dataset.other + '_other').required = on;
+                    const description = $('f-' + select.dataset.other + '_other');
+                    description.required = on;
+                    description.disabled = !on;
                 };
                 select.addEventListener('change', sync);
                 sync();
@@ -201,17 +160,6 @@
                 source.addEventListener('change', sync);
                 sync();
             });
-
-            // Check file type and size when a file is chosen
-            all('[data-req]').forEach((input) => input.addEventListener('change', () => {
-                const file = input.files[0];
-                const message = !file ? '' :
-                    !/^(image\/(jpeg|png)|application\/pdf)$/.test(file.type) ?
-                    'Only JPG, PNG, or PDF files are allowed.' :
-                    file.size > MAX ? 'The file must not be larger than {{ $maxMb }} MB.' : '';
-                input.closest('[data-req-wrap]').querySelector('[data-req-error]').textContent = message;
-                if (message) input.value = '';
-            }));
 
             const preview = $('certificate-preview');
             function updatePreview() {
@@ -265,8 +213,8 @@
 
             // Next: only if every field on this step is valid
             $('next-button').addEventListener('click', () => {
-                const fields = all(`[data-panel="${step}"] :is(input, select, textarea)`);
-                if ([...fields].every((f) => f.reportValidity())) goTo(step + 1);
+                const panel = form.querySelector(`[data-panel="${step}"]`);
+                if (FormValidation.validatePanel(panel)) goTo(step + 1);
             });
 
             $('back-button').addEventListener('click', () => step === 1 ? location.href = @json(route('citizen.services')) :
@@ -283,14 +231,19 @@
             // Submit only on the last step after the privacy notice is accepted;
             // jump back to any invalid hidden field
             form.addEventListener('submit', (e) => {
-                const invalid = form.querySelector(':invalid');
-                if (step === LAST && privacy.value === '1' && !invalid) return void($('submit-button').disabled = true);
-
-                e.preventDefault();
-                if (invalid) {
-                    goTo(Number(invalid.closest('[data-panel]').dataset.panel));
-                    invalid.reportValidity();
+                if (step !== LAST || privacy.value !== '1') {
+                    e.preventDefault();
+                    return;
                 }
+                for (const panel of form.querySelectorAll('[data-panel]')) {
+                    if (!FormValidation.validatePanel(panel)) {
+                        e.preventDefault();
+                        goTo(Number(panel.dataset.panel));
+                        panel.querySelector('[aria-invalid="true"]')?.focus();
+                        return;
+                    }
+                }
+                $('submit-button').disabled = true;
             });
 
             goTo({{ $startStep }});

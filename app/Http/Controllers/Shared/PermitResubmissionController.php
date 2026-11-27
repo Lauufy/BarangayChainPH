@@ -7,6 +7,7 @@ use App\Models\PermitRevision;
 use App\Models\ServiceRequest;
 use App\Notifications\PermitCorrectionsRequested;
 use App\Services\PermitCorrectionFields;
+use App\Support\Phone;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -101,7 +102,12 @@ class PermitResubmissionController extends Controller
                         $items[$key] = $this->replaceDocument($application, $key, $value, $items[$key], $created, $replaced);
                         continue;
                     }
-                    if ((string) $value === (string) $fields[$key]['value'] ||
+                    $previous = $fields[$key]['value'];
+                    if ($fields[$key]['type'] === 'tel') {
+                        $values[$key] = $value = Phone::normalize($value);
+                        $previous = Phone::normalize($previous);
+                    }
+                    if ((string) $value === (string) $previous ||
                         ($fields[$key]['type'] === 'number' && is_numeric($fields[$key]['value']) && (float) $value === (float) $fields[$key]['value'])) {
                         throw ValidationException::withMessages(["corrections.$key" => 'Enter a value different from the previous answer.']);
                     }

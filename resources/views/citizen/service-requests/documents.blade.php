@@ -1,7 +1,3 @@
-@php
-    $hasMultipleRequirements = count($service['requirements']) > 1;
-@endphp
-
 <section class="{{ $card }}">
     <h3 class="{{ $h3 }}">Supporting documents</h3>
     <p class="{{ $sub }} mt-0.5">
@@ -10,7 +6,7 @@
 
     <div @class([
         'mt-3 grid gap-4',
-        'sm:grid-cols-2 lg:grid-cols-3' => $hasMultipleRequirements,
+        'sm:grid-cols-2' => count($service['requirements']) > 1,
     ])>
         @foreach ($service['requirements'] as $key => $label)
             @php
@@ -29,6 +25,7 @@
                 :name="'requirements[' . $key . ']'"
                 :label="$label . ' (' . $note . ')'"
                 :max-mb="$maxMb"
+                :data-error-message="'Upload the required document: '.$label.'.'"
                 :required="$rule === 'required'"
                 :data-required-for-renewal="$isRenewalOnly ? 'true' : null"
             />
