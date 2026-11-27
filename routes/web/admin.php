@@ -156,17 +156,17 @@ Route::middleware(['auth', 'nocache', 'role:admin,staff'])
 
         // Smart contracts page (needs the contracts.view permission).
         Route::get('/smart-contracts', [SmartContractController::class, 'index'])
-            ->middleware(['permission:contracts.view', 'throttle:30,1'])
+            ->middleware(['permission:contracts.view', 'throttle:30,1,registry-status:'])
             ->name('smart-contracts.index');
 
         // Pause or resume the smart contract (admin only, limited to 5 per minute).
         Route::post('/smart-contracts/pause', [SmartContractController::class, 'togglePause'])
-            ->middleware(['role:admin', 'throttle:5,1'])
+            ->middleware(['role:admin', 'throttle:5,1,registry-controls:'])
             ->name('smart-contracts.pause');
 
         Route::post('/smart-contracts/recovery/{operation}', [SmartContractController::class, 'recover'])
             ->whereIn('operation', ['retry', 'recover'])
-            ->middleware(['role:admin', 'throttle:5,1'])
+            ->middleware(['role:admin', 'throttle:5,1,registry-controls:'])
             ->name('smart-contracts.recovery');
 
         // Reports (needs the reports.view permission).

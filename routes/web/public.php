@@ -62,5 +62,5 @@ Route::post('/verify/result', [PermitVerificationController::class, 'verify'])
 // SyncVersionController must reject a scope that does not match the user's role.
 Route::get('/sync/version/{scope}', SyncVersionController::class)
     ->whereIn('scope', ['admin', 'citizen'])
-    ->middleware(['auth', 'nocache', 'throttle:120,1'])
+    ->middleware(['auth', 'nocache', 'throttle:120,1,sync-poll:'])
     ->name('sync.version');
