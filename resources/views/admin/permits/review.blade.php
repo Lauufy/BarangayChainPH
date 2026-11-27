@@ -385,11 +385,11 @@
                 <h3 id="print-limit-title" class="dark:text-(--celadon-500) text-base font-semibold text-slate-900">
                     Update print allowance</h3>
                 <p class="{{ $hintClass }} mt-0.5">
-                    Raise the total print allowance when helping a citizen print their certificate.
+                    Each request for a printable PDF uses one copy from this allowance.
                 </p>
 
                 <div class="mt-3 space-y-3 border-t border-slate-100 pt-3 dark:border-slate-800">
-                    <x-form.input light id="print_limit" name="print_limit" type="number" label="Allowed prints"
+                    <x-form.input light id="print_limit" name="print_limit" type="number" label="Allowed printable PDF copies"
                         required max="1000" min="{{ $application->print_count }}" :value="old('print_limit', $application->effectivePrintLimit())" />
 
                     @error('print_limit')

@@ -37,6 +37,7 @@ class ReportServiceTest extends TestCase
         $this->assertSame([
             'total' => 0,
             'pending' => 0,
+            'resubmission_required' => 0,
             'processing' => 0,
             'in_progress' => 0,
             'approved' => 0,

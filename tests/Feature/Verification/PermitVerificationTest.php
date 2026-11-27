@@ -59,6 +59,19 @@ class PermitVerificationTest extends TestCase
         ]);
     }
 
+    public function test_scan_requests_the_original_pdf_for_authentication(): void
+    {
+        [$document] = $this->issue();
+        $this->mock(PermitFields::class)->shouldReceive('differences')->once()->andReturn([]);
+
+        $this->post(route('permits.verify.upload'), [
+            'ref' => $document->document_uuid,
+            'permit' => UploadedFile::fake()->image('scan.png'),
+        ])->assertOk()
+            ->assertSee('Upload the original issued PDF')
+            ->assertDontSee('Fake / Invalid');
+    }
+
     public function test_edited_pdf_is_invalid_and_shows_field_differences(): void
     {
         [$document] = $this->issue();

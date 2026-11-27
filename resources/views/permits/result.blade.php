@@ -7,7 +7,7 @@
     $badge = match ($status) {
         'valid' => ['Valid document', 'bg-emerald-50 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200', 'This PDF matches the current permit in the barangay and blockchain records.'],
         'revoked' => ['Revoked', 'bg-red-50 text-red-900 dark:bg-red-950 dark:text-red-200', null],
-        'invalid' => ['Fake / Invalid', 'bg-red-50 text-red-900 dark:bg-red-950 dark:text-red-200', 'The file could not be verified.'],
+        'invalid' => ['File could not be authenticated', 'bg-red-50 text-red-900 dark:bg-red-950 dark:text-red-200', 'The file could not be verified.'],
         'expired' => ['Expired', 'bg-amber-50 text-amber-900 dark:bg-amber-950 dark:text-amber-200', null],
         'unavailable' => ['Cannot verify right now', 'bg-amber-50 text-amber-900 dark:bg-amber-950 dark:text-amber-200', 'Blockchain confirmation is temporarily unavailable. Try again later.'],
         default => null,

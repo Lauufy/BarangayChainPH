@@ -27,9 +27,15 @@ class CitizenDashboardTest extends TestCase
             'status' => ServiceRequest::APPROVED,
         ]);
 
+        ServiceRequest::factory()->create([
+            'user_id' => $citizen->id,
+            'status' => ServiceRequest::RESUBMISSION_REQUIRED,
+        ]);
+
         $this->actingAs($citizen)
             ->get(route('citizen.dashboard'))
             ->assertOk()
+            ->assertSee('Corrections required')
             ->assertSee('OWN-REQUEST-1001')
             ->assertSee('Processing')
             ->assertDontSee('OTHER-REQUEST-2002');

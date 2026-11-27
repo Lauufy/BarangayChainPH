@@ -4,13 +4,9 @@
 
 @section('content')
     @php
-        // Which filters make sense on which tab (everything else is hidden).
-        $tabFilters = [
-            'service' => ['permit_type', 'application_status', 'assigned_staff'],
-            'citizens' => ['identity_status'],
-            'verification' => ['permit_type', 'blockchain_status'],
-            'staff' => ['permit_type', 'assigned_staff'],
-        ];
+        $tabs = ['service' => 'Service Requests', 'citizens' => 'Citizens', 'verification' => 'Verification', 'staff' => 'Staff Performance'];
+        $requestedTab = request()->query('report_tab');
+        $tab = is_string($requestedTab) && isset($tabs[$requestedTab]) ? $requestedTab : 'service';
         $ledgerBtn = 'inline-flex h-10 items-center whitespace-nowrap rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700';
         $statBox = 'grid grid-cols-2 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900';
         $scopeAll = 'rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300';
@@ -97,7 +93,7 @@
             <div class="rounded-lg bg-white p-4 shadow-sm dark:bg-slate-900">
                 {{-- Tabs on the left; filters and shortcuts on the right. --}}
                 <x-tables.toolbar key="report" class="mb-3"
-                    :tabs="['service' => 'Service Requests', 'citizens' => 'Citizens', 'verification' => 'Verification', 'staff' => 'Staff Performance']">
+                    :tabs="$tabs" :active="$tab">
                     <x-slot:searchActions>
                         <details class="relative">
                             <summary
@@ -145,38 +141,23 @@
                                             @enderror
                                         </div>
 
-                                        @php
-                                            $selects = [
-                                                'permit_type' => ['Permit type', 'All permit types', collect(config('barangay_services.services', []))->pluck('title', 'type')->all()],
-                                                'application_status' => ['Application status', 'All statuses', $filterOptions['application_status']],
-                                                'assigned_staff' => ['Assigned staff', 'All staff', $filterOptions['staff']->pluck('name', 'id')->all()],
-                                                'identity_status' => ['Identity verification status', 'All statuses', $filterOptions['identity_status']],
-                                                'blockchain_status' => ['Blockchain transaction status', 'All statuses', $filterOptions['blockchain_status']],
-                                            ];
-                                        @endphp
-                                        @foreach ($selects as $name => [$selectTitle, $selectAll, $selectOptions])
-                                            @if (in_array($name, $tabFilters[$tab], true))
-                                                <div>
-                                                    <label for="report-{{ $name }}"
-                                                        class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ $selectTitle }}</label>
-                                                    <select id="report-{{ $name }}" name="{{ $name }}" class="admin-field">
-                                                        <option value="">{{ $selectAll }}</option>
-                                                        @foreach ($selectOptions as $optionValue => $optionLabel)
-                                                            <option value="{{ $optionValue }}" @selected((string) ($filters[$name] ?? '') === (string) $optionValue)>{{ $optionLabel }}</option>
-                                                        @endforeach
-                                                    </select>
-                                                    @error($name)
-                                                        <p class="mt-1 text-xs text-rose-600">{{ $message }}</p>
-                                                    @enderror
-                                                </div>
-                                            @endif
-                                        @endforeach
+                                        @if ($tab !== 'citizens')
+                                            <div>
+                                                <label for="report-permit-type" class="{{ $label }}">Permit type</label>
+                                                <select id="report-permit-type" name="permit_type" class="admin-field">
+                                                    <option value="">All permit types</option>
+                                                    @foreach (config('barangay_services.services') as $service)
+                                                        <option value="{{ $service['type'] }}" @selected($filters['permit_type'] === $service['type'])>{{ $service['title'] }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                        @endif
 
                                         <div>
                                             <label for="report-grouping"
                                                 class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Grouping</label>
                                             <select id="report-grouping" name="grouping" class="admin-field">
-                                                @foreach (['daily' => 'Daily', 'weekly' => 'Weekly', 'monthly' => 'Monthly', 'yearly' => 'Yearly'] as $value => $title)
+                                                @foreach (['daily' => 'Daily', 'monthly' => 'Monthly', 'yearly' => 'Yearly'] as $value => $title)
                                                     <option value="{{ $value }}" @selected($filters['grouping'] === $value)>{{ $title }}</option>
                                                 @endforeach
                                             </select>
@@ -238,9 +219,9 @@
                                 <h3 class="{{ $heading }}">Application Status</h3>
                                 <p class="{{ $muted }}">Share of requests by current status</p>
                                 <x-partials.chart type="status" center="requests"
-                                    :empty="($summary['pending'] + $summary['processing'] + $summary['approved'] + $summary['rejected'] + $summary['cancelled']) === 0"
-                                    :labels="['Pending', 'Processing', 'Approved', 'Rejected', 'Cancelled']"
-                                    :values="[$summary['pending'], $summary['processing'], $summary['approved'], $summary['rejected'], $summary['cancelled']]"
+                                    :empty="$summary['total'] === 0"
+                                    :labels="['Pending', 'Corrections required', 'Processing', 'Approved', 'Rejected', 'Cancelled']"
+                                    :values="[$summary['pending'], $summary['resubmission_required'], $summary['processing'], $summary['approved'], $summary['rejected'], $summary['cancelled']]"
                                     height="h-72" aria="Application status distribution" />
                             </article>
 

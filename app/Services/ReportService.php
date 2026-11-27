@@ -30,6 +30,7 @@ class ReportService
         return [
             'total' => (int) $counts->sum(),
             'pending' => (int) ($counts[ServiceRequest::PENDING] ?? 0),
+            'resubmission_required' => (int) ($counts[ServiceRequest::RESUBMISSION_REQUIRED] ?? 0),
             'processing' => (int) ($counts[ServiceRequest::PROCESSING] ?? 0),
             'in_progress' => (int) ($counts[ServiceRequest::PENDING] ?? 0)
                 + (int) ($counts[ServiceRequest::PROCESSING] ?? 0),

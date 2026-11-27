@@ -62,7 +62,7 @@ class StaffPermissionsTest extends TestCase
             'admin.document-authentication.index' => 'documents.authenticate',
             'admin.permits.index' => 'permits.review',
             'admin.reports.index' => 'reports.view',
-            'admin.tickets.index' => 'tickets.reply',
+            'admin.contact-messages.index' => 'tickets.reply',
         ];
 
         foreach ($pages as $route => $permission) {

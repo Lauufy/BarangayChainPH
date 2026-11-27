@@ -36,14 +36,14 @@ class IdFieldExtractor
     }
 
     /**
-     * True when every meaningful word of $name (3+ letters) appears in the OCR
+     * True when every meaningful word of $name (2+ letters) appears in the OCR
      * text, allowing 1-2 character OCR mistakes on longer words.
      */
     public function nameFound(string $name, string $ocrText): bool
     {
         $tokens = array_filter(
             explode(' ', $this->normalize($name)),
-            fn ($t) => strlen($t) >= 3
+            fn ($t) => strlen($t) >= 2
         );
         if (! $tokens) {
             return false;

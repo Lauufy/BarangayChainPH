@@ -76,7 +76,7 @@ class ContactMessageWorkflowTest extends TestCase
         $contactMessage = $this->createContactMessage();
 
         $this->actingAs($admin)
-            ->get(route('admin.tickets.index', ['communications_tab' => 'inquiries']))
+            ->get(route('admin.contact-messages.index', ['communications_tab' => 'inquiries']))
             ->assertOk()
             ->assertSee('Communications Management')
             ->assertSee($contactMessage->subject)
@@ -186,7 +186,7 @@ class ContactMessageWorkflowTest extends TestCase
         ]);
         $mail = new ContactMessageReplyMail($contactMessage, 'Barangay Staff', $unsafeReply);
 
-        $mail->assertHasSubject('Reply from Barangay San Luis');
+        $mail->assertHasSubject('Re: '.$unsafeSubject);
         $mail->assertSeeInHtml('Barangay Staff');
         $mail->assertSeeInHtml($unsafeFirstName);
         $mail->assertSeeInHtml($unsafeSubject);

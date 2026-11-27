@@ -27,6 +27,12 @@ class IdFieldExtractorTest extends TestCase
         $this->assertTrue($this->extractor->nameFound('Carlos', 'JUAN CARLQS'));
     }
 
+    public function test_two_letter_names_require_an_exact_match(): void
+    {
+        $this->assertTrue($this->extractor->nameFound('Li Yu', 'LI YU'));
+        $this->assertFalse($this->extractor->nameFound('Maria Li', 'MARIA TAN'));
+    }
+
     public function test_wrong_name_is_not_found(): void
     {
         $this->assertFalse($this->extractor->nameFound('Santos', 'JUAN CARLOS DE LA PENA'));

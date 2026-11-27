@@ -39,7 +39,8 @@ Route::middleware(['auth', 'nocache', 'role:citizen'])
             // Show one application.
             Route::get('/applications/{serviceRequest}', 'showApplication')->name('applications.show');
             // Printable view of one application.
-            Route::get('/applications/{serviceRequest}/print', 'printApplication')->name('applications.print');
+            Route::get('/applications/{serviceRequest}/print', fn () => redirect()->route('citizen.documents'));
+            Route::post('/applications/{serviceRequest}/print', 'printApplication')->name('applications.print');
             // Cancel one application.
             Route::post('/applications/{serviceRequest}/cancel', 'cancelApplication')->name('applications.cancel');
         });

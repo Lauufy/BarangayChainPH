@@ -67,7 +67,7 @@ class HelpCenterSeeder extends Seeder
                     false,
                     <<<'MARKDOWN'
                     1. Open [Documents](/citizen/documents) and find your approved clearance.
-                    2. Choose **Print** when available. Save the issued PDF from the viewer or print a paper copy.
+                    2. Choose **Get printable PDF** to use one copy from your allowance. Save the issued PDF from the viewer or print a paper copy.
                     3. Keep the original PDF for verification. If the print limit has been reached, contact staff with the application reference.
                     MARKDOWN,
                 ],
@@ -175,7 +175,7 @@ class HelpCenterSeeder extends Seeder
                     'Open the issued certificate from Documents.',
                     false,
                     <<<'MARKDOWN'
-                    After approval, go to **Documents**, find the certificate by type and reference, and choose **Print** when available. Save the PDF from the viewer. Check the name, purpose, and issue date before giving it to the requesting office.
+                    After approval, go to **Documents**, find the certificate by type and reference, and choose **Get printable PDF** to use one copy from your allowance. Save the PDF from the viewer. Check the name, purpose, and issue date before giving it to the requesting office.
 
                     Keep this original file for verification. If you reach the print limit, ask staff about access.
                     MARKDOWN,
@@ -212,7 +212,7 @@ class HelpCenterSeeder extends Seeder
                     true,
                     <<<'MARKDOWN'
                     1. Scan the QR code with your phone camera and open the BarangayChain PH verification page.
-                    2. Check the reference and upload the permit as a PDF, JPEG, or PNG, up to 10 MB. Use the original PDF when possible.
+                    2. Check the reference and upload the permit as a PDF, JPEG, or PNG, up to 10 MB. Only the original issued PDF can be authenticated. Images can be checked for field differences.
                     3. Submit the file and read the result. Compare the displayed permit number, document type, and dates with your copy.
                     MARKDOWN,
                 ],
@@ -229,7 +229,7 @@ class HelpCenterSeeder extends Seeder
                     'Learn what the portal checks after you upload a file.',
                     true,
                     <<<'MARKDOWN'
-                    The verifier looks up the issuance record, checks the uploaded file against the document details, and checks the current blockchain record. An original issued PDF gives the verifier the best copy to compare. A scan must be clear enough to read.
+                    The verifier looks up the issuance record, checks the uploaded file against the document details, and checks the current blockchain record. Only the original issued PDF can be authenticated. Images can be checked for field differences.
 
                     Scanning the QR code opens the verification form. Read the result after uploading the document before relying on it.
                     MARKDOWN,
@@ -240,7 +240,7 @@ class HelpCenterSeeder extends Seeder
                     false,
                     <<<'MARKDOWN'
                     - **Valid document** — the document passed the checks against the current record.
-                    - **Fake / Invalid** — verification failed. Check the reference, use a clear copy, and read the reason shown.
+                    - **File could not be authenticated** — check the permit number and upload the original issued PDF. A photo or scan can only be checked for field differences.
                     - **Expired** — the recorded validity period has ended.
                     - **Revoked** — the issuing office has withdrawn this version.
                     - **Cannot verify right now** — blockchain confirmation is temporarily unavailable. Try again later.
@@ -251,7 +251,7 @@ class HelpCenterSeeder extends Seeder
                     'Try a clearer scan or verify with the printed permit number.',
                     false,
                     <<<'MARKDOWN'
-                    Lay the document flat, avoid glare, and keep all four corners of the code in view. If the camera still cannot read it, open [Verify a permit](/verify) and type the printed permit number. Upload the original PDF or a clear image of the whole permit. If you still need help, tell staff which message appeared.
+                    Lay the document flat, avoid glare, and keep all four corners of the code in view. If the camera still cannot read it, open [Verify a permit](/verify) and type the printed permit number. Only the original issued PDF can be authenticated. Images can be checked for field differences. If you still need help, tell staff which message appeared.
                     MARKDOWN,
                 ],
                 [

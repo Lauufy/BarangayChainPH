@@ -119,14 +119,20 @@ class ReportAccessExportTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin']);
 
         // Service Requests tab (default)
+        ServiceRequest::factory()->create([
+            'status' => ServiceRequest::RESUBMISSION_REQUIRED,
+            'created_at' => Carbon::parse('2026-11-12 08:00:00'),
+        ]);
         $service = $this->actingAs($admin)->get(route('admin.reports.index'));
         $service->assertOk()
+            ->assertViewHas('summary', fn (array $summary) => $summary['resubmission_required'] === 1)
+            ->assertSee('Corrections required')
             ->assertSee('value="2026-10-15"', false)
             ->assertSee('value="2026-11-13"', false)
             ->assertSee('data-report-preset="month"', false)
             ->assertSee('data-report-preset="last30"', false)
-            ->assertDontSee('data-report-preset="today"', false)
-            ->assertDontSee('data-report-preset="week"', false)
+            ->assertSee('data-report-preset="today"', false)
+            ->assertSee('data-report-preset="week"', false)
             ->assertDontSee('name="status"', false)
             ->assertDontSee('name="purok"', false)
             ->assertSee('Filters')
@@ -140,17 +146,17 @@ class ReportAccessExportTest extends TestCase
             ->assertSee('Average Processing Time')
             ->assertSee('In Progress')
             ->assertSee('Application Trends')
-            ->assertSee('Applications by Permit Type');
+            ->assertSee('Most Requested Services');
         $this->assertGreaterThanOrEqual(2, substr_count($service->getContent(), 'data-report-chart='));
 
         // Citizens tab
         $citizens = $this->actingAs($admin)
             ->get(route('admin.reports.index', ['report_tab' => 'citizens']));
         $citizens->assertOk()
-            ->assertSee('Citizen Verification')
+            ->assertSee('Registered citizens')
             ->assertSee('Identity Status')
             ->assertSee('Identity Review Rates')
-            ->assertSee('Request status');
+            ->assertSee('Verification completion');
         $this->assertGreaterThanOrEqual(1, substr_count($citizens->getContent(), 'data-report-chart='));
 
         // Verification tab
@@ -163,8 +169,12 @@ class ReportAccessExportTest extends TestCase
             ->assertSee('Open ledger')
             ->assertSee('REPORT-TABLE-0001')
             ->assertSee('Successful')
-            ->assertSee('Verification attempts')
-            ->assertSee('Top 10 staff');
+            ->assertSee('Verification attempts');
+
+        $this->get(route('admin.reports.index', ['report_tab' => 'staff']))
+            ->assertOk()
+            ->assertSee('Performance Comparison')
+            ->assertSee('report-staff-performance');
     }
 
     public function test_report_tables_show_shared_empty_states_when_the_period_has_no_rows(): void
@@ -187,7 +197,10 @@ class ReportAccessExportTest extends TestCase
             ->get(route('admin.reports.index', ['report_tab' => 'verification']))
             ->assertOk()
             ->assertSee('No transactions in this period.')
-            ->assertSee('No attempts')
+            ->assertSee('No attempts');
+
+        $this->get(route('admin.reports.index', ['report_tab' => 'staff']))
+            ->assertOk()
             ->assertSee('No staff data in this period.')
             ->assertSee('data-table-search', false)
             ->assertSee('data-table-key="report-staff-performance"', false)

@@ -73,7 +73,7 @@ class AdminTicketInboxTest extends TestCase
         ]);
         $otherTicket->forceFill(['updated_at' => now()->addMinute()])->save();
 
-        $response = $this->actingAs($admin)->get(route('admin.tickets.index', [
+        $response = $this->actingAs($admin)->followingRedirects()->get(route('admin.tickets.index', [
             'search' => 'Needle',
             'per_page' => 10,
         ]));
@@ -82,7 +82,7 @@ class AdminTicketInboxTest extends TestCase
             ->assertSee('Ticket Citizen A')
             ->assertSee('Unrelated Citizen')
             ->assertViewHas('tickets', fn ($tickets): bool => $tickets->total() === 12)
-            ->assertSee('data-table-key="ticket-messages"', false)
+            ->assertSee('data-table-key="communications"', false)
             ->assertSee('placeholder="Search citizen, reference, or message"', false)
             ->assertSee('')
             ->assertSee('aria-label="Pagination"', false)

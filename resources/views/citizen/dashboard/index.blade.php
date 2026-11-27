@@ -53,6 +53,7 @@
                 'bg-(--red-600)',
                 'Rejected',
             ],
+            'resubmission_required' => ['bg-amber-100 text-amber-900', 'bg-amber-500', 'Corrections required'],
             'processing' => [
                 'bg-(--amber-500)/20 text-(--gray-900) dark:bg-(--amber-500)',
                 'bg-(--amber-500)',

@@ -80,6 +80,7 @@ class LoginControllerTest extends TestCase
 
     public function test_phone_login_requires_otp_for_unverified_phone_even_when_two_factor_is_off(): void
     {
+        config(['services.textbee.key' => 'test-key', 'services.textbee.device' => 'test-device']);
         Http::fake([
             'https://api.textbee.dev/api/v1/gateway/devices/*/send-sms' => Http::response(['ok' => true]),
         ]);

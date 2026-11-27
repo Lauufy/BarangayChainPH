@@ -31,7 +31,21 @@ Contract source in this repository: `blockchain/contracts/PermitRegistry.sol` (S
 
 ## Synchronize the application registry
 
-Use a maintainer shell with access to the application and database. The web dashboard reads deployment history. The configured network and contract select the issuance target, and a validated deployment row must match before the application can sign a new issuance.
+The web dashboard reads deployment history. The configured network and contract select the issuance target, and a validated deployment row must match before the application can sign a new issuance.
+
+### Render Docker service
+
+In the service’s **Environment** settings, configure the selected network’s RPC endpoint, contract address and issuer key. Set the following three additional variables together and deploy the updated Docker image.
+
+| Variable | Value |
+|---|---|
+| `BLOCKCHAIN_DEPLOY_TX` | Public transaction hash of the transaction that created the configured registry |
+| `BLOCKCHAIN_DEPLOY_VERSION` | Your release label, for example `v2.0` |
+| `BLOCKCHAIN_DEPLOY_OWNER` | Independently confirmed public address of the registry’s current owner |
+
+Startup runs migrations, then runs the synchronization command before starting workers and the web server. Look for **Deployment validated and synchronized.** in the deploy logs. Synchronization reads the blockchain and records the verified deployment in the application database. Leaving the three values set repeats validation on startup. A partial configuration or failed validation stops that startup. Leaving all three blank skips automatic synchronization and preserves existing deployment records.
+
+### Manual synchronization
 
 1. Apply the Laravel migrations. Keep the existing deployment and permit rows.
 2. Supply the selected network's RPC endpoint, registry address and issuer key through the application's secret configuration. Refresh cached configuration and restart long-running workers after changing these settings.

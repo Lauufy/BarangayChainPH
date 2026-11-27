@@ -44,7 +44,9 @@ class PermitVerification
             return [
                 'status' => 'invalid',
                 'document' => $document,
-                'reason' => 'This file does not match the issued PDF for this reference. Upload the original PDF to verify the permit.',
+                'reason' => str_starts_with((string) $mime, 'image/')
+                    ? 'A scan can show field differences. Upload the original issued PDF to authenticate the permit.'
+                    : 'This file does not match the issued PDF for this reference. Upload the original PDF to verify the permit.',
                 'differences' => $differences,
             ];
         }

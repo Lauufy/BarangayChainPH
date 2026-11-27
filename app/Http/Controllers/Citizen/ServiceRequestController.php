@@ -163,9 +163,9 @@ class ServiceRequestController extends Controller
             $locked->increment('print_count');
 
             app(AuditLogger::class)->log(
-                'document_printed',
+                'document_pdf_released',
                 $locked,
-                note: 'Print #'.$locked->print_count.' of '.$printData['document']->document_number
+                note: 'Printable PDF copy #'.$locked->print_count.' of '.$printData['document']->document_number
             );
 
             return $printData;
@@ -176,7 +176,7 @@ class ServiceRequestController extends Controller
     private function printableDocument(ServiceRequest $serviceRequest): ?array
     {
         abort_unless($serviceRequest->status === ServiceRequest::APPROVED, 404);
-        abort_unless($serviceRequest->canPrint(), 403, 'This permit has reached its print limit.');
+        abort_unless($serviceRequest->canPrint(), 403, 'This permit has reached its printable PDF copy limit.');
 
         $document = $serviceRequest->issuedDocuments()
             ->whereNull('revoked_at')

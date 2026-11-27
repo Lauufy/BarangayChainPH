@@ -19,7 +19,9 @@ FROM node:22-slim AS blockchain
 WORKDIR /blockchain
 
 COPY blockchain/package.json blockchain/package-lock.json ./
-RUN npm ci --omit=dev
+COPY blockchain/hardhat.config.js ./
+COPY blockchain/contracts ./contracts
+RUN npm ci && npx hardhat compile && npm prune --omit=dev
 
 
 # Stage 3: Build Laravel application
@@ -96,6 +98,7 @@ COPY . .
 
 # Copy blockchain runtime and dependencies
 COPY --from=blockchain /usr/local/bin/node /usr/local/bin/node
+COPY --from=blockchain /blockchain/artifacts/contracts/PermitRegistry.sol/PermitRegistry.json ./blockchain/artifacts/contracts/PermitRegistry.sol/PermitRegistry.json
 COPY --from=blockchain /blockchain/node_modules ./blockchain/node_modules
 
 
@@ -153,7 +156,11 @@ RUN printf '%s\n' \
     'sed -ri "s/<VirtualHost \*:[0-9]+>/<VirtualHost *:${PORT}>/" /etc/apache2/sites-available/000-default.conf' \
     'php artisan config:clear' \
     'php artisan migrate --force' \
+    'if [ -n "${BLOCKCHAIN_DEPLOY_TX:-}${BLOCKCHAIN_DEPLOY_VERSION:-}${BLOCKCHAIN_DEPLOY_OWNER:-}" ]; then' \
+    '  php artisan blockchain:sync-deployment "${BLOCKCHAIN_DEPLOY_TX:?Missing creation transaction hash}" "${BLOCKCHAIN_DEPLOY_VERSION:?Missing release version}" "${BLOCKCHAIN_DEPLOY_OWNER:?Missing expected owner address}"' \
+    'fi' \
     '(while true; do su -s /bin/sh www-data -c "php artisan queue:work --sleep=3 --tries=2 --max-time=3600"; sleep 2; done) &' \
+    'su -s /bin/sh www-data -c "php artisan schedule:work" &' \
     'exec apache2-foreground' \
     > /usr/local/bin/start-render.sh \
     && chmod +x /usr/local/bin/start-render.sh

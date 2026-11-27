@@ -70,17 +70,19 @@ class ProcessIdentityOcr implements ShouldQueue
                 'ocr_flags' => array_values(array_unique($flags)),
                 'ocr_processed_at' => now(),
             ]);
-        } catch (Throwable $exception) {
-            report($exception);
-            $verification->update([
-                'ocr_status' => 'failed',
-                'ocr_flags' => ['ocr_failed'],
-                'ocr_processed_at' => now(),
-            ]);
         } finally {
             if (is_string($temporaryPath) && file_exists($temporaryPath)) {
                 unlink($temporaryPath);
             }
         }
+    }
+
+    public function failed(?Throwable $exception): void
+    {
+        IdentityVerification::find($this->verificationId)?->update([
+            'ocr_status' => 'failed',
+            'ocr_flags' => ['ocr_failed'],
+            'ocr_processed_at' => now(),
+        ]);
     }
 }

@@ -61,7 +61,7 @@ class HelpTicketTest extends TestCase
         $this->get($ticket->citizenUrl())->assertNotFound();
         $this->post(route('citizen.help.reply', $ticket), ['body' => 'Hello'])->assertNotFound();
 
-        $this->actingAs($admin)->get(route('admin.tickets.index'))->assertOk()->assertSee($ticket->reference());
+        $this->actingAs($admin)->get(route('admin.contact-messages.index'))->assertOk()->assertSee($ticket->reference());
         $this->get(route('admin.tickets.show', $ticket))->assertOk()->assertSee('Download details.txt');
         $this->post(route('admin.tickets.reply', $ticket), ['body' => 'Received'])->assertRedirect();
         $this->assertSame($ticket->citizenUrl(), $owner->notifications()->firstOrFail()->data['url']);
