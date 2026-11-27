@@ -75,7 +75,7 @@ class ServiceRequestController extends Controller
         if ($printData === null) {
             return back()->with(
                 'error',
-                'This certificate cannot be printed because its stored PDF or QR code is unavailable. Please contact the barangay office for assistance.'
+                'This certificate cannot be downloaded because its stored PDF or QR code is unavailable. Please contact the barangay office for assistance.'
             );
         }
 
@@ -83,7 +83,7 @@ class ServiceRequestController extends Controller
 
         return response($printData['fileContents'], 200, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => "inline; filename=\"{$filename}.pdf\"",
+            'Content-Disposition' => "attachment; filename=\"{$filename}.pdf\"",
             'Cache-Control' => 'private, no-store, no-cache, must-revalidate',
             'X-Content-Type-Options' => 'nosniff',
         ]);
@@ -165,7 +165,7 @@ class ServiceRequestController extends Controller
             app(AuditLogger::class)->log(
                 'document_pdf_released',
                 $locked,
-                note: 'Printable PDF copy #'.$locked->print_count.' of '.$printData['document']->document_number
+                note: 'PDF download #'.$locked->print_count.' of '.$printData['document']->document_number
             );
 
             return $printData;
@@ -176,7 +176,7 @@ class ServiceRequestController extends Controller
     private function printableDocument(ServiceRequest $serviceRequest): ?array
     {
         abort_unless($serviceRequest->status === ServiceRequest::APPROVED, 404);
-        abort_unless($serviceRequest->canPrint(), 403, 'This permit has reached its printable PDF copy limit.');
+        abort_unless($serviceRequest->canPrint(), 403, 'This permit has reached its PDF download limit.');
 
         $document = $serviceRequest->issuedDocuments()
             ->whereNull('revoked_at')

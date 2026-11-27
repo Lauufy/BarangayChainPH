@@ -68,7 +68,7 @@ class ServiceSubmissionRateLimitTest extends TestCase
             }
 
             if (in_array($slug, ['business-clearance', 'barangay-clearance', 'certificate-of-indigency'], true)) {
-                $response->assertSee('Draft certificate preview')->assertSee('header_permit.png');
+                $response->assertSee('Draft certificate preview')->assertSee('header_permit_new.png');
             }
         }
     }

@@ -27,8 +27,8 @@
             'x' => '<path d="m6 6 12 12M18 6 6 18"/>',
             'message' =>
                 '<path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"/>',
-            'printer' =>
-                '<path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"/><rect x="6" y="14" width="12" height="8" rx="1"/>',
+            'download' =>
+                '<path d="M12 3v12m-5-5 5 5 5-5M4 16v4h16v-4"/>',
         ][$icon] ?? '';
 
     $svg =
@@ -49,7 +49,7 @@
             'bg-orange-50 text-orange-700 hover:bg-orange-100 dark:bg-orange-500/10 dark:text-orange-300 dark:hover:bg-orange-500/20',
         'message' =>
             'bg-violet-50 text-violet-700 hover:bg-violet-100 dark:bg-violet-500/10 dark:text-violet-300 dark:hover:bg-violet-500/20',
-        'printer' =>
+        'download' =>
             'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-300 dark:hover:bg-indigo-500/20',
 
         // Explicit variants still win over the icon color
@@ -66,7 +66,7 @@
     $color = $colors[$variant !== 'default' ? $variant : $icon] ?? $colors['default'];
 
     $btn =
-        'grid size-10 place-items-center rounded-md sm:size-8' .
+        ($slot->isEmpty() ? 'grid size-10 place-items-center sm:size-8' : 'inline-flex min-h-11 items-center gap-2 px-3 text-sm font-semibold') . ' rounded-md' .
         ' transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 ' .
         $color;
 @endphp
@@ -87,7 +87,7 @@
                 @method($method)
             @endif
             <button type="submit" aria-label="{{ $label }}" {{ $attributes->class($btn) }}>
-                {!! $svg !!}
+                {!! $svg !!} {{ $slot }}
             </button>
         </form>
     @elseif ($href)

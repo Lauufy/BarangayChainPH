@@ -183,7 +183,7 @@
                 const choice = business?.value ?? $('f-purpose')?.value;
                 page.querySelectorAll('[data-choice]').forEach((mark) => {
                     const selected = choice === mark.dataset.choice;
-                    mark.textContent = business ? (selected ? '☒' : '□') : (selected ? '[ X ]' : '[   ]');
+                    mark.textContent = selected ? 'X' : '';
                 });
             }
             preview?.addEventListener('load', updatePreview);

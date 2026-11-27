@@ -131,7 +131,9 @@ class PermitWorkflowTest extends TestCase
         $this->post(route('citizen.applications.print', $application))->assertStatus(423);
         $this->assertSame(0, $application->fresh()->print_count);
         $document->blockchainRecord()->create(['recorded_at' => now(), 'tx_hash' => '0x'.str_repeat('a', 64)]);
-        $this->post(route('citizen.applications.print', $application))->assertOk();
+        $this->post(route('citizen.applications.print', $application))
+            ->assertDownload($document->document_number.'.pdf')
+            ->assertContent($pdfContent);
         $this->assertNotNull($document->qr_code_generated_at);
         $this->assertNull($document->revoked_at);
     }
@@ -169,7 +171,7 @@ class PermitWorkflowTest extends TestCase
             ->post(route('citizen.applications.print', $application));
 
         $response->assertRedirect(route('citizen.applications.show', $application))
-            ->assertSessionHas('error', 'This certificate cannot be printed because its stored PDF or QR code is unavailable. Please contact the barangay office for assistance.');
+            ->assertSessionHas('error', 'This certificate cannot be downloaded because its stored PDF or QR code is unavailable. Please contact the barangay office for assistance.');
 
         $this->assertDatabaseCount('issued_documents', 1);
         $this->assertNull($legacyDocument->fresh()->revoked_at);

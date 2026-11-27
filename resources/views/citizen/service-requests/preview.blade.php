@@ -9,13 +9,13 @@
                 {{-- Holder is as wide as the screen; the scaler shrinks the full-size page to fit it and centers it --}}
                 <div id="preview-holder"
                     class="w-full overflow-hidden rounded-md border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-800">
-                    <div id="preview-scaler" class="origin-top-left shadow-md" style="width: 816px;">
+                    <div id="preview-scaler" class="origin-top-left shadow-md" style="width: 794px;">
                         <iframe
                             id="certificate-preview"
                             title="Draft certificate preview"
                             scrolling="no"
                             class="block w-full border-0 bg-white"
-                            style="height: 1056px;"
+                            style="height: 1123px;"
                             srcdoc="{{ view('permits.san-luis', [
                                 'type' => $service['type'],
                                 'name' => $personalInfo['Name'],
@@ -31,7 +31,7 @@
 
                 <script>
                     (() => {
-                        const PAGE_W = 816; // paper width in px (8.5in at 96dpi). Change if your permit page is wider.
+                        const PAGE_W = 794; // A4 width at 96 dpi.
                         const holder = document.getElementById('preview-holder');
                         const scaler = document.getElementById('preview-scaler');
                         const frame = document.getElementById('certificate-preview');
@@ -42,7 +42,7 @@
 
                             const scale = Math.min(1, width / PAGE_W);
                             const page = frame.contentDocument?.documentElement;
-                            const height = Math.max(page?.scrollHeight ?? 0, 1056);
+                            const height = Math.max(page?.scrollHeight ?? 0, 1123);
 
                             frame.style.height = height + 'px';
                             scaler.style.transform = `scale(${scale})`;

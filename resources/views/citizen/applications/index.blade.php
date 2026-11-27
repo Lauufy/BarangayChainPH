@@ -78,7 +78,7 @@
                                 @endif
 
                                 @if ($canPrint)
-                                    <x-tables.action :label="'Get printable PDF ('.$application->printsRemaining().' remaining)'" icon="printer" :action="route('citizen.applications.print', $application)" />
+                                    <x-tables.action :label="'Download PDF ('.$application->printsRemaining().' remaining)'" icon="download" :action="route('citizen.applications.print', $application)">Download PDF</x-tables.action>
                                 @endif
 
                                 {{-- Cancel: opens the shared cancellation modal below --}}

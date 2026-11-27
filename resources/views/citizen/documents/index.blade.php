@@ -51,7 +51,7 @@
                                 @if (! $anchor?->recorded_at || $anchor->revoked_at)
                                     <span class="text-sm">Awaiting document clearance</span>
                                 @elseif ($document->canPrint())
-                                    <x-tables.action :label="'Get printable PDF ('.$document->printsRemaining().' remaining)'" icon="printer" :action="route('citizen.applications.print', $document)" />
+                                    <x-tables.action :label="'Download PDF ('.$document->printsRemaining().' remaining)'" icon="download" :action="route('citizen.applications.print', $document)">Download PDF</x-tables.action>
                                 @endif
                             </div>
                         </x-tables.detail>
