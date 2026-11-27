@@ -155,6 +155,7 @@ RUN printf '%s\n' \
     'sed -ri "s/^Listen .*/Listen ${PORT}/" /etc/apache2/ports.conf' \
     'sed -ri "s/<VirtualHost \*:[0-9]+>/<VirtualHost *:${PORT}>/" /etc/apache2/sites-available/000-default.conf' \
     'php artisan config:clear' \
+    'php artisan storage:link' \
     'php artisan migrate --force' \
     'if [ -n "${BLOCKCHAIN_DEPLOY_TX:-}${BLOCKCHAIN_DEPLOY_VERSION:-}${BLOCKCHAIN_DEPLOY_OWNER:-}" ]; then' \
     '  php artisan blockchain:sync-deployment "${BLOCKCHAIN_DEPLOY_TX:?Missing creation transaction hash}" "${BLOCKCHAIN_DEPLOY_VERSION:?Missing release version}" "${BLOCKCHAIN_DEPLOY_OWNER:?Missing expected owner address}"' \
