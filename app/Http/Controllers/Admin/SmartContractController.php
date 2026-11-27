@@ -41,23 +41,9 @@ class SmartContractController extends Controller
 
         $deployments = ContractDeployment::latest('deployed_at')->paginate(8, ['*'], 'deployments')->withQueryString();
 
-        $state = $request->string('state')->toString();
-        $validStates = ['pending', 'submitted', 'failed', 'paused', 'confirmed', 'revoked'];
-        $transactions = BlockchainRecord::query()
-            ->with('issuedDocument')
-            ->when(in_array($state, $validStates, true), fn ($query) => $query->whereRaw(
-                BlockchainRecord::STATE_SQL.' = ?',
-                [$state]
-            ))
-            ->latest('updated_at')
-            ->paginate(10, ['*'], 'transactions')
-            ->withQueryString();
-
         return view('admin.smart-contracts.index', compact('info', 'active', 'problem', 'attention', 'deployments') + [
             'network' => ContractDeployment::network(),
             'isAdmin' => $request->user()->role === 'admin',
-            'transactions' => $transactions,
-            'transactionState' => in_array($state, $validStates, true) ? $state : null,
         ]);
     }
 

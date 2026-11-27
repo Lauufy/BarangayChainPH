@@ -314,40 +314,6 @@
         </div>
 
         {{-- Deployment history --}}
-        <x-tables.card title="Blockchain Transactions" description="Permit records matched to the active registry."
-            :paginator="$transactions" :searchable="false" item-label="transactions">
-            <x-tables.table :heads="['Permit', 'Status', 'Issue Transaction', 'Updated']"
-                :empty="$transactions->isEmpty()" message="No matching transactions."
-                hint="Records appear here once permit blockchain activity is available.">
-                @foreach ($transactions as $record)
-                    <tr>
-                        <td data-title>{{ $record->issuedDocument->document_number }}</td>
-                        <td data-side="right">
-                            @php
-                                $transactionState = $record->issuanceState();
-                            @endphp
-                            <x-tables.badge
-                                :variant="match ($transactionState) {
-                                    'confirmed' => 'success',
-                                    'failed' => 'danger',
-                                    'revoked' => 'neutral',
-                                    default => 'warning',
-                                }"
-                                class="gap-1.5 rounded-full!">
-                                {{ ucfirst($transactionState) }}
-                            </x-tables.badge>
-                        </td>
-                        <td data-label="Issue transaction" class="font-mono text-xs">
-                            {{ $record->tx_hash ? Str::limit($record->tx_hash, 16) : '—' }}
-                        </td>
-                        <td data-label="Updated" class="sm:whitespace-nowrap">
-                            {{ $record->updated_at?->timezone(config('app.timezone'))->format('M j, Y g:i A') ?? 'N/A' }}
-                        </td>
-                    </tr>
-                @endforeach
-            </x-tables.table>
-        </x-tables.card>
-
         <x-tables.card title="Contract Deployment History" description="Every version of the permit registry deployed."
             :paginator="$deployments" :searchable="false" item-label="deployments">
             <x-tables.table :heads="$deploymentHeads" :empty="$deployments->isEmpty()" message="No deployments recorded."

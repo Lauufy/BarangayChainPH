@@ -36,7 +36,7 @@ class SecurityHeaders
 
         $response->headers->set($header, $this->policy(
             $nonce,
-            $request->routeIs('permits.verify.form')
+            $request->routeIs('permits.verify.form', 'admin.document-authentication.index')
                 || ($request->routeIs('permits.verify.upload') && $response->getStatusCode() === 422),
         ));
 

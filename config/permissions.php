@@ -7,7 +7,7 @@ return [
         'permits.review' => 'Permit Management (view, approve, reject)',
         'permits.print-limit' => 'Change permit print limit',
         'tickets.reply' => 'Ticket Messages',
-        'documents.authenticate' => 'Document Authentication',
+        'documents.authenticate' => 'Document Records',
         'blockchain.view' => 'Blockchain Ledger',
         'contracts.view' => 'Contract Management',
         'reports.view' => 'Reports & Analytics',

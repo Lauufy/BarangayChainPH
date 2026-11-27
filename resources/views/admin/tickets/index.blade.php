@@ -61,31 +61,22 @@
                     @endforeach
                 </x-tables.table>
             @else
-                <x-tables.table :heads="['Inquiry', 'Sender', 'Service', 'Last activity', 'Status', ['label' => 'Action', 'align' => 'center']]"
+                <x-tables.table :heads="['Sender','Inquiry',  'Service', 'Last activity', 'Status', ['label' => 'Action', 'align' => 'center']]"
                     :empty="$contactMessages->isEmpty()" message="No website inquiries yet.">
                     @foreach ($contactMessages as $contactMessage)
                         @php($awaitingReply = $contactMessage->status === \App\Models\ContactMessage::NEW)
                         <tr>
+                            <td>
+                                <x-tables.user-cell :name="trim($contactMessage->first_name . ' ' . $contactMessage->last_name)"
+                                    :sub="$contactMessage->email" />
+                            </td>
                             <td class="max-w-xs">
                                 <p class="truncate font-semibold text-slate-900 dark:text-slate-100">
                                     {{ $contactMessage->subject }}
                                 </p>
-                                <p class="mt-1 line-clamp-2 whitespace-pre-line text-xs text-slate-500 dark:text-slate-400">
-                                    {{ $contactMessage->body }}
-                                </p>
-                            </td>
-                            <td>
-                                <p class="text-slate-900 dark:text-slate-100">
-                                    {{ $contactMessage->first_name }} {{ $contactMessage->last_name }}
-                                </p>
-                                <p class="text-xs text-slate-500 dark:text-slate-400">{{ $contactMessage->email }}</p>
                             </td>
                             <td class="text-slate-600">
                                 {{ $contactMessage->service }}
-                                <span class="block text-xs text-slate-500">
-                                    {{ $contactMessage->replies_count }}
-                                    {{ \Illuminate\Support\Str::plural('reply', $contactMessage->replies_count) }}
-                                </span>
                             </td>
                             <td class="text-slate-600 sm:whitespace-nowrap">
                                 {{ $contactMessage->updated_at->timezone(config('app.timezone'))->format('M j, Y g:i A') }}

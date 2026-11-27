@@ -32,7 +32,7 @@ class SmartContractControllerTest extends TestCase
         $this->mock(BlockchainRegistry::class)->shouldReceive('contractInfo')->once()->andReturn(null);
         $staff = User::factory()->create(['role' => 'staff', 'permissions' => ['contracts.view']]);
         $this->actingAs($staff)->get(route('admin.smart-contracts.index'))->assertOk()
-            ->assertSee('Blockchain status unavailable')->assertSee('No deployments recorded')->assertSee('No matching transactions')
+            ->assertSee('Blockchain status unavailable')->assertSee('No deployments recorded')->assertDontSee('Blockchain Transactions')
             ->assertDontSee('Authorized Officials')->assertDontSee('Retry failed transactions');
         $this->post(route('admin.smart-contracts.pause'), ['paused' => 1])->assertForbidden();
         $this->post(route('admin.smart-contracts.recovery', 'retry'))->assertForbidden();
@@ -71,7 +71,7 @@ class SmartContractControllerTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['action' => 'contract_resumed']);
     }
 
-    public function test_filtered_transactions_and_recovery_use_their_actual_states(): void
+    public function test_recovery_uses_actual_states_and_links_to_the_ledger(): void
     {
         Queue::fake();
         $info = $this->deployment();
@@ -81,8 +81,8 @@ class SmartContractControllerTest extends TestCase
         $pending = BlockchainRecord::factory()->create($target);
         BlockchainRecord::factory()->create($target + ['recorded_at' => now()]);
         $this->actingAs(User::factory()->create(['role' => 'admin']));
-        $this->get(route('admin.smart-contracts.index', ['state' => 'failed']))->assertOk()
-            ->assertSee($failed->issuedDocument->document_number)->assertDontSee($pending->issuedDocument->document_number)
+        $this->get(route('admin.smart-contracts.index'))->assertOk()
+            ->assertSee(route('admin.blockchain-ledger.index', ['status' => 'failed']))->assertDontSee($failed->issuedDocument->document_number)->assertDontSee($pending->issuedDocument->document_number)
             ->assertSee('data-confirm-label="Pause blockchain recording"', false);
         $this->post(route('admin.smart-contracts.recovery', 'retry'))->assertSessionHas('registry_notice');
         $this->post(route('admin.smart-contracts.recovery', 'recover'))->assertSessionHas('registry_notice');

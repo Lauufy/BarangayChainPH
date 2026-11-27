@@ -204,7 +204,7 @@
                             <x-admin.nav-link href="/admin/document-authentication"
                                 match="admin/document-authentication*">
                                 <x-slot:icon><path d="M12 2 4 5v6c0 5 3.4 9.3 8 11 4.6-1.7 8-6 8-11V5z"/><path class="cutl" d="m8.5 12 2.5 2.5 4.5-4.5"/></x-slot:icon>
-                                Document Authentication
+                                Document Records
                             </x-admin.nav-link>
                         </div>
                     </div>

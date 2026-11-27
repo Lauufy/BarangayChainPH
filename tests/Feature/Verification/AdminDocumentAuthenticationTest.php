@@ -6,6 +6,7 @@ use App\Models\IssuedDocument;
 use App\Models\ServiceRequest;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -21,7 +22,7 @@ class AdminDocumentAuthenticationTest extends TestCase
         ]);
     }
 
-    private function issuePermit(string $number, string $name): void
+    private function issuePermit(string $number, string $name): IssuedDocument
     {
         $citizen = User::factory()->create(['role' => 'citizen']);
 
@@ -37,7 +38,7 @@ class AdminDocumentAuthenticationTest extends TestCase
             'permit_number' => $number,
         ]);
 
-        IssuedDocument::create([
+        return IssuedDocument::create([
             'service_request_id' => $application->id,
             'document_uuid' => (string) Str::uuid(),
             'document_number' => $number,
@@ -51,15 +52,47 @@ class AdminDocumentAuthenticationTest extends TestCase
 
     public function test_page_lists_an_issued_document(): void
     {
-        $this->issuePermit('PERMIT-AUTH-1', 'Maria Santos');
+        $document = $this->issuePermit('PERMIT-AUTH-1', 'Maria Santos');
 
         $this->actingAs($this->staff())
             ->get(route('admin.document-authentication.index'))
             ->assertOk()
+            ->assertSee(route('admin.document-authentication.show', $document))
             ->assertSee('PERMIT-AUTH-1')
             ->assertSee('Maria Santos')
             ->assertSee('Barangay Clearance')
             ->assertSee('Active');
+    }
+
+    public function test_authorized_reviewer_can_view_the_selected_version_inline(): void
+    {
+        $disk = Storage::fake('local');
+        $document = $this->issuePermit('PERMIT-AUTH-1', 'Maria Santos');
+        $pdf = '%PDF-1.4 issued version one';
+        $disk->put($document->file_path, $pdf);
+        $document->update(['file_hash' => hash('sha256', $pdf), 'revoked_at' => now()]);
+        $url = route('admin.document-authentication.show', $document);
+
+        $this->actingAs($this->staff())->get($url)
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf')
+            ->assertHeader('Content-Disposition', 'inline; filename="PERMIT-AUTH-1-v1.pdf"')
+            ->assertContent($pdf);
+
+        $disk->put($document->file_path, 'altered');
+        $this->get($url)->assertStatus(409);
+
+        $disk->delete($document->file_path);
+        $this->get($url)->assertNotFound();
+    }
+
+    public function test_staff_without_document_permission_cannot_open_a_preview(): void
+    {
+        $document = $this->issuePermit('PERMIT-AUTH-1', 'Maria Santos');
+        $staff = User::factory()->create(['role' => 'staff', 'permissions' => []]);
+
+        $this->actingAs($staff)->get(route('admin.document-authentication.show', $document))
+            ->assertForbidden();
     }
 
     public function test_search_query_is_ignored_and_client_search_toolbar_is_rendered(): void

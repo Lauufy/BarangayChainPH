@@ -44,32 +44,34 @@
     @variant dark { background-color: var(--blue-900); }
 }
 
-/* Adapt the account list to the available panel, including sidebar resizing. */
-.account-directory table {
+/* Adapt directory tables to the available panel, including sidebar resizing. */
+:is(.account-directory, .document-directory) table {
     table-layout: fixed;
     min-width: 0;
     font-size: clamp(.8125rem, 1.35cqi, .9375rem);
 }
-.account-directory :is(th, td) {
+:is(.account-directory, .document-directory) :is(th, td) {
     overflow-wrap: anywhere;
     padding-inline: clamp(.375rem, 1cqi, 1rem);
 }
-.account-directory th {
+:is(.account-directory, .document-directory) th {
     white-space: normal;
     text-transform: uppercase;
     letter-spacing: .04em;
     font-size: clamp(.6875rem, 1cqi, .75rem);
 }
-.account-directory td[data-title] p {
+:is(.account-directory, .document-directory) td[data-title] p {
     white-space: normal;
     overflow: visible;
     font-size: inherit;
 }
-.account-directory td[data-title] p + p { font-size: .875em; }
+:is(.account-directory, .document-directory) td[data-title] p + p { font-size: .875em; }
 @container table-region (min-width: 40rem) {
     .account-directory th:first-child { width: 25%; }
     .account-directory th:nth-child(3) { width: 19%; }
     .account-directory th:last-child { width: 7.5rem; }
+    .document-directory th:first-child { width: 32%; }
+    .document-directory th:nth-child(2) { width: 28%; }
 }
 [data-table-key='users'] > div { min-width: 0; max-width: 100%; }
 [data-table-key='users'] > div:last-child { flex: 1 1 19rem; justify-content: flex-end; }

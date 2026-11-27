@@ -148,6 +148,9 @@ Route::middleware(['auth', 'nocache', 'role:admin,staff'])
         Route::get('/document-authentication', [DocumentAuthenticationController::class, 'index'])
             ->middleware('permission:documents.authenticate')
             ->name('document-authentication.index');
+        Route::get('/document-authentication/{document}', [DocumentAuthenticationController::class, 'show'])
+            ->middleware('permission:documents.authenticate')
+            ->name('document-authentication.show');
 
         // Blockchain ledger page (needs the blockchain.view permission).
         Route::get('/blockchain-ledger', [BlockchainLedgerController::class, 'index'])
