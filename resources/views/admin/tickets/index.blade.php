@@ -74,6 +74,9 @@
                                 <p class="truncate text-slate-600 dark:text-slate-100">
                                     {{ $contactMessage->subject }}
                                 </p>
+                                <p class="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">
+                                    {{ $contactMessage->body }}
+                                </p>
                             </td>
                             <td class="text-slate-600">
                                 {{ $contactMessage->service }}
