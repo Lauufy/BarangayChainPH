@@ -2,7 +2,7 @@
 
 namespace App\Services\Ocr;
 
-use thiagoalessio\TesseractOCR\TesseractOCR;
+use Symfony\Component\Process\Process;
 
 class IdOcrService
 {
@@ -30,14 +30,17 @@ class IdOcrService
     /** Run Tesseract and return the raw text found on the image. */
     public function read(string $absolutePath): string
     {
-        $ocr = new TesseractOCR($absolutePath);
+        $process = new Process([
+            config('permit-verification.tesseract'),
+            $absolutePath,
+            'stdout',
+            '-l',
+            'eng',
+            '--psm',
+            '6',
+        ], timeout: 110);
+        $process->mustRun();
 
-        // Set TESSERACT_PATH in .env if the program is not on the PATH
-        // (common on Windows), e.g. C:\Program Files\Tesseract-OCR\tesseract.exe
-        if ($path = env('TESSERACT_PATH')) {
-            $ocr->executable($path);
-        }
-
-        return $ocr->lang('eng')->psm(6)->run();
+        return trim($process->getOutput());
     }
 }
