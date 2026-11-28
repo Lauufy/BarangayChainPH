@@ -46,16 +46,16 @@ Route::middleware(['auth', 'nocache', 'role:citizen'])
         });
 
         Route::controller(TicketController::class)->prefix('help-center')->name('help.')->group(function () {
-            Route::get('/', 'index')->name('index');
+            Route::get('/', [HelpArticleController::class, 'index'])->name('index');
             Route::post('/', 'store')->middleware('throttle:5,1,help-request:')->name('store');
             Route::get('/tickets/create', 'create')->name('create');
             Route::get('/tickets', 'tickets')->name('tickets');
             Route::get('/{ticket}', 'showHelp')->name('show');
             Route::post('/{ticket}', 'replyHelp')->middleware('throttle:20,1')->name('reply');
         });
-        Route::get('/help/categories/{category:slug}', [HelpArticleController::class, 'category'])
+        Route::get('/help/categories/{category}', [HelpArticleController::class, 'category'])
             ->name('help.category');
-        Route::get('/help/articles/{article:slug}', [HelpArticleController::class, 'show'])
+        Route::get('/help/articles/{article}', [HelpArticleController::class, 'show'])
             ->name('help.article');
 
         // Show the support ticket of an application.

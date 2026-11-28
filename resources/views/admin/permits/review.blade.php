@@ -5,19 +5,20 @@
 @section('content')
     @if (session('registry_notice')) <p role="status" class="mb-3 text-sm">{{ session('registry_notice') }}</p> @endif
     @php
+        $reviewInputClass = 'field-sizing-content min-h-14! wrap-anywhere read-only:cursor-text! read-only:opacity-100!';
         $isApproved = $isApproved ?? false;
         $canPrintLimit = $isApproved && auth()->user()->hasPermission('permits.print-limit');
         $hasActiveDocument = $isApproved && $activeDocuments->isNotEmpty();
         $hasTools = $canPrintLimit || $hasActiveDocument;
         $expiryPresets = [3 => '3 months', 6 => '6 months', 12 => '1 year'];
         $cardClass =
-            'shadow-xs rounded-lg border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-900';
+            'min-w-0 shadow-xs rounded-lg border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-900';
         $titleClass = 'dark:text-(--celadon-500) text-lg font-semibold text-slate-900';
         $hintClass = 'text-xs text-slate-500 dark:text-slate-400';
         $presetClass =
             'rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700';
         $dialogClass =
-            'dark:text-(--celadon-500) m-auto w-[calc(100%-2rem)] max-w-md overflow-hidden rounded-lg bg-white p-0 text-slate-900 shadow-2xl backdrop:bg-slate-950/60 backdrop:backdrop-blur-sm dark:bg-slate-900 dark:ring-1 dark:ring-slate-800';
+            'dark:text-(--celadon-500) m-auto w-[calc(100%-2rem)] max-w-md max-h-[90dvh] overflow-y-auto rounded-lg bg-white p-0 text-slate-900 shadow-2xl backdrop:bg-slate-950/60 backdrop:backdrop-blur-sm dark:bg-slate-900 dark:ring-1 dark:ring-slate-800';
         $cancelClass =
             'w-[50%] rounded-md bg-slate-200 px-6 py-3.5 text-sm font-bold text-slate-700 transition hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700';
         $primaryClass =
@@ -30,7 +31,7 @@
         };
     @endphp
 
-    <div class="space-y-4">
+    <div class="min-w-0 wrap-anywhere space-y-4">
 
         {{-- Header --}}
         <header class="flex flex-wrap items-center justify-between gap-3">
@@ -43,7 +44,7 @@
                 </nav>
 
                 <h1
-                    class="mt-0.5 text-2xl font-extrabold uppercase leading-tight tracking-tight text-slate-950 dark:text-white">
+                    class="mt-0.5 text-xl sm:text-2xl font-extrabold uppercase leading-tight tracking-tight text-slate-950 dark:text-white">
                     {{ $application->serviceTitle() }}
                 </h1>
 
@@ -52,7 +53,7 @@
                 </p>
             </div>
 
-            <div class="flex items-center gap-3">
+            <div class="flex flex-wrap items-center gap-3">
                 <span
                     class="inline-flex items-center gap-2 rounded-md px-4 py-2 text-xs font-semibold {{ $badgeClass }}">
                     <span class="size-1.5 rounded-full bg-current" aria-hidden="true"></span>
@@ -69,7 +70,7 @@
         <x-feedbacks.form-errors />
 
         {{-- Row 1: applicant | documents. Row 2: request details | certificate tools --}}
-        <div class="grid items-stretch gap-4 lg:grid-cols-12">
+        <div class="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-12">
 
             {{-- Applicant --}}
             <section class="{{ $cardClass }} lg:col-span-7">
@@ -79,17 +80,14 @@
                         submitted documents.</p>
                 </div>
 
-                <div class="grid gap-4 sm:grid-cols-2">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     @foreach ($details as $label => $value)
-                        <x-form.input :name="'ro_' . Str::slug($label, '_')" :label="$label" :value="$value" :light="true"
-                            :raised="true" :use-old="false" readonly tabindex="-1" placeholder="Not provided"
-                            class="read-only:cursor-default! read-only:opacity-100! dark:bg-slate-800! dark:text-(--white)! dark:border-slate-700! font-medium" />
+                        <x-form.input type="textarea" rows="1" :name="'ro_' . Str::slug($label, '_')" :label="$label"
+                            :value="$value" :use-old="false" light raised readonly placeholder="Not provided" :class="$reviewInputClass" />
                     @endforeach
-
                     <div class="sm:col-span-2">
-                        <x-form.input name="ro_address" label="Address" :value="$application->address" :light="true"
-                            :raised="true" :use-old="false" readonly tabindex="-1" placeholder="Not provided"
-                            class="read-only:cursor-default! read-only:opacity-100! dark:bg-slate-800! dark:text-(--white)! dark:border-slate-700! font-medium" />
+                        <x-form.input type="textarea" rows="1" name="ro_address" label="Address" :value="$application->address"
+                            :use-old="false" light raised readonly placeholder="Not provided" :class="$reviewInputClass" />
                     </div>
                 </div>
             </section>
@@ -112,7 +110,7 @@
                             <div class="min-w-0">
                                 <p class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ $document->label }}
                                 </p>
-                                <p class="truncate text-xs text-slate-500 dark:text-slate-400">
+                                <p class="text-xs text-slate-500 dark:text-slate-400">
                                     {{ $document->original_name }} · {{ number_format($document->size / 1024) }} KB
                                 </p>
                             </div>
@@ -174,32 +172,13 @@
                 </div>
 
                 @if (count($requestDetails))
-                    @php
-                        // Only "Purpose" is a long answer, so it gets a growing textarea below the other fields
-                        $purposeLabel = collect($requestDetails)
-                            ->keys()
-                            ->first(fn($label) => Str::contains(Str::lower($label), 'purpose'));
-                        $inputClass =
-                            'read-only:cursor-default! read-only:opacity-100! dark:bg-slate-800! dark:text-(--white)! dark:border-slate-700! font-medium';
-                    @endphp
-
-                    <div class="grid gap-4 sm:grid-cols-2">
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         @foreach ($requestDetails as $label => $value)
-                            @continue($label === $purposeLabel)
-                            <x-form.input :name="'rd_' . Str::slug($label, '_')" :label="$label" :value="$value"
-                                :light="true" :raised="true" :use-old="false" readonly tabindex="-1"
-                                placeholder="Not provided" class="{{ $inputClass }}" />
-                        @endforeach
-
-                        @if ($purposeLabel !== null)
-                            {{-- Grows with the text (field-sizing) and can be pulled taller by hand (resize-y) --}}
-                            <div class="sm:col-span-2">
-                                <x-form.input type="textarea" rows="1" :name="'rd_' . Str::slug($purposeLabel, '_')"
-                                    :label="$purposeLabel" :value="$requestDetails[$purposeLabel]" :light="true"
-                                    :raised="true" :use-old="false" readonly tabindex="-1" placeholder="Not provided"
-                                    class="field-sizing-content min-h-14! resize-y! {{ $inputClass }}" />
+                            <div @class(['min-w-0', 'sm:col-span-2' => Str::contains(Str::lower($label), 'purpose')])>
+                                <x-form.input type="textarea" rows="1" :name="'rd_' . Str::slug($label, '_')" :label="$label"
+                                    :value="$value" :use-old="false" light raised readonly placeholder="Not provided" :class="$reviewInputClass" />
                             </div>
-                        @endif
+                        @endforeach
                     </div>
                 @else
                     <p class="text-sm text-slate-500 dark:text-slate-400">No additional details.</p>
@@ -250,7 +229,7 @@
                         @endphp
 
                         <section class="{{ $cardClass }} flex flex-1 flex-col">
-                            <div class="flex items-start justify-between gap-3">
+                            <div class="flex flex-wrap items-start justify-between gap-3">
                                 <div>
                                     <h2 class="dark:text-(--celadon-500) text-base font-semibold text-slate-900">
                                         Blockchain Record</h2>
@@ -447,7 +426,7 @@
 
         {{-- Reject --}}
         <dialog id="reject-dialog"
-            class="dark:text-(--celadon-500) m-auto w-[calc(100%-2rem)] max-w-xl overflow-hidden rounded-lg bg-white p-0 text-slate-900 shadow-2xl backdrop:bg-slate-950/60 backdrop:backdrop-blur-sm dark:bg-slate-900 dark:ring-1 dark:ring-slate-800">
+            class="dark:text-(--celadon-500) m-auto w-[calc(100%-2rem)] max-w-xl max-h-[90dvh] overflow-y-auto rounded-lg bg-white p-0 text-slate-900 shadow-2xl backdrop:bg-slate-950/60 backdrop:backdrop-blur-sm dark:bg-slate-900 dark:ring-1 dark:ring-slate-800">
             <form id="reject-form" method="POST" action="{{ route('admin.permits.reject', $application) }}"
                 class="p-3 sm:p-5" novalidate>
                 @csrf

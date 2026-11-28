@@ -3,8 +3,6 @@
 namespace App\Http\Controllers\Citizen;
 
 use App\Http\Controllers\Controller;
-use App\Models\HelpArticle;
-use App\Models\HelpCategory;
 use App\Models\ServiceRequest;
 use App\Models\Ticket;
 use App\Services\PostTicketMessage;
@@ -16,20 +14,6 @@ use Illuminate\View\View;
 class TicketController extends Controller
 {
     public function __construct(private PostTicketMessage $postMessage) {}
-
-    public function index(Request $request): View
-    {
-        // Help center content
-        $search = trim((string) $request->query('q', ''));
-
-        $categories = HelpCategory::with(['articles' => fn ($q) => $q->published()->orderBy('title')])
-            ->orderBy('sort_order')
-            ->get();
-
-        $popular = HelpArticle::published()->where('is_popular', true)->latest()->limit(4)->get();
-
-        return view('citizen.help.index', compact('categories', 'popular', 'search'));
-    }
 
     public function tickets(Request $request): View
     {

@@ -3,30 +3,62 @@
 namespace App\Http\Controllers\Citizen;
 
 use App\Http\Controllers\Controller;
-use App\Models\HelpArticle;
-use App\Models\HelpCategory;
+use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
+use Illuminate\View\View;
 
 class HelpArticleController extends Controller
 {
-    public function category(HelpCategory $category)
+    private function categories(): Collection
     {
-        $articles = $category->articles()->published()->orderBy('title')->get();
+        $categories = collect();
 
-        return view('citizen.help.category', compact('category', 'articles'));
+        foreach (require resource_path('help.php') as [$name, $color, $guides]) {
+            $category = (object) ['name' => $name, 'slug' => Str::slug($name), 'color' => $color];
+            $articles = collect();
+
+            foreach ($guides as [$title, $summary, $popular, $body]) {
+                $articles->push((object) [
+                    'title' => $title,
+                    'slug' => Str::slug($title),
+                    'summary' => $summary,
+                    'popular' => $popular,
+                    'body' => $body,
+                    'category' => $category,
+                ]);
+            }
+
+            $category->articles = $articles->sortBy('title')->values();
+            $categories->push($category);
+        }
+
+        return $categories;
     }
 
-    public function show(HelpArticle $article)
+    public function index(Request $request): View
     {
-        abort_unless($article->is_published, 404);
+        $categories = $this->categories();
+        $popular = $categories->pluck('articles')->collapse()->where('popular', true)->take(4);
+        $search = trim((string) $request->query('q', ''));
 
-        $article->increment('views');
-        $article->load('category');
+        return view('citizen.help.index', compact('categories', 'popular', 'search'));
+    }
 
-        $related = HelpArticle::published()
-            ->where('help_category_id', $article->help_category_id)
-            ->whereKeyNot($article->id)
-            ->limit(4)
-            ->get();
+    public function category(string $category): View
+    {
+        $category = $this->categories()->firstWhere('slug', $category);
+        abort_unless($category, 404);
+
+        return view('citizen.help.category', ['category' => $category, 'articles' => $category->articles]);
+    }
+
+    public function show(string $article): View
+    {
+        $article = $this->categories()->pluck('articles')->collapse()->firstWhere('slug', $article);
+        abort_unless($article, 404);
+
+        $related = $article->category->articles->where('slug', '!=', $article->slug)->take(4);
 
         return view('citizen.help.article', compact('article', 'related'));
     }

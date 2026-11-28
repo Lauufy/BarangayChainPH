@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\ServiceRequest;
 use App\Models\Ticket;
 use App\Models\User;
-use Database\Seeders\HelpCenterSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -17,7 +16,6 @@ class HelpTicketTest extends TestCase
 
     public function test_citizen_can_browse_and_search_help_articles(): void
     {
-        $this->seed(HelpCenterSeeder::class);
         $this->actingAs(User::factory()->create(['role' => 'citizen']));
 
         $article = route('citizen.help.article', 'how-to-track-your-permit-request');

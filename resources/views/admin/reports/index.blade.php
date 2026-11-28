@@ -8,7 +8,7 @@
         $requestedTab = request()->query('report_tab');
         $tab = is_string($requestedTab) && isset($tabs[$requestedTab]) ? $requestedTab : 'service';
         $ledgerBtn = 'inline-flex h-10 items-center whitespace-nowrap rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700';
-        $statBox = 'grid grid-cols-2 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900';
+        $statBox = 'grid grid-cols-1 min-[420px]:grid-cols-2 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900';
         $scopeAll = 'rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300';
         $scopePeriod = 'rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-950/50 dark:text-blue-300';
     @endphp

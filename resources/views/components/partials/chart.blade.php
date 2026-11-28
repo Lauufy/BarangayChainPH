@@ -1,7 +1,7 @@
 @props(['type', 'aria', 'labels', 'values' => [], 'datasets' => null, 'empty' => false,
     'height' => 'h-64', 'unit' => '', 'center' => null, 'stacked' => false, 'uniform' => false])
 
-<div data-chart-frame class="relative {{ $height }}">
+<div data-chart-frame class="relative w-full min-w-0 {{ $height }}">
     @if ($empty)
         <p class="flex h-full items-center justify-center text-sm">No data in this period.</p>
     @else

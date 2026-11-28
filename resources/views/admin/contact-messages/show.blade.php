@@ -89,7 +89,7 @@
                 {{-- Mobile back link --}}
                 <a href="{{ route('admin.contact-messages.index', ['communications_tab' => 'inquiries']) }}"
                     class="border-b border-slate-200 px-4 py-3 text-sm font-semibold text-blue-700 hover:underline dark:border-slate-800 dark:text-blue-300 md:hidden">
-                    ← Back to Communications Management
+                     Back to Communications Management
                 </a>
 
                 {{-- Email header fields --}}
@@ -186,9 +186,6 @@
                             </svg>
                         </button>
                     </div>
-                    <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                        This will be sent by email to {{ $contactMessage->email }}.
-                    </p>
                 </form>
             </section>
         </div>

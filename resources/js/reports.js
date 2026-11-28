@@ -206,7 +206,15 @@ function horizontalise(options, theme, unit) {
     };
     options.scales.y.border = { display: false };
     options.scales.y.grid = { display: false };
-    options.scales.y.ticks = { color: theme.text, autoSkip: false };
+    options.scales.y.ticks = {
+        color: theme.text,
+        autoSkip: false,
+        callback(value) {
+            const label = this.getLabelForValue(value);
+            const limit = Math.max(10, Math.floor(this.chart.width / 18));
+            return label.length > limit ? label.slice(0, limit - 1) + "\u2026" : label;
+        },
+    };
     options.plugins.tooltip.callbacks.label = (item) =>
         formatValue(item.parsed.x, unit);
 }
@@ -457,6 +465,7 @@ function createDoughnut(canvas, theme) {
             layout: { padding: 4 },
             plugins: {
                 legend: {
+                    display: !canvas.hasAttribute("data-external-legend"),
                     position: "bottom",
                     labels: {
                         color: theme.text,

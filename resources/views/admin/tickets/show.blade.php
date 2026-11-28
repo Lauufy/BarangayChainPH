@@ -121,7 +121,7 @@
                 <div class="flex min-w-0 items-center gap-4">
                     <a href="{{ route('admin.tickets.index') }}" aria-label="Back to tickets"
                         class="grid size-8 shrink-0 place-items-center rounded-sm text-slate-500 transition hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/5 lg:hidden">
-                        ←
+                        
                     </a>
 
                     <span

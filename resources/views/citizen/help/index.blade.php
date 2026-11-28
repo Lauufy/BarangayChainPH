@@ -25,7 +25,7 @@
         <section id="help-categories" aria-label="Browse by category">
             <div class="grid gap-4 sm:grid-cols-2">
                 @forelse ($categories as $category)
-                    <a href="{{ route('citizen.help.category', $category) }}"
+                    <a href="{{ route('citizen.help.category', $category->slug) }}"
                         class="dark:bg-(--blue-850) group flex flex-col rounded-lg border border-slate-200 bg-white p-6 hover:border-slate-400 focus-visible:outline-2 dark:border-slate-700 dark:hover:border-slate-500">
                         <span class="flex items-center gap-3">
                             <span class="bg-current/5 grid size-8 place-items-center rounded-md">

@@ -53,12 +53,12 @@
                 {{ $icon }}
             </span>
         @endisset
-        <span class="truncate text-sm font-medium text-slate-700 dark:text-slate-300">{{ $label }}</span>
+        <span class="wrap-anywhere sm:truncate text-sm font-medium text-slate-700 dark:text-slate-300">{{ $label }}</span>
     </div>
 
     {{-- Value --}}
     <p title="{{ $value }}" @class([
-        'mt-2 truncate text-xl font-bold tabular-nums',
+        'mt-2 wrap-anywhere sm:truncate text-xl font-bold tabular-nums',
         'text-slate-900 dark:text-slate-100' => ! $valueClass,
         $valueClass => $valueClass,
         'font-mono' => $mono,
@@ -68,13 +68,13 @@
 
     {{-- Subtitle --}}
     @if ($subtitle)
-        <p class="truncate text-xs text-slate-500 dark:text-slate-400">{{ $subtitle }}</p>
+        <p class="wrap-anywhere sm:truncate text-xs text-slate-500 dark:text-slate-400">{{ $subtitle }}</p>
     @endif
 
     {{-- Footer: latest date, note, or trend --}}
     @if ($showFooter)
         <div class="mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-            <p class="min-w-0 truncate text-xs text-slate-500 dark:text-slate-400">
+            <p class="min-w-0 wrap-anywhere sm:truncate text-xs text-slate-500 dark:text-slate-400">
                 @if ($isEmpty)
                     {{ $emptyText }}
                 @elseif ($latestText)

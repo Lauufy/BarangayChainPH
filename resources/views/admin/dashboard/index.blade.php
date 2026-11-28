@@ -18,7 +18,7 @@
             </div>
         @endif
 
-        <div class="grid grid-cols-2 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 lg:grid-cols-4">
+        <div class="grid grid-cols-1 min-[420px]:grid-cols-2 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 lg:grid-cols-4">
             <x-admin.stat-card label="Total Citizens" subtitle="Registered accounts" :value="number_format($totalCitizens ?? 0)" :trend="$citizensTrend ?? null"
                 :latest="$citizensLatest ?? null" latest-label="Last registered" :href="$isAdmin ? route('admin.users.index') : null">
                 <x-slot:icon>
@@ -92,7 +92,7 @@
                 }
             @endphp
 
-            <section class="{{ $panel }} p-5" aria-labelledby="staff-workload-heading">
+            <section class="{{ $panel }} min-w-0 p-3 sm:p-5" aria-labelledby="staff-workload-heading">
                 <h2 id="staff-workload-heading" class="{{ $panelTitle }}">My workload</h2>
                 <p class="{{ $muted }} mt-1 text-sm">
                     @if ($workload['can_review_permits'] || $workload['can_review_identity'])
@@ -102,7 +102,7 @@
                     @endif
                 </p>
 
-                <div class="mt-4 grid grid-cols-2 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 lg:grid-cols-3">
+                <div class="mt-4 grid grid-cols-1 min-[420px]:grid-cols-2 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 lg:grid-cols-3">
                     @if ($workload['can_review_permits'])
                         <x-admin.stat-card label="Requests awaiting action" subtitle="Open service requests" :value="$workload['requests']" />
                     @endif
@@ -118,11 +118,11 @@
         @endif
 
         {{-- Row 2: bar chart + request status donut --}}
-        <div class="grid gap-6 xl:grid-cols-3">
+        <div class="grid grid-cols-1 gap-4 sm:gap-6 xl:grid-cols-3">
 
             {{-- Permit requests per month (always drawn, even when every month is 0) --}}
-            <section class="{{ $panel }} p-5 xl:col-span-2">
-                <div class="flex items-start justify-between gap-3">
+            <section class="{{ $panel }} min-w-0 p-3 sm:p-5 xl:col-span-2">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                         <h2 class="{{ $panelTitle }}">Permit Requests This Year</h2>
                         <p class="{{ $muted }} mt-0.5 text-xs">Requests from all services</p>
@@ -130,7 +130,7 @@
                     <x-admin.stat-card label="Last 12 months" subtitle="Permit requests submitted" :value="number_format($participationTotal)" />
                 </div>
 
-                <div class="mt-4 h-64">
+                <div class="relative mt-4 h-56 w-full min-w-0 sm:h-64">
                     <canvas data-report-chart="trend" data-labels="{{ json_encode($participation['labels']) }}"
                         data-values="{{ json_encode($participation['values']) }}" aria-label="Permit requests per month"
                         role="img"></canvas>
@@ -138,13 +138,13 @@
             </section>
 
             {{-- Request status donut --}}
-            <section class="{{ $panel }} p-5">
+            <section class="{{ $panel }} min-w-0 p-3 sm:p-5">
                 <h2 class="{{ $panelTitle }}">Request Status</h2>
                 <p class="{{ $muted }} mt-0.5 text-xs">All permit requests</p>
 
                 @if ($requestStatusTotal > 0)
                     <div class="relative mx-auto mt-4 h-44 max-w-48">
-                        <canvas data-report-chart="citizens"
+                        <canvas data-report-chart="citizens" data-external-legend
                             data-labels="{{ json_encode(['Approved', 'In progress', 'Rejected', 'Cancelled']) }}"
                             data-values="{{ json_encode(array_values($requestStatus)) }}"
                             aria-label="Permit requests by status" role="img"></canvas>
@@ -167,7 +167,7 @@
         </div>
 
         {{-- Row 3: shortcuts + recent permits --}}
-        <div class="grid gap-6 xl:grid-cols-3">
+        <div class="grid grid-cols-1 gap-4 sm:gap-6 xl:grid-cols-3">
 
             {{-- Shortcuts --}}
             <section class="{{ $panel }} self-start">
@@ -193,7 +193,7 @@
             {{-- Recent permit requests --}}
             @if ($recentPermits !== null)
                 <section class="{{ $panel }} min-w-0 overflow-hidden xl:col-span-2">
-                    <div class="{{ $panelHead }} flex items-start justify-between gap-3">
+                    <div class="{{ $panelHead }} flex flex-wrap items-start justify-between gap-3">
                         <div>
                             <h2 class="{{ $panelTitle }}">Recent Permit Requests</h2>
                             <p class="{{ $muted }} mt-0.5 text-xs">The latest requests submitted by citizens.</p>

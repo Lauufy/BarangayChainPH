@@ -7,7 +7,7 @@
         <nav class="text-sm text-slate-500">
             <a href="{{ route('citizen.help.index') }}" class="hover:underline">Help Center</a>
             <span class="mx-1">/</span>
-            <a href="{{ route('citizen.help.category', $article->category) }}" class="hover:underline">{{ $article->category->name }}</a>
+            <a href="{{ route('citizen.help.category', $article->category->slug) }}" class="hover:underline">{{ $article->category->name }}</a>
         </nav>
 
         <article>
