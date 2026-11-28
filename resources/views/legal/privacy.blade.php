@@ -67,7 +67,7 @@
         <section>
             <h2 class="text-lg font-semibold text-white">6. Data Sharing and Disclosure</h2>
             <p>
-                We do not sell, rent, or trade your personal information. Your data is accessible only to authorized Barangay San Luis personnel performing official duties. Information may only be disclosed externally when: (a) verifying document authenticity through QR/hash lookup (limited strictly to document validity status), (b) required by law, court order, or lawful subpoena, or (c) necessary for official coordination with the City Government of Antipolo or national government agencies under valid data-sharing agreements.
+                We do not sell, rent, or trade your personal information. Your data is accessible only to authorized Barangay San Luis personnel performing official duties. Information may only be disclosed externally when: (a) verifying document authenticity through QR/hash lookup, which shows the document's validity status and limited permit details (document type, permit number, reference number, the holder's first name with the rest of the name masked, issue and expiry dates, issuing office, and version), (b) required by law, court order, or lawful subpoena, or (c) necessary for official coordination with the City Government of Antipolo or national government agencies under valid data-sharing agreements.
             </p>
         </section>
 

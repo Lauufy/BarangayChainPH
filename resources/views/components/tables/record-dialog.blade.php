@@ -8,5 +8,4 @@
     <dl class="my-4 grid gap-2 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-800"></dl>
     <p data-sheet-note class="mb-4 whitespace-pre-line text-sm text-slate-600 dark:text-slate-300"></p>
     <div data-sheet-actions></div>
-    <button type="button" data-sheet-close class="record-done" autofocus>Done</button>
 </dialog>

@@ -19,7 +19,7 @@
         $dialogClass =
             'dark:text-(--celadon-500) m-auto w-[calc(100%-2rem)] max-w-md overflow-hidden rounded-lg bg-white p-0 text-slate-900 shadow-2xl backdrop:bg-slate-950/60 backdrop:backdrop-blur-sm dark:bg-slate-900 dark:ring-1 dark:ring-slate-800';
         $cancelClass =
-            'rounded-md bg-slate-200 px-6 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700';
+            'w-[50%] rounded-md bg-slate-200 px-6 py-3.5 text-sm font-bold text-slate-700 transition hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700';
         $primaryClass =
             'rounded-md bg-[#0a1f6b] px-6 py-2 text-sm font-bold text-white transition hover:bg-[#0c2788] disabled:opacity-60 dark:bg-blue-600 dark:hover:bg-blue-500';
         $badgeClass = match ($statusVariant) {
@@ -337,7 +337,7 @@
     @if ($hasActiveDocument)
         {{-- Reissue. The modal is closed before confirming, otherwise it would cover the confirmation. --}}
         <dialog id="reissue-dialog" aria-labelledby="reissue-title" class="{{ $dialogClass }}">
-            <form method="POST" action="{{ route('admin.permits.reissue', $application) }}" class="p-4 sm:p-5"
+            <form method="POST" action="{{ route('admin.permits.reissue', $application) }}" class="p-3 sm:p-5"
                 onsubmit="event.preventDefault(); var form = this; var dialog = form.closest('dialog'); dialog.close(); tConfirmation({ title: 'Reissue this document?', text: 'Are you sure you want to reissue this document? The current document will become invalid after the replacement is successfully generated.', confirmLabel: 'Yes, reissue' }).then(function (ok) { if (ok) { form.submit(); } else { dialog.showModal(); } });">
                 @csrf
 
@@ -345,7 +345,7 @@
                     Reissue document</h3>
                 <p class="{{ $hintClass }} mt-0.5">
                     Generate a replacement authenticated PDF. The previous record is kept.
-                    Active: <span class="font-semibold">Version {{ $activeDocuments->max('version') }}</span>
+                    Active: <span class="font-semibold">Ver {{ $activeDocuments->max('version') }}</span>
                 </p>
 
                 <div class="mt-3 space-y-3 border-t border-slate-100 pt-3 dark:border-slate-800">
@@ -368,7 +368,7 @@
 
                 <div class="mt-4 flex items-center justify-end gap-3">
                     <button type="button" data-close-dialog class="{{ $cancelClass }}">Cancel</button>
-                    <button type="submit" class="{{ $primaryClass }}">Reissue</button>
+                    <x-form.button type="submit" loadingText="Reissuing..." color="blue" class="w-[50%]">Reissue</x-form.button>
                 </div>
             </form>
         </dialog>
@@ -378,7 +378,7 @@
         {{-- Print allowance --}}
         <dialog id="print-limit-dialog" aria-labelledby="print-limit-title" class="{{ $dialogClass }}">
             <form method="POST" action="{{ route('admin.permits.print-limit.update', $application) }}"
-                class="p-4 sm:p-5">
+                class="p-3 sm:p-5">
                 @csrf
                 @method('PATCH')
 
@@ -399,7 +399,7 @@
 
                 <div class="mt-4 flex items-center justify-end gap-3">
                     <button type="button" data-close-dialog class="{{ $cancelClass }}">Cancel</button>
-                    <button type="submit" class="{{ $primaryClass }}">Update</button>
+                    <x-form.button type="submit" loadingText="Updating..." color="blue" class="w-[50%]">Update</x-form.button>
                 </div>
             </form>
         </dialog>
@@ -414,7 +414,7 @@
         {{-- Approve --}}
         <dialog id="approve-dialog" class="{{ $dialogClass }}">
             <form id="approve-form" method="POST" action="{{ route('admin.permits.approve', $application) }}"
-                class="p-4 sm:p-5">
+                class="p-3 sm:p-5">
                 @csrf
 
                 <h3 class="dark:text-(--celadon-500) text-base font-semibold text-slate-900">Approve application</h3>
@@ -438,9 +438,9 @@
                     </div>
                 </div>
 
-                <div class="mt-4 flex items-center justify-end gap-3">
+                <div class="mt-4 flex items-center w-full gap-3">
                     <button type="button" data-close-dialog class="{{ $cancelClass }}">Cancel</button>
-                    <button type="button" id="confirm-approve" class="{{ $primaryClass }}">Approve</button>
+                    <x-form.button type="button" id="confirm-approve" loadingText="Approving..." color="blue" class="w-[50%]">Approve</x-form.button>
                 </div>
             </form>
         </dialog>
@@ -449,7 +449,7 @@
         <dialog id="reject-dialog"
             class="dark:text-(--celadon-500) m-auto w-[calc(100%-2rem)] max-w-xl overflow-hidden rounded-lg bg-white p-0 text-slate-900 shadow-2xl backdrop:bg-slate-950/60 backdrop:backdrop-blur-sm dark:bg-slate-900 dark:ring-1 dark:ring-slate-800">
             <form id="reject-form" method="POST" action="{{ route('admin.permits.reject', $application) }}"
-                class="p-4 sm:p-5" novalidate>
+                class="p-3 sm:p-5" novalidate>
                 @csrf
 
                 <h3 class="dark:text-(--celadon-500) text-base font-semibold text-slate-900">Reject application</h3>
@@ -471,13 +471,12 @@
 
                 <div class="mt-4 flex items-center justify-end gap-3">
                     <button type="button" data-close-dialog
-                        class="rounded-md bg-slate-200 px-6 py-2 text-sm font-bold text-red-600 transition hover:bg-slate-300 dark:bg-slate-800 dark:text-red-300 dark:hover:bg-slate-700">
+                        class="w-[50%] rounded-md bg-slate-100 px-6 py-3.5 text-sm font-bold text-red-600 transition hover:bg-slate-300 dark:bg-slate-800 dark:text-red-300 dark:hover:bg-slate-700">
                         Cancel
                     </button>
-                    <button type="button" id="confirm-reject"
-                        class="rounded-md bg-red-500 px-6 py-2 text-sm font-bold text-white transition hover:bg-red-600 disabled:opacity-60">
+                    <x-form.button type="button" id="confirm-reject" loadingText="Rejecting..." color="red" class="w-[50%]">
                         Reject
-                    </button>
+                    </x-form.button>
                 </div>
             </form>
         </dialog>

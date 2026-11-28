@@ -5,9 +5,9 @@
 @section('content')
 @php
     $badge = match ($status) {
-        'valid' => ['Valid document', 'bg-emerald-50 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200', 'This PDF matches the current permit in the barangay and blockchain records.'],
+        'valid' => ['Valid document', 'bg-emerald-50 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200', $qr ? 'This permit matches an approved record in the barangay system.' : 'This PDF matches the current permit in the barangay and blockchain records.'],
         'revoked' => ['Revoked', 'bg-red-50 text-red-900 dark:bg-red-950 dark:text-red-200', null],
-        'invalid' => ['File could not be authenticated', 'bg-red-50 text-red-900 dark:bg-red-950 dark:text-red-200', 'The file could not be verified.'],
+        'invalid' => [$qr ? 'Not valid' : 'File could not be authenticated', 'bg-red-50 text-red-900 dark:bg-red-950 dark:text-red-200', 'The file could not be verified.'],
         'expired' => ['Expired', 'bg-amber-50 text-amber-900 dark:bg-amber-950 dark:text-amber-200', null],
         'unavailable' => ['Cannot verify right now', 'bg-amber-50 text-amber-900 dark:bg-amber-950 dark:text-amber-200', 'Blockchain confirmation is temporarily unavailable. Try again later.'],
         default => null,
@@ -48,7 +48,7 @@
                 </div>
             @endif
 
-            @if ($status === 'valid')
+            @if ($details)
                 <dl class="grid gap-x-6 gap-y-4 border-t border-slate-200 p-5 text-sm sm:grid-cols-2 sm:px-7 dark:border-slate-800">
                     @foreach ($details as $label => $value)
                         <div @class(['min-w-0', 'sm:col-span-2' => $loop->first])>
@@ -57,25 +57,29 @@
                         </div>
                     @endforeach
                 </dl>
-            @elseif ($status === 'revoked' && $document->replacement)
-                <div class="border-t border-slate-200 p-5 sm:px-7 dark:border-slate-800">
-                    <a class="text-sm font-semibold text-blue-800 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4 dark:text-blue-300"
-                        href="{{ route('permits.verify.form', ['ref' => $document->replacement->document_uuid]) }}">
-                        Verify replacement permit (version {{ $document->replacement->version }})
-                    </a>
-                </div>
             @endif
+
         </section>
     @endif
 
-    <div class="flex flex-wrap gap-x-5 gap-y-3">
-        <a href="{{ route('permits.verify.form', ['ref' => $reference]) }}"
-            class="inline-flex rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-[#17325c] hover:border-blue-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-            Try another file
+    @if ($qr)
+        <p class="text-xs text-slate-600 dark:text-slate-300">
+            This page checks the permit’s current status in the BarangayChain PH application database. It does not represent an on-chain blockchain verification.
+        </p>
+        <a href="{{ route('permits.verify.form', ['ref' => $reference, 'upload' => 1]) }}"
+            class="mt-3 inline-flex text-sm font-semibold text-blue-800 underline underline-offset-4 dark:text-blue-300">
+            Upload the original PDF for the full blockchain check
         </a>
-        <a href="{{ route('permits.verify.form') }}"
-            class="inline-flex items-center px-1 text-sm font-semibold text-blue-800 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-blue-300">
-            Verify another permit
-        </a>
-    </div>
+    @else
+        <div class="flex flex-wrap gap-x-5 gap-y-3">
+            <a href="{{ route('permits.verify.form', ['ref' => $reference]) }}"
+                class="inline-flex rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-[#17325c] hover:border-blue-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                Try another file
+            </a>
+            <a href="{{ route('permits.verify.form') }}"
+                class="inline-flex items-center px-1 text-sm font-semibold text-blue-800 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-blue-300">
+                Verify another permit
+            </a>
+        </div>
+    @endif
 @endsection

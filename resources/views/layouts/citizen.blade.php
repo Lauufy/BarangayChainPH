@@ -302,7 +302,7 @@
             <main id="citizen-page-content" class="min-h-screen w-full flex-1">
             @else
                 <main id="citizen-page-content"
-                    class="mx-auto min-h-screen w-full max-w-7xl flex-1 px-5 py-8 sm:px-8 sm:py-12">
+                    class="mx-auto min-h-screen w-full max-w-7xl flex-1 px-3 py-8 sm:px-8 sm:py-12">
         @endif
         <x-feedbacks.toast />
 

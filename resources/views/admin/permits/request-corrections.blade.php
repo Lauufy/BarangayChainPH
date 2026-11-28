@@ -32,8 +32,8 @@
             </label>
         </div>
         <footer class="flex flex-wrap justify-end gap-2 border-t border-slate-200 px-4 py-3 sm:px-5 dark:border-slate-700">
-            <button type="button" data-close-dialog class="rounded-md bg-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-200">Cancel</button>
-            <button type="submit" disabled class="rounded-md bg-blue-800 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">Send correction request</button>
+            <x-form.button type="submit" disabled loadingText="Sending correction request..." class="w-full">Send correction request</x-form.button>
+            <button type="button" data-close-dialog class="w-full rounded-md bg-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-200">Cancel</button>
         </footer>
     </form>
 </dialog>

@@ -543,7 +543,7 @@
 
             {{-- Page content --}}
             <main id="admin-page-content"
-                class="min-h-0 min-w-0 flex-1 overflow-y-auto px-4 pb-6 pt-6 sm:px-8 sm:pb-8">
+                class="min-h-0 min-w-0 flex-1 overflow-y-auto px-3 pb-12 pt-6 sm:px-8 sm:pb-18">
                 @yield('content')
             </main>
         </div>

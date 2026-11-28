@@ -19,27 +19,32 @@
 
     <div class="space-y-6">
         {{-- Header --}}
-        <header class="space-y-2 border-b border-(--gray-200) pb-4 dark:border-(--gray-700)">
-            <nav class="flex items-center gap-2 text-xs text-(--gray-500) dark:text-(--gray-400)" aria-label="Breadcrumb">
-                <a href="{{ route('citizen.services') }}" class="hover:text-(--blue-700) dark:hover:text-(--blue-300)">Services</a>
+        <header class="border-(--gray-200) dark:border-(--gray-700) space-y-2 border-b pb-4">
+            <nav class="text-(--gray-500) dark:text-(--gray-400) flex items-center gap-2 text-xs" aria-label="Breadcrumb">
+                <a href="{{ route('citizen.services') }}"
+                    class="hover:text-(--blue-700) dark:hover:text-(--blue-300)">Services</a>
                 <span aria-hidden="true">›</span>
-                <span class="font-semibold text-(--blue-700) dark:text-(--blue-300)">My applications</span>
+                <span class="text-(--blue-700) dark:text-(--blue-300) font-semibold">My applications</span>
             </nav>
 
             <div>
-                <h1 class="text-2xl font-bold tracking-tight text-(--blue-900) sm:text-3xl dark:text-(--blue-300)">My applications</h1>
-                <p class="mt-1 text-sm text-(--gray-600) dark:text-(--gray-300)">Track the progress of your barangay service requests in one place.</p>
+                <h1 class="text-(--blue-900) dark:text-(--blue-300) text-2xl font-bold tracking-tight sm:text-3xl">My
+                    applications</h1>
+                <p class="text-(--gray-600) dark:text-(--gray-300) mt-1 text-sm">Track the progress of your barangay service
+                    requests in one place.</p>
             </div>
         </header>
 
-        <x-tables.card title="Service requests"
-            description="Review your submitted requests and their current status."
+        <x-tables.card title="Service requests" description="Review your submitted requests and their current status."
             :paginator="$applications->hasPages() ? $applications : null" :searchable="false" :per-page-options="[]">
-            <x-tables.table
-                :heads="['Reference', 'Service', 'Date Submitted', 'Status', ['label' => 'Actions', 'align' => 'center']]"
-                :empty="$applications->isEmpty()"
-                message="No applications yet. Submit a barangay service request to start tracking its progress here."
-            >
+            <x-tables.table :heads="[
+                'Reference',
+                'Service',
+                'Date Submitted',
+                'Status',
+                ['label' => 'Actions', 'align' => 'center'],
+            ]" :empty="$applications->isEmpty()"
+                message="No applications yet. Submit a barangay service request to start tracking its progress here.">
                 @foreach ($applications as $application)
                     @php
                         $hasTicket = (bool) $application->ticket;
@@ -53,7 +58,8 @@
                         </td>
                         <td data-title class="text-slate-600 dark:text-slate-300">{{ $application->serviceTitle() }}</td>
 
-                        <x-tables.detail data-date label="Date submitted" class="whitespace-nowrap text-slate-600 dark:text-slate-300">
+                        <x-tables.detail data-date label="Date submitted"
+                            class="whitespace-nowrap text-slate-600 dark:text-slate-300">
                             {{ $application->created_at->timezone(config('app.timezone'))->format('M j, Y g:i A') }}
                         </x-tables.detail>
 
@@ -76,12 +82,13 @@
                                 @endif
 
                                 @if ($canPrint)
-                                    <x-tables.action :label="'Download PDF ('.$application->printsRemaining().' remaining)'" icon="download" :action="route('citizen.applications.print', $application)">Download PDF</x-tables.action>
+                                    <x-tables.action :label="'Download PDF (' . $application->printsRemaining() . ' remaining)'" icon="download" :action="route('citizen.applications.print', $application)">Download
+                                        PDF</x-tables.action>
                                 @endif
 
                                 {{-- Cancel: opens the shared cancellation modal below --}}
                                 @if ($canCancel)
-                                    <x-tables.action label="Cancel application {{ $application->reference_number }}" icon="x" variant="danger"
+                                    <x-tables.action label="Cancel Application" icon="x" variant="danger"
                                         data-cancel-open data-id="{{ $application->id }}"
                                         data-ref="{{ $application->reference_number }}"
                                         data-action="{{ route('citizen.applications.cancel', $application) }}" />
@@ -123,15 +130,16 @@
                 </p>
             </div>
 
-            <div class="mt-4 flex items-center justify-end gap-3">
+            <div class="mt-4 flex items-center justify-end gap-2 sm:gap-3">
                 <button type="button" id="cancel-close"
-                    class="rounded-md bg-slate-200 px-5 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
-                    Keep application
+                    class="rounded-md bg-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-300 sm:px-5 sm:text-sm dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+                    Retain
                 </button>
                 <button type="button" id="cancel-confirm"
-                    class="rounded-md bg-red-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-60">
+                    class="rounded-md bg-red-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-red-700 disabled:opacity-60 sm:px-5 sm:text-sm">
                     Confirm cancellation
                 </button>
+            </div>
             </div>
         </form>
     </dialog>

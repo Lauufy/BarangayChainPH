@@ -136,6 +136,11 @@
                     </p>
 
                     <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+                        <a href="#verify"
+                            class="focus-visible:outline-(--celadon-500) text-(--off-white) inline-flex items-center justify-center gap-2 rounded-lg border border-white/25 bg-white/10 px-6 py-3.5 text-sm font-semibold backdrop-blur-sm transition hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2">
+                            Verify a Document
+                        </a>
+
                         <a href="{{ $dashboard ?? route('register') }}"
                             class="bg-(--celadon-500) text-(--blue-850) focus-visible:outline-(--celadon-500) inline-flex items-center justify-center gap-2 rounded-lg px-6 py-3.5 text-sm font-bold shadow-lg transition hover:-translate-y-0.5 hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 motion-reduce:hover:translate-y-0">
                             {{ $dashboard ?? null ? 'Open Citizen Workspace' : 'Apply for a Certificate' }}
@@ -143,11 +148,6 @@
                                 viewBox="0 0 24 24" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                             </svg>
-                        </a>
-
-                        <a href="#verify"
-                            class="focus-visible:outline-(--celadon-500) text-(--off-white) inline-flex items-center justify-center gap-2 rounded-lg border border-white/25 bg-white/10 px-6 py-3.5 text-sm font-semibold backdrop-blur-sm transition hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2">
-                            Verify a Document
                         </a>
                     </div>
                 </div>
@@ -407,11 +407,14 @@
             <div class="mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-24">
                 <div class="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
                     <div data-reveal="left">
-                        <p class="text-(--celadon-500) text-xs font-bold uppercase tracking-wider">Public Verification
-                            Portal</p>
+                        <p class="text-(--celadon-500) text-xs font-bold uppercase tracking-wider">
+                            Public Verification Portal
+                        </p>
 
                         <h2 class="mt-3 text-balance text-3xl font-bold leading-[1.1] tracking-tight sm:text-5xl">
-                            Check if a document is authentic.</h2>
+                            Check if a document is authentic.
+                        </h2>
+
                         <p class="text-(--off-white)/80 mt-5 max-w-prose text-base leading-7">
                             Every certificate issued through BarangayChain PH carries a cryptographic hash and QR code.
                             Employers, banks, and government agencies can verify a document immediately—no account
@@ -427,26 +430,37 @@
                                     <h3 class="text-(--off-white) text-lg font-semibold leading-snug">
                                         Is your document genuine?
                                     </h3>
+
                                     <p class="text-(--off-white)/70 mt-1.5 max-w-xs text-sm leading-relaxed">
                                         Confirm that we issued it and that nothing has been changed since. It takes a
-                                        few seconds and
-                                        needs no account.
+                                        few seconds and needs no account.
                                     </p>
 
-                                    <a href="{{ route('permits.verify.form') }}"
-                                        class="bg-(--celadon-500) text-(--blue-850) focus-visible:outline-(--celadon-500) group mt-4 inline-flex items-center gap-2 rounded-sm px-4 py-2.5 text-sm font-bold transition hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2">
-                                        Verify a document
-                                        <svg class="size-4 transition group-hover:translate-x-0.5" viewBox="0 0 20 20"
-                                            fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                            <path d="M4 10h12M11 5l5 5-5 5" />
-                                        </svg>
-                                    </a>
+                                    <div class="mt-4 grid grid-cols-2 gap-3">
+                                        <a href="{{ route('permits.verify.form') }}"
+                                            class="bg-(--celadon-500) text-(--blue-850) focus-visible:outline-(--celadon-500) group inline-flex items-center justify-center gap-2 rounded-sm px-4 py-2.5 text-sm font-bold transition hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2">
+                                            Verify
+                                            <svg class="size-4 transition group-hover:translate-x-0.5" fill="none"
+                                                stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"
+                                                aria-hidden="true">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                    d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                                            </svg>
+                                        </a>
 
-                                    <p class="text-(--off-white)/55 mt-3 max-w-xs text-xs leading-relaxed">
-                                        Scan the QR code on your document to open the upload form with its reference
-                                        already filled in.
-                                    </p>
+                                        <a href="https://lens.google.com/" target="_blank" rel="noopener noreferrer"
+                                            class="text-(--off-white) focus-visible:outline-(--celadon-500) inline-flex items-center justify-center gap-2 rounded-sm border border-white/25 bg-white/10 px-4 py-2.5 text-sm font-semibold transition hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2">
+                                            <svg class="size-4" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                stroke-linejoin="round" aria-hidden="true">
+                                                <path
+                                                    d="M4 8V5a1 1 0 011-1h3M16 4h3a1 1 0 011 1v3M20 16v3a1 1 0 01-1 1h-3M8 20H5a1 1 0 01-1-1v-3" />
+                                                <path d="M8 12h8" />
+                                            </svg>
+                                            Scan
+                                        </a>
+                                    </div>
+
                                 </div>
 
                                 {{-- Right: document sketch showing where the QR code is --}}
@@ -456,6 +470,7 @@
                                         {{-- Page --}}
                                         <rect x="6" y="4" width="148" height="192" rx="3"
                                             fill="#f4f6f3" />
+
                                         {{-- Heading and body lines --}}
                                         <rect x="22" y="24" width="64" height="7" rx="1.5"
                                             fill="#1f3a5f" fill-opacity=".85" />
@@ -469,9 +484,11 @@
                                             <rect x="22" y="110" width="116" height="3" rx="1.5" />
                                             <rect x="22" y="120" width="100" height="3" rx="1.5" />
                                         </g>
+
                                         {{-- Signature line --}}
                                         <path d="M22 156c6-8 10 4 16-3s8-2 14-1" stroke="#1f3a5f" stroke-opacity=".5"
                                             stroke-width="1.5" stroke-linecap="round" />
+
                                         {{-- QR corner highlight --}}
                                         <rect x="104" y="146" width="40" height="40" rx="2.5"
                                             fill="#fff" stroke="#3fb892" stroke-width="2"
@@ -496,9 +513,9 @@
                                         </svg>
                                     </span>
                                 </div>
+
                             </div>
                         </div>
-
                     </div>
 
                     <figure class="bg-(--blue-900) rounded-xl p-3 shadow-2xl ring-1 ring-white/15"

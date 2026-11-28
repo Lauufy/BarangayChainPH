@@ -21,7 +21,7 @@ class PermitVerificationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_qr_links_open_the_form_without_checking_or_showing_a_status(): void
+    public function test_qr_links_show_a_database_result_without_checking_the_chain(): void
     {
         $reference = (string) Str::uuid();
         $this->mock(BlockchainRegistry::class)->shouldNotReceive('lookup');
@@ -31,11 +31,51 @@ class PermitVerificationTest extends TestCase
 
         $this->get(route('permits.verify.form', ['ref' => $reference]))
             ->assertOk()
+            ->assertViewIs('permits.result')
+            ->assertViewHas('status', 'invalid')
+            ->assertSee('Not valid');
+
+        $this->get(route('permits.verify.form', ['ref' => $reference, 'upload' => 1]))
+            ->assertOk()
             ->assertViewIs('permits.upload')
-            ->assertSee('Verify uploaded file')
-            ->assertDontSee('Fake / Invalid');
+            ->assertSee('Verify uploaded file');
 
         $this->assertDatabaseCount('verification_logs', 0);
+    }
+
+    public function test_qr_scan_shows_valid_with_masked_details(): void
+    {
+        [$document] = $this->issue();
+        $this->mock(BlockchainRegistry::class)->shouldNotReceive('lookup');
+
+        $this->get(route('permits.verify.form', ['ref' => $document->document_uuid]))
+            ->assertOk()
+            ->assertViewIs('permits.result')
+            ->assertViewHas('status', 'valid')
+            ->assertSee('Valid document')
+            ->assertSee($document->document_number)
+            ->assertSee('Carlo M***')
+            ->assertDontSee('Carlo Mamaril');
+    }
+
+    public function test_qr_scan_of_an_old_version_shows_revoked(): void
+    {
+        [$document] = $this->issue();
+        $replacement = app(DocumentIssuer::class)->reissue($document->serviceRequest);
+
+        $this->get(route('permits.verify.form', ['ref' => $document->document_uuid]))
+            ->assertOk()
+            ->assertViewHas('status', 'revoked')
+            ->assertSee(route('permits.verify.form', ['ref' => $replacement->document_uuid]));
+    }
+
+    public function test_qr_scan_of_an_expired_permit_shows_expired(): void
+    {
+        [$document] = $this->issue(expired: true);
+
+        $this->get(route('permits.verify.form', ['ref' => $document->document_uuid]))
+            ->assertOk()
+            ->assertViewHas('status', 'expired');
     }
 
     public function test_exact_issued_pdf_checks_the_chain_and_shows_verified_details(): void
@@ -50,7 +90,7 @@ class PermitVerificationTest extends TestCase
             ->assertDontSee('multipart/form-data', false)
             ->assertSee('Try another file')
             ->assertSee($document->document_number)
-            ->assertSee('C*** M***')
+            ->assertSee('Carlo M***')
             ->assertDontSee('Carlo Mamaril');
 
         $this->assertDatabaseHas('verification_logs', [
@@ -124,7 +164,7 @@ class PermitVerificationTest extends TestCase
             ->assertViewHas('status', 'revoked')
             ->assertSee('Revoked on '.$document->revoked_at->format('F j, Y'))
             ->assertSee(route('permits.verify.form', ['ref' => $replacement->document_uuid]))
-            ->assertDontSee('C*** M***');
+            ->assertDontSee('Carlo M***');
     }
 
     public function test_nonexistent_permit_is_invalid_and_is_logged(): void
@@ -181,7 +221,7 @@ class PermitVerificationTest extends TestCase
 
         $this->upload($document->document_uuid, $pdf)
             ->assertViewHas('status', 'expired')
-            ->assertDontSee('C*** M***');
+            ->assertDontSee('Carlo M***');
     }
 
     public function test_unsupported_file_is_rejected_and_logged(): void

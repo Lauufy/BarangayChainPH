@@ -25,8 +25,38 @@ class PermitVerificationController extends Controller
     public function show(Request $request): Response
     {
         $reference = $request->query('ref');
+        $reference = is_string($reference) ? substr($reference, 0, 64) : '';
 
-        return $this->uploadPage(is_string($reference) ? substr($reference, 0, 64) : '');
+        // Typed permit numbers, blank visits and ?upload=1 get the upload form
+        if (! Str::isUuid($reference) || $request->boolean('upload')) {
+            return $this->uploadPage($reference);
+        }
+
+        $document = IssuedDocument::with(['serviceRequest', 'replacement'])
+            ->where('document_uuid', strtolower($reference))
+            ->first();
+        $application = $document?->serviceRequest;
+
+        $result = ['status' => 'invalid', 'reason' => 'No permit matches this QR code.', 'qr' => true];
+
+        if ($application) {
+            $result['document'] = $document;
+            $result['reason'] = null;
+
+            if ($document->revoked_at !== null) {
+                $result['status'] = 'revoked';
+            } elseif (
+                $application->status !== ServiceRequest::APPROVED
+                || $application->permit_number !== $document->document_number
+                || $application->issuedDocuments()->where('version', '>', $document->version)->exists()
+            ) {
+                $result['reason'] = 'This permit is no longer current.';
+            } else {
+                $result['status'] = $document->isExpired() ? 'expired' : 'valid';
+            }
+        }
+
+        return $this->resultPage($reference, $result);
     }
 
     public function verify(Request $request, PermitVerification $verification): Response
@@ -85,8 +115,9 @@ class PermitVerificationController extends Controller
             'reference' => $reference,
             'status' => $status,
             'document' => $document,
-            'details' => $status === 'valid' ? $this->details($document) : [],
+            'details' => $document && ($status === 'valid' || ($result['qr'] ?? false)) ? $this->details($document) : [],
             'reason' => $result['reason'] ?? null,
+            'qr' => $result['qr'] ?? false,
             'differences' => $result['differences'] ?? [],
             'barangayName' => config('app.barangay_name', 'Barangay San Luis'),
         ], 200, ['Cache-Control' => 'no-store, private']);
@@ -96,7 +127,11 @@ class PermitVerificationController extends Controller
     {
         $fields = $document->canonical_fields ?? PermitFields::snapshot($document, $document->serviceRequest);
         $parts = preg_split('/\s+/u', $fields['holder'], -1, PREG_SPLIT_NO_EMPTY) ?: [];
-        $holder = implode(' ', array_map(fn (string $part): string => Str::substr($part, 0, 1).'***', $parts));
+        $holder = implode(' ', array_map(
+            fn(string $part, int $i): string => $i === 0 ? $part : Str::substr($part, 0, 1) . '***',
+            $parts,
+            array_keys($parts)
+        ));
 
         return [
             'Document type' => $this->documentTitle($document->serviceRequest, $fields['type']),
