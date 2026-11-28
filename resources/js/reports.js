@@ -37,9 +37,11 @@ const labelColors = {
 
 Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
 Chart.defaults.font.size = 12;
-Chart.defaults.animation = prefersReducedMotion
-    ? false
-    : { duration: 500, easing: "easeOutQuart" };
+if (prefersReducedMotion) {
+    Chart.defaults.animation = false;
+} else {
+    Chart.defaults.animation.duration = 500;
+}
 
 /* ───────────── helpers ───────────── */
 
@@ -156,7 +158,8 @@ function baseOptions(theme, unit, { legend = false } = {}) {
                 usePointStyle: true,
                 callbacks: {
                     label: (item) => {
-                        const value = item.parsed.y ?? item.parsed.x ?? item.parsed;
+                        const value =
+                            item.parsed.y ?? item.parsed.x ?? item.parsed;
                         const name = item.dataset.label
                             ? `${item.dataset.label}: `
                             : "";
@@ -212,7 +215,9 @@ function horizontalise(options, theme, unit) {
         callback(value) {
             const label = this.getLabelForValue(value);
             const limit = Math.max(10, Math.floor(this.chart.width / 18));
-            return label.length > limit ? label.slice(0, limit - 1) + "\u2026" : label;
+            return label.length > limit
+                ? label.slice(0, limit - 1) + "\u2026"
+                : label;
         },
     };
     options.plugins.tooltip.callbacks.label = (item) =>
@@ -306,7 +311,10 @@ function createSparkline(canvas, theme) {
             responsive: true,
             maintainAspectRatio: false,
             animation: prefersReducedMotion ? false : { duration: 350 },
-            plugins: { legend: { display: false }, tooltip: { enabled: false } },
+            plugins: {
+                legend: { display: false },
+                tooltip: { enabled: false },
+            },
             scales: {
                 x: { display: false },
                 y: { display: false },
@@ -320,7 +328,10 @@ function createLine(canvas, theme) {
     const labels = readJson(canvas, "labels");
     const unit = canvas.dataset.unit ?? "";
     const datasets = readJson(canvas, "datasets", null) ?? [
-        { label: canvas.dataset.seriesLabel ?? "", data: readJson(canvas, "values") },
+        {
+            label: canvas.dataset.seriesLabel ?? "",
+            data: readJson(canvas, "values"),
+        },
     ];
     const multi = datasets.length > 1;
     const sparse = labels.length <= 2;
@@ -328,7 +339,9 @@ function createLine(canvas, theme) {
     const options = baseOptions(theme, unit, { legend: multi });
     options.scales.y.suggestedMax = Math.max(
         4,
-        ...datasets.flatMap((set) => set.data.map((value) => Number(value) || 0)),
+        ...datasets.flatMap((set) =>
+            set.data.map((value) => Number(value) || 0),
+        ),
     );
 
     return new Chart(canvas, {
@@ -337,13 +350,16 @@ function createLine(canvas, theme) {
             labels,
             datasets: datasets.map((set, index) => {
                 const color =
-                    set.color ?? colorFor(set.label ?? "", index === 0 ? 0 : index);
+                    set.color ??
+                    colorFor(set.label ?? "", index === 0 ? 0 : index);
 
                 return {
                     label: set.label,
                     data: set.data,
                     borderColor: color,
-                    backgroundColor: multi ? withAlpha(color, 0.08) : areaGradient(color),
+                    backgroundColor: multi
+                        ? withAlpha(color, 0.08)
+                        : areaGradient(color),
                     fill: true,
                     borderWidth: 2.5,
                     tension: 0.35,
@@ -366,14 +382,19 @@ function createBar(canvas, theme) {
     const unit = canvas.dataset.unit ?? "";
     const stacked = canvas.dataset.stacked === "true";
     const datasets = readJson(canvas, "datasets", null) ?? [
-        { label: canvas.dataset.seriesLabel ?? "", data: readJson(canvas, "values") },
+        {
+            label: canvas.dataset.seriesLabel ?? "",
+            data: readJson(canvas, "values"),
+        },
     ];
     const multi = datasets.length > 1;
 
     const options = baseOptions(theme, unit, { legend: multi });
     options.scales.y.suggestedMax = Math.max(
         4,
-        ...datasets.flatMap((set) => set.data.map((value) => Number(value) || 0)),
+        ...datasets.flatMap((set) =>
+            set.data.map((value) => Number(value) || 0),
+        ),
     );
 
     if (stacked) {
@@ -438,7 +459,9 @@ function createHorizontalBar(canvas, theme) {
 // Part-of-whole with a total in the centre and a legend underneath.
 function createDoughnut(canvas, theme) {
     const labels = readJson(canvas, "labels");
-    const values = readJson(canvas, "values").map((value) => Number(value) || 0);
+    const values = readJson(canvas, "values").map(
+        (value) => Number(value) || 0,
+    );
     const total = values.reduce((sum, value) => sum + value, 0);
     const centerLabel = canvas.dataset.centerLabel ?? "Total";
 
@@ -477,8 +500,14 @@ function createDoughnut(canvas, theme) {
                         generateLabels: (chart) =>
                             chart.data.labels.map((label, index) => ({
                                 text: `${label} (${numberFormat.format(values[index])})`,
-                                fillStyle: chart.data.datasets[0].backgroundColor[index],
-                                strokeStyle: chart.data.datasets[0].backgroundColor[index],
+                                fillStyle:
+                                    chart.data.datasets[0].backgroundColor[
+                                        index
+                                    ],
+                                strokeStyle:
+                                    chart.data.datasets[0].backgroundColor[
+                                        index
+                                    ],
                                 fontColor: theme.text,
                                 pointStyle: "circle",
                                 hidden: !chart.getDataVisibility(index),
@@ -577,7 +606,11 @@ function recreateCharts() {
 
                 return chart;
             } catch (error) {
-                console.error("Chart failed:", canvas.dataset.reportChart, error);
+                console.error(
+                    "Chart failed:",
+                    canvas.dataset.reportChart,
+                    error,
+                );
                 showChartError(canvas);
 
                 return null;
@@ -664,7 +697,10 @@ function cellValue(row, index) {
     const text = (row.children[index]?.textContent ?? "").trim();
     const number = parseFloat(text.replace(/[^0-9.\-]/g, ""));
 
-    return text !== "" && text !== "—" && !Number.isNaN(number) && /\d/.test(text)
+    return text !== "" &&
+        text !== "—" &&
+        !Number.isNaN(number) &&
+        /\d/.test(text)
         ? number
         : text.toLowerCase();
 }
@@ -680,10 +716,15 @@ document.addEventListener("click", (event) => {
     const table = head.closest("table");
     const body = table.tBodies[0];
     const index = [...head.parentElement.children].indexOf(head);
-    const direction = head.getAttribute("aria-sort") === "ascending" ? "descending" : "ascending";
+    const direction =
+        head.getAttribute("aria-sort") === "ascending"
+            ? "descending"
+            : "ascending";
     const factor = direction === "ascending" ? 1 : -1;
 
-    [...head.parentElement.children].forEach((th) => th.removeAttribute("aria-sort"));
+    [...head.parentElement.children].forEach((th) =>
+        th.removeAttribute("aria-sort"),
+    );
     head.setAttribute("aria-sort", direction);
 
     [...body.rows]
