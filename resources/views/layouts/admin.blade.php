@@ -740,20 +740,7 @@
             });
         });
     </script>
-    <script>
-        (() => {
-            const box = document.createElement('pre');
-            box.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#000;color:#0f0;font-size:11px;padding:6px;margin:0;white-space:pre-wrap;max-height:30vh;overflow:auto';
-            document.body.appendChild(box);
-            const log = (m) => box.textContent += m + '\n';
-            addEventListener('error', (e) => log('ERR: ' + e.message));
-            addEventListener('unhandledrejection', (e) => log('REJ: ' + e.reason));
-            setTimeout(() => {
-                document.querySelectorAll('[data-report-chart]').forEach((c) =>
-                log(c.dataset.reportChart + ' ' + c.clientWidth + 'x' + c.clientHeight));
-            }, 2500);
-        })();
-    </script>
+
 </body>
 
 </html>
