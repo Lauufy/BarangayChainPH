@@ -2,6 +2,10 @@
 
 @section('title', 'Dashboard')
 
+@push('page-scripts')
+    @vite('resources/js/reports.js')
+@endpush
+
 @section('content')
     <div class="admin-module space-y-5" data-reports-page>
 

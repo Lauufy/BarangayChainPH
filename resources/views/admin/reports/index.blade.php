@@ -2,6 +2,10 @@
 
 @section('title', 'Reports & Analytics')
 
+@push('page-scripts')
+    @vite('resources/js/reports.js')
+@endpush
+
 @section('content')
     @php
         $tabs = ['service' => 'Service Requests', 'citizens' => 'Citizens', 'verification' => 'Verification', 'staff' => 'Staff Performance'];
