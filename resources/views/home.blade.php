@@ -818,6 +818,13 @@
 
     </main>
 
+    <script>
+        if (/Android/i.test(navigator.userAgent)) {
+            document.getElementById('scan').href =
+                'intent://lens.google.com/#Intent;scheme=https;package=com.google.android.googlequicksearchbox;S.browser_fallback_url=https%3A%2F%2Flens.google.com%2F;end';
+        }
+    </script>
+
     {{-- Header menu + active-section highlight (scroll animations now live in resources/js/reveal.js) --}}
     <script>
         const header = document.getElementById('site-header');
