@@ -123,6 +123,7 @@
         }
     </style>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @stack('page-scripts')
 </head>
 
 <body

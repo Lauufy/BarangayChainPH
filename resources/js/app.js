@@ -8,10 +8,6 @@ import './reveal';
 import './help-search';
 import './ticket-composer';
 
-if (document.querySelector('[data-reports-page]')) {
-    import('./reports');
-}
-
 if (document.getElementById('id-scanner')) {
     window.idImageValidatorReady = () => import('./identity/id-image-validator.js');
     document.dispatchEvent(new Event('id-image-validator-ready'));
