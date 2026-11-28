@@ -242,6 +242,7 @@ class PermitVerificationTest extends TestCase
     private function issue(string $holder = 'Carlo Mamaril', bool $expired = false): array
     {
         Storage::fake('supabase');
+        view()->getFinder()->prependLocation(base_path('tests/Fixtures/verification'));
         $application = ServiceRequest::factory()->create(['applicant_name' => $holder]);
         $document = app(DocumentIssuer::class)->issue($application, $expired ? now()->subDay() : null);
 
