@@ -129,7 +129,7 @@
     $base = implode(' ', [
         'peer validation-input block w-full rounded-md border pb-1.5 pt-5',
         'pl-3.5', // with a prefix, the inline style in $defaults overrides this
-        'text-[13px] outline-none transition focus:ring-2 sm:text-sm', // 13px on mobile, 14px from sm up
+        'text-base outline-none transition focus:ring-2 sm:text-sm',
         'disabled:opacity-60',
         $readOnly,
         $typeSpecific,
@@ -192,7 +192,7 @@
 
     $labelClasses = implode(' ', [
         'pointer-events-none absolute left-3.5',
-        'text-[11px] font-semibold uppercase tracking-wider transition-all duration-200',
+        'text-xs font-semibold uppercase tracking-wider transition-all duration-200',
         $muted,
         $labelFocus,
         $labelPosition,
@@ -229,7 +229,7 @@
                 {{ $attributes->class([$base, $isDateLike ? '' : $placeholder, 'h-14', $type === 'password' ? 'pr-11' : 'pr-3.5'])->merge($defaults) }}>
 
             @if ($prefix)
-                <span class="{{ $muted }} pointer-events-none absolute bottom-1.5 left-3.5 top-5 items-center text-[13px] sm:text-sm {{ $raised ? 'flex' : 'hidden peer-focus:flex peer-not-placeholder-shown:flex peer-aria-invalid:flex' }}">{{ $prefix }}</span>
+                <span class="{{ $muted }} pointer-events-none absolute bottom-1.5 left-3.5 top-5 items-center text-base sm:text-sm {{ $raised ? 'flex' : 'hidden peer-focus:flex peer-not-placeholder-shown:flex peer-aria-invalid:flex' }}">{{ $prefix }}</span>
             @endif
         @endif
 
@@ -254,10 +254,10 @@
     </div>
 
     {{-- Error message: Laravel errors show on load, JS fills this on blur --}}
-    <p data-error-for="{{ $name }}" class="{{ $invalid ? '' : 'hidden' }} mt-1 text-[11px] text-(--red-500) sm:text-xs">{{ $errors->first($name) }}</p>
+    <p data-error-for="{{ $name }}" class="{{ $invalid ? '' : 'hidden' }} mt-1 text-xs text-(--red-500)">{{ $errors->first($name) }}</p>
 
     @if ($hint)
-        <p class="{{ $muted }} mt-1 text-[11px] sm:text-xs">{{ $hint }}</p>
+        <p class="{{ $muted }} mt-1 text-xs">{{ $hint }}</p>
     @endif
 
     {{ $slot }}
